@@ -1,0 +1,28 @@
+Click on checkbox in match table
+A helper function gets the data from the row containing the checkbox and returns the correct data
+For passing into the table.row.add() method.  Obviously we need the form prefix, the field names
+and need to counter for the number of forms in the formset.
+On the server side we pass in the form data.  If there are errors they are sent back to the client.
+We therefore also need to be able to construct the jQuery datatable clientside.
+
+
+
+
+
+
+
+PRIORITY 1
+
+    TableFormset init needs to take the rendered rows and style them and add them to the look up
+    dictionary.
+
+    When transaction input forms errors the input dropdown widgets do have a blank label
+
+PRIORITY 2
+
+    Matching tables did not align because of scrollbar.  To consider ...
+
+    Use pgAdmin instead of adminer for a DB GUI
+
+    Refactor the styles in styles.css and ui_elem_styles.css.  Styles in the first sheet probably belong to the second.
+    The second sheet could do with being renamed

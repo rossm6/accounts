@@ -1,0 +1,107 @@
+ <div class="mt-5 d-flex justify-content-center">
+    <div>
+        <div class="border data-grid p-4">
+                <div class="mb-3 d-flex justify-content-center">
+                    {% load utility_tags %}
+
+                    {% comment %} {% if header_form.errors %}
+                        <ul class="ul-plain mt-2 mb-5 p-2 pl-4 alert alert-danger">
+                            <p class="font-weight-bold p-0 mb-2">Please correct the following errors below</p>
+                            {% for field, errors in header_form.errors.items %}
+                                {% if field != "__all__" %}
+                                    {{ header_form.fields|get_label:field }}
+                                    <ul class="ul-plain m-0 p-2 ml-3">
+                                {% endif %}
+                                    {% for error in errors %}
+                                        <li class="{% if field != "__all__" %}ml-1{% endif %}">{{ error }}</li>
+                                    {% endfor %}
+                                {% if field != "__all__" %}
+                                    </ul>
+                                {% endif %}  
+                            {% endfor %}        
+                        </ul>
+                    {% endif %} {% endcomment %}
+
+                    <div class="errors p-2 border border-danger rounded d-flex small">
+                        <div>
+                            <svg class="bi bi-exclamation-triangle-fill" width="2em" height="2em" viewBox="0 0 16 16" fill="red" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <ul class="p-0 m-0 ml-3 list-unstyled">
+                                <li>Three errors occured for the following reasons:
+                                    <ul class="p-0 py-1 m-0 ml-3 small">
+                                        <li class="py-1">An error occured</li>
+                                        <li class="py-1">An error occured</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+
+
+                </div>
+                <div>
+                    <h2 class="h6 font-weight-bold">Enter</h2>
+                </div>
+                <div>
+                    <form class="formset" method="POST">
+                        {% csrf_token %}
+                        {% load crispy_forms_tags %}
+                        {% crispy header_form %}
+                        <div>
+                            {{ line_formset.management_form|crispy }}
+                        </div>
+                        <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="{{ line_form_prefix }}">
+                                {% crispy line_formset %}
+                                {% crispy line_formset.empty_form line_formset.empty_form.helpers.empty_form %}
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-between p-2 border-top-0 border">
+                            <div class="dropdown-split-button">
+                                <div class="btn-group mt-3 " role="group" aria-label="Button group with nested dropdown">
+                                    <button type="button" class="btn button add-lines">Add New Line</button>
+                                    <button id="btnGroupDrop1" type="button" class="btn button dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                                    <div class="dropdown-menu add-multiple-lines" aria-labelledby="btnGroupDrop1">
+                                        <a class="dropdown-item pointer" data-lines="5">Add 5 lines</a>
+                                        <a class="dropdown-item pointer" data-lines="10">Add 10 lines</a>
+                                        <a class="dropdown-item pointer" data-lines="20">Add 20 lines</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success xero-btn approve">Approve</button>
+                        </div>
+                        <div class="my-4">
+                            <div class="mb-2">
+                                <h2 class="h6 font-weight-bold">Currently Matching</h2>
+                                <small class="form-text text-muted">The transactions you have already selected to match to this new transaction to</small>
+                            </div>
+                            <div>
+                                <div class="d-none matching_transactions_formset">
+                                    {{ matching_formset.management_form|crispy }}
+                                </div>
+                                <div>
+                                    <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="matched_transactions">
+                                            {% crispy matching_formset %}
+                                            {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="mt-4">
+                    <div class="mb-2">
+                        <h2 class="h6 font-weight-bold">Match</h2>
+                        <small class="form-text text-muted">Choose transactions to match this new transaction to</small>
+                    </div>
+                    <div>
+                        {% include 'accountancy/matching.html' %}
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>

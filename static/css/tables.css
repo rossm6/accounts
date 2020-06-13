@@ -1,0 +1,32 @@
+table {
+    font-size: 80% !important;
+}
+
+table th {
+    padding: 0.75em;
+}
+
+td {
+    height: 36px;
+}
+
+td > input {
+    height: 100%;
+    padding-left: 0.5em;
+}
+
+.col-draggable-icon,
+.col-close-icon {
+    padding: 0px !important;
+}
+
+
+/* standard widths for these standard columns in a data input table */
+
+.col-close-icon {
+    width: 20px;
+}
+
+.col-draggable-icon {
+    width: 20px;
+}

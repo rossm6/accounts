@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    {% include 'accountancy/create_css.html' %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/input_trans_grid.css' %}">
+    <link rel="stylesheet" href="{% static 'css/purchases/purchase_input.css' %}">
+    <link rel="stylesheet" href="{% static 'css/input_dropdown.css' %}">
+    {% include 'accountancy/matching_css.html' %}
+    <link rel="stylesheet" href="{% static 'css/matching.css' %}">
+{% endblock head %}
+
+{% block content %}
+    <div class="cont">
+        <div>
+            {% include 'accountancy/create.html' %}
+        </div>
+    </div>
+{% endblock content %}
+
+{% block js %}
+    {% include 'accountancy/create_js.html' with header_form=header_form %}
+    {% include 'accountancy/matching_js.html' %}
+{% endblock js %}

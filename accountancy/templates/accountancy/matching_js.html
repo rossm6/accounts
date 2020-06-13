@@ -1,0 +1,181 @@
+{% load static %}
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
+<script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
+<script src="{% static 'js/table_formset.js' %}"></script>
+<script>
+
+    $(document).ready(function(){
+
+
+        var supplier_field = 'select[name=header-supplier]'; // will do for now but there may be other fields
+        // which matching depends on also in the future
+
+
+        // Ordering was a bit tricky.
+        // There are two problems -
+
+        // 1. User can input into value field so we must order based on live DOM value.  Because datatables does
+           // not use the live value - for performance reasons - this is a problem.  The solution is a custom
+           // data source plugin.  It is a just few lines of code.  We use it with this line of code -
+
+                // { orderDataType: 'dom-text', targets: [6] }
+
+        // 2. Normally ordering is easy.  Just define the value for the HTML attribute data-order.  But it seems
+           // if you are adding jQuery objects for the new rows this does not work.  The solution seems to be a
+           // nice trick noted here https://stackoverflow.com/a/53929269 whereby we just create a span element
+           // with the input value inside.  The datatables plugin must look for these elements out of the box.
+
+
+        var matched_transacions_table = $("table.matched_transactions").DataTable({
+            dom: "t",
+            bPaginate: false,
+            columnDefs: [
+                { orderDataType: 'dom-text', targets: [ 6 ] }, // this requires a plugin - see above and https://datatables.net/plug-ins/sorting/custom-data-source/dom-text
+                { className: 'd-none', targets: [ 5 ] },
+                { className: "dt-center", "targets": "_all" }
+            ],
+
+        });
+
+        var matched_transactions_table_formset = new TableFormset({
+            table: matched_transacions_table,
+            form_prefix: '{{ matching_form_prefix }}',
+            trs_to_ignore: '.empty-form',
+            unique_field: 'matched_to',
+            management_form: $("div.matching_transactions_formset"), // FIX ME - rename the class of this div
+            empty_form_identifier: ".empty-form"
+        });
+
+
+        $("table.outstanding_table").on("click", "input.match-checkbox", function() {
+            var checkbox = $(this);
+            var tr = $(this).parents("tr").eq(0);
+            var fields = tr.data()["fields"];
+            var id_of_transaction = fields.matched_to.value;
+            var apply_disabled_attrs = function ($elem) {
+                $elem.addClass("input-disabled");
+                $elem.attr("readonly", "readonly");
+            }
+            if(checkbox.prop("checked")){
+                var attrs = {
+                    "type": function ($elem) {
+                        $elem.addClass("input-disabled");
+                        $elem.attr("disabled", "disabled");
+                    },
+                    "ref": apply_disabled_attrs,
+                    "total": apply_disabled_attrs,
+                    "paid": apply_disabled_attrs,
+                    "due": apply_disabled_attrs
+                };
+                var new_tr = matched_transactions_table_formset.create(fields, attrs);
+                matched_transactions_table_formset.add(id_of_transaction, new_tr);
+            }
+            else{
+                matched_transactions_table_formset.delete(id_of_transaction);
+            }
+        });
+
+
+        // How to sort when you have elements inside the td element?
+        // https://stackoverflow.com/questions/2862322/how-to-sort-by-date-with-datatables-jquery-plugin
+
+
+        var outstanding_table = $("table.outstanding_table")
+        .on('init.dt', function (e, settings, json) {
+            
+        })
+        .DataTable({
+            ajax: {
+                url: "{% url 'purchases:load_matching_transactions' %}",
+                data: function (d) {
+                    // the user can change the supplier
+                    // each time they do we need to load new matching transactions
+                    // there may be other changes which require a reload
+                    var supplier = $(supplier_field).val();
+                    if (supplier){
+                        d["s"] = supplier;
+                    }
+                }
+            },
+            columns: [
+                { 
+                    'data': 'type',
+                    'render': function (data, type, full, meta) {
+                        return '<span data-order="' + full.type.value + '">' + data.label + '</span>';
+                    }
+                },
+                { 
+                    'data': 'ref',
+                    'render': function (data, type, full, meta) {
+                        return '<span data-order="' + data + '">' + data + '</span>';
+                    }
+                },
+                { 
+                    'data': 'total',
+                    'render': function (data, type, full, meta) {
+                        return '<span data-order="' + data + '">' + data + '</span>';
+                    }
+                },
+                {
+                    'data': 'due',
+                    'render': function (data, type, full, meta) {
+                        return '<span data-order="' + data + '">' + data + '</span>';
+                    }
+                },
+                { 
+                    'data': 'paid',
+                    'render': function (data, type, full, meta) {
+                        return '<span data-order="' + data + '">' + data + '</span>';
+                    }
+                },
+                { 
+                    'data': null,
+                    'searchable': false,
+                    'orderable': false,
+                    'classname': 'dt-body-center',
+                    'render': function (data, type, full, meta) {
+                        var id = full["DT_RowData"].pk;
+                        var checked = matched_transactions_table_formset.lookup(id) ? "checked" : "";
+                        return '<input ' + checked + ' type="checkbox" name="matching_transaction" value="' + id + '" class="match-checkbox">';
+                    }
+                },
+            ],
+            columnDefs: [
+                {"className": "dt-center", "targets": "_all"}
+            ],
+            dom: 't',
+            scrollY: 500,
+            deferRender: true,
+            scroller: true,
+            serverSide: true,
+            scrollCollapse: true,
+        });
+
+
+        $(":input.input-disabled").on("focus", function(event){
+            event.preventDefault();
+            return false;
+        });
+
+
+        outstanding_table.on("draw", function(){
+
+        });
+
+        $(supplier_field).on("change", function() {
+            outstanding_table.ajax.reload();
+        });
+
+        // Unlike input elements we cannot set a readonly attribute on the select element
+        // So we disable it but then enable it before the data is sent to the server 
+        $("form.formset").on("submit", function(){
+            var selects = $("select").filter(function(){
+                return this.disabled;
+            });
+            selects.prop("disabled", false);
+        });
+
+    });
+</script>

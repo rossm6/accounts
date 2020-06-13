@@ -1,0 +1,54 @@
+{% load static %}
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="{% static 'js/infinite_scroll.js' %}"></script>
+<script src="{% static 'js/input_dropdown_widget.js' %}"></script>
+<script src="{% static 'js/grid.js' %}"></script>
+<script>
+    {% include "accountancy/input_grid.js" %}
+</script>
+<script src="{% static 'js/selectize.min.js' %}"></script>
+{{ header_form.media }}
+<script>
+
+
+    $(document).ready(function(){
+        $(".datepicker").removeClass("form-control");
+    });
+
+
+    $(".transaction-type-select").selectize();
+
+    {% comment %} 
+    
+    the standard example of loading from a remote source for the selectize.js library uses
+    jsonp which was new to me.  JSONP was only created for loading from another domain so is not needed here.
+    It was also created back in 2005 so not sure it is needed at all anymore.
+
+    Here we just use json.  Callback is obviously a function passed in from the library itself.
+    
+    {% endcomment %}
+
+    $(".supplier-select").selectize({
+        valueField: 'id',
+        labelField: 'name',
+        searchField: 'name',
+        create: true,
+        load: function(query, callback) {
+            $.ajax({
+                url: '{% url "purchases:load_suppliers" %}',
+                type: 'GET',
+                dataType: 'json',
+                data: {
+                    q: query,
+                    page_limit: 10,
+                },
+                error: function() {
+                    console.log("error");
+                },
+                success: function(res) {
+                    callback(res.data);
+                }
+            });
+        }
+	});
+</script>

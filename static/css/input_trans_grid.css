@@ -1,0 +1,25 @@
+table {
+    table-layout: fixed;
+}
+
+thead {
+    background: linear-gradient(#fff,#fafafa);
+    background-color: #fafafa!important;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+}
+
+table th {
+    border-top: 1px solid #dee2e6;
+}
+
+table td {
+    padding: 0px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+}
+
+.ui-sortable-helper {
+    display: table;
+}

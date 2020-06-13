@@ -1,0 +1,131 @@
+/* buttons */
+
+.xero-btn {
+    padding-left: 4em;
+    padding-right: 4em;
+    font-size: 80% !important;
+    font-weight: 700 !important;
+}
+
+.button {
+    background: rgb(250, 250, 250) linear-gradient(rgb(255, 255, 255), rgb(230, 234, 236)) repeat scroll 0% 0% / auto padding-box border-box;
+    border: 1px solid rgb(207, 210, 212);
+    color: rgb(4, 143, 194);  
+    font-size: 80%;
+    font-weight: 900;
+}
+
+.button-secondary {
+    color: white;
+    font-size: 80%;
+    font-weight: 900;
+    background: linear-gradient(#00b1e6,#0382b3);
+    border: 1px solid #0078a5!important;
+}
+
+.button-secondary:hover {
+    color: white;
+}
+
+.button:focus,
+.button-secondary:focus
+{
+    outline: none;
+    box-shadow: none;
+}
+
+.button:hover {
+    color: rgb(4, 143, 194);  
+}
+
+.btn-group .dropdown-menu {
+    font-size: 80%;
+    top: -1px;
+    color: rgb(4, 143, 194);
+    padding: 0px;
+}
+
+.btn-group .dropdown-item {
+    color: rgb(4, 143, 194);   
+}
+
+.btn-group .dropdown-item:hover {
+    background-color: rgb(224, 238, 243); 
+}
+
+.dropdown-split-button {
+    position: relative;
+}
+
+.dropdown-split-button .btn-group {
+    position: static;
+}
+
+.dropdown-split-button .dropdown-toggle::after {
+    margin-left: 0px !important;
+    /* otherwise the carrat icon is misaligned */
+}
+
+.dropdown-split-button .dropdown-menu {
+    position: absolute;
+    transform: none !important;
+    will-change: none !important;
+    top: 100% !important;
+}
+
+/* inputs */
+
+.input {
+    -webkit-font-smoothing: antialiased;
+    padding: 0;
+    margin: 0;
+    font-size: 11px;
+    font-family: Helvetica,sans-serif;
+    border: 1px solid #7f9db9;
+    padding-left: 2px;
+    padding-right: 2px;
+    border-color: #b5b8bb #e2e4e7 #e8eaec #bdbfc3;
+    border-style: solid;
+    border-width: 1px;
+    height: 25px!important;
+}
+
+
+/* select2 widget styling */
+
+.select2-container--default .select2-selection--single {
+    border-radius: 0px !important;
+    border-color: #b5b8bb #e2e4e7 #e8eaec #bdbfc3 !important;
+    border-style: solid !important;
+    height: 25px !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 24px !important;
+}
+
+.select2-container--default .select2-selection--single:focus {
+    outline: 0 !important;
+}
+
+.select2-container--default .dropdown-wrapper {
+    font-size: 80% !important;
+}
+
+.select2-results__option--selectable {
+    font-size: 80% !important;
+}
+
+/* the selected option has these classes */
+.select2-container--default .select2-results__option--selected {
+    background-color: white !important;
+}
+
+.select2-results__option {
+    padding-left: 10px !important;
+}
+
+/* the option which is highlighted has these classes */
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #e6f5fa !important;
+}

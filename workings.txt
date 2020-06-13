@@ -1,0 +1,91 @@
+// the actual formset table
+var matching_transactions_formset_table = $("table.formset");
+
+
+
+(function(){
+
+
+    TableFormSet.prototype.add = function (key, new_row) {
+        // key is the form field value which is a unique identifier for the row
+        if(!this.forms[value]){
+            this.formset.row.add(new_row).draw();
+            this.forms[key] = new_row;
+        }
+    };
+
+
+    TableFormSet.prototype.delete = function (key, row) {
+        if(value in this.forms){
+            this.formset.row.remove(row);
+            delete this.forms[key];
+        }
+    };
+
+
+    TableFormSet.prototype.lookup = function (key) {
+        if(this.forms[key]){
+            return true;
+        }
+        else{
+            return false;
+        }
+    };
+
+
+    function create_unique_identifier_regex (prefix, field) {
+        return # regex exp
+    }
+
+
+    function init (self, formset) {
+        var table_dom = formset.table().container();
+        var trs = table_dom.find("tr").not(this.trs_to_ignore);
+        var unique_identifier_regex = this.unique_identifier_regex;
+        var forms = this.forms;
+        trs.each(function(index, tr){
+            var key = tr.find(unique_identifier_regex).val();
+            forms[key] = tr;
+        });
+    }
+
+
+    function TableFormSet(opts) {
+        this.formset = opts.table; // jquery DataTable for formset
+        this.form_prefix = opts.form_prefix;
+        this.trs_to_ignore = opts.trs_to_ignore; // class set on TR elements which do not contain fields for user input
+        this.unique_field = opts.unique_field;
+        this.forms = {}; // for quick look up
+        this.unique_identifier_regex = create_unique_identifier_regex(form_prefix, this.unique_field);
+        init(this, formset);
+    }
+
+
+})();
+
+
+
+var matching_transactions = new TableFormSet(matching_transactions_formset_table);
+
+var outstanding_transactions = some jquery datatable
+
+new_matching_transaction.on("click", function() {
+    var transaction = $(this);
+    var unique_key = transaction.find();
+    var new_row = create_new_form_in_matching_formset(transaction);
+    matching_transactions.add(unique_key, new_row);
+});
+
+
+delete_matching_transaction.on("click", function() {
+    var tr = $(this);
+    var unique_key = transaction.find();
+    matching_transactions.add(unique_key, tr);
+});
+
+
+outstanding_transactions.on("scroll", function() {
+    # look up in tableformset
+    # if exists then check the box
+    # else not
+});

@@ -1,0 +1,45 @@
+.errors {
+    width: 100%;
+    max-width: 750px;
+    border-width: 2px !important;
+}
+
+table {
+    width: 1250px;
+}
+
+.col-item {
+    width: 150px;
+}
+
+.col-description {
+    width: 250px;
+}
+
+.col-qty {
+    width: 75px;
+}
+
+.col-unit_price {
+    width: 100px;
+}
+
+.col-nominal {
+    width: 150px;
+}
+
+.col-tax_rate {
+    width: 150px;
+}
+
+.col-region {
+    width: 150px;
+}
+
+.col-amount {
+    width: 150px;
+}
+
+div.selectize-control.supplier-select {
+    width: 200px;
+}

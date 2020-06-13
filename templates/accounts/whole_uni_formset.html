@@ -1,0 +1,25 @@
+{% load crispy_forms_tags %}
+{% load crispy_forms_utils %}
+{% load crispy_forms_field %}
+
+{% specialspaceless %}
+
+    <thead class="text-muted">
+
+        {% crispy formset.empty_form formset.empty_form.helpers.thead %}
+
+    </thead>
+
+    <tbody class="table-bordered">
+
+        {% for form in formset %}
+
+            {% if form_show_errors and not form.is_extra %}
+                {% include "bootstrap4/errors.html" %}
+            {% endif %}
+
+            {% crispy form form.helpers.tbody %}
+
+        {% endfor %}
+
+{% endspecialspaceless %} 

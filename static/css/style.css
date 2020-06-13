@@ -1,0 +1,96 @@
+.text-overflow-hidden {
+    text-overflow: hidden;
+}
+
+.label {
+    line-height: 30px;
+    height: 100%;
+    position: absolute;
+    z-index: 10;
+    /* z-index was a 1000 but the date picker widget we use is less than this so not visible */
+    width: 100%;
+    background: white;
+}
+
+input, input[type="password"], textarea, select { 
+    outline: none;
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.data-input-focus-border {
+    border: 1px solid #048fc2 !important;
+}
+
+.dropdown {
+    display: none;
+    margin-left: -1px;
+    margin-top: 1px;
+    width: 250px;
+    height: 400px;
+    overflow-y: scroll;
+    list-style: none;
+    background-color: white;
+    z-index: 10000000;
+    padding: 0px;
+}
+
+.dropdown > li {
+    padding: 0.5em;
+    border: 1px solid transparent;
+}
+
+.dropdown > li:hover {
+    background-color: #e6f5fa;
+    border: 1px dotted #a3bae9;
+    cursor: pointer;
+}
+
+.color-b-1 {
+    color:  #048fc2
+}
+
+.non-td-input {
+    border-color: #b5b8bb #e2e4e7 #e8eaec #bdbfc3;
+    border-style: solid;
+    border-width: 1px;
+    padding-left: 0.25em;
+}
+
+.data-grid {
+    background: linear-gradient(#fff,#f8f8f8);
+    background-color: #f8f8f8;
+    background-repeat: no-repeat;
+    width: 100%;
+    max-width: 1300px;
+}
+
+.pagination-numbers-ui {
+    margin-right: 1em;
+}
+
+.pagination-numbers-ui:hover {
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.close-sm {
+    font-size: 1rem!important;
+}
+
+
+.selectize-dropdown,
+.selectize-input {
+    line-height: 12px !important;
+    padding: 4px 4px !important;
+}
+
+.selectize-dropdown,
+.selectize-dropdown-content 
+{
+    z-index: 1000000 !important; 
+    /* must exceed selectize-control in case dropdown is over another
+    selectize widget */
+}

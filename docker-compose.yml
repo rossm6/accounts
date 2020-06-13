@@ -1,0 +1,37 @@
+version: '3.7'
+
+# This departs from my standard set up because there arose the need to install
+# a postgres sql extension so we could use the TrigramSimilarity Django feature -
+# namely, the pg_trgm extension
+# The newt up is based on this - https://gist.github.com/leopoldodonnell/b0b7e06943bd389560184d948bdc2d5b
+
+services:
+
+    postgres:
+        build:
+            context: .
+            dockerfile: pg-Dockerfile
+        ports:
+            - 5432:5432
+        environment:
+            - POSTGRES_DB=dspace
+            - POSTGRES_USER=dspace
+        # You can put all of your env vars in env_file, but you may also only
+        # want to put secrets in it and put the file in .gitignore
+        env_file:
+            - proj.env
+        network_mode: "host"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+
+    db_interface:
+        image: adminer
+        ports:
+            - 8080:8080
+        depends_on:
+            - postgres
+        restart: always
+        network_mode: "host"
+
+volumes:
+    postgres_data:
