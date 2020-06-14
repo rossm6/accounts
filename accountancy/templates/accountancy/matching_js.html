@@ -36,40 +36,31 @@
                 { className: 'd-none', targets: [ 5 ] },
                 { className: "dt-center", "targets": "_all" }
             ],
-
+            scrollY: "200px",
+            scrollCollapse: true,
+            paging: false
         });
 
+
+        // this must be set up before the outstanding transactions datatable
+        // because the checkboxes in the latter depend on the form attribute
+        // of this object
         var matched_transactions_table_formset = new TableFormset({
             table: matched_transacions_table,
             form_prefix: '{{ matching_form_prefix }}',
             trs_to_ignore: '.empty-form',
             unique_field: 'matched_to',
             management_form: $("div.matching_transactions_formset"), // FIX ME - rename the class of this div
-            empty_form_identifier: ".empty-form"
+            empty_form_identifier: ".empty-form",
         });
-
 
         $("table.outstanding_table").on("click", "input.match-checkbox", function() {
             var checkbox = $(this);
             var tr = $(this).parents("tr").eq(0);
             var fields = tr.data()["fields"];
             var id_of_transaction = fields.matched_to.value;
-            var apply_disabled_attrs = function ($elem) {
-                $elem.addClass("input-disabled");
-                $elem.attr("readonly", "readonly");
-            }
             if(checkbox.prop("checked")){
-                var attrs = {
-                    "type": function ($elem) {
-                        $elem.addClass("input-disabled");
-                        $elem.attr("disabled", "disabled");
-                    },
-                    "ref": apply_disabled_attrs,
-                    "total": apply_disabled_attrs,
-                    "paid": apply_disabled_attrs,
-                    "due": apply_disabled_attrs
-                };
-                var new_tr = matched_transactions_table_formset.create(fields, attrs);
+                var new_tr = matched_transactions_table_formset.create(fields);
                 matched_transactions_table_formset.add(id_of_transaction, new_tr);
             }
             else{

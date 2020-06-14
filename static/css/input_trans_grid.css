@@ -23,3 +23,13 @@ table td {
 .ui-sortable-helper {
     display: table;
 }
+
+div.field_errors_wrapper {
+    position: fixed;
+    bottom: 1%;
+    background: white;
+    z-index: 10000000000000;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+}

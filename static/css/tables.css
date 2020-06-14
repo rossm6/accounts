@@ -30,3 +30,25 @@ td > input {
 .col-draggable-icon {
     width: 20px;
 }
+
+
+div.has_errors {
+    position: relative;
+    height: 100%;
+}
+
+div.has_errors::before,
+div.has_errors::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    border-color: transparent;
+    border-style: solid;
+    z-index: 10000000000000000000;
+}
+
+div.has_errors::after {
+    border-left-color: red;
+    border-bottom-color: red;
+}

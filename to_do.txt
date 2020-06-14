@@ -1,22 +1,15 @@
-Click on checkbox in match table
-A helper function gets the data from the row containing the checkbox and returns the correct data
-For passing into the table.row.add() method.  Obviously we need the form prefix, the field names
-and need to counter for the number of forms in the formset.
-On the server side we pass in the form data.  If there are errors they are sent back to the client.
-We therefore also need to be able to construct the jQuery datatable clientside.
-
-
-
-
-
-
-
 PRIORITY 1
 
-    TableFormset init needs to take the rendered rows and style them and add them to the look up
-    dictionary.
+    The red triangle on the table elements which contain field errors requires position:relative; this means
+    the dropdown for the input widget does not work.  I tried to detect focus in and out of the td element but
+    the body element gets focus even when i click on elements inside the td element.  So i have no choice put
+    to clone the dropdown menu and position it relative to the whole grid container.  This shouldn't require
+    any change to the widget luckily.  And the change shouldn't be in the widget module because this isn't
+    a problem with the widget.  Rather the design around the widget.
 
-    When transaction input forms errors the input dropdown widgets do have a blank label
+    No left padding on some input fields in the input grid following the containment of the input with a div element
+
+    Rename "Match" header section to "Outstanding"
 
 PRIORITY 2
 

@@ -25,3 +25,9 @@ table.dataTable {
 select.input-disabled {
     text-align-last: center;
 }
+
+.dataTables_scrollBody {
+    overflow-y: scroll !important;
+    border-bottom: none !important;
+    /* this is so the different matching tables vertically align */
+}

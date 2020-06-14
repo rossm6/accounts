@@ -1,0 +1,8 @@
+Issue -
+
+    InputDropDown not showing label after posting data to server
+
+Solution -
+
+    Value passed to widget was string but function expected integer.
+    So just cast string to an integer.

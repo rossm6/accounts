@@ -1,0 +1,17 @@
+{% load crispy_forms_field %}
+<div class="h-100 {% if field.errors %} has_errors {% endif %}">
+    {% crispy_field field %}
+    {% if field.errors %}
+        <div class="d-none error-tooltip">
+            <ul class="ml-3 p-0 m-0 list-unstyled">
+                <li>This specific field has the following errors -
+                    <ul class="p-0 py-1 m-0 ml-3 small">
+                        {% for error in field.errors %}
+                            <li class="py-1">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    {% endif %}
+</div>

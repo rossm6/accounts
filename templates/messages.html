@@ -1,0 +1,12 @@
+{% if messages %}
+    <div class="position-absolute fixed-centre">
+        {% for message in messages %}
+                <div class="mt-1 fixed-centre alert {% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} alert-success {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %} alert-warning{% elif message.level == DEFAULT_MESSAGE_LEVELS.ERROR %} alert-danger{% else %} alert-info {% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+        {% endfor %}
+    </div>
+{% endif %}

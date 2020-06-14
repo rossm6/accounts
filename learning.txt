@@ -1,0 +1,5 @@
+Django Crispy Forms
+
+    I had thought you could specify a class on a widget directly in your form
+    and css_classes defined in the library were just appended.  This does not appear to be
+    the case.

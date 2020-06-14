@@ -2,7 +2,7 @@
 {% load crispy_forms_utils %}
 {% specialspaceless %}
 <div class="input-dropdown-widget-wrapper position-relative">
-    <div class="label p-1">{% if widget.value %}{{ widget.label }}{% endif %}</div>
+    <div class="label p-1">{% if widget.label %}{{ widget.label }}{% endif %}</div>
     <div class="input-wrapper">
         <div class="input-dropdown-widget d-flex">
             <input name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %} value="{{ widget.value }}">

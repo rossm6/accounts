@@ -6,7 +6,7 @@ from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField)
 from accountancy.forms import (AjaxForm, LabelAndFieldOnly, TableHelper,
                                create_tbody_helper, create_thead_helper,
-                               create_transaction_header_helper)
+                               create_transaction_header_helper, PlainFieldErrors)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.widgets import InputDropDown
 from items.models import Item
@@ -67,7 +67,7 @@ class PurchaseHeaderForm(forms.ModelForm):
 
     def clean(self):
         super().clean()
-        raise forms.ValidationError("test")
+        # raise forms.ValidationError("test")
         
 
     def save(self, commit=True):
@@ -91,23 +91,17 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
 
     def clean(self):
         super().clean()
-        # remember each of the forms is valid at this point
-        # header has not been saved to DB yet
-        # because obviously you don't want to do that before
-        # you check the lines are all good
-        if self.header.total != 0:
-            total_analysed = 0
-            for form in self.forms:
-                # this will not do for the edit lines formset
-                if form.empty_permitted and form.has_changed():
-                    total_analysed = total_analysed + form.instance.amount
-            if total_analysed != self.header.total:
-                raise forms.ValidationError(
-                    _(
-                        "Total does not equal sum of values entered for each line"
-                    ),
-                    code="total-difference"
-                )
+        # raise forms.ValidationError("line formset error") testing purposes
+        # header has not been saved by this point
+        # forms each have an instance by now
+        # so change values on the instance not in cleaned data
+        # if any of the forms have failed you might not want to do further validation
+        # so could do this -
+        # if any(self.errors):
+        #   return
+        # example - https://docs.djangoproject.com/en/3.0/topics/forms/formsets/#custom-formset-validation
+        # note that the model formset clean method by default checks the integrity of the data
+        # see - https://docs.djangoproject.com/en/3.0/topics/forms/formsets/#custom-formset-validation
 
 
 class PurchaseLineForm(AjaxForm):
@@ -152,18 +146,33 @@ class PurchaseLineForm(AjaxForm):
         super().__init__(*args, **kwargs)
         css_classes = {
             "Td": {
-                "item": "w-100 border-0",
-                "description": "can_highlight w-100 border-0",
-                "nominal": "w-100 border-0",
-                "amount": "can_highlight w-100 border-0"
+                "item": "h-100 w-100 border-0",
+                "description": "can_highlight h-100 w-100 border-0",
+                "nominal": "h-100 w-100 border-0",
+                "amount": "can_highlight h-100 w-100 border-0"
             }
         }
         self.helpers = TableHelper(
             PurchaseLineForm.Meta.fields,
             order=True,
             delete=True,
-            css_classes=css_classes
+            css_classes=css_classes,
+            field_layout_overrides={
+                'Td': {
+                    'item': PlainFieldErrors,
+                    'description': PlainFieldErrors,
+                    'nominal': PlainFieldErrors,
+                    'amount': PlainFieldErrors
+                }
+            }
         ).render()
+
+
+    # testing purposes to check if non_field_errors come through in UI
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     raise forms.ValidationError("non field error on line form")
+    #     return cleaned_data
 
 
 enter_lines = forms.modelformset_factory(
@@ -206,11 +215,12 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     """
 
-    type = forms.ChoiceField(choices=PurchaseHeader.type_choices)
-    ref = forms.CharField(max_length=20)
-    total = forms.DecimalField(decimal_places=2, max_digits=10)
-    paid = forms.DecimalField(decimal_places=2, max_digits=10)
-    due = forms.DecimalField(decimal_places=2, max_digits=10)
+    type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(attrs={"disabled": True, "readonly": True})) 
+    # readonly not permitted for select element so disable used and on client we enable the element before the form is submitted
+    ref = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"readonly": True}))
+    total = forms.DecimalField(decimal_places=2, max_digits=10, widget=forms.NumberInput(attrs={"readonly": True}))
+    paid = forms.DecimalField(decimal_places=2, max_digits=10, widget=forms.NumberInput(attrs={"readonly": True}))
+    due = forms.DecimalField(decimal_places=2, max_digits=10, widget=forms.NumberInput(attrs={"readonly": True}))
 
     class Meta:
         model = PurchaseMatching
@@ -222,10 +232,11 @@ class PurchaseMatchingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         # this logic is in case we ever need the form without the formset
         # but with a formset the keyword argument will not be passed
-        if match_to := kwargs.get("match_to"):
-            self.match_to = match_to
-            kwargs.pop("match_to")
+        if match_by := kwargs.get("match_by"):
+            self.match_by = match_to
+            kwargs.pop("match_by")
         super().__init__(*args, **kwargs)
+        print(self.fields["type"].widget.__dict__)
         # print(self.fields["matched_to"].widget.__dict__)
         # Question - will the matched_to.pk show in the input field when editing ?
         if not self.data and not self.instance.pk:
@@ -235,12 +246,27 @@ class PurchaseMatchingForm(forms.ModelForm):
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) + 
             PurchaseMatchingForm.Meta.fields,
+            css_classes={
+                "Td": {
+                    "type": "input-disabled",
+                    "ref": "input-disabled",
+                    "total": "input-disabled",
+                    "paid": "input-disabled",
+                    "due": "input-disabled",
+                    "value": "w-100 h-100 border-0 pl-2"
+                }
+            },
+            field_layout_overrides={
+                'Td': {
+                    'value': PlainFieldErrors,
+                }
+            }
         ).render()
 
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.matched_by = self.header
+        instance.matched_by = self.match_by
         if commit:
             instance.save()
         return instance
@@ -249,17 +275,30 @@ class PurchaseMatchingForm(forms.ModelForm):
 
 class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
+    """
+    Match by is the header record which is being used to match
+    the other headers against -
+
+    E.g.
+
+    The user creates a new receipt for value -100.00
+    And they select to match an invoice against this in the same posting.
+
+    In this situation the receipt is the "match_by" header and the
+    "match_to" header is the invoice.
+
+    """
+
     def __init__(self, *args, **kwargs):
-        if match_to := kwargs.get("match_to"):
-            self.match_to = match_to
-            kwargs.pop("match_to")
+        if 'match_by' in kwargs:
+            self.match_by = kwargs.pop("match_by")
         super().__init__(*args, **kwargs)
 
 
     def _construct_form(self, i, **kwargs):
         form = super()._construct_form(i, **kwargs)
         try:
-            form.match_to = self.match_to
+            form.match_by = self.match_by
         except AttributeError as e:
             pass
         return form
@@ -267,26 +306,6 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
     def clean(self):
         super().clean()
-
-        # type of validation depends on whether we are creating
-        # or editing
-
-        # for editing we will only receive server side those forms
-        # which correspond to matchings the user has edited
-        # or new matchings
-        # so we have to validate based on what WAS the matching value
-        # i.e. the initial value
-        # and compare the change of the matching value
-
-        # creating is simpler.  we just make sure the total of the
-        # matching value does not exceed the amount due on the header
-
-        try:
-            self.match_to.pk
-            # we are editing
-        except e: # not sure of the exception to check so check in the shell
-            # we are creating
-            pass
 
 
 match = forms.modelformset_factory(

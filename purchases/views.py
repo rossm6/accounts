@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
 from django.http import JsonResponse
 from django.shortcuts import render, reverse
@@ -8,7 +9,7 @@ from accountancy.views import (input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
 
 from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match
-from .models import PurchaseHeader, PurchaseLine, Supplier
+from .models import PurchaseHeader, PurchaseLine, Supplier, PurchaseMatching
 
 
 def create(request):
@@ -21,29 +22,60 @@ def create(request):
             data=request.POST,
             prefix=header_form_prefix
         )
-        line_formset = enter_lines(
-            data=request.POST,
-            prefix=line_form_prefix,
-            header={}
-        )
-        matching_formset = match(
-            data=request.POST,
-            prefix=matching_form_prefix,
-            queryset=PurchaseLine.objects.none(),
-        )
-        # if header_form.is_valid():
-        #     if line_formset.is_valid():
-        #         line_no = 0
-        #         lines = []
-        #         header.save()
-        #         for form in line_formset.ordered_forms:
-        #             if form.empty_permitted and form.has_changed():
-        #                 line_no = line_no + 1
-        #                 line = form.save(commit=False)
-        #                 line.header = header
-        #                 line.line_no = line_no
-        #                 lines.append(line)
-        #         PurchaseLine.objects.bulk_create(lines)
+        if header_form.is_valid():
+            header = header_form.save(commit=True)
+            line_formset = enter_lines(
+                data=request.POST,
+                prefix=line_form_prefix,
+                header=header,
+                queryset=PurchaseLine.objects.none()
+            )
+            matching_formset = match(
+                data=request.POST,
+                prefix=matching_form_prefix,
+                queryset=PurchaseMatching.objects.none(),
+                match_by=header
+            )
+            if line_formset.is_valid() and matching_formset.is_valid():
+                line_no = 0
+                lines = []
+                header.save()
+                for form in line_formset.ordered_forms:
+                    if form.empty_permitted and form.has_changed():
+                        line_no = line_no + 1
+                        line = form.save(commit=False)
+                        line.header = header
+                        line.line_no = line_no
+                        lines.append(line)
+                matchings = []
+                for form in matching_formset:
+                    if form.empty_permitted and form.has_changed():
+                        matching = form.save(commit=False)
+                        matchings.append(matching)
+                PurchaseLine.objects.bulk_create(lines)
+                PurchaseMatching.objects.bulk_create(matchings)
+                # show the user a new input form
+                # might be worth basing this on a user setting in the future
+                # something like "batch mode"
+                # when enabled it shows the user a new form
+                # when disabled it shows the user the new transaction created
+                messages.success(
+                    request,
+                    'Transaction successfully created' # FIX ME - say 'invoice', 'receipt' etc rather than transaction
+                )
+            print(line_formset.__dict__)
+        else:
+            line_formset = enter_lines(
+                data=request.POST,
+                prefix=line_form_prefix,
+                queryset=PurchaseLine.objects.none()
+            )
+            # do not bother validating as header did not
+            matching_formset = match(
+                data=request.POST,
+                prefix=matching_form_prefix,
+                queryset=PurchaseMatching.objects.none(),
+            )
     elif request.method == "GET":
         header_form = PurchaseHeaderForm(
             initial={"type": transaction_type},

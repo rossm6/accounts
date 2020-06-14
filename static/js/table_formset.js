@@ -74,7 +74,7 @@
 
     // danger here is we create a form and increment the total count
     // but the form is not added
-    TableFormset.prototype.create = function (fields, attrs) {
+    TableFormset.prototype.create = function (fields) {
         var form_no = +this.get_total_forms();
         var new_row = this.get_empty_form_as_string();
         new_row = new_row.replace(/__prefix__/g, form_no);
@@ -90,9 +90,6 @@
             var span = $("<span class='d-none'>" + value + "</span>");
             input.parents("td").eq(0).append(span);
             // nice trick - https://stackoverflow.com/a/53929269
-            if(field in attrs){
-                attrs[field](input);
-            }
         }
         this.set_total_forms(form_no + 1);
         return new_row;

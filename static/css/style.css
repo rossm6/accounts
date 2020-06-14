@@ -1,3 +1,11 @@
+.bg-primary-blue {
+    background-color: #0078c8;
+}
+
+.cont {
+    position: relative;
+}
+
 .text-overflow-hidden {
     text-overflow: hidden;
 }
@@ -93,4 +101,20 @@ input, input[type="password"], textarea, select {
     z-index: 1000000 !important; 
     /* must exceed selectize-control in case dropdown is over another
     selectize widget */
+}
+
+/* this is for the messages pop up */
+.fixed-centre {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0px;
+    /* also have position: relative; set on the cont class */
+}
+
+table.dataTable td {
+    padding: 0 !important;
+}
+
+.overflow-y-scroll {
+    overflow-y: scroll;
 }

@@ -114,6 +114,7 @@ class InputDropDown(Widget):
 
 
     def get_label(self, value):
+
         """
 
         Copes with the simple -
@@ -125,6 +126,15 @@ class InputDropDown(Widget):
             (Asset, [(3, Bank Account), (4, Prepayments)]) i.e. account choices which are roots and leaves
             
         """
+
+        # FIXED - when data was sent via POST 'value' was a string
+        # whereas val from self.choices is an integer
+        # so we cast value to an integer
+
+        try:
+            value = int(value)
+        except ValueError:
+            value = None
 
         for val, label in self.choices:
             if isinstance(label, list):

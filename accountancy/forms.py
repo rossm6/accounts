@@ -14,7 +14,12 @@ class Label(Field):
     template = "accounts/layout/label_only.html"
 
 class PlainField(Field):
+    # no label or errors; field only
     template = "accounts/layout/plain_field.html"
+
+class PlainFieldErrors(Field):
+    # no label; field and errors only
+    template = "accounts/layout/plain_field_errors.html"
 
 class Td(Div):
     template = "accounts/layout/td.html"
@@ -208,7 +213,7 @@ class TableHelper(object):
             column_layout_object(
                 field_overrides.get(field, field_layout_object)(
                     field,
-                    css_class=css_classes.get(field, "")
+                    css_class=css_classes.get(field, '')
                 ),
                 css_class="col-" + field
             ) 
