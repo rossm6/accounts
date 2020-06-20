@@ -10,7 +10,6 @@
     // I envisage doing a lookup in the DOM for possibily hundreds of dom elements will be way too slow
     // This module therefore just keeps a dictionary of the dom elements with methods for looking up, adding and deleting
 
-
     TableFormset.prototype.lookup = function (key) {
         if(this.forms[key]){
             return true;
@@ -134,6 +133,6 @@
         init(this, this.formset);
     }
 
-    return TableFormset
+    return TableFormset;
 
 });

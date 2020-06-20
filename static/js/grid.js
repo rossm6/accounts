@@ -4,7 +4,6 @@
 
 })(window, function () {
 
-
     Grid.prototype.delete_line = function (delete_button) {
         // assume delete button is in the line to delete
         // pretty dumb otherwise

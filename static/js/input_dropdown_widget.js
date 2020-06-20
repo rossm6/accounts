@@ -155,6 +155,10 @@
         }
     };
 
+    Widget.prototype.destroy_cloned_dropdown = function () {
+        $(".cloned-dropdown").remove();
+    };
+
     Widget.prototype.set_label_and_value = function (label, value) {
         // will show the label fully inside a DIV element
         // and make the input element only a pixel high
@@ -166,12 +170,29 @@
         $input_wrapper.addClass("px");
         $input_wrapper.removeClass("data-input-focus-border");
         $widget.find(".dropdown").hide();
+        this.destroy_cloned_dropdown();
         $widget.find("input").val(value);
         $widget.find(".label")
             .text(label)
             .show();
         this.remove_events();
+        $widget.find("input").trigger("change");
         last_widget_used = undefined;
+    };
+
+
+    Widget.prototype.clone_dropdown = function ($dropdown) {
+        // clone and position the dropdown, rather
+        var offset = $dropdown.offset();
+        var clone = $dropdown.clone(true, true);
+        clone.addClass("cloned-dropdown");
+        clone.addClass("small");
+        clone.css({
+            "position": "relative",
+            "top": offset.top,
+            "left": offset.left
+        });
+        $("body").append(clone);
     };
 
     Widget.prototype.show_dropdown = function (event) {
@@ -183,11 +204,13 @@
         // populate the dropdown menu
         var url = $input.attr("data-load-url");
         $dropdown.children().not(new_btn_selector).remove();
+        var widget_instance = this;
         $.ajax({
             url: url,
             success: function (data) {
                 var $dropdown_options = $(data);
                 $dropdown.append($dropdown_options.find("li").not(new_btn_selector));
+                widget_instance.clone_dropdown($dropdown);
             }
         });
         // show the dropdown menu
@@ -203,12 +226,22 @@
         if ($event_target.is("li")) {
             var label;
             var value = $event_target.attr("data-value");
+            var data_attrs = $event_target.data(); // this includes all the data- attributes on the element but includes other things too
+            // look for data-model attributes
+            // note keys are now camel case
+            // e.g. data-test-frog is now testFrog
+            // so look for keys beginning with 'modelAttr'
+            var $input = $widget.find("input");
+            for (var key in data_attrs) {
+                if (key.match("modelAttr")) {
+                    $input.get(0).dataset[key] = data_attrs[key];
+                }
+            }
             if (value) {
                 label = $event_target.text();
             } else {
                 label = "";
             }
-            var $input = $widget.find("input");
             $input.val(label);
             $input.attr("data-choice-value", value);
             this.close();

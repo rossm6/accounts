@@ -1,104 +1,235 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
-from django.http import JsonResponse
-from django.shortcuts import render, reverse
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import render, reverse, redirect
 from django.views.generic import ListView
 from querystring_parser import parser
 
 from accountancy.views import (input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
 
-from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match
+from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match, PaymentHeader
 from .models import PurchaseHeader, PurchaseLine, Supplier, PurchaseMatching
+from items.models import Item
 
+
+
+"""
+Successful Posts are slow only because we are rendering all the widgets.  In the end successes
+will be redirected so there won't be the need to render all the widgets and if it fails
+we already override the choices on the widgets so that it doesn't render thousands.
+"""
+
+
+def index(request):
+    """
+    Just a page to redirect successful POSTs to for the time being
+    """
+    return HttpResponse("Post was successful")
 
 def create(request):
     header_form_prefix = "header"
     line_form_prefix = "line"
     matching_form_prefix = "match"
     transaction_type = request.GET.get("t", "i")
+    non_field_errors = False
+    context = {}
     if request.method == "POST":
-        header_form = PurchaseHeaderForm(
-            data=request.POST,
-            prefix=header_form_prefix
-        )
-        if header_form.is_valid():
-            header = header_form.save(commit=True)
-            line_formset = enter_lines(
+        post_successful = False
+        line_formset = None
+        if transaction_type in ("p", "r", "bp", "br"):
+            header_form = PaymentHeader(
                 data=request.POST,
-                prefix=line_form_prefix,
-                header=header,
-                queryset=PurchaseLine.objects.none()
+                prefix=header_form_prefix
             )
-            matching_formset = match(
-                data=request.POST,
-                prefix=matching_form_prefix,
-                queryset=PurchaseMatching.objects.none(),
-                match_by=header
-            )
-            if line_formset.is_valid() and matching_formset.is_valid():
-                line_no = 0
-                lines = []
-                header.save()
-                for form in line_formset.ordered_forms:
-                    if form.empty_permitted and form.has_changed():
-                        line_no = line_no + 1
-                        line = form.save(commit=False)
-                        line.header = header
-                        line.line_no = line_no
-                        lines.append(line)
-                matchings = []
-                for form in matching_formset:
-                    if form.empty_permitted and form.has_changed():
-                        matching = form.save(commit=False)
-                        matchings.append(matching)
-                PurchaseLine.objects.bulk_create(lines)
-                PurchaseMatching.objects.bulk_create(matchings)
-                # show the user a new input form
-                # might be worth basing this on a user setting in the future
-                # something like "batch mode"
-                # when enabled it shows the user a new form
-                # when disabled it shows the user the new transaction created
-                messages.success(
-                    request,
-                    'Transaction successfully created' # FIX ME - say 'invoice', 'receipt' etc rather than transaction
+            if header_form.is_valid():
+                header = header_form.save(commit=False)
+                matching_formset = match(
+                    data=request.POST,
+                    prefix=matching_form_prefix,
+                    queryset=PurchaseMatching.objects.none(),
+                    match_by=header
                 )
-            print(line_formset.__dict__)
+                if matching_formset.is_valid():
+                    header.save()
+                    matchings = []
+                    for form in matching_formset:
+                        if form.empty_permitted and form.has_changed():
+                            matching = form.save(commit=False)
+                            matchings.append(matching)
+                    PurchaseMatching.objects.bulk_create(matchings)
+                    # show the user a new input form
+                    # might be worth basing this on a user setting in the future
+                    # something like "batch mode"
+                    # when enabled it shows the user a new form
+                    # when disabled it shows the user the new transaction created
+                    messages.success(
+                        request,
+                        'Transaction successfully created' # FIX ME - say 'invoice', 'receipt' etc rather than transaction
+                    )
+                    post_successful = True
+            else:
+                if header_form.non_field_errors():
+                    non_field_errors = True
+                matching_formset = match(
+                    data=request.POST,
+                    prefix=matching_form_prefix,
+                    queryset=PurchaseMatching.objects.none(),
+                )
+                matching_formset.is_valid()
+                if matching_formset.non_form_errors():
+                    non_field_errors = True
+                for form in matching_formset:
+                    if form.non_field_errors():
+                        non_field_errors = True
         else:
-            line_formset = enter_lines(
+            header_form = PurchaseHeaderForm(
                 data=request.POST,
+                prefix=header_form_prefix
+            )
+            if header_form.is_valid():
+                header = header_form.save(commit=False)
+                line_formset = enter_lines(
+                    data=request.POST,
+                    prefix=line_form_prefix,
+                    header=header,
+                    queryset=PurchaseLine.objects.none()
+                )
+                context["line_formset"] = line_formset
+                matching_formset = match(
+                    data=request.POST,
+                    prefix=matching_form_prefix,
+                    queryset=PurchaseMatching.objects.none(),
+                    match_by=header
+                )
+                if line_formset.is_valid() and matching_formset.is_valid():
+                    line_no = 0
+                    lines = []
+                    header.save()
+                    for form in line_formset.ordered_forms:
+                        if form.empty_permitted and form.has_changed():
+                            line_no = line_no + 1
+                            line = form.save(commit=False)
+                            line.header = header
+                            line.line_no = line_no
+                            lines.append(line)
+                    matchings = []
+                    for form in matching_formset:
+                        if form.empty_permitted and form.has_changed():
+                            matching = form.save(commit=False)
+                            matchings.append(matching)
+                    if lines:
+                        PurchaseLine.objects.bulk_create(lines)
+                    if matchings:
+                        # need to update the due amount for the 'matched_to' headers
+                        PurchaseHeader.objects.bulk_update(matching_formset.headers, ['due', 'paid'])
+                        PurchaseMatching.objects.bulk_create(matchings)
+                    # show the user a new input form
+                    # might be worth basing this on a user setting in the future
+                    # something like "batch mode"
+                    # when enabled it shows the user a new form
+                    # when disabled it shows the user the new transaction created
+                    messages.success(
+                        request,
+                        'Transaction successfully created' # FIX ME - say 'invoice', 'receipt' etc rather than transaction
+                    )
+                    post_successful = True
+                else:
+                    print("either line formset or matching formset is wrong")
+            else:
+                print("header form is not valid")
+                print(header_form.errors)
+                if header_form.non_field_errors():
+                    non_field_errors = True
+                # querysets are .all() for each modelchoicemodel
+                # if the querysets contain thousands of objects this will hit performance badly
+                # so we need to override the querysets AFTER checking if the forms are valid (obviously need full querysets for this)
+                chosen_supplier = header_form.cleaned_data.get("supplier")
+                if chosen_supplier:
+                    field = header_form.fields['supplier']
+                    field.widget.choices = [ (chosen_supplier.pk, str(chosen_supplier)) ]
+                line_formset = enter_lines(
+                    data=request.POST,
+                    prefix=line_form_prefix,
+                    queryset=PurchaseLine.objects.none()
+                )
+                context["line_formset"] = line_formset
+                line_formset.is_valid()
+                if line_formset.non_form_errors():
+                    non_field_errors = True
+                for form in line_formset:
+                    if form.non_field_errors():
+                        non_field_errors = True
+                matching_formset = match(
+                    data=request.POST,
+                    prefix=matching_form_prefix,
+                    queryset=PurchaseMatching.objects.none(),
+                )
+                matching_formset.is_valid()
+                if matching_formset.non_form_errors():
+                    non_field_errors = True
+                for form in matching_formset:
+                    if form.non_field_errors():
+                        non_field_errors = True
+
+
+        # override the choices so that it doesn't take so long to render
+
+        chosen_supplier = header_form.cleaned_data.get("supplier")
+        if chosen_supplier:
+            field = header_form.fields['supplier']
+            field.widget.choices = [ (chosen_supplier.pk, str(chosen_supplier)) ]
+
+        if line_formset:
+            for form in line_formset:
+                item = form.cleaned_data.get("item")
+                field = form.fields["item"]
+                if item:
+                    field.widget.choices = [ (item.pk, str(item)) ]
+                else:
+                    field.widget.choices = []
+                nominal = form.cleaned_data.get("nominal")
+                field = form.fields["nominal"]
+                if nominal:
+                    field.widget.choices = [ (nominal.pk, str(nominal)) ]
+                else:
+                    field.widget.choices = []
+
+
+        if post_successful:
+            return redirect(reverse("purchases:index"))
+
+
+    elif request.method == "GET":
+        if transaction_type in ("p", "r", "bp", "br"):
+            header_form = PaymentHeader(
+                initial={"type": transaction_type, "total": 0},
+                prefix=header_form_prefix,
+            )
+        else:
+            header_form = PurchaseHeaderForm(
+                initial={"type": transaction_type, "total": 0},
+                prefix=header_form_prefix
+            )
+            line_formset = enter_lines(
                 prefix=line_form_prefix,
                 queryset=PurchaseLine.objects.none()
             )
-            # do not bother validating as header did not
-            matching_formset = match(
-                data=request.POST,
-                prefix=matching_form_prefix,
-                queryset=PurchaseMatching.objects.none(),
-            )
-    elif request.method == "GET":
-        header_form = PurchaseHeaderForm(
-            initial={"type": transaction_type},
-            prefix=header_form_prefix
-        )
-        line_formset = enter_lines(
-            prefix=line_form_prefix,
-            queryset=PurchaseLine.objects.none()
-        )
+            context["line_formset"] = line_formset
         matching_formset = match(
             prefix=matching_form_prefix,
             queryset=PurchaseLine.objects.none(),
         )
+    context["header_form"] = header_form
+    context["matching_formset"] = matching_formset
+    context["line_form_prefix"] = line_form_prefix
+    context["matching_form_prefix"] = matching_form_prefix
     return render(
         request,
         "purchases/create.html",
-        {
-            "header_form": header_form,
-            "line_formset": line_formset,
-            "matching_formset": matching_formset,
-            "line_form_prefix": line_form_prefix, # required by input_grid.js
-            "matching_form_prefix": matching_form_prefix # required by matching_js.html
-        }
+        context
     )
 
 

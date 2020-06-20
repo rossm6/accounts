@@ -18,7 +18,7 @@ def create_suppliers(n):
     return Supplier.objects.bulk_create(suppliers)
 
 
-def create_invoices(supplier, ref_prefix, n):
+def create_invoices(supplier, ref_prefix, n, value=100):
     date = timezone.now()
     due_date = date + timedelta(days=31)
     invoices = []
@@ -26,12 +26,11 @@ def create_invoices(supplier, ref_prefix, n):
         i = Invoice(
             supplier=supplier,
             ref=ref_prefix + str(i),
-            goods=100,
-            discount=0,
-            vat=20,
-            total=120,
+            goods=value,
+            vat=0.2 * value,
+            total=1.2 * value,
             paid=0,
-            due=120,
+            due=1.2 * value,
             date=date,
             due_date=due_date,
             type="i"

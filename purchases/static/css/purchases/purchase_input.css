@@ -43,3 +43,7 @@ table {
 div.selectize-control.supplier-select {
     width: 200px;
 }
+
+.totals > div {
+    width: 400px;
+}

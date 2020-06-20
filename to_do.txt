@@ -1,21 +1,14 @@
 PRIORITY 1
 
-    The red triangle on the table elements which contain field errors requires position:relative; this means
-    the dropdown for the input widget does not work.  I tried to detect focus in and out of the td element but
-    the body element gets focus even when i click on elements inside the td element.  So i have no choice put
-    to clone the dropdown menu and position it relative to the whole grid container.  This shouldn't require
-    any change to the widget luckily.  And the change shouldn't be in the widget module because this isn't
-    a problem with the widget.  Rather the design around the widget.
+    Subtotal, vat, total needs to be set on the server - for errors and editing
 
-    No left padding on some input fields in the input grid following the containment of the input with a div element
+    Add supplier does not work.  Need to create a pop up form on the fly
 
-    Rename "Match" header section to "Outstanding"
+    Fix the __len__ method of the model choice field override in accountancy.fields
 
 PRIORITY 2
 
-    Matching tables did not align because of scrollbar.  To consider ...
-
-    Use pgAdmin instead of adminer for a DB GUI
+    Warn user if the vat value they override is not the goods * rate
 
     Refactor the styles in styles.css and ui_elem_styles.css.  Styles in the first sheet probably belong to the second.
     The second sheet could do with being renamed

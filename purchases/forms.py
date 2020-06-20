@@ -3,16 +3,18 @@ from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
 
 from accountancy.fields import (AjaxModelChoiceField,
-                                AjaxRootAndLeavesModelChoiceField)
+                                AjaxRootAndLeavesModelChoiceField, ModelChoiceIteratorWithFields)
 from accountancy.forms import (AjaxForm, LabelAndFieldOnly, TableHelper,
                                create_tbody_helper, create_thead_helper,
-                               create_transaction_header_helper, PlainFieldErrors)
+                               create_transaction_header_helper, PlainFieldErrors, create_payment_transaction_header_helper)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.widgets import InputDropDown
 from items.models import Item
 from nominals.models import Nominal
 
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
+
+from vat.models import Vat
 
 
 class BaseTransactionModelFormSet(forms.BaseModelFormSet):
@@ -21,6 +23,52 @@ class BaseTransactionModelFormSet(forms.BaseModelFormSet):
         return forms.HiddenInput(attrs={'class': 'ordering'})
 
 
+# FIX ME - this should inherit from a base class PaymentHeader in accountancy.forms
+class PaymentHeader(forms.ModelForm):
+
+    date = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        )
+    )
+
+    class Meta:
+        model = PurchaseHeader
+        fields = ('supplier', 'ref', 'date', 'total', 'type',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = create_payment_transaction_header_helper(
+            {
+                'contact': 'supplier',
+            }
+        )
+        # FIX ME - The supplier field should use the generic AjaxModelChoice Field class I created
+        # this then takes care out of this already
+        # Form would then need to inherit from AjaxForm
+        if not self.data:
+            self.fields["supplier"].queryset = Supplier.objects.none()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # the user should never have the option to directly
+        # change the due amount or the paid amount
+        # paid will default to zero
+        instance.due = instance.total - instance.paid
+        if commit:
+            instance.save()
+        return instance
+
+
+
+# FIX ME - THIS OUGHT TO INHERIT FROM A, InvoiceHeader Form in accountancy
 class PurchaseHeaderForm(forms.ModelForm):
 
     date = forms.DateField(
@@ -65,10 +113,6 @@ class PurchaseHeaderForm(forms.ModelForm):
         if not self.data:
             self.fields["supplier"].queryset = Supplier.objects.none()
 
-    def clean(self):
-        super().clean()
-        # raise forms.ValidationError("test")
-        
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -91,18 +135,27 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
 
     def clean(self):
         super().clean()
-        # raise forms.ValidationError("line formset error") testing purposes
-        # header has not been saved by this point
-        # forms each have an instance by now
-        # so change values on the instance not in cleaned data
-        # if any of the forms have failed you might not want to do further validation
-        # so could do this -
-        # if any(self.errors):
-        #   return
-        # example - https://docs.djangoproject.com/en/3.0/topics/forms/formsets/#custom-formset-validation
-        # note that the model formset clean method by default checks the integrity of the data
-        # see - https://docs.djangoproject.com/en/3.0/topics/forms/formsets/#custom-formset-validation
-
+        goods = 0
+        vat = 0
+        total = 0
+        for form in self.forms:
+            goods += form.instance.goods
+            vat += form.instance.vat
+            total += ( form.instance.goods + form.instance.vat )
+        if self.header.total != 0 and self.header.total != total:
+            raise forms.ValidationError(
+                _(
+                    "The total of the lines does not equal the total you entered."
+                ),
+                code="invalid-total"
+            )
+        self.header.goods = goods
+        self.header.vat = vat
+        self.header.total = total
+        self.header.due = total
+        # this header will be passed to the matching formset
+        # we need to update this value for this formset
+        
 
 class PurchaseLineForm(AjaxForm):
 
@@ -121,6 +174,7 @@ class PurchaseLineForm(AjaxForm):
         empty_label="(None)",
         searchable_fields=('code', 'description')
     )
+
     nominal = AjaxRootAndLeavesModelChoiceField(
         widget=InputDropDown(
             attrs={
@@ -137,10 +191,37 @@ class PurchaseLineForm(AjaxForm):
         searchable_fields=('name',)
     )
 
+    vat_code = AjaxModelChoiceField(
+        widget=InputDropDown(
+            attrs={
+                "data-new-vat-code": "#new-vat-code",
+                "data-load-url": delay_reverse_lazy("purchases:load_options", "field=vat_code"),
+                "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=vat_code")
+            },
+            model_attrs=['rate']
+        ),
+        empty_label=None,
+        get_queryset=Vat.objects.none(),
+        load_queryset=Vat.objects.all(),
+        post_queryset=Vat.objects.all(),
+        inst_queryset= lambda inst : Vat.objects.filter(pk=inst.vat_code_id),
+        searchable_fields=('code', 'rate',),
+        iterator=ModelChoiceIteratorWithFields
+    )
+
     class Meta:
         model = PurchaseLine
-        fields = ('item', 'description', 'nominal', 'amount',)
-        ajax_fields = ('item', 'nominal',) # used in Transaction form set_querysets method
+        fields = ('item', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
+        ajax_fields = ('item', 'nominal', 'vat_code', ) # used in Transaction form set_querysets method
+        widgets = {
+            "vat_code": InputDropDown(
+                attrs={
+                    "data-new-vat-code": "#new-vat-code",
+                    "data-load-url": delay_reverse_lazy("purchases:load_options", "field=vat_code"),
+                    "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=vat_code")
+                }
+            )
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -149,7 +230,9 @@ class PurchaseLineForm(AjaxForm):
                 "item": "h-100 w-100 border-0",
                 "description": "can_highlight h-100 w-100 border-0",
                 "nominal": "h-100 w-100 border-0",
-                "amount": "can_highlight h-100 w-100 border-0"
+                "goods": "can_highlight h-100 w-100 border-0",
+                "vat_code": "h-100 w-100 border-0",
+                "vat": "can_highlight w-100 h-100 border-0"
             }
         }
         self.helpers = TableHelper(
@@ -236,13 +319,10 @@ class PurchaseMatchingForm(forms.ModelForm):
             self.match_by = match_to
             kwargs.pop("match_by")
         super().__init__(*args, **kwargs)
-        print(self.fields["type"].widget.__dict__)
         # print(self.fields["matched_to"].widget.__dict__)
         # Question - will the matched_to.pk show in the input field when editing ?
         if not self.data and not self.instance.pk:
             self.fields["matched_to"].queryset = PurchaseHeader.objects.none()
-        elif self.instance.pk:
-            self.fields["matched_to"].queryset = PurchaseHeader.objects.get(pk=self.instance.matched_to)
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) + 
             PurchaseMatchingForm.Meta.fields,
@@ -262,6 +342,29 @@ class PurchaseMatchingForm(forms.ModelForm):
                 }
             }
         ).render()
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+        matched_to = cleaned_data.get("matched_to")
+        value = cleaned_data.get("value")
+        if matched_to and value:
+            if matched_to.due > 0:
+                if value < 0:
+                    raise forms.ValidationError(
+                        _(
+                            "Cannot match less than value outstanding"
+                        ),
+                        code="invalid-match"
+                    )
+            elif matched_to.due < 0:
+                if value > 0:
+                    raise forms.ValidationError(
+                        _(
+                            "Cannot match less than value outstanding"
+                        ),
+                        code="invalid-match"
+                    )
 
 
     def save(self, commit=True):
@@ -306,6 +409,57 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
     def clean(self):
         super().clean()
+        if(any(self.errors)):
+            return
+        self.headers = []
+        total_value_matching = 0
+        for form in self.forms:
+            value = form.instance.value
+            total_value_matching += value
+            form.instance.matched_to.due -= value
+            form.instance.matched_to.paid += value
+            self.headers.append(form.instance.matched_to)
+        if self.match_by.total == 0 and self.match_by.due == 0:
+            if total_value_matching != 0:
+                raise forms.ValidationError(
+                    _(
+                        f"You are trying to match a total value of { total_value_matching }.  "
+                        "Because you are entering a zero value transaction the total amount to match must be zero also."
+                    ),
+                    code="invalid-match"
+                )
+            if not self.forms:
+                raise forms.ValidationError(
+                    _(
+                        "You are trying to enter a zero value transaction without matching to anything.  This isn't allowed because "
+                        "it is pointless.",
+                    ),
+                    code="zero-value-transaction-not-matched"
+                )
+        elif self.match_by.total > 0:
+            if self.forms:
+                if (-1 * total_value_matching) > 0 and (-1 * total_value_matching) <= self.match_by.due:
+                    self.match_by.due += total_value_matching
+                    self.match_by.paid -= total_value_matching
+                else:
+                    raise forms.ValidationError(
+                        _(
+                            "Please ensure the total of the transactions you are matching is below the due amount."
+                        ),
+                        code="invalid-match"
+                    )
+        elif self.match_by.total < 0:
+            if self.forms:
+                if (-1 * total_value_matching) < 0 and (-1 * total_value_matching) >= self.match_by.due:
+                    self.match_by.due += total_value_matching
+                    self.match_by.paid -= total_value_matching
+                else:
+                    raise forms.ValidationError(
+                        _(
+                            "Please ensure the total of the transactions you are matching is below the due amount."
+                        )
+                    )
+
 
 
 match = forms.modelformset_factory(

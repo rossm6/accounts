@@ -32,7 +32,9 @@ class Tr(Div):
 
 class LabelAndFieldOnly(Field):
     template = "accounts/layout/label_and_field.html"
-    # fix me - better name the HTML file
+
+class LabelAndFieldAndErrors(Field):
+    template = "accounts/layout/label_and_field_and_error.html"
 
 class AdvSearchField(Field):
     template = "accounts/layout/adv_search_field.html"
@@ -79,6 +81,57 @@ class AjaxForm(forms.ModelForm):
 
 
 
+def create_payment_transaction_header_helper(generic_to_fields_map):
+    # differs to the other only by the exclusion of the due_date field
+
+    class StandardHeaderHelper(FormHelper):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.form_tag = False
+            self.disable_csrf = True
+            self.form_show_errors = False
+            self.include_media = False
+            self.layout = Layout(
+                Div(
+                    Div(
+                        # this field does not show errrors but there shouldn't ever be any errors for this field
+                        PlainField(generic_to_fields_map.get("type", "type"), css_class="transaction-type-select"),
+                        css_class="form-group mr-2"
+                    ),
+                    Div(
+                        Div(
+                            Div(
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class="supplier-select"), # FIX ME - change to contact-select
+                                css_class="form-group mr-2"
+                            ),
+                            Div(
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="w-100 input"),
+                                css_class="form-group mr-2"
+                            ),
+                            Div(
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="w-100 input"),
+                                css_class="form-group mr-2 position-relative"
+                            ),
+                            css_class="d-flex justify-content-between" 
+                        ),
+                        Div(
+                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="w-100 input"),
+                            css_class="form-group"
+                        ),
+                        css_class="mb-4 d-flex justify-content-between"
+                    ),
+                )
+            )
+    
+    return StandardHeaderHelper()
+
+
+
+
+
+
+
+# FIX ME - This ought to be 'create_invoice_transaction_header_helper'
 def create_transaction_header_helper(generic_to_fields_map):
 
     """
@@ -95,31 +148,32 @@ def create_transaction_header_helper(generic_to_fields_map):
             self.layout = Layout(
                 Div(
                     Div(
+                        # this field does not show errrors but there shouldn't ever be any errors for this field
                         PlainField(generic_to_fields_map.get("type", "type"), css_class="transaction-type-select"),
                         css_class="form-group mr-2"
                     ),
                     Div(
                         Div(
                             Div(
-                                LabelAndFieldOnly(generic_to_fields_map.get("contact", "contact"), css_class="supplier-select"), # FIX ME - change to contact-select
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class="supplier-select"), # FIX ME - change to contact-select
                                 css_class="form-group mr-2"
                             ),
                             Div(
-                                LabelAndFieldOnly(generic_to_fields_map.get("ref", "ref"), css_class="w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="w-100 input"),
                                 css_class="form-group mr-2"
                             ),
                             Div(
-                                LabelAndFieldOnly(generic_to_fields_map.get("date", "date"), css_class="w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="w-100 input"),
                                 css_class="form-group mr-2 position-relative"
                             ),
                             Div(
-                                LabelAndFieldOnly(generic_to_fields_map.get("due_date", "due_date"), css_class="w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("due_date", "due_date"), css_class="w-100 input"),
                                 css_class="form-group mr-2 position-relative"
                             ),
                             css_class="d-flex justify-content-between" 
                         ),
                         Div(
-                            LabelAndFieldOnly(generic_to_fields_map.get("total", "total"), css_class="w-100 input"),
+                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="w-100 input"),
                             css_class="form-group"
                         ),
                         css_class="mb-4 d-flex justify-content-between"

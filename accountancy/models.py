@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 
 
@@ -10,7 +12,37 @@ class Contact(models.Model):
     class Meta:
         abstract = True
 
-class TransactionHeader(models.Model):
+
+
+
+class DecimalBaseModel(models.Model):
+
+    """
+    The purpose of this class is simply to make sure the decimal zero is
+    saved instead of null to the database.  At first i had 0.00 as the
+    default value set against each field on the model but i don't like
+    this showing as the initial value in the creation form.
+
+    REMEMBER - clean is called as part of the full_clean process which
+    itself it not called during save()
+    """
+
+    pass
+
+    class Meta:
+        abstract = True
+
+    def clean(self):
+        fields = self._meta.get_fields()
+        for field in fields:
+            if field.__class__ is models.fields.DecimalField:
+                field_name = field.name
+                field_value = getattr(self, field_name)
+                if field_value == None:
+                    setattr(self, field_name, Decimal(0.00))
+
+
+class TransactionHeader(DecimalBaseModel):
     """
     Base transaction which can be sub classed.
     Subclasses will likely need to include a
@@ -25,37 +57,37 @@ class TransactionHeader(models.Model):
         decimal_places=2,
         max_digits=10,
         blank=True,
-        default=0    
+        null=True
     )
     discount = models.DecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
-        default=0   
+        null=True
     )
     vat = models.DecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
-        default=0     
+        null=True   
     )
     total = models.DecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
-        default=0
+        null=True
     )
     paid = models.DecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
-        default=0
+        null=True
     )
     due = models.DecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
-        default=0
+        null=True
     )
     date = models.DateField()
     due_date = models.DateField()
@@ -73,6 +105,7 @@ class TransactionHeader(models.Model):
 
 
 
+
 # class Invoice(TransactionHeader):
 #     class Meta:
 #         proxy = True
@@ -84,15 +117,20 @@ class TransactionHeader(models.Model):
 #         proxy = True
 
 
-class TransactionLine(models.Model):
+class TransactionLine(DecimalBaseModel):
     line_no = models.IntegerField()
     description = models.CharField(max_length=100)
-    amount = models.DecimalField(
+    goods = models.DecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
-        null=True,
-        default=None
+        null=True
+    )
+    vat = models.DecimalField(
+        decimal_places=2,
+        max_digits=10,
+        blank=True,
+        null=True
     )
 
     class Meta:

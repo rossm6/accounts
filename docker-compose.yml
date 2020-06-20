@@ -5,6 +5,11 @@ version: '3.7'
 # namely, the pg_trgm extension
 # The newt up is based on this - https://gist.github.com/leopoldodonnell/b0b7e06943bd389560184d948bdc2d5b
 
+# A further move came with the improvement of the pgadmin GUI - previously i was using adminer.
+# Our python app runs on our host network and connects to the DB over the host - see settings.py in django project
+# But our pgadmin is running in another container so it connects to the other container - the DB - via
+# the hostname 'postgres'
+
 services:
 
     postgres:
@@ -20,18 +25,20 @@ services:
         # want to put secrets in it and put the file in .gitignore
         env_file:
             - proj.env
-        network_mode: "host"
         volumes:
             - postgres_data:/var/lib/postgresql/data/
 
-    db_interface:
-        image: adminer
-        ports:
-            - 8080:8080
+
+    pgadmin:
+        image: dpage/pgadmin4
         depends_on:
             - postgres
-        restart: always
-        network_mode: "host"
+        ports:
+            - 5555:80
+        environment:
+            PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+            PGADMIN_DEFAULT_PASSWORD: admin
+        restart: unless-stopped
 
 volumes:
     postgres_data:

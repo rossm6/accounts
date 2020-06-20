@@ -4,7 +4,7 @@ from accountancy.models import (Contact, MatchedHeaders, TransactionHeader,
                                 TransactionLine)
 from items.models import Item
 from nominals.models import Nominal
-
+from vat.models import Vat
 
 class Supplier(Contact):
     pass
@@ -31,6 +31,7 @@ class PurchaseLine(TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
+    vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
 
 class Payment(PurchaseHeader):
     class Meta:

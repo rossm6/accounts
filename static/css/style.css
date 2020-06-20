@@ -73,6 +73,7 @@ input, input[type="password"], textarea, select {
     background-repeat: no-repeat;
     width: 100%;
     max-width: 1300px;
+    margin: 2em;
 }
 
 .pagination-numbers-ui {
@@ -117,4 +118,17 @@ table.dataTable td {
 
 .overflow-y-scroll {
     overflow-y: scroll;
+}
+
+input {
+    padding-left: 5px;
+}
+
+.black-single-border-bottom {
+    border-bottom: 1px solid black;
+}
+
+.black-double-border-bottom {
+    border-bottom-style: double;
+    border-bottom-color: black;
 }
