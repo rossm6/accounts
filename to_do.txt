@@ -1,10 +1,14 @@
 PRIORITY 1
 
+    Test that credit note entered as positive is negative.  Same for refund etc
+
     Subtotal, vat, total needs to be set on the server - for errors and editing
 
     Add supplier does not work.  Need to create a pop up form on the fly
 
     Fix the __len__ method of the model choice field override in accountancy.fields
+
+    Enable Ordering for the Outstanding transactions table
 
 PRIORITY 2
 
@@ -12,3 +16,9 @@ PRIORITY 2
 
     Refactor the styles in styles.css and ui_elem_styles.css.  Styles in the first sheet probably belong to the second.
     The second sheet could do with being renamed
+
+
+
+Python
+
+    @classonlymethod decorator

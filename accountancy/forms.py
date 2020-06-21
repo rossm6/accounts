@@ -186,66 +186,66 @@ def create_transaction_header_helper(generic_to_fields_map):
 
 
 
-def create_transaction_table_formset_helper(field_columns, tr_class=""):
-    class TransactionHelper(FormHelper):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form_tag = False
-            self.disable_csrf = True
-            self.layout = Layout(
-                Tr(
-                    *field_columns,
-                    css_class=tr_class
-                )
-            )
-    return TransactionHelper()
+# def create_transaction_table_formset_helper(field_columns, tr_class=""):
+#     class TransactionHelper(FormHelper):
+#         def __init__(self, *args, **kwargs):
+#             super().__init__(*args, **kwargs)
+#             self.form_tag = False
+#             self.disable_csrf = True
+#             self.layout = Layout(
+#                 Tr(
+#                     *field_columns,
+#                     css_class=tr_class
+#                 )
+#             )
+#     return TransactionHelper()
 
 
-def create_field_columns(fields, column_layout_object, field_layout_object, css_classes={}):
-    return [ 
-        column_layout_object(
-            field_layout_object(
-                field,
-                css_class=css_classes.get(field, "")
-            ), 
-            css_class="col-" + field
-        ) 
-        for field in fields 
-    ]
+# def create_field_columns(fields, column_layout_object, field_layout_object, css_classes={}):
+#     return [ 
+#         column_layout_object(
+#             field_layout_object(
+#                 field,
+#                 css_class=css_classes.get(field, "")
+#             ), 
+#             css_class="col-" + field
+#         ) 
+#         for field in fields 
+#     ]
 
 
-def create_thead_helper(fields, tr_class="", css_classes={}):
-    field_columns = [ 
-        Th(
-            HTML(''), css_class="pointer col-draggable-icon"
-        ) 
-    ]
-    field_columns += create_field_columns(fields, Th, Label, css_classes) # Th class defined above
-    field_columns += [
-        Th(
-            HTML(''),
-            css_class="pointer col-draggable-icon" # FIX ME - change this from col-draggable-icon to col-deletable-icon
-        )
-    ]
-    return create_transaction_table_formset_helper(field_columns, tr_class)
+# def create_thead_helper(fields, tr_class="", css_classes={}):
+#     field_columns = [ 
+#         Th(
+#             HTML(''), css_class="pointer col-draggable-icon"
+#         ) 
+#     ]
+#     field_columns += create_field_columns(fields, Th, Label, css_classes) # Th class defined above
+#     field_columns += [
+#         Th(
+#             HTML(''),
+#             css_class="pointer col-draggable-icon" # FIX ME - change this from col-draggable-icon to col-deletable-icon
+#         )
+#     ]
+#     return create_transaction_table_formset_helper(field_columns, tr_class)
 
 
-def create_tbody_helper(fields, tr_class="", css_classes={}):
-    field_columns = [ 
-        Td(
-            Draggable(),
-            css_class="pointer col-draggable-icon"
-        ),
-    ]
-    field_columns += create_field_columns(fields, Td, PlainField, css_classes) # Th class defined above
-    field_columns += [
-        Td(
-            Delete(),
-            PlainField('ORDER', type="hidden", css_class="ordering"),
-            css_class="pointer col-close-icon"
-        )
-    ]
-    return create_transaction_table_formset_helper(field_columns, tr_class)
+# def create_tbody_helper(fields, tr_class="", css_classes={}):
+#     field_columns = [ 
+#         Td(
+#             Draggable(),
+#             css_class="pointer col-draggable-icon"
+#         ),
+#     ]
+#     field_columns += create_field_columns(fields, Td, PlainField, css_classes) # Th class defined above
+#     field_columns += [
+#         Td(
+#             Delete(),
+#             PlainField('ORDER', type="hidden", css_class="ordering"),
+#             css_class="pointer col-close-icon"
+#         )
+#     ]
+#     return create_transaction_table_formset_helper(field_columns, tr_class)
 
 
 

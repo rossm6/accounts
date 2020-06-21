@@ -30,7 +30,6 @@ def index(request):
     return HttpResponse("Post was successful")
 
 def create(request):
-    print(request)
     header_form_prefix = "header"
     line_form_prefix = "line"
     matching_form_prefix = "match"
