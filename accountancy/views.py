@@ -5,9 +5,11 @@ from django.contrib import messages
 from django.contrib.postgres.search import SearchVector
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
-from django.http import Http404, HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.http import (Http404, HttpResponse, HttpResponseRedirect,
+                         JsonResponse)
+from django.shortcuts import render, reverse
 from django.views.generic import ListView, View
+from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
 
 from .widgets import InputDropDown
@@ -302,52 +304,74 @@ class BaseTransactionsList(ListView):
 #         formset: PurchaseMatchingFormset
 #     }
 
-class CreateTransactions(View):
+class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
 
-    # METHODS TO ADD -
-        # get_context_data
-        # render_to_response
+    def get_context_data(self, **kwargs):
+        # FIX ME - change 'matching_formset" to "match_formset" in the template
+        if 'header_form' not in kwargs:
+            kwargs["header_form"] = self.get_header_form()
+        if 'line_formset' not in kwargs:
+            kwargs["line_formset"] = self.get_line_formset()
+        if 'matching_formset' not in kwargs:
+            kwargs["matching_formset"] = self.get_match_formset()
+        if 'line_form_prefix' not in kwargs:
+            kwargs["line_form_prefix"] = self.get_line_prefix()
+        if 'matching_form_prefix' not in kwargs:
+            kwargs["matching_form_prefix"] = self.get_match_prefix()
+        return super().get_context_data(**kwargs)
 
-    # View - built into Django - will call self.get or self.post
-    # CreateView, buit into Django, provides this with the ProcessFormView Mixin -
 
-    # """Render a form on GET and processes it on POST."""
-    # def get(self, request, *args, **kwargs):
-    #     """Handle GET requests: instantiate a blank version of the form."""
-    #     return self.render_to_response(self.get_context_data())
+    def override_choices(self):
+        """
+        Will override the specified choices so that only the instance of the form being
+        validated remains.  Necessary as some choices may contain thousands of items which
+        will take ages to render using django crispy forms.
+        """
+        # override choices is a list.  May need to provide a dictionary eventually
+        # with a function as the value to use for setting the choices
+        for choice in self.header.get('override_choices'):
+            chosen = self.header_form.cleaned_data.get(choice)
+            if chosen:
+                field = self.header_form.fields[choice]
+                field.widget.choices = [ (chosen.pk, str(chosen)) ] # will do for now
+        
+        if self.line_formset:
+            if override_choices := self.line.get('override_choices'):
+                for form in self.line_formset:
+                    for choice in override_choices:
+                        field = form.fields[choice]
+                        if chosen := form.cleaned_data.get(choice):
+                            field.widget.choices = [ (chosen.pk, str(chosen)) ]
+                        else:
+                            field.widget.choices = []
 
-    # def post(self, request, *args, **kwargs):
-    #     """
-    #     Handle POST requests: instantiate a form instance with the passed
-    #     POST variables and then check if it's valid.
-    #     """
-    #     form = self.get_form()
-    #     if form.is_valid():
-    #         return self.form_valid(form)
-    #     else:
-    #         return self.form_invalid(form)
+        # Shoudn't be any need to do this for match_formset
+        # I recommend you override the select input widget for a text input to prevent
+        # all choices rendering
 
-    # # PUT is a valid HTTP verb for creating (with a known URL) or editing an
-    # # object, note that browsers only support POST for now.
-    # def put(self, *args, **kwargs):
-    #     return self.post(*args, **kwargs)
 
     def invalid_forms(self):
+        """
+        This gets all the errors possible from the forms.
+        A
+        """
+
         # make sure all non field errors are generated
         # at form and formset level
         # we also set a flag to true only because this helps
         # the template rendering
+
         if self.header_form.non_field_errors():
             self.non_field_errors = True
         self.line_formset = self.line_formset or self.get_line_formset()
-        if self.line_formet:
-            self.line_formet.is_valid()
+        if self.line_formset:
+            self.line_formset.is_valid()
             # validation may have been called already but Django will not run full_clean
             # again if so
             # see is_valid method at - https://github.com/django/django/blob/master/django/forms/forms.py
-            if self.line_formet.non_form_errors():
+            if self.line_formset.non_form_errors():
                 self.non_field_errors = True
-            for form in self.line_formet:
+            for form in self.line_formset:
                 if form.non_field_errors():
                     self.non_field_errors = True
         self.match_formset = self.match_formset or self.get_match_formset()
@@ -359,22 +383,31 @@ class CreateTransactions(View):
                 if form.non_field_errors():
                     self.non_field_errors = True
 
+        # choices for some forms could contain thousands of items
+        # this will take django crispy forms way too long to render
+        # so we offer the choice to override the choices so it includes
+        # only the selected item
+        self.override_choices()
+
+        return self.render_to_response(self.get_context_data())
+        
+
     def lines_are_valid(self):
         line_no = 0
         lines = []
-        self.header.save()
-        for form in self.line_formet.ordered_forms:
+        self.header_obj.save() # this could have been updated by line formset clean method already
+        for form in self.line_formset.ordered_forms:
             if form.empty_permitted and form.has_changed():
                 line_no = line_no + 1
                 line = form.save(commit=False)
-                line.header = header
+                line.header = self.header_obj
                 line.line_no = line_no
                 lines.append(line)
         if lines:
             self.get_line_model().objects.bulk_create(lines)
 
     def matching_is_valid(self):
-        self.header.save()
+        self.header_obj.save()
         matches = []
         for form in self.match_formset:
             if form.empty_permitted and form.has_changed():
@@ -400,13 +433,15 @@ class CreateTransactions(View):
         return self.header.get('initial', {})
 
     def get_header_prefix(self):
-        return self.header.get('prefix')
+        return self.header.get('prefix', 'header')
 
     def get_line_prefix(self):
-        return self.line.get('prefix')
+        if hasattr(self, 'line'):
+            return self.line.get('prefix', 'line')
 
     def get_match_prefix(self):
-        return self.match.get('prefix')
+        if hasattr(self, 'match'):
+            return self.match.get('prefix', 'match')
 
     def get_header_form_kwargs(self):
         kwargs = {
@@ -453,18 +488,26 @@ class CreateTransactions(View):
         return kwargs
 
     def get_header_form(self):
+        if hasattr(self, "header_form"):
+            return self.header_form
         form_class = self.header.get('form')
         return form_class(**self.get_header_form_kwargs())
         
     def get_line_formset(self, header=None):
         if hasattr(self, 'line'):
-            formset_class = self.line.get('formset')
-            return formset_class(**self.get_line_formset_kwargs(header))
+            if hasattr(self, 'line_formset'):
+                return self.line_formset
+            else:
+                formset_class = self.line.get('formset')
+                return formset_class(**self.get_line_formset_kwargs(header))
 
     def get_match_formset(self, header=None):
         if hasattr(self, 'match'):
-            formset_class = self.match.get('formset')
-            return formset_class(**self.get_match_formset_kwargs(header))
+            if hasattr(self, 'match_formset'):
+                return self.match_formset
+            else:
+                formset_class = self.match.get('formset')
+                return formset_class(**self.get_match_formset_kwargs(header))
 
     def get(self, request, *args, **kwargs):
         """ Handle GET requests: instantiate a blank version of the form. """
@@ -474,13 +517,16 @@ class CreateTransactions(View):
         """
         Handle POST requests: instantiate forms with the passed POST variables
         and then check if it is valid
+
+        WARNING - LINE FORMSET MUST BE VALIDATED BEFORE MATCH FORMSET
+
         """
         self.header_form = self.get_header_form()
         if self.header_form.is_valid():
-            self.header = header_form.save(commit=False)
-            self.line_formet = self.get_line_formset(header)
-            self.match_formset = self.get_match_formset(header)
-            if not self.line_formet and self.match_formset:
+            self.header_obj = self.header_form.save(commit=False) # changed name from header because this is a cls attribute of course
+            self.line_formset = self.get_line_formset(self.header_obj)
+            self.match_formset = self.get_match_formset(self.header_obj)
+            if not self.line_formset and self.match_formset:
                 # e.g. processing payments on PL
                 if self.match_formset.is_valid():
                     self.matching_is_valid()
@@ -489,23 +535,21 @@ class CreateTransactions(View):
                         'Transaction successfully created' # may want to change this
                     )
                 else:
-                    self.invalid_forms()
-            elif self.line_formet and self.match_formset:
+                    return self.invalid_forms()
+            elif self.line_formset and self.match_formset:
                 # e.g. processing invoice on PL
-                if self.line_formet.is_valid() and self.match_formset.is_valid():
+                if self.line_formset.is_valid() and self.match_formset.is_valid():
+                    self.lines_are_valid() # has to come before matching_is_valid because this formset could alter header_obj
                     self.matching_is_valid()
-                    self.lines_are_valid()
                     messages.success(
                         request,
                         'Transaction successfully created'
                     )
                 else:
-                    self.invalid_forms()
+                    return self.invalid_forms()
             # other scenarios to consider later on ...
         else:
-            self.invalid_forms()
+            return self.invalid_forms()
 
-    # IF form is successful either redirect to create_view again, or go elsewhere
-    # Depends on which submit button was used
-
-    # IF form errors send back to the client
+        # So we were successful
+        return HttpResponseRedirect(reverse("purchases:create_invoice")) # FIX ME - get url from get_success_url()

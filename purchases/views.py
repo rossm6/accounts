@@ -2,18 +2,19 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render, reverse, redirect
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect, render, reverse
 from django.views.generic import ListView
 from querystring_parser import parser
 
-from accountancy.views import (input_dropdown_widget_load_options_factory,
+from accountancy.views import (CreateTransactions,
+                               input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
-
-from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match, PaymentHeader
-from .models import PurchaseHeader, PurchaseLine, Supplier, PurchaseMatching
 from items.models import Item
 
+from .forms import (PaymentHeader, PurchaseHeaderForm, PurchaseLineForm,
+                    enter_lines, match)
+from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
 """
@@ -28,6 +29,47 @@ def index(request):
     Just a page to redirect successful POSTs to for the time being
     """
     return HttpResponse("Post was successful")
+
+
+
+class CreateInvoice(CreateTransactions):
+    header = {
+        "model": PurchaseHeader,
+        "form": PurchaseHeaderForm,
+        "prefix": "header",
+        "override_choices": ["supplier"],
+        "initial": {"type": "i", "total": 0},
+    }
+    line = {
+        "model": PurchaseLine,
+        "formset": enter_lines,
+        "prefix": "line",
+        "override_choices": ["item", "nominal"] # VAT would not work at the moment
+        # because VAT requires (value, label, [ model field attrs ])
+    }
+    match = {
+        "model": PurchaseMatching,
+        "formset": match,
+        "prefix": "match"
+    }
+    template_name = "purchases/create.html"
+
+
+class CreatePayment(CreateTransactions):
+    header = {
+        "model": PurchaseHeader,
+        "form": PaymentHeader,
+        "prefix": "header",
+        "override_choices": ["supplier"],
+        "initial": {"type": "p", "total": 0},
+    }
+    match = {
+        "model": PurchaseMatching,
+        "formset": match,
+        "prefix": "match"
+    }   
+    template_name = "purchases/create.html"
+
 
 def create(request):
     header_form_prefix = "header"

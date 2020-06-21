@@ -152,6 +152,8 @@ class CreateInvoice(TestCase):
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
+        cls.url = reverse("purchases:create_invoice")
+
     """
 
     An invoice like a credit note will normally have positive values entered in the input fields.
@@ -208,7 +210,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 1)
@@ -291,7 +293,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 1)
@@ -378,7 +380,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, []) # NO LINES NEED BUT CODE STILL NEEDS THE LINE MANAGEMENT FORM
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         new_header = PurchaseHeader.objects.filter(ref=self.ref)
         self.assertEqual(len(list(new_header)), 1)
@@ -449,7 +451,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, []) # NO LINES NEED BUT CODE STILL NEEDS THE LINE MANAGEMENT FORM
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         new_header = PurchaseHeader.objects.filter(ref=self.ref)
         self.assertEqual(len(list(new_header)), 0)
@@ -493,7 +495,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -535,7 +537,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 1)
@@ -626,7 +628,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 11)
@@ -739,7 +741,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 25)
@@ -852,7 +854,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -902,7 +904,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -946,7 +948,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 1)
@@ -1029,7 +1031,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 0)
@@ -1077,7 +1079,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 1)
@@ -1167,7 +1169,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 11)
@@ -1280,7 +1282,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 25)
@@ -1392,7 +1394,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -1441,7 +1443,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -1484,7 +1486,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 1)
@@ -1567,7 +1569,7 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 0)
@@ -1634,7 +1636,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -1682,7 +1684,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -1730,7 +1732,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -1778,7 +1780,7 @@ class CreateInvoice(TestCase):
         data.update(matching_data)
         data.update(line_data)
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
-        response = self.client.post(reverse("purchases:create"), data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(PurchaseHeader.objects.all()),
@@ -1816,7 +1818,7 @@ class CreatePayment(TestCase):
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
-        cls.url = reverse("purchases:create") + "?t=p"
+        cls.url = reverse("purchases:create_payment")
 
 
     def test_payment_with_positive_input_is_saved_as_negative(self):

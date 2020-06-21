@@ -159,13 +159,18 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
 
     def clean(self):
         super().clean()
+        if(any(self.errors)):
+            return
         goods = 0
         vat = 0
         total = 0
         for form in self.forms:
-            goods += form.instance.goods
-            vat += form.instance.vat
-            total += ( form.instance.goods + form.instance.vat )
+            if form.empty_permitted and form.has_changed(): # because there are no forms errors every form which has changed
+                # must contain valid goods, vat, and total figures
+                # otherwise could try checking is_valid
+                goods += form.instance.goods
+                vat += form.instance.vat
+                total += ( form.instance.goods + form.instance.vat )
         if self.header.total != 0 and self.header.total != total:
             raise forms.ValidationError(
                 _(
