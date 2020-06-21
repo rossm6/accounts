@@ -10,16 +10,19 @@ class Supplier(Contact):
     pass
 
 class PurchaseHeader(TransactionHeader):
-    type_choices = [
-        ('p', 'Payment'),
-        ('i', 'Invoice'),
-        ('c', 'Credit Note'),
-        ('r', 'Refund'),
-        ('bp', 'Brought Forward Payment'),
+    type_non_payments = [
         ('bi', 'Brought Forward Invoice'),
         ('bc', 'Brought Forward Credit Note'),
-        ('br', 'Brought Forward Refund')
+        ('i', 'Invoice'),
+        ('c', 'Credit Note'),
     ]
+    type_payments = [
+        ('bp', 'Brought Forward Payment'),
+        ('br', 'Brought Forward Refund'),
+        ('p', 'Payment'),
+        ('r', 'Refund'),
+    ]
+    type_choices = type_non_payments + type_payments
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=2,

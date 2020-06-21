@@ -30,6 +30,7 @@ def index(request):
     return HttpResponse("Post was successful")
 
 def create(request):
+    print(request)
     header_form_prefix = "header"
     line_form_prefix = "line"
     matching_form_prefix = "match"
@@ -59,6 +60,7 @@ def create(request):
                         if form.empty_permitted and form.has_changed():
                             matching = form.save(commit=False)
                             matchings.append(matching)
+                    PurchaseHeader.objects.bulk_update(matching_formset.headers, ['due', 'paid'])
                     PurchaseMatching.objects.bulk_create(matchings)
                     # show the user a new input form
                     # might be worth basing this on a user setting in the future

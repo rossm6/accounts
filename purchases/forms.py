@@ -45,6 +45,8 @@ class PaymentHeader(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.data:
+            self.fields['type'].choices = PurchaseHeader.type_payments
         self.helper = create_payment_transaction_header_helper(
             {
                 'contact': 'supplier',
@@ -55,6 +57,17 @@ class PaymentHeader(forms.ModelForm):
         # Form would then need to inherit from AjaxForm
         if not self.data:
             self.fields["supplier"].queryset = Supplier.objects.none()
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+        type = cleaned_data.get("type")
+        total = cleaned_data.get("total")
+        if total:
+            if type in ("p", "bp"):
+                cleaned_data["total"] = -1 * total
+        return cleaned_data
+
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -102,6 +115,8 @@ class PurchaseHeaderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.data:
+            self.fields['type'].choices = PurchaseHeader.type_non_payments
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
@@ -113,6 +128,14 @@ class PurchaseHeaderForm(forms.ModelForm):
         if not self.data:
             self.fields["supplier"].queryset = Supplier.objects.none()
 
+    def clean(self):
+        cleaned_data = super().clean()
+        type = cleaned_data.get("type")
+        total = cleaned_data.get("total")
+        if total:
+            if type in ("c", "bc"):
+                cleaned_data["total"] = -1 * total
+        return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -357,6 +380,12 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
+                elif value > matched_to.due:
+                    raise forms.ValidationError(
+                        _(
+                            'Cannot match more than value outstanding'
+                        )
+                    )
             elif matched_to.due < 0:
                 if value > 0:
                     raise forms.ValidationError(
@@ -364,6 +393,12 @@ class PurchaseMatchingForm(forms.ModelForm):
                             "Cannot match less than value outstanding"
                         ),
                         code="invalid-match"
+                    )
+                elif value < matched_to.due:
+                    raise forms.ValidationError(
+                        _(
+                            'Cannot match more than value outstanding'
+                        )
                     )
 
 

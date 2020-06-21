@@ -90,7 +90,7 @@ class TransactionHeader(DecimalBaseModel):
         null=True
     )
     date = models.DateField()
-    due_date = models.DateField()
+    due_date = models.DateField(null=True, blank=True) # payments do not require due dates
     # type = models.CharField(
     #     max_length=1,
     #     choices=[

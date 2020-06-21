@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from .models import Supplier, Invoice
+from .models import Supplier, Invoice, Payment
 
 def create_suppliers(n):
     suppliers = []
@@ -37,3 +37,21 @@ def create_invoices(supplier, ref_prefix, n, value=100):
         )
         invoices.append(i)
     return Invoice.objects.bulk_create(invoices)
+
+
+def create_payments(supplier, ref_prefix, n, value=100):
+    date = timezone.now()
+    due_date = date + timedelta(days=31)
+    payments = []
+    for i in range(n):
+        p = Payment(
+            supplier=supplier,
+            ref=ref_prefix + str(i),
+            total= -1 * value,
+            paid=0,
+            due= -1 * value,
+            date=date,
+            type="p"
+        )
+        payments.append(p)
+    return Payment.objects.bulk_create(payments)
