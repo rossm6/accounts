@@ -1,15 +1,30 @@
 PRIORITY 1
 
-    Test that credit note entered as positive is negative.  Same for refund etc
+    Edit -
 
-    Test entering blank lines is ok
+        Negatives in DB - payments - show in edit form as negatives when they should be positive.  Just need to flip the sign.
+        Loop through the fields and each which has a DecimalField should have sign of initial value flipped.
 
-    Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
-    testing the forms work as this has been checked in views already.
+        For the match forms we need to check the value is -
 
-    Subtotal, vat, total needs to be set on the server - for errors and editing
+            0  < value < self.instance.value + due
 
-    Add supplier does not work.  Need to create a pop up form on the fly
+        Because due is what is left on the header AFTER self.instance.value has been paid.
+
+        Ordering in the Existing Matching table does not work because there is no span element.
+
+    Create -
+
+        Test that credit note entered as positive is negative.  Same for refund etc
+
+        Test entering blank lines is ok
+
+        Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
+        testing the forms work as this has been checked in views already.
+
+        Subtotal, vat, total needs to be set on the server - for errors and editing
+
+        Add supplier does not work.  Need to create a pop up form on the fly
 
     Fix the __len__ method of the model choice field override in accountancy.fields
 

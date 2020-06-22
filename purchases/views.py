@@ -2,8 +2,9 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, render, reverse
+from django.shortcuts import redirect, render, reverse, get_object_or_404
 from django.views.generic import ListView
 from querystring_parser import parser
 
@@ -274,6 +275,51 @@ def create(request):
         "purchases/create.html",
         context
     )
+
+
+
+def edit(request, **kwargs):
+    pk = kwargs.get("pk")
+    header_prefix = "header"
+    line_prefix = "line"
+    match_prefix="match"
+    context = {}
+    if request.method == "GET":
+        header = get_object_or_404(PurchaseHeader, pk=pk)
+        if header.type in ('i', 'c', 'bi', 'bc'):
+            pass
+        else:
+            header_form = PaymentHeader(
+                prefix=header_prefix,
+                instance=header
+            )
+            context["header_form"] = header_form
+            # line_formset = enter_lines(
+            #     prefix=line_prefix,
+            #     queryset=PurchaseLine.objects.filter(header=header)
+            # )
+            # context["line_form_prefix"] = line_prefix
+            # context["line_formset"] = line_formset
+        match_formset = match(
+            prefix="match",
+            queryset=(
+                PurchaseMatching.objects
+                .filter(Q(matched_by=header) | Q(matched_to=header))
+                .select_related('matched_by')
+                .select_related('matched_to')
+            ),
+            match_by=header
+        )
+        context["matching_prefix"] = match_prefix
+        context["matching_formset"] = match_formset
+        return render(
+            request,
+            "purchases/edit.html",
+            context
+        )
+    if request.method == "POST":
+        pass
+
 
 
 class LoadMatchingTransactions(ListView):

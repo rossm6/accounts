@@ -56,8 +56,10 @@ class PaymentHeader(forms.ModelForm):
         # FIX ME - The supplier field should use the generic AjaxModelChoice Field class I created
         # this then takes care out of this already
         # Form would then need to inherit from AjaxForm
-        if not self.data:
+        if not self.data and not self.instance.pk:
             self.fields["supplier"].queryset = Supplier.objects.none()
+        if self.instance.pk:
+            self.fields["supplier"].queryset = Supplier.objects.filter(pk=self.instance.supplier_id)
 
 
     def clean(self):
@@ -345,13 +347,23 @@ class PurchaseMatchingForm(forms.ModelForm):
         # this logic is in case we ever need the form without the formset
         # but with a formset the keyword argument will not be passed
         if match_by := kwargs.get("match_by"):
-            self.match_by = match_to
+            self.match_by = match_by
             kwargs.pop("match_by")
         super().__init__(*args, **kwargs)
         # print(self.fields["matched_to"].widget.__dict__)
         # Question - will the matched_to.pk show in the input field when editing ?
         if not self.data and not self.instance.pk:
             self.fields["matched_to"].queryset = PurchaseHeader.objects.none()
+        if self.instance.pk:
+            if self.match_by.pk == self.instance.matched_to_id:
+                matched_header = self.instance.matched_by
+            else:
+                matched_header = self.instance.matched_to
+            self.fields["type"].initial = matched_header.type
+            self.fields["ref"].initial = matched_header.ref
+            self.fields["total"].initial = matched_header.total
+            self.fields["paid"].initial = matched_header.paid
+            self.fields["due"].initial = matched_header.due
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) + 
             PurchaseMatchingForm.Meta.fields,
@@ -420,16 +432,23 @@ class PurchaseMatchingForm(forms.ModelForm):
 class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
     """
-    Match by is the header record which is being used to match
+
+    Match by has two meaning depending on the context.
+
+    For create, match by is the header record which is being used to match
     the other headers against -
 
-    E.g.
+        E.g.
 
-    The user creates a new receipt for value -100.00
-    And they select to match an invoice against this in the same posting.
+        The user creates a new receipt for value -100.00
+        And they select to match an invoice against this in the same posting.
 
-    In this situation the receipt is the "match_by" header and the
-    "match_to" header is the invoice.
+        In this situation the receipt is the "match_by" header and the
+        "match_to" header is the invoice.
+
+    For edit, match by is the header record we are viewing to edit.
+    In terms of the matching record itself, this header could correspond
+    to either the matching_by or the matching_to.
 
     """
 
@@ -440,11 +459,9 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
 
     def _construct_form(self, i, **kwargs):
+        if hasattr(self, 'match_by'):
+            kwargs["match_by"] = self.match_by
         form = super()._construct_form(i, **kwargs)
-        try:
-            form.match_by = self.match_by
-        except AttributeError as e:
-            pass
         return form
 
 

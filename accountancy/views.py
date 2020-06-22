@@ -318,6 +318,9 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
             kwargs["line_form_prefix"] = self.get_line_prefix()
         if 'matching_form_prefix' not in kwargs:
             kwargs["matching_form_prefix"] = self.get_match_prefix()
+        if 'non_field_errors' not in kwargs:
+            if hasattr(self, 'non_field_errors'):
+                kwargs['non_field_errors'] = self.non_field_errors
         return super().get_context_data(**kwargs)
 
 
