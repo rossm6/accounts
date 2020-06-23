@@ -27,7 +27,7 @@
            // with the input value inside.  The datatables plugin must look for these elements out of the box.
 
 
-        var matched_transacions_table = $("table.matched_transactions").DataTable({
+        var existing_matched_transactions_table = $("table.existing_matched_transactions").DataTable({
             dom: "t",
             bPaginate: false,
             columnDefs: [
@@ -41,11 +41,24 @@
         });
 
 
+        var new_matched_transacions_table = $("table.new_matched_transactions").DataTable({
+            dom: "t",
+            bPaginate: false,
+            columnDefs: [
+                { orderDataType: 'dom-text', targets: [ 6 ] }, // this requires a plugin - see above and https://datatables.net/plug-ins/sorting/custom-data-source/dom-text
+                { className: 'd-none', targets: [ 5 ] },
+                { className: "dt-center", "targets": "_all" }
+            ],
+            scrollY: "200px",
+            scrollCollapse: true,
+            paging: false
+        });
+
         // this must be set up before the outstanding transactions datatable
         // because the checkboxes in the latter depend on the form attribute
         // of this object
-        var matched_transactions_table_formset = new TableFormset({
-            table: matched_transacions_table,
+        var new_matched_transactions_table_formset = new TableFormset({
+            table: new_matched_transacions_table,
             form_prefix: '{{ matching_form_prefix }}',
             trs_to_ignore: '.empty-form',
             unique_field: 'matched_to',
@@ -60,11 +73,11 @@
             var fields = tr.data()["fields"];
             var id_of_transaction = fields.matched_to.value;
             if(checkbox.prop("checked")){
-                var new_tr = matched_transactions_table_formset.create(fields);
-                matched_transactions_table_formset.add(id_of_transaction, new_tr);
+                var new_tr = new_matched_transactions_table_formset.create(fields);
+                new_matched_transactions_table_formset.add(id_of_transaction, new_tr);
             }
             else{
-                matched_transactions_table_formset.delete(id_of_transaction);
+                new_matched_transactions_table_formset.delete(id_of_transaction);
             }
         });
 
@@ -133,7 +146,7 @@
                     'classname': 'dt-body-center',
                     'render': function (data, type, full, meta) {
                         var id = full["DT_RowData"].pk;
-                        var checked = matched_transactions_table_formset.lookup(id) ? "checked" : "";
+                        var checked = new_matched_transactions_table_formset.lookup(id) ? "checked" : "";
                         return '<input ' + checked + ' type="checkbox" name="matching_transaction" value="' + id + '" class="match-checkbox">';
                     }
                 },

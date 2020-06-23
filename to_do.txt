@@ -2,6 +2,8 @@ PRIORITY 1
 
     Edit -
 
+        id field should be added to the matching form if we are doing an edit; else ignore this field.  Table column also needs hiding
+
         Negatives in DB - payments - show in edit form as negatives when they should be positive.  Just need to flip the sign.
         Loop through the fields and each which has a DecimalField should have sign of initial value flipped.
 
@@ -9,9 +11,9 @@ PRIORITY 1
 
             0  < value < self.instance.value + due
 
-        Because due is what is left on the header AFTER self.instance.value has been paid.
+        Because due is what is left on the header AFTER self.instance.value has been paid
 
-        Ordering in the Existing Matching table does not work because there is no span element.
+        Start writing a few tests
 
     Create -
 

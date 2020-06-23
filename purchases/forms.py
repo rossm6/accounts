@@ -5,8 +5,8 @@ from tempus_dominus.widgets import DatePicker
 from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField,
                                 ModelChoiceIteratorWithFields)
-from accountancy.forms import (AjaxForm, LabelAndFieldOnly, PlainFieldErrors,
-                               TableHelper,
+from accountancy.forms import (AjaxForm, DataTableTdField, LabelAndFieldOnly,
+                               PlainFieldErrors, TableHelper,
                                create_payment_transaction_header_helper,
                                create_transaction_header_helper)
 from accountancy.helpers import delay_reverse_lazy
@@ -338,7 +338,7 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     class Meta:
         model = PurchaseMatching
-        fields = ('matched_to', 'value',)
+        fields = ('matched_to', 'value', 'id')
         widgets = {
             'matched_to': forms.TextInput
         }
@@ -379,6 +379,11 @@ class PurchaseMatchingForm(forms.ModelForm):
             },
             field_layout_overrides={
                 'Td': {
+                    'type': DataTableTdField,
+                    'ref': DataTableTdField,
+                    'total': DataTableTdField,
+                    'paid': DataTableTdField,
+                    'due': DataTableTdField,
                     'value': PlainFieldErrors,
                 }
             }

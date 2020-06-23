@@ -21,6 +21,11 @@ class PlainFieldErrors(Field):
     # no label; field and errors only
     template = "accounts/layout/plain_field_errors.html"
 
+class DataTableTdField(Field):
+    # native sorting in jquery datatables is possible by including the field value in a <span> element
+    # this is necessary for those td elements which contain <input elements>
+    template = "accounts/layout/data_table_td_field.html"
+
 class Td(Div):
     template = "accounts/layout/td.html"
 

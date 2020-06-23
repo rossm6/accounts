@@ -130,12 +130,53 @@
                                     {{ matching_formset.management_form|crispy }}
                                 </div>
                                 <div class="matched_transactions_wrapper">
-                                    <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="matched_transactions">
+                                    <table class="existing_matched_transactions">
                                             {% crispy matching_formset %}
                                             {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="my-4">
+                            <div class="mb-2">
+                                <h2 class="h6 font-weight-bold">New Matching Transactions</h2>
+                                <small class="form-text text-muted">These transactions you've matched have not yet been saved</small>
+                            </div>
+                            <div>
+                                <table class="new_matched_transactions">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                Type
+                                            </th>
+                                            <th>
+                                                Ref
+                                            </th>
+                                            <th>
+                                                Total
+                                            </th>
+                                            <th>
+                                                Paid
+                                            </th>
+                                            <th>
+                                                Due
+                                            </th>
+                                            <th>
+                                                Matched to
+                                            </th>
+                                            <th>
+                                                Value
+                                            </th>
+                                            <th>
+                                                Id
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
+                                    </tbody>
+                                </table>     
                             </div>
                         </div>
                     </form>

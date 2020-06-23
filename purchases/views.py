@@ -1,10 +1,11 @@
 from decimal import Decimal
+from itertools import chain
 
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, render, reverse, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.views.generic import ListView
 from querystring_parser import parser
 
@@ -282,7 +283,7 @@ def edit(request, **kwargs):
     pk = kwargs.get("pk")
     header_prefix = "header"
     line_prefix = "line"
-    match_prefix="match"
+    match_prefix= "match"
     context = {}
     if request.method == "GET":
         header = get_object_or_404(PurchaseHeader, pk=pk)
@@ -308,10 +309,12 @@ def edit(request, **kwargs):
                 .select_related('matched_by')
                 .select_related('matched_to')
             ),
-            match_by=header
+            match_by=header,
+            auto_id=False
         )
-        context["matching_prefix"] = match_prefix
+        context["matching_form_prefix"] = match_prefix
         context["matching_formset"] = match_formset
+        context["edit"] = pk
         return render(
             request,
             "purchases/edit.html",
@@ -385,7 +388,14 @@ class LoadMatchingTransactions(ListView):
 
     def get_queryset(self):
         if supplier := self.request.GET.get("s"):
-            return PurchaseHeader.objects.filter(supplier=supplier).exclude(due__exact=0)
+            q = PurchaseHeader.objects.filter(supplier=supplier).exclude(due__exact=0)
+            if edit := self.request.GET.get("edit"):
+                matches = PurchaseMatching.objects.filter(Q(matched_to=edit) | Q(matched_by=edit))
+                matches = [ (match.matched_by_id, match.matched_to_id) for match in matches ]
+                matched_headers = list(chain(*matches)) # List of primary keys.  Includes the primary key for edit record itself
+                return q.exclude(pk__in=[ header for header in matched_headers ])
+            else:
+                return q
         else:
             return PurchaseHeader.objects.none() 
     
