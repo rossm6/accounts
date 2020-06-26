@@ -332,3 +332,34 @@ class TableHelper(object):
             "tbody": self.create_tbody(),
             "empty_form": self.create_tbody("d-none empty-form")
         }
+
+
+class BaseTransactionMixin(object):
+    """
+
+    At least this is needed ...
+
+        Accountancy forms should give the user the option to enter a positive number
+        which is then understand by the system as a negative number i.e. a credit balance
+
+        For example when entering a payment it is more intuitive to type 100.00
+        but this needs to be saved in the database as -100.00, because it is a credit balance
+
+        If the user is creating data there is no problem.  But if they are editing data they
+        need to see this negative value as a positive.  
+
+        So we need a global dictionary of transaction types and the associated debit or credit.
+        And then we just look up the transaction type and flip the sign if it is a credit
+        transaction.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        # based on - https://stackoverflow.com/a/60118733
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            for field in self.fields:
+                if isinstance(self.fields[field], forms.DecimalField):
+                    if self.instance.type in ('c', 'p', 'bc', 'bp'):
+                        tmp = self.initial[field]
+                        self.initial[field] = -1 * tmp

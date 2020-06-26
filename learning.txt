@@ -3,3 +3,17 @@ Django Crispy Forms
     I had thought you could specify a class on a widget directly in your form
     and css_classes defined in the library were just appended.  This does not appear to be
     the case.
+
+
+Python MRO
+
+    I thought the base class in Python was left most in the classes to inherit from but i read
+    a comment on Stackoverflow which said it was righmost.  Will clarify this when i finish the
+    book "Effective Python"
+
+
+Django Formsets
+
+    Forms in a formset will have empty_permitted = True for new creations i.e. forms not corresponding to DB instances
+    For forms with a DB instance, the INITIAL_FORMS count must be correct, so that empty_permitted = False
+    This caught me out in testing.

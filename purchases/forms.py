@@ -8,7 +8,7 @@ from accountancy.fields import (AjaxModelChoiceField,
 from accountancy.forms import (AjaxForm, DataTableTdField, LabelAndFieldOnly,
                                PlainFieldErrors, TableHelper,
                                create_payment_transaction_header_helper,
-                               create_transaction_header_helper)
+                               create_transaction_header_helper, BaseTransactionMixin)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.widgets import InputDropDown
 from items.models import Item
@@ -25,7 +25,7 @@ class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
 
 # FIX ME - this should inherit from a base class PaymentHeader in accountancy.forms
-class PaymentHeader(forms.ModelForm):
+class PaymentHeader(BaseTransactionMixin, forms.ModelForm):
 
     date = forms.DateField(
         widget=DatePicker(
@@ -84,8 +84,7 @@ class PaymentHeader(forms.ModelForm):
 
 
 
-# FIX ME - THIS OUGHT TO INHERIT FROM A, InvoiceHeader Form in accountancy
-class PurchaseHeaderForm(forms.ModelForm):
+class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     date = forms.DateField(
         widget=DatePicker(
@@ -109,7 +108,8 @@ class PurchaseHeaderForm(forms.ModelForm):
                 "icon_toggle": True,
                 "input_group": False
             }
-        )
+        ),
+        required=False
     )
 
     class Meta:
@@ -118,8 +118,6 @@ class PurchaseHeaderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.data:
-            self.fields['type'].choices = PurchaseHeader.type_non_payments
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
@@ -128,15 +126,17 @@ class PurchaseHeaderForm(forms.ModelForm):
         # FIX ME - The supplier field should use the generic AjaxModelChoice Field class I created
         # this then takes care out of this already
         # Form would then need to inherit from AjaxForm
-        if not self.data:
+        if not self.data and not self.instance.pk:
             self.fields["supplier"].queryset = Supplier.objects.none()
+        if self.instance.pk:
+            self.fields["supplier"].queryset = Supplier.objects.filter(pk=self.instance.supplier_id)
 
     def clean(self):
         cleaned_data = super().clean()
         type = cleaned_data.get("type")
         total = cleaned_data.get("total")
         if total:
-            if type in ("c", "bc"):
+            if type in ("c", "bc", "p", "bp"):
                 cleaned_data["total"] = -1 * total
         return cleaned_data
 
@@ -156,12 +156,14 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
 
     def __init__(self, *args, **kwargs):
         if 'header' in kwargs:
-            self.header = kwargs.pop("header")
+            if header := kwargs.get('header'): # header could be None
+                self.header = header
+            kwargs.pop("header")
         super().__init__(*args, **kwargs)
 
     def clean(self):
         super().clean()
-        if(any(self.errors)):
+        if(any(self.errors) or not hasattr(self, 'header')):
             return
         goods = 0
         vat = 0
@@ -188,7 +190,7 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
         # we need to update this value for this formset
         
 
-class PurchaseLineForm(AjaxForm):
+class PurchaseLineForm(BaseTransactionMixin, AjaxForm):
 
     item = AjaxModelChoiceField(
         get_queryset=Item.objects.none(),
@@ -310,6 +312,7 @@ will have been created by this point.
 """
 
 
+# SHOULD NOT INHERIT FROM BASETRANSACTIONMIXIN BECAUSE WE WANT TO SEE CREDITS WITH A MINUS SIGN
 class PurchaseMatchingForm(forms.ModelForm):
 
     """
@@ -346,24 +349,28 @@ class PurchaseMatchingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         # this logic is in case we ever need the form without the formset
         # but with a formset the keyword argument will not be passed
-        if match_by := kwargs.get("match_by"):
-            self.match_by = match_by
+        if 'match_by' in kwargs:
+            if match_by := kwargs.get('match_by'): # match_by could be None
+                self.match_by = match_by
             kwargs.pop("match_by")
-        super().__init__(*args, **kwargs)
+
         # print(self.fields["matched_to"].widget.__dict__)
         # Question - will the matched_to.pk show in the input field when editing ?
+
+        super().__init__(*args, **kwargs)
+
         if not self.data and not self.instance.pk:
             self.fields["matched_to"].queryset = PurchaseHeader.objects.none()
-        if self.instance.pk:
-            if self.match_by.pk == self.instance.matched_to_id:
-                matched_header = self.instance.matched_by
-            else:
-                matched_header = self.instance.matched_to
-            self.fields["type"].initial = matched_header.type
-            self.fields["ref"].initial = matched_header.ref
-            self.fields["total"].initial = matched_header.total
-            self.fields["paid"].initial = matched_header.paid
-            self.fields["due"].initial = matched_header.due
+        # if self.instance.pk:
+        #     if self.match_by.pk == self.instance.matched_to_id:
+        #         matched_header = self.instance.matched_by
+        #     else:
+        #         matched_header = self.instance.matched_to
+        #     self.fields["type"].initial = matched_header.type
+        #     self.fields["ref"].initial = matched_header.ref
+        #     self.fields["total"].initial = matched_header.total
+        #     self.fields["paid"].initial = matched_header.paid
+        #     self.fields["due"].initial = matched_header.due
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) + 
             PurchaseMatchingForm.Meta.fields,
@@ -392,6 +399,11 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        existing_instance = cleaned_data.get("id")
+        existing_value = 0
+        if existing_instance: # of course for creating matches this won't apply
+            existing_value = existing_instance.value
+            self.existing_instance = existing_instance # we need this for validation at formset level
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
         if matched_to and value:
@@ -403,7 +415,7 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
-                elif value > matched_to.due:
+                elif value > matched_to.due + existing_value:
                     raise forms.ValidationError(
                         _(
                             'Cannot match more than value outstanding'
@@ -417,7 +429,7 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
-                elif value < matched_to.due:
+                elif value < matched_to.due - existing_value:
                     raise forms.ValidationError(
                         _(
                             'Cannot match more than value outstanding'
@@ -459,7 +471,9 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
     def __init__(self, *args, **kwargs):
         if 'match_by' in kwargs:
-            self.match_by = kwargs.pop("match_by")
+            if match_by := kwargs.get('match_by'): # match_by could be None
+                self.match_by = match_by
+            kwargs.pop("match_by")
         super().__init__(*args, **kwargs)
 
 
@@ -472,13 +486,16 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
     def clean(self):
         super().clean()
-        if(any(self.errors)):
+        if(any(self.errors) or not hasattr(self, 'match_by')):
             return
         self.headers = []
         total_value_matching = 0
         for form in self.forms:
             value = form.instance.value
             total_value_matching += value
+            if hasattr(form, 'existing_instance'):
+                value = value - form.existing_instance.value
+                print(value)
             form.instance.matched_to.due -= value
             form.instance.matched_to.paid += value
             self.headers.append(form.instance.matched_to)

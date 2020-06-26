@@ -60,7 +60,7 @@ class CreateInvoice(CreateTransactions):
 class CreatePayment(CreateTransactions):
     header = {
         "model": PurchaseHeader,
-        "form": PaymentHeader,
+        "form": PurchaseHeaderForm,
         "prefix": "header",
         "override_choices": ["supplier"],
         "initial": {"type": "p", "total": 0},
@@ -285,22 +285,17 @@ def edit(request, **kwargs):
     line_prefix = "line"
     match_prefix= "match"
     context = {}
+    context["edit"] = pk
+    header = get_object_or_404(PurchaseHeader, pk=pk)
+    print(header)
     if request.method == "GET":
-        header = get_object_or_404(PurchaseHeader, pk=pk)
-        if header.type in ('i', 'c', 'bi', 'bc'):
-            pass
-        else:
-            header_form = PaymentHeader(
-                prefix=header_prefix,
-                instance=header
-            )
-            context["header_form"] = header_form
-            # line_formset = enter_lines(
-            #     prefix=line_prefix,
-            #     queryset=PurchaseLine.objects.filter(header=header)
-            # )
-            # context["line_form_prefix"] = line_prefix
-            # context["line_formset"] = line_formset
+        header_form = PurchaseHeaderForm(prefix=header_prefix)        
+        # line_formset = enter_lines(
+        #     prefix=line_prefix,
+        #     queryset=PurchaseLine.objects.filter(header=header)
+        # )
+        # context["line_form_prefix"] = line_prefix
+        # context["line_formset"] = line_formset
         match_formset = match(
             prefix="match",
             queryset=(
@@ -312,16 +307,40 @@ def edit(request, **kwargs):
             match_by=header,
             auto_id=False
         )
-        context["matching_form_prefix"] = match_prefix
-        context["matching_formset"] = match_formset
-        context["edit"] = pk
-        return render(
-            request,
-            "purchases/edit.html",
-            context
-        )
     if request.method == "POST":
-        pass
+        header_form = PurchaseHeaderForm(data=request.POST, prefix=header_prefix, instance=header)
+        if header_form.is_valid():
+            header = header_form.save(commit=False)
+            if header.type in ('p', 'bp', 'r', 'br'):
+                # do no consider lines
+                match_formset = match(
+                    data=request.POST,
+                    prefix="match",
+                    queryset=(
+                        PurchaseMatching.objects
+                        .filter(Q(matched_by=header) | Q(matched_to=header))
+                        .select_related('matched_by')
+                        .select_related('matched_to')
+                    ),
+                    match_by=header,
+                    auto_id=False
+                )
+                if match_formset.is_valid():
+                    header.save()
+                    return redirect(reverse("purchases:index"))
+                else:
+                    print("invalid")
+            else:
+                # consider lines
+                pass
+    context["header_form"] = header_form    
+    context["matching_form_prefix"] = match_prefix
+    context["matching_formset"] = match_formset
+    return render(
+        request,
+        "purchases/edit.html",
+        context
+    )
 
 
 

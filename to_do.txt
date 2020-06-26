@@ -2,10 +2,11 @@ PRIORITY 1
 
     Edit -
 
-        id field should be added to the matching form if we are doing an edit; else ignore this field.  Table column also needs hiding
+        Priortise writing the tests first but need to check a few things -
 
-        Negatives in DB - payments - show in edit form as negatives when they should be positive.  Just need to flip the sign.
-        Loop through the fields and each which has a DecimalField should have sign of initial value flipped.
+            1. my edit forms have empty_permitted=True.  I would have expected False
+            2. initial = {} for edit forms even though there is obviously the DB model data
+            3. how do i access the existing instance on the form ?
 
         For the match forms we need to check the value is -
 
@@ -15,18 +16,25 @@ PRIORITY 1
 
         Start writing a few tests
 
+        Add table-bordered to the 'New Matching Transactions' table
+
     Create -
+
+        Instead of reloading a new view depending on transaction type we will
+        just use the same form and view for all but hide the unneeded parts clientside
+        depending on the type chosen.  This will mean creating empty lineformset
+        datasets for the CreatePayment tests.
 
         Test that credit note entered as positive is negative.  Same for refund etc
 
         Test entering blank lines is ok
 
-        Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
-        testing the forms work as this has been checked in views already.
-
         Subtotal, vat, total needs to be set on the server - for errors and editing
 
         Add supplier does not work.  Need to create a pop up form on the fly
+
+        Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
+        testing the forms work as this has been checked in views already.
 
     Fix the __len__ method of the model choice field override in accountancy.fields
 

@@ -33,6 +33,29 @@ LINE_FORM_PREFIX = "line"
 MATCHING_FORM_PREFIX = "match"
 
 
+def match(match_by, matched_to):
+    headers_to_update = []
+    matches = []
+    match_total = 0
+    for match_to, match_value in matched_to:
+        match_total += match_value
+        match_to.due = match_to.total - match_value
+        match_to.paid = match_to.total - match_to.due
+        matches.append(
+            PurchaseMatching(
+                matched_by=match_by, 
+                matched_to=match_to, 
+                value=match_value
+            )
+        )
+        headers_to_update.append(match_to)
+    headers_to_update.append(match_by)
+    match_by.due = match_by.total + match_total
+    match_by.paid = match_by.total - match_by.due
+    PurchaseHeader.objects.bulk_update(headers_to_update, ['due', 'paid'])
+    PurchaseMatching.objects.bulk_create(matches)
+
+
 def add_and_replace_objects(objects, replace_keys, extra_keys_and_values):
     for obj in objects:
         for old_key in replace_keys:
@@ -174,16 +197,33 @@ class CreateInvoice(TestCase):
 
 
 
-    """
-    In this section tests putting on a zero value transaction which can only be put on to match
-    other transactions.
+    # INCORRECT USAGE
+    def test_invoice_header_is_invalid(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": '1025', # non existent primary key for supplier to make form invalid
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 0)
+        
 
-    First we test putting on a zero value invoice and then we test putting on a zero value payment.
-    This way we hit both branches of the code.
 
-    """
-
-
+    # CORRECT USAGE
     def test_invoice_with_positive_input_is_saved_as_positive(self):
         data = {}
         header_data = create_header(
@@ -266,7 +306,7 @@ class CreateInvoice(TestCase):
                 20
             )
 
-
+    # CORRECT USAGE
     def test_invoice_with_negative_input_is_saved_as_negative(self):
         data = {}
         header_data = create_header(
@@ -348,6 +388,14 @@ class CreateInvoice(TestCase):
                 line.vat,
                 -20
             )
+
+
+    """
+
+    This section tests putting on a zero value transaction which can only be put on to match
+    other transactions.
+
+    """
 
 
     # CORRECT USAGE
@@ -1796,6 +1844,9 @@ class CreateInvoice(TestCase):
         )
     
 
+
+# THIS WAS WRITTEN BACK WHEN PAYMENTS USED A DIFFERENT FORM TO INVOICES
+# STILL KEEPS IT ANYWAY BUT NOT SO IMPORTANT NOW
 class CreatePayment(TestCase):
 
     """
@@ -2800,3 +2851,328 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+
+
+# EditInvoice should be based on this
+class EditPayment(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+
+    """
+
+    Let a payment be matched to multiple transaction types such that the payment is fully paid.
+
+    The payment is therefore the matched_to transaction and the matched_by transactions are the others.
+
+    """
+
+
+    """
+    First no new matching transactions are added
+    """
+
+    # CORRECT USAGE
+    # Payment total is increased.  Payment was previously fully matched
+    def test_1(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 2, 1000)
+        match(payment, [ ( invoice, 500 ) for invoice in invoices ])
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 2000
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 500}) # Same value as matched originally
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        payment = PurchaseHeader.objects.get(pk=1)
+        self.assertEqual(payment.total, -2000)
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)  
+
+
+    # INCORRECT USAGE
+    # Payment total is decreased.  Payment was previously fully matched
+    def test_2(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 2, 1000)
+
+        match(payment, [ ( invoice, 500 ) for invoice in invoices ])
+        trans = {}
+        trans[payment.pk] = payment
+        trans[invoices[0].pk] = invoices[0]
+        trans[invoices[1].pk] = invoices[1]
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 500
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 500}) # Same value as matched originally
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        payment = PurchaseHeader.objects.get(pk=1)
+        self.assertEqual(payment.total, -1000)
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)
+
+
+    # CORRECT USAGE
+    # Payment total is increased
+    # Match value of transaction increased
+    # Payment still fully matched
+    def test_3(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 2, 1000)
+        match(payment, [ ( invoice, 500 ) for invoice in invoices ])
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 2000
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 1000}) # increase both matches by 500.00
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        payment = PurchaseHeader.objects.get(pk=1)
+        self.assertEqual(payment.total, -2000)
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 1000)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 1000)  
+
+    # CORRECT USAGE
+    # Payment total is increased
+    # Match value of transaction increased
+    # Payment not fully matched now though
+    def test_4(self):
+        pass
+
+
+    # INCORRECT USAGE
+    # Payment total is increased
+    # Match value of transaction is increased which is ok per this matched header i.e. increase is below outstanding on this transaction
+    # But now the matched value total is greater than the total value of the payment
+    # 100.00 payment matched to two invoices 100.00 and 50.00.  (Only 50.00 of first invoice is matched to payment)
+    # So -100 = 50 + 50 means the payment is fully matched
+    # Now increase payment to -110
+    # And match first invoice up to 100
+    # So now we have 100 + 50 = 150 which is greater than the 110 payment total
+    def test_5(self):
+        pass
+
+
+    # CORRECT USAGE 
+    # Payment total is decreased
+    # Match value of a transaction is decreased
+    # Payment still fully paid
+    def test_6(self):
+        pass
+
+
+    # CORRECT USAGE
+    # Payment total is decreased
+    # Match value is decreased
+    # Yet payment is not fully paid now
+    def test_7(self):
+        pass
+
+
+    # INCORRECT USAGE
+    # Payment total is decreased
+    # Match value of transaction is decreased so is ok on the header
+    # But now the match value total is not valid
+    # Example.  100 payment is matched to a 200 payment and a 300 invoice.
+    # The payment is reduced to 80.  And only 150.00 of the payment is now matched
+    # This isn't allowed as obviously a 80 + 150 payment cannot pay a 300 invoice
+    def test_8(self):
+        pass
+
+
+    """
+    Now we repeat tests 3 to 8 but this time try the same thing but by adding new transactions
+    """
+
+
+    # repeat the tests
+
+
+    """
+    Finally we need to just check that the matched value cannot exceed the due amount of the transaction
+    or fall below zero (or above zero) depending on whether is a debit or a credit.
+    """

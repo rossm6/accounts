@@ -5,9 +5,8 @@ from .views import (LoadMatchingTransactions, LoadSuppliers, create, index,
 
 app_name = "purchases"
 urlpatterns = [
-    path("create", create, name="create"),
-    path("create_invoice", CreateInvoice.as_view(), name="create_invoice"),
-    path("create_payment", CreatePayment.as_view(), name="create_payment"),
+    path("create/invoice", CreateInvoice.as_view(), name="create_invoice"),
+    path("create/payment", CreatePayment.as_view(), name="create_payment"),
     path("edit/<int:pk>", edit, name="edit"),
     path("index", index, name="index"),
     path("load_matching_transactions", LoadMatchingTransactions.as_view(), name="load_matching_transactions"),

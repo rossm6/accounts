@@ -354,19 +354,18 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
 
 
     def invalid_forms(self):
+
         """
         This gets all the errors possible from the forms.
-        A
         """
 
         # make sure all non field errors are generated
         # at form and formset level
         # we also set a flag to true only because this helps
         # the template rendering
-
         if self.header_form.non_field_errors():
             self.non_field_errors = True
-        self.line_formset = self.line_formset or self.get_line_formset()
+        self.line_formset = self.get_line_formset()
         if self.line_formset:
             self.line_formset.is_valid()
             # validation may have been called already but Django will not run full_clean
@@ -377,7 +376,7 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
             for form in self.line_formset:
                 if form.non_field_errors():
                     self.non_field_errors = True
-        self.match_formset = self.match_formset or self.get_match_formset()
+        self.match_formset = self.get_match_formset()
         if self.match_formset:
             self.match_formset.is_valid()
             if self.match_formset.non_form_errors():
