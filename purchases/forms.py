@@ -118,10 +118,17 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.initial['type'] in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
+            # as we are repeating ourselves
+            payment_form = True
+            print("true")
+        else:
+            payment_form = False
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
-            }
+            },
+            payment_form
         )
         # FIX ME - The supplier field should use the generic AjaxModelChoice Field class I created
         # this then takes care out of this already
@@ -399,11 +406,7 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        existing_instance = cleaned_data.get("id")
-        existing_value = 0
-        if existing_instance: # of course for creating matches this won't apply
-            existing_value = existing_instance.value
-            self.existing_instance = existing_instance # we need this for validation at formset level
+        initial_value = self.initial.get("value", 0)
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
         if matched_to and value:
@@ -415,7 +418,7 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
-                elif value > matched_to.due + existing_value:
+                elif value > matched_to.due + initial_value:
                     raise forms.ValidationError(
                         _(
                             'Cannot match more than value outstanding'
@@ -429,7 +432,7 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
-                elif value < matched_to.due - existing_value:
+                elif value < matched_to.due - initial_value:
                     raise forms.ValidationError(
                         _(
                             'Cannot match more than value outstanding'
@@ -490,15 +493,16 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
             return
         self.headers = []
         total_value_matching = 0
+        change_in_value = 0
         for form in self.forms:
-            value = form.instance.value
-            total_value_matching += value
-            if hasattr(form, 'existing_instance'):
-                value = value - form.existing_instance.value
-                print(value)
-            form.instance.matched_to.due -= value
-            form.instance.matched_to.paid += value
-            self.headers.append(form.instance.matched_to)
+            if 'value' in form.changed_data:
+                initial_value = form.initial.get("value", 0)
+                value = form.instance.value - initial_value
+                form.instance.matched_to.due -= value
+                form.instance.matched_to.paid += value
+                self.headers.append(form.instance.matched_to)
+                change_in_value += value
+            total_value_matching += form.instance.value
         if self.match_by.total == 0 and self.match_by.due == 0:
             if total_value_matching != 0:
                 raise forms.ValidationError(
@@ -518,9 +522,9 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                 )
         elif self.match_by.total > 0:
             if self.forms:
-                if (-1 * total_value_matching) > 0 and (-1 * total_value_matching) <= self.match_by.due:
-                    self.match_by.due += total_value_matching
-                    self.match_by.paid -= total_value_matching
+                if (-1 * total_value_matching) > 0 and (-1 * total_value_matching) <= self.match_by.total:
+                    self.match_by.due += change_in_value
+                    self.match_by.paid -= change_in_value
                 else:
                     raise forms.ValidationError(
                         _(
@@ -530,9 +534,9 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                     )
         elif self.match_by.total < 0:
             if self.forms:
-                if (-1 * total_value_matching) < 0 and (-1 * total_value_matching) >= self.match_by.due:
-                    self.match_by.due += total_value_matching
-                    self.match_by.paid -= total_value_matching
+                if (-1 * total_value_matching) < 0 and (-1 * total_value_matching) >= self.match_by.total:
+                    self.match_by.due += change_in_value
+                    self.match_by.paid -= change_in_value
                 else:
                     raise forms.ValidationError(
                         _(

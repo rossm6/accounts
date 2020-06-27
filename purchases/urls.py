@@ -1,12 +1,11 @@
 from django.urls import path
 
 from .views import (LoadMatchingTransactions, LoadSuppliers, create, index,
-                    load_options, validate_choice, CreateInvoice, CreatePayment, edit)
+                    load_options, validate_choice, CreateTransaction, edit)
 
 app_name = "purchases"
 urlpatterns = [
-    path("create/invoice", CreateInvoice.as_view(), name="create_invoice"),
-    path("create/payment", CreatePayment.as_view(), name="create_payment"),
+    path("create", CreateTransaction.as_view(), name="create"),
     path("edit/<int:pk>", edit, name="edit"),
     path("index", index, name="index"),
     path("load_matching_transactions", LoadMatchingTransactions.as_view(), name="load_matching_transactions"),

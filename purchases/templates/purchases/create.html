@@ -22,4 +22,7 @@
 {% block js %}
     {% include 'accountancy/create_js.html' with header_form=header_form %}
     {% include 'accountancy/matching_js.html' %}
+    <script>
+        {% include 'purchases/type_dependent_layout.js' with header_form_prefix=header_form_prefix %}
+    </script>
 {% endblock js %}

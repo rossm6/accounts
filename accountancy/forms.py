@@ -137,10 +137,17 @@ def create_payment_transaction_header_helper(generic_to_fields_map):
 
 
 # FIX ME - This ought to be 'create_invoice_transaction_header_helper'
-def create_transaction_header_helper(generic_to_fields_map):
+def create_transaction_header_helper(generic_to_fields_map, payment_form=False):
 
     """
+
     This will returns the standard header help for transaction forms
+
+    The only difference with the header form for a payment or refund is we don't need
+    the due date field.  Because we are using the same form either way we need to hide
+    this field.  If later the decision is made to use a different form remember that
+    the edit form needs the ability to change transaction on the client side....
+
     """
 
     class StandardHeaderHelper(FormHelper):
@@ -173,7 +180,7 @@ def create_transaction_header_helper(generic_to_fields_map):
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get("due_date", "due_date"), css_class="w-100 input"),
-                                css_class="form-group mr-2 position-relative"
+                                css_class="form-group mr-2 position-relativen" + ( " d-none" if payment_form else "")
                             ),
                             css_class="d-flex justify-content-between" 
                         ),

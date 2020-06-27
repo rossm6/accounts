@@ -18,11 +18,11 @@
 
     $(".transaction-type-select").selectize();
 
-    $("select.transaction-type-select").on("change", function() {
+    {% comment %} $("select.transaction-type-select").on("change", function() {
         var transaction_type = $(this).val();
         var url = window.location.href.split('?')[0];
         window.location.href = url + "?t=" + transaction_type;
-    });
+    }); {% endcomment %}
 
     {% comment %} 
     

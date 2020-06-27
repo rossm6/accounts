@@ -304,7 +304,7 @@ class BaseTransactionsList(ListView):
 #         formset: PurchaseMatchingFormset
 #     }
 
-class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
+class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def get_context_data(self, **kwargs):
         # FIX ME - change 'matching_formset" to "match_formset" in the template
@@ -314,6 +314,8 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
             kwargs["line_formset"] = self.get_line_formset()
         if 'matching_formset' not in kwargs:
             kwargs["matching_formset"] = self.get_match_formset()
+        if 'header_prefix' not in kwargs:
+            kwargs['header_form_prefix'] = self.get_header_prefix()
         if 'line_form_prefix' not in kwargs:
             kwargs["line_form_prefix"] = self.get_line_prefix()
         if 'matching_form_prefix' not in kwargs:
@@ -321,6 +323,8 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
         if 'non_field_errors' not in kwargs:
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
+        if 'payment_form' not in kwargs:
+            kwargs['payment_form'] = self.is_payment_form()
         return super().get_context_data(**kwargs)
 
 
@@ -432,7 +436,10 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
         return self.match.get('model')
 
     def get_header_form_initial(self):
-        return self.header.get('initial', {})
+        initial = self.header.get('initial', {})
+        if t := self.request.GET.get("t", "i"):
+            initial["type"] = t
+        return initial
 
     def get_header_prefix(self):
         return self.header.get('prefix', 'header')
@@ -455,6 +462,7 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
                 'data': self.request.POST,
             })
         elif self.request.method in ('GET'):
+            # IMPORTANT THIS IS ONLY SET ON GET
             kwargs.update({
                 'initial': self.get_header_form_initial()
             })
@@ -489,11 +497,18 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
         
         return kwargs
 
+    def is_payment_form(self):
+        if self.header_form.initial["type"] in ("bp", "p", "br", "r"):
+            return True
+        else:
+            return False
+
     def get_header_form(self):
         if hasattr(self, "header_form"):
             return self.header_form
         form_class = self.header.get('form')
-        return form_class(**self.get_header_form_kwargs())
+        self.header_form = form_class(**self.get_header_form_kwargs())
+        return self.header_form
         
     def get_line_formset(self, header=None):
         if hasattr(self, 'line'):
@@ -528,7 +543,7 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
             self.header_obj = self.header_form.save(commit=False) # changed name from header because this is a cls attribute of course
             self.line_formset = self.get_line_formset(self.header_obj)
             self.match_formset = self.get_match_formset(self.header_obj)
-            if not self.line_formset and self.match_formset:
+            if self.header_obj.type in ('bp', 'p', 'br', 'r'):
                 # e.g. processing payments on PL
                 if self.match_formset.is_valid():
                     self.matching_is_valid()
@@ -538,7 +553,7 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
                     )
                 else:
                     return self.invalid_forms()
-            elif self.line_formset and self.match_formset:
+            else:
                 # e.g. processing invoice on PL
                 if self.line_formset.is_valid() and self.match_formset.is_valid():
                     self.lines_are_valid() # has to come before matching_is_valid because this formset could alter header_obj
@@ -554,4 +569,4 @@ class CreateTransactions(TemplateResponseMixin, ContextMixin, View):
             return self.invalid_forms()
 
         # So we were successful
-        return HttpResponseRedirect(reverse("purchases:create_invoice")) # FIX ME - get url from get_success_url()
+        return HttpResponseRedirect(reverse("purchases:create")) # FIX ME - get url from get_success_url()

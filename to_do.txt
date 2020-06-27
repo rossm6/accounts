@@ -1,29 +1,13 @@
 PRIORITY 1
 
     Edit -
-
-        Priortise writing the tests first but need to check a few things -
-
-            1. my edit forms have empty_permitted=True.  I would have expected False
-            2. initial = {} for edit forms even though there is obviously the DB model data
-            3. how do i access the existing instance on the form ?
-
-        For the match forms we need to check the value is -
-
-            0  < value < self.instance.value + due
-
-        Because due is what is left on the header AFTER self.instance.value has been paid
-
-        Start writing a few tests
-
+    
         Add table-bordered to the 'New Matching Transactions' table
 
-    Create -
+        If an invoice is changed from should we bother deleting the lines?  I suppose it should
+        and we should also warn the user about this.
 
-        Instead of reloading a new view depending on transaction type we will
-        just use the same form and view for all but hide the unneeded parts clientside
-        depending on the type chosen.  This will mean creating empty lineformset
-        datasets for the CreatePayment tests.
+    Create -
 
         Test that credit note entered as positive is negative.  Same for refund etc
 
@@ -44,6 +28,9 @@ PRIORITY 1
 
     save is called on the header_obj potentially twice in CreateTransactions.  I assume the second time
     will not hit the DB because Django first checks if the fields have changed.  But i need to confirm this.
+
+    Many times i am checking whether the transaction type is a payment or not.  Need a global helper to do this
+    instead of repeating the code all over the place.
 
 PRIORITY 2
 

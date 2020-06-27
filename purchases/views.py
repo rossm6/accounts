@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.views.generic import ListView
 from querystring_parser import parser
 
-from accountancy.views import (CreateTransactions,
+from accountancy.views import (BaseCreateTransaction,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
 from items.models import Item
@@ -34,13 +34,13 @@ def index(request):
 
 
 
-class CreateInvoice(CreateTransactions):
+class CreateTransaction(BaseCreateTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
         "prefix": "header",
         "override_choices": ["supplier"],
-        "initial": {"type": "i", "total": 0},
+        "initial": {"total": 0},
     }
     line = {
         "model": PurchaseLine,
@@ -57,20 +57,20 @@ class CreateInvoice(CreateTransactions):
     template_name = "purchases/create.html"
 
 
-class CreatePayment(CreateTransactions):
-    header = {
-        "model": PurchaseHeader,
-        "form": PurchaseHeaderForm,
-        "prefix": "header",
-        "override_choices": ["supplier"],
-        "initial": {"type": "p", "total": 0},
-    }
-    match = {
-        "model": PurchaseMatching,
-        "formset": match,
-        "prefix": "match"
-    }   
-    template_name = "purchases/create.html"
+# class CreatePayment(CreateTransactions):
+#     header = {
+#         "model": PurchaseHeader,
+#         "form": PurchaseHeaderForm,
+#         "prefix": "header",
+#         "override_choices": ["supplier"],
+#         "initial": {"type": "p", "total": 0},
+#     }
+#     match = {
+#         "model": PurchaseMatching,
+#         "formset": match,
+#         "prefix": "match"
+#     }   
+#     template_name = "purchases/create.html"
 
 
 def create(request):
@@ -287,7 +287,6 @@ def edit(request, **kwargs):
     context = {}
     context["edit"] = pk
     header = get_object_or_404(PurchaseHeader, pk=pk)
-    print(header)
     if request.method == "GET":
         header_form = PurchaseHeaderForm(prefix=header_prefix)        
         # line_formset = enter_lines(
@@ -326,13 +325,25 @@ def edit(request, **kwargs):
                     auto_id=False
                 )
                 if match_formset.is_valid():
-                    header.save()
+                    header.save() # perhaps put this in the headers_to_update set also
+                    matches_to_update = []
+                    for form in match_formset:
+                        if not form.empty_permitted:
+                            matches_to_update.append(form.save(commit=False))
+                        else:
+                            # new ones need to be added to a seperate list
+                            pass
+                    PurchaseMatching.objects.bulk_update(matches_to_update, ['value'])
+                    PurchaseHeader.objects.bulk_update(match_formset.headers, ['due', 'paid'])
                     return redirect(reverse("purchases:index"))
                 else:
+                    print(match_formset.non_form_errors())
                     print("invalid")
             else:
                 # consider lines
                 pass
+        else:
+            print("invalid")
     context["header_form"] = header_form    
     context["matching_form_prefix"] = match_prefix
     context["matching_formset"] = match_formset
