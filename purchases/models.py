@@ -30,6 +30,7 @@ class PurchaseHeader(TransactionHeader):
     )
     matched_to = models.ManyToManyField('self', through='PurchaseMatching', symmetrical=False)
 
+
 class PurchaseLine(TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)

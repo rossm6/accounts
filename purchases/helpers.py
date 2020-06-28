@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from .models import Supplier, Invoice, Payment, PurchaseHeader
+from .models import Invoice, Payment, PurchaseHeader, PurchaseLine, Supplier
+
 
 def create_suppliers(n):
     suppliers = []
@@ -17,6 +18,15 @@ def create_suppliers(n):
             i = i + 1
     return Supplier.objects.bulk_create(suppliers)
 
+
+def create_lines(header, lines):
+    tmp = []
+    for i, line in enumerate(lines):
+        line["line_no"] = i
+        line["header"] = header
+        tmp.append(PurchaseLine(**line))
+    return PurchaseLine.objects.bulk_create(tmp)
+    
 
 def create_invoices(supplier, ref_prefix, n, value=100):
     date = timezone.now()

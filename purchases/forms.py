@@ -118,12 +118,14 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.initial['type'] in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
-            # as we are repeating ourselves
-            payment_form = True
-            print("true")
-        else:
-            payment_form = False
+        # if self.initial['type'] in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
+        #     # as we are repeating ourselves
+        #     payment_form = True
+        #     print("true")
+        # else:
+        #     payment_form = False
+        # print(self.initial)
+        payment_form = False
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
@@ -176,12 +178,13 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
         vat = 0
         total = 0
         for form in self.forms:
-            if form.empty_permitted and form.has_changed(): # because there are no forms errors every form which has changed
-                # must contain valid goods, vat, and total figures
-                # otherwise could try checking is_valid
-                goods += form.instance.goods
-                vat += form.instance.vat
-                total += ( form.instance.goods + form.instance.vat )
+            # empty_permitted = False is set on forms for existing data
+            # empty_permitted = True is set new forms i.e. for non existent data
+            if not form.empty_permitted or (form.empty_permitted and form.has_changed()):
+                if not form.cleaned_data.get("DELETE"):
+                    goods += form.instance.goods
+                    vat += form.instance.vat
+                    total += ( form.instance.goods + form.instance.vat )
         if self.header.total != 0 and self.header.total != total:
             raise forms.ValidationError(
                 _(
@@ -197,7 +200,7 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
         # we need to update this value for this formset
         
 
-class PurchaseLineForm(BaseTransactionMixin, AjaxForm):
+class PurchaseLineForm(AjaxForm):
 
     item = AjaxModelChoiceField(
         get_queryset=Item.objects.none(),
@@ -251,7 +254,7 @@ class PurchaseLineForm(BaseTransactionMixin, AjaxForm):
 
     class Meta:
         model = PurchaseLine
-        fields = ('item', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
+        fields = ('id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
         ajax_fields = ('item', 'nominal', 'vat_code', ) # used in Transaction form set_querysets method
         widgets = {
             "vat_code": InputDropDown(
@@ -303,7 +306,8 @@ enter_lines = forms.modelformset_factory(
     form=PurchaseLineForm, 
     formset=PurchaseLineFormset, 
     extra=5, 
-    can_order=True
+    can_order=True,
+    can_delete=True
 )
 
 
@@ -410,7 +414,7 @@ class PurchaseMatchingForm(forms.ModelForm):
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
         if matched_to and value:
-            if matched_to.due > 0:
+            if matched_to.total > 0:
                 if value < 0:
                     raise forms.ValidationError(
                         _(
@@ -424,7 +428,7 @@ class PurchaseMatchingForm(forms.ModelForm):
                             'Cannot match more than value outstanding'
                         )
                     )
-            elif matched_to.due < 0:
+            elif matched_to.total < 0:
                 if value > 0:
                     raise forms.ValidationError(
                         _(
@@ -432,7 +436,7 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
-                elif value < matched_to.due - initial_value:
+                elif value < matched_to.due + initial_value:
                     raise forms.ValidationError(
                         _(
                             'Cannot match more than value outstanding'
@@ -523,8 +527,8 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
         elif self.match_by.total > 0:
             if self.forms:
                 if (-1 * total_value_matching) > 0 and (-1 * total_value_matching) <= self.match_by.total:
-                    self.match_by.due += change_in_value
-                    self.match_by.paid -= change_in_value
+                    self.match_by.due = self.match_by.total + total_value_matching
+                    self.match_by.paid = self.match_by.total - self.match_by.due
                 else:
                     raise forms.ValidationError(
                         _(
@@ -535,8 +539,8 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
         elif self.match_by.total < 0:
             if self.forms:
                 if (-1 * total_value_matching) < 0 and (-1 * total_value_matching) >= self.match_by.total:
-                    self.match_by.due += change_in_value
-                    self.match_by.paid -= change_in_value
+                    self.match_by.due = self.match_by.total + total_value_matching
+                    self.match_by.paid = self.match_by.total - self.match_by.due
                 else:
                     raise forms.ValidationError(
                         _(

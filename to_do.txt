@@ -1,7 +1,19 @@
 PRIORITY 1
 
+    All tests should use sort_multiple to make sure they are in pk ascending order
+
+    Line ordering.  I think we just need to make sure the lines are ordered by line no at the model level.
+    This way they show correctly in the edit view.... Need to test this.
+
     Edit -
     
+        Test EditInvoice.  Repeat tests so that we test adding a new matching line
+
+        I've tested deleting lines in the edit view but have not yet done the work client side.
+        For the create view, delete might as well literally remove the line i.e. dom element
+        But for edit view it would be better to just highlight the line reddish in case the user accidentally deletes it;
+        this way they can click the button again to undo the delete.
+
         Add table-bordered to the 'New Matching Transactions' table
 
         If an invoice is changed from should we bother deleting the lines?  I suppose it should

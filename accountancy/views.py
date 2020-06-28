@@ -435,11 +435,9 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
     def get_match_model(self):
         return self.match.get('model')
 
-    def get_header_form_initial(self):
-        initial = self.header.get('initial', {})
-        if t := self.request.GET.get("t", "i"):
-            initial["type"] = t
-        return initial
+    def get_header_form_type(self):
+        t = self.request.GET.get("t", "i")
+        return t
 
     def get_header_prefix(self):
         return self.header.get('prefix', 'header')
@@ -462,10 +460,9 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
                 'data': self.request.POST,
             })
         elif self.request.method in ('GET'):
-            # IMPORTANT THIS IS ONLY SET ON GET
-            kwargs.update({
-                'initial': self.get_header_form_initial()
-            })
+            kwargs["initial"] = {
+                "type": self.get_header_form_type()
+            }
         
         return kwargs
 
@@ -498,8 +495,9 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
         return kwargs
 
     def is_payment_form(self):
-        if self.header_form.initial["type"] in ("bp", "p", "br", "r"):
-            return True
+        if t := self.header_form.initial.get('type'):
+            if t in ("bp", "p", "br", "r"):
+                return True
         else:
             return False
 

@@ -281,7 +281,7 @@ class TableHelper(object):
                     field,
                     css_class=css_classes.get(field, '')
                 ),
-                css_class="col-" + field
+                css_class="col-" + field + ( " d-none" if field == "id" else "" )
             ) 
             for field in fields 
         ]
@@ -301,9 +301,12 @@ class TableHelper(object):
             ]
         field_columns += self.create_field_columns(self.fields, column_layout_object, field_layout_object, _type)
         if self.delete:
+            delete_args = [ delete_layout_object ]
+            if _type == "Td":
+                delete_args += [ PlainField('DELETE', type="hidden", css_class="delete-line") ]
             field_columns += [
                 column_layout_object(
-                    delete_layout_object,
+                    *delete_args,
                     css_class="pointer col-close-icon" # FIX ME - change this from col-draggable-icon to col-deletable-icon
                 )
             ]

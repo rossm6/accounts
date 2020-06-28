@@ -1,5 +1,6 @@
 from decimal import Decimal
 from itertools import chain
+from functools import reduce
 
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
@@ -55,22 +56,6 @@ class CreateTransaction(BaseCreateTransaction):
         "prefix": "match"
     }
     template_name = "purchases/create.html"
-
-
-# class CreatePayment(CreateTransactions):
-#     header = {
-#         "model": PurchaseHeader,
-#         "form": PurchaseHeaderForm,
-#         "prefix": "header",
-#         "override_choices": ["supplier"],
-#         "initial": {"type": "p", "total": 0},
-#     }
-#     match = {
-#         "model": PurchaseMatching,
-#         "formset": match,
-#         "prefix": "match"
-#     }   
-#     template_name = "purchases/create.html"
 
 
 def create(request):
@@ -281,14 +266,14 @@ def create(request):
 
 def edit(request, **kwargs):
     pk = kwargs.get("pk")
-    header_prefix = "header"
-    line_prefix = "line"
-    match_prefix= "match"
+    header_form_prefix = "header"
+    line_form_prefix = "line"
+    match_form_prefix= "match"
     context = {}
     context["edit"] = pk
     header = get_object_or_404(PurchaseHeader, pk=pk)
     if request.method == "GET":
-        header_form = PurchaseHeaderForm(prefix=header_prefix)        
+        header_form = PurchaseHeaderForm(prefix=header_form_prefix)        
         # line_formset = enter_lines(
         #     prefix=line_prefix,
         #     queryset=PurchaseLine.objects.filter(header=header)
@@ -296,7 +281,7 @@ def edit(request, **kwargs):
         # context["line_form_prefix"] = line_prefix
         # context["line_formset"] = line_formset
         match_formset = match(
-            prefix="match",
+            match_form_prefix,
             queryset=(
                 PurchaseMatching.objects
                 .filter(Q(matched_by=header) | Q(matched_to=header))
@@ -307,14 +292,14 @@ def edit(request, **kwargs):
             auto_id=False
         )
     if request.method == "POST":
-        header_form = PurchaseHeaderForm(data=request.POST, prefix=header_prefix, instance=header)
+        header_form = PurchaseHeaderForm(data=request.POST, prefix=header_form_prefix, instance=header)
         if header_form.is_valid():
             header = header_form.save(commit=False)
             if header.type in ('p', 'bp', 'r', 'br'):
                 # do no consider lines
                 match_formset = match(
                     data=request.POST,
-                    prefix="match",
+                    prefix=match_form_prefix,
                     queryset=(
                         PurchaseMatching.objects
                         .filter(Q(matched_by=header) | Q(matched_to=header))
@@ -326,26 +311,77 @@ def edit(request, **kwargs):
                 )
                 if match_formset.is_valid():
                     header.save() # perhaps put this in the headers_to_update set also
-                    matches_to_update = []
-                    for form in match_formset:
-                        if not form.empty_permitted:
-                            matches_to_update.append(form.save(commit=False))
-                        else:
-                            # new ones need to be added to a seperate list
-                            pass
-                    PurchaseMatching.objects.bulk_update(matches_to_update, ['value'])
+                    match_formset.save(commit=False)
+                    PurchaseMatching.objects.bulk_create(match_formset.new_objects)
+                    PurchaseMatching.objects.bulk_update(
+                        [ obj for obj, _tuple in match_formset.changed_objects ], 
+                        [ 'value' ]
+                    )
                     PurchaseHeader.objects.bulk_update(match_formset.headers, ['due', 'paid'])
                     return redirect(reverse("purchases:index"))
                 else:
                     print(match_formset.non_form_errors())
+                    print(match_formset.errors)
                     print("invalid")
             else:
-                # consider lines
-                pass
+                line_formset = enter_lines(
+                    data=request.POST,
+                    prefix=line_form_prefix,
+                    header=header,
+                    queryset=PurchaseLine.objects.filter(header=header)
+                )
+                match_formset = match(
+                    data=request.POST,
+                    prefix=match_form_prefix,
+                    queryset=(
+                        PurchaseMatching.objects
+                        .filter(Q(matched_by=header) | Q(matched_to=header))
+                        .select_related('matched_by')
+                        .select_related('matched_to')
+                    ),
+                    match_by=header,
+                    auto_id=False
+                )
+                if line_formset.is_valid() and match_formset.is_valid():
+                    header.save()
+                    line_formset.save(commit=False)
+                    line_no = 1
+                    # WE PROGRAM DEFENSIVELY HERE IN CASE VALID BUT EMPTY FORMS
+                    # ARE INCLUDED IN ORDERED_FORMS
+                    for form in line_formset.ordered_forms: # user can still order in edit view
+                        if form.empty_permitted and form.has_changed():
+                            form.instance.header = header
+                            form.instance.line_no = line_no
+                            line_no = line_no + 1
+                        elif not form.empty_permitted:
+                            form.instance.line_no = line_no
+                            line_no = line_no + 1
+                    # matching formset
+                    match_formset.save(commit=False)
+                    PurchaseMatching.objects.bulk_create(match_formset.new_objects)
+                    PurchaseMatching.objects.bulk_update(
+                        [ obj for obj, _tuple in match_formset.changed_objects ], 
+                        [ 'value' ]
+                    )
+                    PurchaseHeader.objects.bulk_update(match_formset.headers, ['due', 'paid'])
+                    PurchaseLine.objects.bulk_create(line_formset.new_objects)
+                    PurchaseLine.objects.bulk_update(
+                        [ obj for obj, _tuple in line_formset.changed_objects ],
+                        [ 'line_no', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat' ]
+                    )
+                    PurchaseLine.objects.filter(pk__in=[ line.pk for line in line_formset.deleted_objects  ]).delete()
+                    context["line_formset"] = line_formset
+                    context["match_formset"] = match_formset
+                    return redirect(reverse("purchases:index"))
+                else:
+                    print(line_formset.non_form_errors())
+                    print(match_formset.non_form_errors())
+                    print(line_formset.errors)
+                    print(match_formset.errors)
         else:
             print("invalid")
     context["header_form"] = header_form    
-    context["matching_form_prefix"] = match_prefix
+    context["matching_form_prefix"] = match_form_prefix
     context["matching_formset"] = match_formset
     return render(
         request,

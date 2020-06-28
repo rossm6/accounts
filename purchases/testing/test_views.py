@@ -7,23 +7,17 @@ from django.utils import timezone
 
 from items.models import Item
 from nominals.models import Nominal
+from utils.helpers import sort_multiple
 from vat.models import Vat
 
-from ..helpers import create_invoices, create_payments
+from ..helpers import create_invoices, create_lines, create_payments
 from ..models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 from ..views import create
 
-
 """
 
-    Remember the transaction type is specified by a query paramter.  When creating the API -
-
-    We could create methods:
-
-        Purchase.create.payment() # which under the hood sets t='p' and POSTs to correct URI
-
-
-    Need to test the sign for credit note and refund too
+    tests 8 to 14 for EditPayments use sort_multiple to ensure the objects are in primary key ascending order.  
+    Might be worth using this for others to be certain of order also.
 
 """
 
@@ -3660,11 +3654,3204 @@ class EditPayment(TestCase):
     Now we repeat tests 3 to 8 but this time try the same thing but by adding new transactions
     """
 
+    # test_3 again but this time we also create a new matching record
+    # i.e. match a new transaction to the matched_by transaction
+    # CORRECT USAGE
+    # Payment total is increased
+    # Match value of transaction increased
+    # Payment still fully matched
+    def test_9(self):
 
-    # repeat the tests
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 3, 1000)
+        invoices_to_match = list(invoices)[:2]
+        invoice_not_matched = list(invoices)[-1]
+        match(payment, [ ( invoice, 500 ) for invoice in invoices_to_match ])
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+        # and now the invoice not matched
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, 1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, 1200)
+
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 2000
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 500})
+        matching_forms[-1]["value"] = 1000
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        # This means we haven't changed the original two invoices matched against the payment - both still match only 500.00
+        # But we've matched the third invoice to the payment also and for a value of 1000.00
+        # So the payment should be fully paid now
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        payment = PurchaseHeader.objects.get(pk=payment.pk)
+        self.assertEqual(payment.total, -2000)
+        self.assertEqual(payment.due, 0)
+        self.assertEqual(payment.paid, -2000)
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        self.assertEqual(len(invoices), 3)
+        self.assertEqual(invoices[0].total, 1200)
+        self.assertEqual(invoices[0].due, 700)
+        self.assertEqual(invoices[0].paid, 500)
+        self.assertEqual(invoices[1].total, 1200)
+        self.assertEqual(invoices[1].due, 700)
+        self.assertEqual(invoices[1].paid, 500)
+        self.assertEqual(invoices[2].total, 1200)
+        self.assertEqual(invoices[2].due, 200)
+        self.assertEqual(invoices[2].paid, 1000)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+
+        self.assertEqual(len(matches), 3)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)  
+        self.assertEqual(matches[2].matched_by, payment)
+        self.assertEqual(matches[2].matched_to, invoices[2])
+        self.assertEqual(matches[2].value, 1000)  
+
+    # test_4 again but this time we also create a new matching record
+    # i.e. match a new transaction to the matched_by transaction
+    # CORRECT USAGE
+    # Payment total is increased
+    # Match value of transaction increased
+    # Payment not fully matched now though
+    def test_10(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 3, 1000)
+        invoices_to_match = list(invoices)[:2]
+        invoice_not_matched = list(invoices)[-1]
+        match(payment, [ ( invoice, 500 ) for invoice in invoices_to_match ])
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+        # and now the invoice not matched
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, 1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, 1200)
+
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 2000
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 500})
+        matching_forms[-1]["value"] = 600
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        # This means we haven't changed the original two invoices matched against the payment - both still match only 500.00
+        # But we've matched the third invoice to the payment also and for a value of 1000.00
+        # So the payment should be fully paid now
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        payment = PurchaseHeader.objects.get(pk=payment.pk)
+        self.assertEqual(payment.total, -2000)
+        self.assertEqual(payment.due, -400)
+        self.assertEqual(payment.paid, -1600)
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        self.assertEqual(len(invoices), 3)
+        self.assertEqual(invoices[0].total, 1200)
+        self.assertEqual(invoices[0].due, 700)
+        self.assertEqual(invoices[0].paid, 500)
+        self.assertEqual(invoices[1].total, 1200)
+        self.assertEqual(invoices[1].due, 700)
+        self.assertEqual(invoices[1].paid, 500)
+        self.assertEqual(invoices[2].total, 1200)
+        self.assertEqual(invoices[2].due, 600)
+        self.assertEqual(invoices[2].paid, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+
+        self.assertEqual(len(matches), 3)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)  
+        self.assertEqual(matches[2].matched_by, payment)
+        self.assertEqual(matches[2].matched_to, invoices[2])
+        self.assertEqual(matches[2].value, 600)  
+
+    # test_5 again but this time including a new transaction to match
+    # INCORRECT USAGE
+    # Payment total is increased
+    # Match value of transaction is increased which is ok per this matched header i.e. increase is below outstanding on this transaction
+    # But now the matched value total is greater than the total value of the payment
+    # 100.00 payment matched to two invoices 100.00 and 50.00.  (Only 50.00 of first invoice is matched to payment)
+    # So -100 = 50 + 50 means the payment is fully matched
+    # Now increase payment to -110
+    # And match first invoice up to 100
+    # So now we have 100 + 50 = 150 which is greater than the 110 payment total
+    def test_11(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 3, 1000)
+        invoices_to_match = list(invoices)[:2]
+        invoice_not_matched = list(invoices)[-1]
+        match(payment, [ ( invoice, 500 ) for invoice in invoices_to_match ])
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+        # and now the invoice not matched
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, 1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, 1200)
+
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 2000
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 1000})
+        matching_forms[-1]["value"] = 1000
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        # So we are trying to match 3 x 1000.00 invoices fully to a 2000.00 payment
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        payment = PurchaseHeader.objects.get(pk=payment.pk)
+        self.assertEqual(payment.total, -1000)
+        self.assertEqual(payment.due, 0)
+        self.assertEqual(payment.paid, -1000)
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        self.assertEqual(len(invoices), 3)
+        self.assertEqual(invoices[0].total, 1200)
+        self.assertEqual(invoices[0].due, 700)
+        self.assertEqual(invoices[0].paid, 500)
+        self.assertEqual(invoices[1].total, 1200)
+        self.assertEqual(invoices[1].due, 700)
+        self.assertEqual(invoices[1].paid, 500)
+        self.assertEqual(invoices[2].total, 1200)
+        self.assertEqual(invoices[2].due, 1200)
+        self.assertEqual(invoices[2].paid, 0)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)  
+
+    # test_6 again but this time including a new transaction to match
+    # CORRECT USAGE 
+    # Payment total is decreased
+    # Match value of a transaction is decreased
+    # Payment still fully paid
+    def test_12(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 3, 1000)
+        invoices_to_match = list(invoices)[:2]
+        invoice_not_matched = list(invoices)[-1]
+        match(payment, [ ( invoice, 500 ) for invoice in invoices_to_match ])
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+        # and now the invoice not matched
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, 1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, 1200)
+
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 500
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 200})
+        matching_forms[-1]["value"] = 100
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        # So we are trying to match 3 x 1000.00 invoices fully to a 2000.00 payment
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        payment = PurchaseHeader.objects.get(pk=payment.pk)
+        self.assertEqual(payment.total, -500)
+        self.assertEqual(payment.due, 0)
+        self.assertEqual(payment.paid, -500)
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        self.assertEqual(len(invoices), 3)
+        self.assertEqual(invoices[0].total, 1200)
+        self.assertEqual(invoices[0].due, 1000)
+        self.assertEqual(invoices[0].paid, 200)
+        self.assertEqual(invoices[1].total, 1200)
+        self.assertEqual(invoices[1].due, 1000)
+        self.assertEqual(invoices[1].paid, 200)
+        self.assertEqual(invoices[2].total, 1200)
+        self.assertEqual(invoices[2].due, 1100)
+        self.assertEqual(invoices[2].paid, 100)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+
+        self.assertEqual(len(matches), 3)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 200)
+        self.assertEqual(matches[2].matched_by, payment)
+        self.assertEqual(matches[2].matched_to, invoices[2])
+        self.assertEqual(matches[2].value, 100)
+
+    # test_7 again but this time including a new transaction to match
+    # CORRECT USAGE
+    # Payment total is decreased
+    # Match value is decreased
+    # Yet payment is not fully paid now
+    def test_13(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = create_invoices(self.supplier, "invoice", 3, 1000)
+        invoices_to_match = list(invoices)[:2]
+        invoice_not_matched = list(invoices)[-1]
+        match(payment, [ ( invoice, 500 ) for invoice in invoices_to_match ])
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 500)
+        self.assertEqual(headers[1].due, 700)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 500)
+        self.assertEqual(headers[2].due, 700)
+        # and now the invoice not matched
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, 1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, 1200)
+
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 500)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 500)
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 500
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(invoices_to_match_against, {"id": "matched_to"}, {"value": 200})
+        matching_forms[-1]["value"] = 50
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        # So we are trying to match 3 x 1000.00 invoices fully to a 2000.00 payment
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        payment = PurchaseHeader.objects.get(pk=payment.pk)
+        self.assertEqual(payment.total, -500)
+        self.assertEqual(payment.due, -50)
+        self.assertEqual(payment.paid, -450)
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        self.assertEqual(len(invoices), 3)
+        self.assertEqual(invoices[0].total, 1200)
+        self.assertEqual(invoices[0].due, 1000)
+        self.assertEqual(invoices[0].paid, 200)
+        self.assertEqual(invoices[1].total, 1200)
+        self.assertEqual(invoices[1].due, 1000)
+        self.assertEqual(invoices[1].paid, 200)
+        self.assertEqual(invoices[2].total, 1200)
+        self.assertEqual(invoices[2].due, 1150)
+        self.assertEqual(invoices[2].paid, 50)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+
+        self.assertEqual(len(matches), 3)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, 200)
+        self.assertEqual(matches[2].matched_by, payment)
+        self.assertEqual(matches[2].matched_to, invoices[2])
+        self.assertEqual(matches[2].value, 50)
+
+    # test_8 but with new transactions
+    # INCORRECT USAGE
+    # Payment total is decreased
+    # Match value of transaction is decreased so is ok on the header
+    # But now the match value total is not valid
+    # Example.  100 payment is matched to a 200 payment and a 300 invoice.
+    # The payment is reduced to 80.  And only 150.00 of the payment is now matched
+    # This isn't allowed as obviously a 80 + 150 payment cannot pay a 300 invoice
+    def test_14(self):
+
+        # IN FACT WE WILL JUST MATCH A PAYMENT TO A POSITIVE AND NEGATIVE INVOICE
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 2000)
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(payment, [ ( invoices[0], 2000 ), ( invoices[1], -1000) ])
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 2400)
+        self.assertEqual(headers[1].paid, 2000)
+        self.assertEqual(headers[1].due, 400)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -1000)
+        self.assertEqual(headers[2].due, -200)
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, -1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, -1200)
+
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 2000)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, -1000)
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": "payment",
+                "date": payment.date,
+                "total": 800
+            }
+        )
+        data.update(header_data)
+        invoices_to_match_against_orig = invoices
+        invoices_as_dicts = [ to_dict(invoice) for invoice in invoices ]
+        invoices_to_match_against = [ get_fields(invoice, ['type', 'ref', 'total', 'paid', 'due', 'id']) for invoice in invoices_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([invoices_to_match_against[0]], {"id": "matched_to"}, {"value": 1000})
+        matching_forms += add_and_replace_objects([invoices_to_match_against[1]], {"id": "matched_to"}, {"value": -900})
+        matching_forms += add_and_replace_objects([invoices_to_match_against[2]], {"id": "matched_to"}, {"value": -900})
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        payment = PurchaseHeader.objects.get(pk=payment.pk)
+        self.assertEqual(payment.total, -1000)
+        self.assertEqual(payment.due, 0)
+        self.assertEqual(payment.paid, -1000)
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        self.assertEqual(len(invoices), 3)
+        self.assertEqual(invoices[0].total, 2400)
+        self.assertEqual(invoices[0].due, 400)
+        self.assertEqual(invoices[0].paid, 2000)
+        self.assertEqual(invoices[1].total, -1200)
+        self.assertEqual(invoices[1].due, -200)
+        self.assertEqual(invoices[1].paid, -1000)
+        self.assertEqual(invoices[2].total, -1200)
+        self.assertEqual(invoices[2].due, -1200)
+        self.assertEqual(invoices[2].paid, 0)
+
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 2000)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[1])
+        self.assertEqual(matches[1].value, -1000)
 
 
     """
     Finally we need to just check that the matched value cannot exceed the due amount of the transaction
     or fall below zero (or above zero) depending on whether is a debit or a credit.... THIS HAS BEEN CHECKED ALREADY THOUGH, I THINK
     """
+
+
+class EditInvoice(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+    """
+
+    Let a payment be matched to multiple transaction types such that the payment is fully paid.
+
+    The payment is therefore the matched_to transaction and the matched_by transactions are the others.
+
+    """
+
+
+    """
+    First no new matching transactions are added
+    """
+
+    # CORRECT USAGE
+    # Invoice total is increased (the invoice this time is the matched_to transaction)
+    # Lines are added to match the header total
+    # Payment was previously fully matched
+    def test_1(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 2400
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        new_lines = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 20
+                }
+        ] * 10
+        line_forms = lines_as_dicts + new_lines
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        # TO BE CLEAR - We are doubling the invoice
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 2400)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 1200)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 20)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600) 
+
+
+    # CORRECT USAGE -
+    # Same as above only this time the increase comes from increasing an existing line
+    # rather than adding new ones
+    def test_2(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1320
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["goods"] = 200
+        line_trans[-1]["vat"] = 40
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        # TO BE CLEAR - We are doubling the invoice
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1320)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 120)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        for line in lines[:-2]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        line = lines[-1]
+        self.assertEqual(line.item, self.item)
+        self.assertEqual(line.description, self.description)
+        self.assertEqual(line.goods, 200)
+        self.assertEqual(line.nominal, self.nominal)
+        self.assertEqual(line.vat_code, self.vat_code)
+        self.assertEqual(line.vat, 40)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600) 
+
+
+    # INCORRECT USAGE
+    # Delete a line so the total decreases
+    # But matching, which previously fully paid the invoice, is not adjusted
+    def test_3(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1080
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600) 
+
+
+    # INCORRECT USAGE
+    # Same as above but this time we lower the line value rather than delete a line
+    def test_4(self):
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1080
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["goods"] = 0
+        line_trans[-1]["vat"] = 0
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600) 
+
+    # CORRECT USAGE
+    # Invoice total is increased by adding new lines
+    # Match value of transaction is increased
+    # Invoice is still fully matched
+    def test_5(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 2200
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -1000})
+        matching_forms[0]["value"] = -1200
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        new_lines = [ # whereas new here so no ID
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 0
+                }
+        ] * 10
+        line_forms = lines_as_dicts + new_lines
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 2200)
+        self.assertEqual(headers[1].paid, 2200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -1200)
+        self.assertEqual(headers[2].due, 0)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 20)
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+
+        for line in lines[:10]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        for line in lines[10:]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 0)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -1200)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -1000) 
+
+    # CORRECT USAGE
+    # Invoice total is increased by adding new lines
+    # Match value of transaction is increased
+    # Invoice is not still fully matched
+    def test_6(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 2200
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -1000})
+        matching_forms[0]["value"] = -1100
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        new_lines = [ # whereas new here so no ID
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 0
+                }
+        ] * 10
+        line_forms = lines_as_dicts + new_lines
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 2200)
+        self.assertEqual(headers[1].paid, 2100)
+        self.assertEqual(headers[1].due, 100)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -1100)
+        self.assertEqual(headers[2].due, -100)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 20)
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+
+        for line in lines[:10]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        for line in lines[10:]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 0)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -1100)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -1000) 
+
+    # CORRECT USAGE
+    # Invoice total is increased by increasing existing line
+    # Invoice is still fully matched
+    def test_7(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1320
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -660})
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts[-1]["goods"] = 200
+        lines_as_dicts[-1]["vat"] = 40
+        line_forms = lines_as_dicts
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -660)
+        self.assertEqual(headers[0].due, -340)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1320)
+        self.assertEqual(headers[1].paid, 1320)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -660)
+        self.assertEqual(headers[2].due, -540)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 10)
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+
+        for line in lines[:9]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        line = lines[-1]
+        self.assertEqual(line.item, self.item)
+        self.assertEqual(line.description, self.description)
+        self.assertEqual(line.goods, 200)
+        self.assertEqual(line.nominal, self.nominal)
+        self.assertEqual(line.vat_code, self.vat_code)
+        self.assertEqual(line.vat, 40)
+        
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -660)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -660) 
+
+    # CORRECT USAGE
+    # Invoice total is increased by increasing existing line
+    # Invoice is not fully matched now though -- difference to above
+    def test_8(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1320
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -660})
+        matching_forms[1]["value"] = -600
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts[-1]["goods"] = 200
+        lines_as_dicts[-1]["vat"] = 40
+        line_forms = lines_as_dicts
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1320)
+        self.assertEqual(headers[1].paid, 1260)
+        self.assertEqual(headers[1].due, 60)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -660)
+        self.assertEqual(headers[2].due, -540)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 10)
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+
+        for line in lines[:9]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        line = lines[-1]
+        self.assertEqual(line.item, self.item)
+        self.assertEqual(line.description, self.description)
+        self.assertEqual(line.goods, 200)
+        self.assertEqual(line.nominal, self.nominal)
+        self.assertEqual(line.vat_code, self.vat_code)
+        self.assertEqual(line.vat, 40)
+        
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -660)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)
+
+
+    # INCORRECT USAGE
+    # Payment total is increased by adding new lines
+    # But we overmatch so it does not work
+    def test_9(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 2100
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -1000})
+        matching_forms[0]["value"] = -1200
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        new_lines = [ # whereas new here so no ID
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 0
+                }
+        ] * 9
+        line_forms = lines_as_dicts + new_lines
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 10)
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)
+
+    # INCORRECT USAGE
+    # Same test as above except we increase the invoice by increasing an existing line value this time
+    def test_10(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1320
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -700})
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts[-1]["goods"] = 200
+        lines_as_dicts[-1]["vat"] = 40
+        line_forms = lines_as_dicts
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 10)
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+
+        for line in lines[:9]:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)
+
+    # CORRECT USAGE
+    # Delete a line so the total decreases - like test_3
+    # But this time we lower the matching also so invoice is still fully paid
+    def test_11(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1080
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
+        matching_forms[-1]["value"] = -480
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -480)
+        self.assertEqual(headers[0].due, -520)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1080)
+        self.assertEqual(headers[1].paid, 1080)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 9)
+
+        line_no = 1
+        for line in lines:
+            self.assertEqual(line.line_no, line_no)
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            line_no = line_no + 1
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -480)
+
+
+    # CORRECT USAGE
+    # Decrease line value so the total decreases - like test_3
+    # But this time we lower the matching also so invoice is still fully paid
+    def test_12(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1140
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
+        matching_forms[-1]["value"] = -540
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["goods"] = 50
+        line_trans[-1]["vat"] = 10 
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -540)
+        self.assertEqual(headers[0].due, -460)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1140)
+        self.assertEqual(headers[1].paid, 1140)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        line_no = 1
+        for line in lines[:-1]:
+            self.assertEqual(line.line_no, line_no)
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            line_no = line_no + 1
+
+        line = lines[-1]
+        self.assertEqual(line.line_no, line_no)
+        self.assertEqual(line.item, self.item)
+        self.assertEqual(line.description, self.description)
+        self.assertEqual(line.goods, 50)
+        self.assertEqual(line.nominal, self.nominal)
+        self.assertEqual(line.vat_code, self.vat_code)
+        self.assertEqual(line.vat, 10)
+        
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -540)
+
+    # CORRECT USAGE
+    # Delete a line so the total decreases - like test_3
+    # But this time we lower the matching such that the invoice is not fully paid anymore
+    def test_13(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1200.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1080
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -500}) # Same value as matched originally
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -500)
+        self.assertEqual(headers[0].due, -500)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1080)
+        self.assertEqual(headers[1].paid, 1000)
+        self.assertEqual(headers[1].due, 80)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -500)
+        self.assertEqual(headers[2].due, -700)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 9)
+
+        line_no = 1
+        for line in lines:
+            self.assertEqual(line.line_no, line_no)
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            line_no = line_no + 1
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -500)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -500)
+
+    # CORRECT USAGE
+    # Decrease line value so the total decreases - like test_3
+    # But this time we lower the matching so that is isn't fully paid
+    def test_14(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1140
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -500}) # Same value as matched originally
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["goods"] = 50
+        line_trans[-1]["vat"] = 10 
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -500)
+        self.assertEqual(headers[0].due, -500)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1140)
+        self.assertEqual(headers[1].paid, 1000)
+        self.assertEqual(headers[1].due, 140)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -500)
+        self.assertEqual(headers[2].due, -700)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        line_no = 1
+        for line in lines[:-1]:
+            self.assertEqual(line.line_no, line_no)
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            line_no = line_no + 1
+
+        line = lines[-1]
+        self.assertEqual(line.line_no, line_no)
+        self.assertEqual(line.item, self.item)
+        self.assertEqual(line.description, self.description)
+        self.assertEqual(line.goods, 50)
+        self.assertEqual(line.nominal, self.nominal)
+        self.assertEqual(line.vat_code, self.vat_code)
+        self.assertEqual(line.vat, 10)
+        
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -500)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -500)
+
+    # INCORRECT USAGE
+    # Delete a line so the total decreases - like test_3
+    # Match values are ok from POV of the matched_to transaction
+    # But the matched_value is now not ok for the invoice
+    def test_15(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1200.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1080
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -700})
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)
+
+    # INCORRECT USAGE
+    # Decrease line value so the total decreases
+    # Matching is not right though
+    def test_16(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1140
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -700}) # Same value as matched originally
+
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans[-1]["goods"] = 50
+        line_trans[-1]["vat"] = 10
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)
