@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    {% include 'accountancy/transactions_css.html' %}
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <div class="upper mb-5">
+            <div class="container mt-5">
+                <h1 class="h4 font-weight-bold pb-2 border-bottom">Bills</h1>
+                <div>
+                    <div class="mt-4">
+                        {% comment %} row of buttons here {% endcomment %}
+                        Button here
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="lower d-flex justify-content-center">
+            <div class="w-100 trans-table-cont">
+                {% comment %} give this a max width {% endcomment %}
+                {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block js %}
+    {% include 'accountancy/transactions_js.html' %}
+{% endblock js %}

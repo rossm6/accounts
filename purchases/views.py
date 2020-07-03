@@ -7,12 +7,14 @@ from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, reverse
+from django.urls import reverse_lazy
 from django.views.generic import ListView
 from querystring_parser import parser
 
+from accountancy.forms import AdvancedTransactionSearchForm
 from accountancy.views import (BaseCreateTransaction,
                                input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory)
+                               input_dropdown_widget_validate_choice_factory, BaseTransactionsList)
 from items.models import Item
 
 from .forms import (PaymentHeader, PurchaseHeaderForm, PurchaseLineForm,
@@ -264,6 +266,9 @@ def create(request):
 
 
 
+# we need to create some tests where the header_form fails
+# and the other forms fail too
+
 def edit(request, **kwargs):
     pk = kwargs.get("pk")
     header_form_prefix = "header"
@@ -272,16 +277,19 @@ def edit(request, **kwargs):
     context = {}
     context["edit"] = pk
     header = get_object_or_404(PurchaseHeader, pk=pk)
+    context["payment_form"] = False
+    if header.type in ('bp', 'p', 'br', 'r'):
+        context["payment_form"] = True
     if request.method == "GET":
-        header_form = PurchaseHeaderForm(prefix=header_form_prefix)        
-        # line_formset = enter_lines(
-        #     prefix=line_prefix,
-        #     queryset=PurchaseLine.objects.filter(header=header)
-        # )
-        # context["line_form_prefix"] = line_prefix
-        # context["line_formset"] = line_formset
+        header_form = PurchaseHeaderForm(prefix=header_form_prefix, instance=header)   
+        line_formset = enter_lines(
+            prefix=line_form_prefix,
+            queryset=PurchaseLine.objects.filter(header=header)
+        )
+        context["line_form_prefix"] = line_form_prefix
+        context["line_formset"] = line_formset
         match_formset = match(
-            match_form_prefix,
+            prefix=match_form_prefix,
             queryset=(
                 PurchaseMatching.objects
                 .filter(Q(matched_by=header) | Q(matched_to=header))
@@ -330,6 +338,8 @@ def edit(request, **kwargs):
                     header=header,
                     queryset=PurchaseLine.objects.filter(header=header)
                 )
+                context["line_formset"] = line_formset
+                context["line_form_prefix"] = line_form_prefix
                 match_formset = match(
                     data=request.POST,
                     prefix=match_form_prefix,
@@ -501,5 +511,39 @@ class LoadSuppliers(ListView):
 
 
 load_options = input_dropdown_widget_load_options_factory(PurchaseLineForm(), 25)
+
+
+class TransactionEnquiry(BaseTransactionsList):
+    model = PurchaseHeader
+    fields = [
+        ("supplier__name", "Supplier"),
+        ("ref", "Reference"),
+        ("date", "Date"),
+        ("due_date", "Due Date"),
+        ("paid", "Paid"),
+        ("due", "Due")
+    ]
+    searchable_fields = ["supplier__name", "ref", "total"]
+    datetime_fields = ["date", "due_date"]
+    datetime_format = '%d %b %Y'
+    advanced_search_form_class = AdvancedTransactionSearchForm
+    template_name = "purchases/transactions.html"
+
+    def get_transaction_url(self, **kwargs):
+        pk = kwargs.pop("pk")
+        return reverse_lazy("purchases:edit", kwargs={"pk": pk})
+
+    def get_queryset(self):
+        return (
+            PurchaseHeader.objects
+            .select_related("supplier__name")
+            .all()
+            .values(
+                'id',
+                *[ field[0] for field in self.fields ]
+            )
+            .order_by(*self.order_by())
+        )
+
 
 validate_choice = input_dropdown_widget_validate_choice_factory(PurchaseLineForm())

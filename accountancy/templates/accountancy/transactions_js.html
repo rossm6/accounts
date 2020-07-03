@@ -1,0 +1,353 @@
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/plug-ins/1.10.21/pagination/select.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.26.0/moment.min.js" integrity="sha256-5oApc/wMda1ntIEK4qoWJ4YItnV4fBHMwywunj8gPqc=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function () {
+
+    // Buttons
+
+    // Search button - triggers the advanced search form to show
+    $.fn.dataTable.ext.buttons.show_search_form = {
+        text: 'Search',
+        className: 'btn button search-btn-trigger',
+        action: function (e, dt, node, config) {
+            $(".adv-search-form").toggleClass("d-none");
+            node.hide();
+        },
+        init: function (api, node, config) {
+            $(node).removeClass("dt-button");
+            // https://stackoverflow.com/questions/45299188/how-can-i-remove-default-button-class-of-a-datatables-button
+        }
+    };
+
+    var batch_payment_url = "";
+
+    // Batch Payment - click on this to pay / match the rows you have ticked
+    $.fn.dataTable.ext.buttons.batch_payment = {
+        name: 'batch_payment',
+        text: 'Batch Payment',
+        className: 'btn button batch-payment-btn-trigger',
+        action: function (e, dt, node, config) {
+            var form = $("form.table_form");
+            form.attr("action", batch_payment_url);
+            form.submit();
+        },
+        init: function (api, node, config) {
+            $(node).removeClass("dt-button");
+            // https://stackoverflow.com/questions/45299188/how-can-i-remove-default-button-class-of-a-datatables-button
+        }
+    };
+
+
+    $(".adv-search-form .close").on("click", function () {
+        $(".adv-search-form").toggleClass("d-none");
+        $(".search-btn-trigger").show();
+    });
+
+
+
+    // Pagination widgets can be used multiple times in jQuery datatables
+    // but the catch is it must indeed be the exact same widget
+    // Our transaction table needed two DIFFERENT widgets
+    // So, in addition to the built in widget, we created this -
+    // AltPagination
+
+    function add_alt_pagination_events(settings) {
+        var instance = settings.oInstance;
+        var table = instance.api();
+
+        $(".pagination-numbers-ui").on("click", function () {
+            var value = $(this).attr("data-value");
+            var non_page_values = ["first", "previous", "next", "last"];
+            if (non_page_values.indexOf(value) == -1) {
+                value = +value;
+                // see api - https://datatables.net/reference/api/page()
+                // if you don't do this you will get an error
+                // and it won't work
+            }
+            table.page(value).draw("page");
+        });
+
+    }
+
+
+    $.fn.dataTable.AltPagination = function (settings) {
+
+        var instance = settings.oInstance;
+        var table = instance.api();
+
+        var new_buttons = "";
+        var first = "<span class='pagination-numbers-ui pagination-numbers-ui-button' data-value='first'>First</span>";
+        var previous = "<span class='pagination-numbers-ui pagination-numbers-ui-button' data-value='previous'>Previous</span>";
+        var next = "<span class='pagination-numbers-ui pagination-numbers-ui-button' data-value='next'>Next</span>";
+        var end = "<span class='pagination-numbers-ui pagination-numbers-ui-button' data-value='last'>End</span>";
+
+        var info = table.page.info();
+
+        if (info.page) {
+            new_buttons += first;
+            new_buttons += previous;
+        }
+
+        var lower = info.page - 4;
+        var higher = info.page + 4;
+        var pages = [];
+
+        for (var i = lower; i <= higher; i++) {
+            if (0 <= i && i <= info.pages - 1) {
+                pages.push(i);
+            }
+        }
+
+        // current page must be in pages
+        if (pages.length > 4) {
+            var current_page_index = pages.indexOf(info.page);
+            if (current_page_index > 2) {
+                pages = pages.slice(current_page_index - 2, current_page_index + 1);
+            } else {
+                pages = pages.slice(0, 4);
+            }
+        }
+
+        if (pages.length > 1) {
+            for (var i = 0; i < pages.length; i++) {
+                // pages contains page numbers
+                // but the label is plus 1
+                // because page 1 is page 0
+                new_buttons += "<span class='pagination-numbers-ui pagination-numbers-ui-number'";
+                if (i == info.page) {
+                    new_buttons += " data-selected ";
+                }
+                new_buttons += " data-value='" + pages[i] + "' "
+                new_buttons += ">";
+                new_buttons += (pages[i] + 1) + "</span>";
+            }
+        } else {
+            new_buttons += "";
+        }
+
+
+        if (info.page != info.pages - 1) {
+            new_buttons += next;
+            new_buttons += end;
+        }
+
+        new_buttons = $(new_buttons);
+        new_buttons = $("<div class='pagination-numbers-ui-wrapper'>").append(new_buttons);
+        new_buttons = new_buttons.get(0);
+
+        return new_buttons;
+
+    };
+
+
+    $.fn.dataTable.ext.feature.push({
+        fnInit: function (settings) {
+            var altPagination = new $.fn.dataTable.AltPagination(settings);
+            return altPagination;
+        },
+        cFeature: 'P'
+    });
+
+
+    // A standalone function
+    function add_result_count_to_select_pagination_widget(settings) {
+        var instance = settings.oInstance;
+        var api = instance.api();
+        var result_set_count = api.page.info().recordsTotal;
+        $(".result_set_count").text("(" + result_set_count + " total items)");
+    }
+
+    // Advanced Search Form
+    // The Button defined at the top of the page will show this form
+
+    $(".adv-search-form .clear-btn").on("click", function () {
+        $(".adv-search-form form").get(0).reset();
+    });
+
+    $(".adv-search-form .search-btn").on("click", function (event) {
+        $("#id_use_adv_search").val("yes"); // any value will do
+        // before the ajax request is sent we change this to the default value ''
+        // the server then checks this to see whether advanced search should be applied
+        table.ajax.reload();
+        // in our jquery datatable instance
+        // we define the ajax property such that it reads
+        // the advanced search form field values
+        // and adds them to the AJAX GET request
+        event.preventDefault();
+    });
+
+    // By default the server will render the input field for the
+    // tempus_dominus datetime picker with a bootstrap 4 form-control
+    // class which is unwanted on this occasion
+    // the django plugin doesn't seem to give the option to remove
+    // this class so we do so here
+
+    $(".datepicker").removeClass("form-control");
+    $(".datetimepicker").removeClass("form-control");
+
+
+
+    // when a table row is clicked to all this
+    function row_click_event () {
+        var tr = $(this);
+        var pk = tr.data("pk");
+        var href = tr.data("href");
+        window.location.href = href;
+    }
+
+
+    function row_checkbox_event (event) {
+        event.stopPropagation();
+    }
+
+
+    function add_row_event () {
+    // prevent bubbling on checkbox so row click event does not call callback
+        $("table .row-checkbox").off("click", row_checkbox_event);
+        $("table .row-checkbox").on("click", row_checkbox_event);
+        $("table tbody tr").off("click", row_click_event)
+        $("table tbody tr").on("click", row_click_event);
+    }
+
+    // jQuery Datatable initialisation
+    var table = $('#example')
+        .on('init.dt', function (e, settings, json) {
+            add_result_count_to_select_pagination_widget(settings);
+            add_alt_pagination_events(settings);
+            add_row_event();
+        })
+        .DataTable({
+            columns: [
+                {
+                    'data': null,
+                    'searchable': false,
+                    'orderable': false,
+                    'className': 'dt-body-center',
+                    'render': function (data, type, full, meta) {
+                        return '<input type="checkbox" name="transaction" value="' + $("<div/>").text(data.id).html() + '" class="row-checkbox align-middle">';
+                    }
+                },
+
+                {% for column in columns %}
+
+                    { 'data' : '{{ column }}' },
+
+                {% endfor %}
+
+            ],
+            dom: "<'top d-flex justify-content-between'<'left'><'right'>>t<'bottom p-2 d-flex align-items-center justify-content-between'<'d-flex bottom-left'<'p-wrapper d-flex align-items-center mr-5'p<'ml-1 pt-1 result_set_count'>>l><'bottom-right'P>>",
+            language: {
+                sLengthMenu: "Showing _MENU_ items per page",
+            },
+            order: [
+                [ 1, 'asc' ]
+            ],
+            serverSide: true,
+            ajax: {
+                url: "", // same as 'this' url
+                data: function (d) {
+                    // I was using jQuery.serialize but this encodes the url
+                    // Because jQuery datatables does also we get double encoding
+                    var fields = $(".adv-search-form").find("form").find(":input");
+                    for(var i = 0; i < fields.length; i++){
+                        var field = $(fields[i]);
+                        var name = field.attr("name");
+                        var value = field.val();
+                        d[name] = value;
+                    }
+                    $("#id_use_adv_search").val(""); // put the hidden field
+                    // indicating whether advanced search is being used
+                    // back to '' i.e. not it is not
+                }
+            },
+            sPaginationType: "listbox" // https://datatables.net/plug-ins/pagination/#listbox
+            // https://stackoverflow.com/questions/13137953/dropdown-pagination-in-jquery-datatables
+        });
+
+
+    table.on('draw', function (e, settings) {
+        add_result_count_to_select_pagination_widget(settings);
+        var p = $("div.pagination-numbers-ui-wrapper").parent();
+        p.empty();
+        var altPagination = new $.fn.dataTable.AltPagination(settings);
+        p.append($(altPagination));
+        add_alt_pagination_events(settings);
+        add_row_event();
+    });
+
+
+    new $.fn.dataTable.Buttons( table, {
+        name: 'batch_payment',
+        buttons: [
+            'batch_payment'
+        ]
+    } );
+
+
+    new $.fn.dataTable.Buttons( table, {
+        name: 'search',
+        buttons: [
+            'show_search_form'
+        ]
+    } );
+
+
+    // This part of the datatables API is confusing
+    // Basically buttons can either be added using the DOM method
+    // where you insert a B into the dom option
+    // Or by creating new buttons instances like the two above - https://datatables.net/extensions/buttons/
+    // Getting the right container was not easy to understand.  See example - https://datatables.net/extensions/buttons/examples/initialisation/multiple.html
+    // Simple once you know of course !
+
+    var batch_cont = table.buttons(0, null).container();
+    var search_cont = table.buttons(1, null).container();
+
+    batch_cont.appendTo(".left");
+    search_cont.appendTo(".right");
+
+    $("input[name='select_all']").on("click", function(){
+        // Get all rows with search applied
+        var rows = table.rows({ 'search': 'applied' }).nodes();
+        // Check/uncheck checkboxes for all rows in the table
+        $('input[type="checkbox"]', rows).prop('checked', this.checked);
+    });
+
+    // Handle click on checkbox to set state of "Select all" control
+    $('table tbody').on('change', 'input[type="checkbox"]', function(){
+        // If checkbox is not checked
+        if(!this.checked){
+            var el = $("input[name='select_all']");
+            el.prop("checked", false);
+        }
+        else{
+            var rows = table.rows({ 'search': 'applied' }).nodes();
+            var checkboxes = $('input[type="checkbox"]', rows);
+            var all_checked = true;
+            for(var i = 0; i < checkboxes.length; i++){
+                var checkbox = $(checkboxes[i]);
+                if(!checkbox.prop("checked")){
+                    all_checked = false;
+                    break;
+                }
+            }
+            if(all_checked){
+                $("input[name='select_all']").prop("checked", true);
+            }
+        }
+    });
+
+});
+</script>
+<script>
+    $(document).ready(function(){
+        $(".select2-select").select2({
+            minimumResultsForSearch: Infinity,
+            width: "200px" // label for input needs to be set to display:block in css
+        });
+        $(".select2-select").siblings("label").eq(0).css("display", "block");
+    });
+</script>

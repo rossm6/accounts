@@ -104,8 +104,6 @@ class TransactionHeader(DecimalBaseModel):
         abstract = True
 
 
-
-
 # class Invoice(TransactionHeader):
 #     class Meta:
 #         proxy = True

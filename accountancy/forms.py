@@ -2,6 +2,8 @@ from crispy_forms.layout import (HTML, Div, Field, Hidden, Layout,)
 from crispy_forms.helper import FormHelper
 from django import forms
 
+from tempus_dominus.widgets import DatePicker
+
 # do we need to import Hidden ??
 
 class Delete(Div):
@@ -373,3 +375,98 @@ class BaseTransactionMixin(object):
                     if self.instance.type in ('c', 'p', 'bc', 'bp'):
                         tmp = self.initial[field]
                         self.initial[field] = -1 * tmp
+
+
+
+class AdvancedTransactionSearchForm(forms.Form):
+
+    """
+    Generally the transaction enquiry will have a form
+    with these form fields.
+
+    Fix me -
+
+        We should use a form prefix
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "GET"
+        self.helper.form_tag = False
+        self.helper.form_show_errors = False
+        self.helper.include_media = False  # I decide where the js goes
+        self.helper.layout = Layout(
+            Div(
+                AdvSearchField(
+                    'search', 
+                    css_class="w-100 input",
+                ),
+                AdvSearchField(
+                    'search_within',
+                    css_class="form-control w-100 select2-select"
+                ),
+                AdvSearchField(
+                   'start_date', 
+                   css_class="w-100 input"
+                ),
+                AdvSearchField(
+                    'end_date', 
+                    css_class="w-100 input"
+                ),
+                Field('use_adv_search', type="hidden"),
+                css_class="small d-flex justify-content-between"
+            ),
+            HTML(
+                '<div class="d-flex align-items-center justify-content-end my-4">'
+                    '<button class="btn button-secondary search-btn">Search</button>'
+                    '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
+                '</div>'
+            ),
+        )
+
+
+    search = forms.CharField(
+        label='Enter Reference, Contact or Amount', 
+        max_length=100, 
+        required=False
+    ) # arbitary
+    search_within = forms.ChoiceField(
+        choices=(
+            ('any', 'Any'), 
+            ('tran', 'Transaction date'), 
+            ('due', 'Due Date')
+        )
+    )
+    start_date = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        ),
+        required=False
+    )
+    end_date = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        ),
+        required=False
+    )
+    use_adv_search = forms.BooleanField()
+
+    def clean_start_date(self):
+        start_date = self.cleaned_data["start_date"]
+        return start_date

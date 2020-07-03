@@ -66,48 +66,50 @@
                         <div>
                             {{ line_formset.management_form|crispy }}
                         </div>
-                        <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="{{ line_form_prefix }}">
-                                {% crispy line_formset %}
-                                {% crispy line_formset.empty_form line_formset.empty_form.helpers.empty_form %}
-                            </tbody>
-                        </table>
-                        <div class="mt-3 mb-5">
-                            <div>
-                                <div class="dropdown-split-button">
-                                    <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
-                                        <button type="button" class="btn button add-lines">Add New Line</button>
-                                        <button id="btnGroupDrop1" type="button" class="btn button dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
-                                        <div class="dropdown-menu add-multiple-lines" aria-labelledby="btnGroupDrop1">
-                                            <a class="dropdown-item pointer" data-lines="5">Add 5 lines</a>
-                                            <a class="dropdown-item pointer" data-lines="10">Add 10 lines</a>
-                                            <a class="dropdown-item pointer" data-lines="20">Add 20 lines</a>
+                        <div {% if payment_form  %} class="lines d-none" {% else %} class="lines" {% endif %}>
+                            <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="{{ line_form_prefix }}">
+                                    {% crispy line_formset %}
+                                    {% crispy line_formset.empty_form line_formset.empty_form.helpers.empty_form %}
+                                </tbody>
+                            </table>
+                            <div class="mt-3 mb-5">
+                                <div>
+                                    <div class="dropdown-split-button">
+                                        <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
+                                            <button type="button" class="btn button add-lines">Add New Line</button>
+                                            <button id="btnGroupDrop1" type="button" class="btn button dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                                            <div class="dropdown-menu add-multiple-lines" aria-labelledby="btnGroupDrop1">
+                                                <a class="dropdown-item pointer" data-lines="5">Add 5 lines</a>
+                                                <a class="dropdown-item pointer" data-lines="10">Add 10 lines</a>
+                                                <a class="dropdown-item pointer" data-lines="20">Add 20 lines</a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="d-flex justify-content-end totals pr-3">
-                                <div>
-                                    <div class="row small black-single-border-bottom text-right">
-                                        <div class="col">
-                                            Subtotal
+                                <div class="d-flex justify-content-end totals pr-3">
+                                    <div>
+                                        <div class="row small black-single-border-bottom text-right">
+                                            <div class="col">
+                                                Subtotal
+                                            </div>
+                                            <div class="col sub-total-lines">
+                                                0.00
+                                            </div>
+                                            <div class="mt-2 w-100"></div>
+                                            <div class="my-2 col">
+                                                Vat
+                                            </div>
+                                            <div class="my-2 col vat-total-lines">
+                                                0.00
+                                            </div>
                                         </div>
-                                        <div class="col sub-total-lines">
-                                            0.00
-                                        </div>
-                                        <div class="mt-2 w-100"></div>
-                                        <div class="my-2 col">
-                                            Vat
-                                        </div>
-                                        <div class="my-2 col vat-total-lines">
-                                            0.00
-                                        </div>
-                                    </div>
-                                    <div class="py-2 row font-weight-bold h4 black-double-border-bottom text-right">
-                                        <div class="col text-uppercase">
-                                            total
-                                        </div>
-                                        <div class="col total-lines">
-                                            0.00
+                                        <div class="py-2 row font-weight-bold h4 black-double-border-bottom text-right">
+                                            <div class="col text-uppercase">
+                                                total
+                                            </div>
+                                            <div class="col total-lines">
+                                                0.00
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

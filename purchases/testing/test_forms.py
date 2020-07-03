@@ -1,8 +1,9 @@
 from django.test import TestCase
 
-class CreateInvoice(TestCase):
-    pass
+"""
 
+    Test that the various forms don't allow bad things to happen first
 
-class CreatePayment(TestCase):
-    pass
+    Integration view tests give us confidence it does DO what it should
+
+"""

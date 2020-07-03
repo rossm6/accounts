@@ -15,6 +15,19 @@ from querystring_parser import parser
 from .widgets import InputDropDown
 
 
+def format_dates(objects, date_keys, format):
+    """
+    Convert date or datetime objects to the format specified.
+    """
+    for obj in objects:
+        for key in obj:
+            if key in date_keys:
+                try:
+                    string_format = obj[key].strftime(format)
+                    obj[key] = string_format
+                except AttributeError:
+                    pass
+
 def get_search_vectors(searchable_fields):
     search_vectors = [
         SearchVector(field)

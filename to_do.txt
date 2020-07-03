@@ -1,13 +1,13 @@
 PRIORITY 1
 
+    Need to test header_form failing for create and edit.  Check other failures tested also.
+
     All tests should use sort_multiple to make sure they are in pk ascending order
 
     Line ordering.  I think we just need to make sure the lines are ordered by line no at the model level.
     This way they show correctly in the edit view.... Need to test this.
 
     Edit -
-    
-        Test EditInvoice.  Repeat tests so that we test adding a new matching line
 
         I've tested deleting lines in the edit view but have not yet done the work client side.
         For the create view, delete might as well literally remove the line i.e. dom element
@@ -16,7 +16,7 @@ PRIORITY 1
 
         Add table-bordered to the 'New Matching Transactions' table
 
-        If an invoice is changed from should we bother deleting the lines?  I suppose it should
+        If an invoice is changed to a payment should we bother deleting the lines?  I suppose it should
         and we should also warn the user about this.
 
     Create -
@@ -50,9 +50,3 @@ PRIORITY 2
 
     Refactor the styles in styles.css and ui_elem_styles.css.  Styles in the first sheet probably belong to the second.
     The second sheet could do with being renamed
-
-
-
-Python
-
-    @classonlymethod decorator
