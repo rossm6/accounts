@@ -277,16 +277,19 @@ def edit(request, **kwargs):
     context = {}
     context["edit"] = pk
     header = get_object_or_404(PurchaseHeader, pk=pk)
+    context["header_form_prefix"] = header_form_prefix
+    context["line_form_prefix"] = line_form_prefix
+    context["matching_form_prefix"] = match_form_prefix
     context["payment_form"] = False
     if header.type in ('bp', 'p', 'br', 'r'):
         context["payment_form"] = True
     if request.method == "GET":
-        header_form = PurchaseHeaderForm(prefix=header_form_prefix, instance=header)   
+        header_form = PurchaseHeaderForm(prefix=header_form_prefix, instance=header)
+        context["header_form"] = header_form
         line_formset = enter_lines(
             prefix=line_form_prefix,
             queryset=PurchaseLine.objects.filter(header=header)
         )
-        context["line_form_prefix"] = line_form_prefix
         context["line_formset"] = line_formset
         match_formset = match(
             prefix=match_form_prefix,
@@ -299,8 +302,10 @@ def edit(request, **kwargs):
             match_by=header,
             auto_id=False
         )
+        context["matching_formset"] = match_formset
     if request.method == "POST":
         header_form = PurchaseHeaderForm(data=request.POST, prefix=header_form_prefix, instance=header)
+        context["header_form"] = header_form 
         if header_form.is_valid():
             header = header_form.save(commit=False)
             if header.type in ('p', 'bp', 'r', 'br'):
@@ -317,6 +322,7 @@ def edit(request, **kwargs):
                     match_by=header,
                     auto_id=False
                 )
+                context["matching_formset"] = match_formset
                 if match_formset.is_valid():
                     header.save() # perhaps put this in the headers_to_update set also
                     match_formset.save(commit=False)
@@ -328,9 +334,30 @@ def edit(request, **kwargs):
                     PurchaseHeader.objects.bulk_update(match_formset.headers, ['due', 'paid'])
                     return redirect(reverse("purchases:index"))
                 else:
-                    print(match_formset.non_form_errors())
-                    print(match_formset.errors)
-                    print("invalid")
+                    print("payment matching invalid")
+                    # override the choices so that it doesn't take so long to render
+                    chosen_supplier = header_form.cleaned_data.get("supplier")
+                    if chosen_supplier:
+                        field = header_form.fields['supplier']
+                        field.widget.choices = [ (chosen_supplier.pk, str(chosen_supplier)) ]
+                    match_formset = match(
+                        data=request.POST,
+                        prefix=match_form_prefix,
+                        queryset=(
+                            PurchaseMatching.objects
+                            .filter(Q(matched_by=header) | Q(matched_to=header))
+                            .select_related('matched_by')
+                            .select_related('matched_to')
+                        ),
+                        match_by=header,
+                    )
+                    context["matching_formset"] = match_formset
+                    match_formset.is_valid()
+                    if match_formset.non_form_errors():
+                        non_field_errors = True
+                    for form in match_formset:
+                        if form.non_field_errors():
+                            non_field_errors = True
             else:
                 line_formset = enter_lines(
                     data=request.POST,
@@ -339,7 +366,6 @@ def edit(request, **kwargs):
                     queryset=PurchaseLine.objects.filter(header=header)
                 )
                 context["line_formset"] = line_formset
-                context["line_form_prefix"] = line_form_prefix
                 match_formset = match(
                     data=request.POST,
                     prefix=match_form_prefix,
@@ -352,6 +378,8 @@ def edit(request, **kwargs):
                     match_by=header,
                     auto_id=False
                 )
+                context["matching_formset"] = match_formset
+                print("is it valid")
                 if line_formset.is_valid() and match_formset.is_valid():
                     header.save()
                     line_formset.save(commit=False)
@@ -384,15 +412,89 @@ def edit(request, **kwargs):
                     context["match_formset"] = match_formset
                     return redirect(reverse("purchases:index"))
                 else:
-                    print(line_formset.non_form_errors())
-                    print(match_formset.non_form_errors())
-                    print(line_formset.errors)
-                    print(match_formset.errors)
+                    print("not valid lines or matching")
+                    line_formset = enter_lines(
+                        data=request.POST,
+                        prefix=line_form_prefix,
+                        header=header,
+                        queryset=PurchaseLine.objects.filter(header=header)
+                    )
+                    context["line_formset"] = line_formset
+                    line_formset.is_valid()
+                    if line_formset.non_form_errors():
+                        non_field_errors = True
+                    for form in line_formset:
+                        if form.non_field_errors():
+                            non_field_errors = True
+                    match_formset = match(
+                        data=request.POST,
+                        prefix=match_form_prefix,
+                        queryset=(
+                            PurchaseMatching.objects
+                            .filter(Q(matched_by=header) | Q(matched_to=header))
+                            .select_related('matched_by')
+                            .select_related('matched_to')
+                        ),
+                        match_by=header,
+                    )
+                    context["matching_formset"] = match_formset
+                    match_formset.is_valid()
+                    if match_formset.non_form_errors():
+                        non_field_errors = True
+                    for form in match_formset:
+                        if form.non_field_errors():
+                            non_field_errors = True
+
+                    chosen_supplier = header_form.cleaned_data.get("supplier")
+                    if chosen_supplier:
+                        field = header_form.fields['supplier']
+                        field.widget.choices = [ (chosen_supplier.pk, str(chosen_supplier)) ]
+
+                    if line_formset:
+                        for form in line_formset:
+                            item = form.cleaned_data.get("item")
+                            field = form.fields["item"]
+                            if item:
+                                field.widget.choices = [ (item.pk, str(item)) ]
+                            else:
+                                field.widget.choices = []
+                            nominal = form.cleaned_data.get("nominal")
+                            field = form.fields["nominal"]
+                            if nominal:
+                                field.widget.choices = [ (nominal.pk, str(nominal)) ]
+                            else:
+                                field.widget.choices = []
+
         else:
-            print("invalid")
-    context["header_form"] = header_form    
-    context["matching_form_prefix"] = match_form_prefix
-    context["matching_formset"] = match_formset
+            print("header form is not valid")
+            print(header_form.errors)
+            if header_form.non_field_errors():
+                non_field_errors = True
+            line_formset = enter_lines(
+                data=request.POST,
+                prefix=line_form_prefix,
+                header=header, # HEADER IS THE OBJECT PULLED OUT OF THE DB.  NOT THE ONE FROM THE FORM WHICH DID NOT VALIDATE. SEE TOP OF THE VIEW
+                queryset=PurchaseLine.objects.filter(header=header)
+            )
+            context["line_formset"] = line_formset
+            match_formset = match(
+                data=request.POST,
+                prefix=match_form_prefix,
+                queryset=(
+                    PurchaseMatching.objects
+                    .filter(Q(matched_by=header) | Q(matched_to=header))
+                    .select_related('matched_by')
+                    .select_related('matched_to')
+                ),
+                match_by=header, # HEADER IS THE OBJECT PULLED OUT OF THE DB.  NOT THE ONE FROM THE FORM WHICH DID NOT VALIDATE
+                auto_id=False
+            )
+            context["matching_formset"] = match_formset
+            # override the choices so that it doesn't take so long to render
+            chosen_supplier = header_form.cleaned_data.get("supplier")
+            if chosen_supplier:
+                field = header_form.fields['supplier']
+                field.widget.choices = [ (chosen_supplier.pk, str(chosen_supplier)) ]
     return render(
         request,
         "purchases/edit.html",

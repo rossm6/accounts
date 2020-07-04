@@ -349,9 +349,10 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     class Meta:
         model = PurchaseMatching
-        fields = ('matched_to', 'value', 'id') # matched_to is only needed for create
+        fields = ('matched_by','matched_to', 'value', 'id') # matched_to is only needed for create
         widgets = {
-            'matched_to': forms.TextInput
+            'matched_by': forms.TextInput(attrs={"readonly": True}),
+            'matched_to': forms.TextInput(attrs={"readonly": True})
         }
 
     def __init__(self, *args, **kwargs):
@@ -370,7 +371,7 @@ class PurchaseMatchingForm(forms.ModelForm):
         # GET request for CREATE
         if not self.data and not self.instance.pk:
             self.fields["matched_to"].queryset = PurchaseHeader.objects.none()
-        # GET and POST requests for CREATE
+        # GET and POST requests for CREATE AND EDIT
         if self.instance.pk:
             if self.match_by.pk == self.instance.matched_to_id:
                 matched_header = self.instance.matched_by
@@ -384,6 +385,18 @@ class PurchaseMatchingForm(forms.ModelForm):
             self.fields["paid"].initial = matched_header.paid
             self.fields["due"].initial = matched_header.due
             self.initial["value"] *= f
+            # matched_to is a field rendered on the client because it is for the user to pick (in some situations)
+            # but matched_by, although a field, can always be determined server side so we override the POST data to do so
+            if self.match_by.pk:
+                self.data = self.data.copy()
+                # we are editing a transaction in the system
+                self.data[self.prefix + "-" + "matched_by"] = self.initial.get('matched_by', self.match_by.pk)
+        if not self.instance.pk and self.data:
+            # creating a new transaction
+            # matched_by is not required at form level therefore
+            # view will attach matched_by to instance after successful validation
+            self.fields["matched_by"].required = False
+
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) + 
             PurchaseMatchingForm.Meta.fields,
@@ -409,21 +422,22 @@ class PurchaseMatchingForm(forms.ModelForm):
             }
         ).render()
 
-
     def clean(self):
         cleaned_data = super().clean()
         initial_value = self.initial.get("value", 0)
+        matched_by = self.cleaned_data.get("matched_by")
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
+        header = matched_to
         if self.match_by.pk:
             if self.match_by.pk == matched_to.pk:
                 # matched_to could be the header we are editing
                 # and if so there is no way of knowing the due amount at this point
                 # as it will depend on the other matches
                 # therefore postpone validation until clean method at formset level
-                return
-        if matched_to and value:
-            if matched_to.total > 0:
+                header = matched_by
+        if header and value:
+            if header.total > 0:
                 if value < 0:
                     raise forms.ValidationError(
                         _(
@@ -431,13 +445,13 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
-                elif value > matched_to.due + initial_value:
+                elif value > header.due + initial_value:
                     raise forms.ValidationError(
                         _(
                             'Cannot match more than value outstanding'
                         )
                     )
-            elif matched_to.total < 0:
+            elif header.total < 0:
                 if value > 0:
                     raise forms.ValidationError(
                         _(
@@ -445,7 +459,7 @@ class PurchaseMatchingForm(forms.ModelForm):
                         ),
                         code="invalid-match"
                     )
-                elif value < matched_to.due + initial_value:
+                elif value < header.due + initial_value:
                     raise forms.ValidationError(
                         _(
                             'Cannot match more than value outstanding'
