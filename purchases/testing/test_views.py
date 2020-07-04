@@ -4357,6 +4357,970 @@ class EditPayment(TestCase):
     """
 
 
+    """
+    So far we have tested only editing payments where the matching records have
+    this same payment as matched_by.  Now we test editing the matching for
+    a payment where it has a matched transaction where the payment is the matched_to
+    in the relationship.
+
+    I did this for EditInvoice first so these tests are based on the others.
+    """
+
+    # CORRECT USAGE
+    # WE INCREASE THE MATCH VALUE OF THE MATCH TRANSACTION WHERE THE HEADER BEING EDITED
+    # IS THE MATCHED_TO HEADER
+    def test_15(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 1000
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 800
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -1000)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 800)
+        self.assertEqual(headers[2].due, 400)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -800) 
+
+
+    # CORRECT USAGE
+    # WE DECREASE THE MATCH VALUE OF THE MATCH TRANSACTION WHERE THE HEADER BEING EDITED
+    # IS THE MATCHED_TO HEADER
+    def test_16(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 1000
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 0
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -200)
+        self.assertEqual(headers[0].due, -800)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 0)
+        self.assertEqual(headers[2].due, 1200)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, 0) 
+
+
+    # CORRECT USAGE
+    # WE INCREASE THE MATCH VALUE OF THE MATCH TRANSACTION WHERE THE HEADER BEING EDITED
+    # IS THE MATCHED_TO HEADER
+    # ALSO INCREASE THE HEADER
+    def test_17(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 1400
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 1200
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1400)
+        self.assertEqual(headers[0].paid, -1400)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 1200)
+        self.assertEqual(headers[2].due, 0)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -1200) 
+
+
+    # CORRECT USAGE
+    # WE INCREASE THE MATCH VALUE OF THE MATCH TRANSACTION WHERE THE HEADER BEING EDITED
+    # IS THE MATCHED_TO HEADER
+    # AND DECREASE THE HEADER
+    def test_18(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 900
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 700
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -900)
+        self.assertEqual(headers[0].paid, -900)
+        self.assertEqual(headers[0].due, 0)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 700)
+        self.assertEqual(headers[2].due, 500)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -700) 
+
+
+    # CORRECT USAGE
+    # WE DECREASE THE MATCH VALUE OF THE MATCH TRANSACTION WHERE THE HEADER BEING EDITED
+    # IS THE MATCHED_TO HEADER
+    # AND DECREASE THE HEADER
+    def test_19(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 900
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 400
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -900)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -300)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 400)
+        self.assertEqual(headers[2].due, 800)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -400) 
+
+
+    # INCORRECT USAGE
+    # Same as test_33 but we just try and match a value wrongly - incorrect sign
+    def test_20(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 900
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = -400
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)
+
+
+    # INCORRECT USAGE
+    # Same as above two tests but this time we do incorrect matching overall i.e. match is ok at match record level when taken in isolation
+    def test_21(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 900
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = -1000
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)
+
+    # NOW I CHECK AN INVALID HEADER, INVALID LINES AND INVALID MATCHING
+    # AGAIN JUST USE TEST_33 AS A BASE
+
+    # INCORRECT USAGE
+    # INVALID HEADER
+    def test_22(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": 99999999,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 900
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 400
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600) 
+
+
+    # INCORRECT USAGE
+    # INVALID MATCHING
+    def test_23(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 2, 1000)
+        # SECOND INVOICE
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(payment, [ (invoices[0], 200) ] ) # FIRST MATCH
+        payment = match_by
+        match_by, match_to = match(invoices[1], [ (payment, -600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": payment.pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "p",
+                "supplier": self.supplier.pk,
+                "ref": headers[0].ref,
+                "date": headers[0].date,
+                "total": 1000
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[0], invoices[1] ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 200}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 1000
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -800)
+        self.assertEqual(headers[0].due, -200)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 200)
+        self.assertEqual(headers[1].due, 1000)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, 1200)
+        self.assertEqual(headers[2].paid, 600)
+        self.assertEqual(headers[2].due, 600)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, payment)
+        self.assertEqual(matches[0].matched_to, invoices[0])
+        self.assertEqual(matches[0].value, 200)
+        self.assertEqual(matches[1].matched_by, invoices[1])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600) 
+
+
 class EditInvoice(TestCase):
 
     @classmethod
