@@ -24,66 +24,6 @@ class BaseTransactionModelFormSet(forms.BaseModelFormSet):
         return forms.HiddenInput(attrs={'class': 'ordering'})
 
 
-# FIX ME - this should inherit from a base class PaymentHeader in accountancy.forms
-class PaymentHeader(BaseTransactionMixin, forms.ModelForm):
-
-    date = forms.DateField(
-        widget=DatePicker(
-            options={
-                "useCurrent": True,
-                "collapse": True,
-            },
-            attrs={
-                "icon_toggle": True,
-                "input_group": False
-            }
-        )
-    )
-
-    class Meta:
-        model = PurchaseHeader
-        fields = ('supplier', 'ref', 'date', 'total', 'type',)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.data:
-            self.fields['type'].choices = PurchaseHeader.type_payments
-        self.helper = create_payment_transaction_header_helper(
-            {
-                'contact': 'supplier',
-            }
-        )
-        # FIX ME - The supplier field should use the generic AjaxModelChoice Field class I created
-        # this then takes care out of this already
-        # Form would then need to inherit from AjaxForm
-        if not self.data and not self.instance.pk:
-            self.fields["supplier"].queryset = Supplier.objects.none()
-        if self.instance.pk:
-            self.fields["supplier"].queryset = Supplier.objects.filter(pk=self.instance.supplier_id)
-
-
-    def clean(self):
-        cleaned_data = super().clean()
-        type = cleaned_data.get("type")
-        total = cleaned_data.get("total")
-        if total:
-            if type in ("p", "bp"):
-                cleaned_data["total"] = -1 * total
-        return cleaned_data
-
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        # the user should never have the option to directly
-        # change the due amount or the paid amount
-        # paid will default to zero
-        instance.due = instance.total - instance.paid
-        if commit:
-            instance.save()
-        return instance
-
-
-
 class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     date = forms.DateField(
@@ -253,15 +193,6 @@ class PurchaseLineForm(AjaxForm):
         model = PurchaseLine
         fields = ('id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
         ajax_fields = ('item', 'nominal', 'vat_code', ) # used in Transaction form set_querysets method
-        widgets = {
-            "vat_code": InputDropDown(
-                attrs={
-                    "data-new-vat-code": "#new-vat-code",
-                    "data-load-url": delay_reverse_lazy("purchases:load_options", "field=vat_code"),
-                    "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=vat_code")
-                }
-            )
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

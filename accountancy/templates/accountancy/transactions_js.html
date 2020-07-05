@@ -7,12 +7,19 @@
 <script>
 $(document).ready(function () {
 
+    // https://stackoverflow.com/a/56851042
+    // this will reload the page when the browser navigation buttons are used
+    var perfEntries = performance.getEntriesByType("navigation");
+    if (perfEntries[0].type === "back_forward") {
+        location.reload(true);
+    }
+
     // Buttons
 
     // Search button - triggers the advanced search form to show
     $.fn.dataTable.ext.buttons.show_search_form = {
         text: 'Search',
-        className: 'btn button search-btn-trigger',
+        className: 'btn button search-btn-trigger f-s-100',
         action: function (e, dt, node, config) {
             $(".adv-search-form").toggleClass("d-none");
             node.hide();
@@ -23,23 +30,23 @@ $(document).ready(function () {
         }
     };
 
-    var batch_payment_url = "";
+    //var batch_payment_url = "";
 
     // Batch Payment - click on this to pay / match the rows you have ticked
-    $.fn.dataTable.ext.buttons.batch_payment = {
-        name: 'batch_payment',
-        text: 'Batch Payment',
-        className: 'btn button batch-payment-btn-trigger',
-        action: function (e, dt, node, config) {
-            var form = $("form.table_form");
-            form.attr("action", batch_payment_url);
-            form.submit();
-        },
-        init: function (api, node, config) {
-            $(node).removeClass("dt-button");
+    //$.fn.dataTable.ext.buttons.batch_payment = {
+        //name: 'batch_payment',
+        //text: 'Batch Payment',
+        //className: 'btn button batch-payment-btn-trigger',
+        //action: function (e, dt, node, config) {
+            //var form = $("form.table_form");
+            //form.attr("action", batch_payment_url);
+            //form.submit();
+        //},
+        //init: function (api, node, config) {
+            //$(node).removeClass("dt-button");
             // https://stackoverflow.com/questions/45299188/how-can-i-remove-default-button-class-of-a-datatables-button
-        }
-    };
+        //}
+    //};
 
 
     $(".adv-search-form .close").on("click", function () {
@@ -190,7 +197,6 @@ $(document).ready(function () {
     $(".datetimepicker").removeClass("form-control");
 
 
-
     // when a table row is clicked to all this
     function row_click_event () {
         var tr = $(this);
@@ -199,11 +205,9 @@ $(document).ready(function () {
         window.location.href = href;
     }
 
-
     function row_checkbox_event (event) {
         event.stopPropagation();
     }
-
 
     function add_row_event () {
     // prevent bubbling on checkbox so row click event does not call callback
@@ -239,7 +243,7 @@ $(document).ready(function () {
                 {% endfor %}
 
             ],
-            dom: "<'top d-flex justify-content-between'<'left'><'right'>>t<'bottom p-2 d-flex align-items-center justify-content-between'<'d-flex bottom-left'<'p-wrapper d-flex align-items-center mr-5'p<'ml-1 pt-1 result_set_count'>>l><'bottom-right'P>>",
+            dom: "<'top d-flex justify-content-between'<'left'><'right'>>t<'bottom p-2 d-flex align-items-center justify-content-between'<'d-flex bottom-left'<'p-wrapper d-flex align-items-center mr-5'p<'ml-1 result_set_count'>>l><'bottom-right'P>>",
             language: {
                 sLengthMenu: "Showing _MENU_ items per page",
             },
@@ -264,8 +268,11 @@ $(document).ready(function () {
                     // back to '' i.e. not it is not
                 }
             },
-            sPaginationType: "listbox" // https://datatables.net/plug-ins/pagination/#listbox
-            // https://stackoverflow.com/questions/13137953/dropdown-pagination-in-jquery-datatables
+            sPaginationType: "listbox", // https://datatables.net/plug-ins/pagination/#listbox
+            // https://stackoverflow.com/questions/13137953/dropdown-pagination-in-jquery-datatables,
+            drawCallback: function () {
+                $(".dataTables_paginate.paging_listbox").addClass("p-0");
+            }
         });
 
 
@@ -280,12 +287,12 @@ $(document).ready(function () {
     });
 
 
-    new $.fn.dataTable.Buttons( table, {
-        name: 'batch_payment',
-        buttons: [
-            'batch_payment'
-        ]
-    } );
+    //new $.fn.dataTable.Buttons( table, {
+        //name: 'batch_payment',
+        //buttons: [
+            //'batch_payment'
+        //]
+    //} );
 
 
     new $.fn.dataTable.Buttons( table, {
@@ -303,10 +310,10 @@ $(document).ready(function () {
     // Getting the right container was not easy to understand.  See example - https://datatables.net/extensions/buttons/examples/initialisation/multiple.html
     // Simple once you know of course !
 
-    var batch_cont = table.buttons(0, null).container();
-    var search_cont = table.buttons(1, null).container();
+    //var batch_cont = table.buttons(0, null).container();
+    var search_cont = table.buttons(0, null).container();
 
-    batch_cont.appendTo(".left");
+    //batch_cont.appendTo(".left");
     search_cont.appendTo(".right");
 
     $("input[name='select_all']").on("click", function(){

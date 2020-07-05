@@ -132,3 +132,28 @@ input {
     border-bottom-style: double;
     border-bottom-color: black;
 }
+
+.f-s-100 {
+    font-size: 100% !important;
+}
+
+.bootstrap-datetimepicker-widget {
+    font-size: 80%;
+    background-color: white !important;
+}
+
+.bootstrap-datetimepicker-widget table {
+    table-layout: fixed;
+}
+
+.bootstrap-datetimepicker-widget thead {
+    background: linear-gradient(#fff,#fafafa);
+    background-color: #fafafa!important;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+}
+
+.bootstrap-datetimepicker-widget table th {
+    border-top: 1px solid #dee2e6;
+    color: black;
+}

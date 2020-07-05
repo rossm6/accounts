@@ -1,13 +1,13 @@
 from django.urls import path
 
-from .views import (LoadMatchingTransactions, LoadSuppliers, create, index,
-                    load_options, validate_choice, CreateTransaction, edit, TransactionEnquiry)
+from .views import (CreateTransaction, EditTransaction,
+                    LoadMatchingTransactions, LoadSuppliers,
+                    TransactionEnquiry, load_options, validate_choice)
 
 app_name = "purchases"
 urlpatterns = [
     path("create", CreateTransaction.as_view(), name="create"),
-    path("edit/<int:pk>", edit, name="edit"),
-    path("index", index, name="index"),
+    path("edit/<int:pk>", EditTransaction.as_view(), name="edit"),
     path("load_matching_transactions", LoadMatchingTransactions.as_view(), name="load_matching_transactions"),
     path("load_options", load_options, name="load_options"),
     path("load_suppliers", LoadSuppliers.as_view(), name="load_suppliers"),

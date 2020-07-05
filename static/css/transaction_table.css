@@ -79,3 +79,16 @@ span.pagination-numbers-ui[data-selected] {
     cursor: pointer;
     font-weight: 900;
 }
+
+th {
+    color: #048fc2;
+    font-weight: 900 !important;
+}
+
+tr {
+    height: 30px;
+}
+
+tr:hover {
+    cursor: pointer;
+}

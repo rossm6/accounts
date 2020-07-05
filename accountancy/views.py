@@ -7,7 +7,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.http import (Http404, HttpResponse, HttpResponseRedirect,
                          JsonResponse)
-from django.shortcuts import render, reverse
+from django.shortcuts import get_object_or_404, render, reverse
 from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
@@ -137,22 +137,9 @@ def input_dropdown_widget_load_options_factory(form, paginate_by):
     return load
 
 
-class BaseTransactionsList(ListView):
-    # model = Transaction -- subclass implements
-    # fields = [
-    #     ('supplier__name', 'Supplier'), 
-    #     ('ref1', 'Reference 1'),
-    #     ('date', 'Date'),
-    #     ('due_date', 'Due date'),
-    #     ('paid', 'Paid'),
-    #     ('due', 'Due'),
-    #     ('status', 'Status')
-    # ] ( actual db field name, label for UI )
-    # template_name = "accounting/transactions.html"
-    # advanced_search_form_class -- subclass implements
-    # searchable_fields = ['supplier__name', 'ref1', 'total'] -- subclass implements
-    # datetime_fields = ['date', 'due_date'] -- subclass implements
-    # datetime_format = '%d %b %Y' -- subclass implements
+
+
+class jQueryDataTable(object):
 
     def order_by(self):
         ordering = [] # will pass this to ORM to order the fields correctly
@@ -186,6 +173,26 @@ class BaseTransactionsList(ListView):
                     except IndexError as e:
                         break
         return ordering
+
+
+class BaseTransactionsList(jQueryDataTable, ListView):
+    
+    # model = Transaction -- subclass implements
+    # fields = [
+    #     ('supplier__name', 'Supplier'), 
+    #     ('ref1', 'Reference 1'),
+    #     ('date', 'Date'),
+    #     ('due_date', 'Due date'),
+    #     ('paid', 'Paid'),
+    #     ('due', 'Due'),
+    #     ('status', 'Status')
+    # ] ( actual db field name, label for UI )
+    # template_name = "accounting/transactions.html"
+    # advanced_search_form_class -- subclass implements
+    # searchable_fields = ['supplier__name', 'ref1', 'total'] -- subclass implements
+    # datetime_fields = ['date', 'due_date'] -- subclass implements
+    # datetime_format = '%d %b %Y' -- subclass implements
+
 
     # at the moment we assume these fields exist
     # but may want to make this configurable at later stage
@@ -319,6 +326,9 @@ class BaseTransactionsList(ListView):
 
 class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
 
+    def get_success_url(self):
+        return self.success_url
+
     def get_context_data(self, **kwargs):
         # FIX ME - change 'matching_formset" to "match_formset" in the template
         if 'header_form' not in kwargs:
@@ -337,52 +347,31 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
         if 'payment_form' not in kwargs:
-            kwargs['payment_form'] = self.is_payment_form()
+            kwargs['payment_form'] = self.is_payment_form(kwargs["header_form"]) # as self.header_form not set for GET requests
         return super().get_context_data(**kwargs)
 
 
-    def override_choices(self):
-        """
-        Will override the specified choices so that only the instance of the form being
-        validated remains.  Necessary as some choices may contain thousands of items which
-        will take ages to render using django crispy forms.
-        """
-        # override choices is a list.  May need to provide a dictionary eventually
-        # with a function as the value to use for setting the choices
-        for choice in self.header.get('override_choices'):
-            chosen = self.header_form.cleaned_data.get(choice)
-            if chosen:
-                field = self.header_form.fields[choice]
-                field.widget.choices = [ (chosen.pk, str(chosen)) ] # will do for now
-        
-        if self.line_formset:
-            if override_choices := self.line.get('override_choices'):
-                for form in self.line_formset:
-                    for choice in override_choices:
-                        field = form.fields[choice]
-                        if chosen := form.cleaned_data.get(choice):
-                            field.widget.choices = [ (chosen.pk, str(chosen)) ]
-                        else:
-                            field.widget.choices = []
-
-        # Shoudn't be any need to do this for match_formset
-        # I recommend you override the select input widget for a text input to prevent
-        # all choices rendering
-
-
     def invalid_forms(self):
+        self.header_is_invalid()
+        if not self.header_is_payment_type():
+            print("is invoice")
+            self.lines_are_invalid()
+        self.matching_is_invalid()
+        return self.render_to_response(self.get_context_data())
+        
+    def matching_is_invalid(self):
+        self.match_formset = self.get_match_formset()
+        if self.match_formset:
+            self.match_formset.is_valid()
+            if self.match_formset.non_form_errors():
+                self.non_field_errors = True
+            for form in self.match_formset:
+                if form.non_field_errors():
+                    self.non_field_errors = True
 
-        """
-        This gets all the errors possible from the forms.
-        """
-
-        # make sure all non field errors are generated
-        # at form and formset level
-        # we also set a flag to true only because this helps
-        # the template rendering
-        if self.header_form.non_field_errors():
-            self.non_field_errors = True
+    def lines_are_invalid(self):
         self.line_formset = self.get_line_formset()
+
         if self.line_formset:
             self.line_formset.is_valid()
             # validation may have been called already but Django will not run full_clean
@@ -393,23 +382,24 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
             for form in self.line_formset:
                 if form.non_field_errors():
                     self.non_field_errors = True
-        self.match_formset = self.get_match_formset()
-        if self.match_formset:
-            self.match_formset.is_valid()
-            if self.match_formset.non_form_errors():
-                self.non_field_errors = True
-            for form in self.match_formset:
-                if form.non_field_errors():
-                    self.non_field_errors = True
 
-        # choices for some forms could contain thousands of items
-        # this will take django crispy forms way too long to render
-        # so we offer the choice to override the choices so it includes
-        # only the selected item
-        self.override_choices()
+        if self.line_formset:
+            if override_choices := self.line.get('override_choices'):
+                for form in self.line_formset:
+                    for choice in override_choices:
+                        field = form.fields[choice]
+                        if chosen := form.cleaned_data.get(choice):
+                            field.widget.choices = [ (chosen.pk, str(chosen)) ]
+                        else:
+                            field.widget.choices = []
 
-        return self.render_to_response(self.get_context_data())
-        
+
+    def header_is_invalid(self):
+        """
+        No point checking whether other forms are invalid if header is not
+        """
+        if self.header_form.non_field_errors():
+            self.non_field_errors = True
 
     def lines_are_valid(self):
         line_no = 0
@@ -479,10 +469,13 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
         
         return kwargs
 
+    def get_line_formset_queryset(self):
+        return self.get_line_model().objects.none()
+
     def get_line_formset_kwargs(self, header=None):
         kwargs = {
             'prefix': self.get_line_prefix(),
-            'queryset': self.get_line_model().objects.none()
+            'queryset': self.get_line_formset_queryset()
         }
 
         if self.request.method in ('POST', 'PUT'):
@@ -493,21 +486,32 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
         
         return kwargs
 
+
+    def get_match_formset_queryset(self):
+        return self.get_match_model().objects.none()
+
+
     def get_match_formset_kwargs(self, header=None):
         kwargs = {
             'prefix': self.get_match_prefix(),
-            'queryset': self.get_match_model().objects.none()
+            'queryset': self.get_match_formset_queryset(),
+            'match_by': header
         }
 
         if self.request.method in ('POST', 'PUT'):
             kwargs.update({
                 'data': self.request.POST,
-                'match_by': header
             })
         
         return kwargs
 
-    def is_payment_form(self):
+    def is_payment_form(self, header_form):
+        if hasattr(header_form, "cleaned_data"):
+            if t := header_form.cleaned_data.get("type"):
+                if t in ("bp", "p", "br", "r"):
+                    return True
+                else:
+                    return False
         if t := self.header_form.initial.get('type'):
             if t in ("bp", "p", "br", "r"):
                 return True
@@ -535,7 +539,12 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
                 return self.match_formset
             else:
                 formset_class = self.match.get('formset')
+                print(header)
                 return formset_class(**self.get_match_formset_kwargs(header))
+
+    
+    def header_is_payment_type(self):
+        return self.header_obj.type in ("bp", "p", "br", "r")
 
     def get(self, request, *args, **kwargs):
         """ Handle GET requests: instantiate a blank version of the form. """
@@ -554,7 +563,7 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
             self.header_obj = self.header_form.save(commit=False) # changed name from header because this is a cls attribute of course
             self.line_formset = self.get_line_formset(self.header_obj)
             self.match_formset = self.get_match_formset(self.header_obj)
-            if self.header_obj.type in ('bp', 'p', 'br', 'r'):
+            if self.header_is_payment_type():
                 # e.g. processing payments on PL
                 if self.match_formset.is_valid():
                     self.matching_is_valid()
@@ -577,7 +586,79 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
                     return self.invalid_forms()
             # other scenarios to consider later on ...
         else:
-            return self.invalid_forms()
+            self.header_invalid()
+            return self.render_to_response(self.get_context_data())
 
         # So we were successful
-        return HttpResponseRedirect(reverse("purchases:create")) # FIX ME - get url from get_success_url()
+        return HttpResponseRedirect(self.get_success_url())
+
+
+
+class BaseEditTransaction(BaseCreateTransaction):
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        pk = kwargs.get('pk')
+        header = get_object_or_404(self.get_header_model(), pk=pk)
+        self.header_to_edit = header
+        
+    def lines_are_valid(self):
+        line_no = 1
+        self.header_obj.save() # this could have been updated by line formset clean method already
+        self.line_formset.save(commit=False)
+        for form in self.line_formset.ordered_forms:
+            if form.empty_permitted and form.has_changed():
+                form.instance.header = self.header_obj
+                form.instance.line_no = line_no
+                line_no = line_no + 1
+            elif not form.empty_permitted:
+                form.instance.line_no = line_no
+                line_no = line_no + 1
+        self.get_line_model().objects.bulk_create(self.line_formset.new_objects)
+        self.get_line_model().objects.bulk_update(
+            [ obj for obj, _tuple in self.line_formset.changed_objects ],
+            ['line_no', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']
+        )
+        self.get_line_model().objects.filter(pk__in=[ line.pk for line in self.line_formset.deleted_objects ]).delete()
+
+    def matching_is_valid(self):
+        self.header_obj.save()
+        self.match_formset.save(commit=False)
+        self.get_match_model().objects.bulk_create(self.match_formset.new_objects)
+        self.get_match_model().objects.bulk_update(
+            [ obj for obj, _tuple in self.match_formset.changed_objects ],
+            [ 'value' ]
+        )
+        self.get_header_model().objects.bulk_update(
+            self.match_formset.headers,
+            ['due', 'paid']
+        )
+
+    def get_line_formset_queryset(self):
+        return self.get_line_model().objects.filter(header=self.header_to_edit)
+
+    def get_match_formset_queryset(self):
+        return (
+            self.get_match_model()
+            .objects
+            .filter(Q(matched_by=self.header_to_edit) | Q(matched_to=self.header_to_edit))
+            .select_related('matched_by')
+            .select_related('matched_to')
+        )
+
+    def get_match_formset(self, header=None):
+        header = self.header_to_edit
+        return super().get_match_formset(header)
+
+    def get_header_form_kwargs(self):
+        kwargs = super().get_header_form_kwargs()
+        if not hasattr(self, 'header_to_edit'):
+            raise AttributeError(
+                f"{self.__class__.__name__} has no 'header_to_edit' attribute.  Did you override "
+                "setup() and forget to class super()?"
+            )
+        kwargs["instance"] = self.header_to_edit
+        return kwargs
+
+        # Create method to get type of processing i.e. is it a payment or an invoice ?
+        # Create specific header, line, and matching invalid form methods

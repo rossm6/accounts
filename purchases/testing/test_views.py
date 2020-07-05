@@ -12,7 +12,6 @@ from vat.models import Vat
 
 from ..helpers import create_invoices, create_lines, create_payments
 from ..models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
-from ..views import create
 
 """
 

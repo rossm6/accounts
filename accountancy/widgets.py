@@ -171,15 +171,15 @@ class InputDropDown(Widget):
         for val, label, *model_attrs_and_values in self.choices:
             if isinstance(label, list):
                 for val, _label, *model_attrs_and_values in label:
-                    l = self.return_label(val, value, _label)
-                if model_attrs_and_values:
-                    attrs = self.build_data_model_attrs(model_attrs_and_values[0])
-                    break
+                    if l := self.return_label(val, value, _label):
+                        if model_attrs_and_values:
+                            attrs = self.build_data_model_attrs(model_attrs_and_values[0])
+                        break
             else:
-                l = self.return_label(val, value, label)
-                if model_attrs_and_values:
-                    attrs = self.build_data_model_attrs(model_attrs_and_values[0])
-                break
+                if l := self.return_label(val, value, label):
+                    if model_attrs_and_values:
+                        attrs = self.build_data_model_attrs(model_attrs_and_values[0])
+                    break
         return (l, attrs)
         
 

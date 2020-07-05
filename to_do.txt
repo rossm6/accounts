@@ -1,11 +1,34 @@
 PRIORITY 1
 
-    Need to test header_form failing for create and edit.  Check other failures tested also.
+    Tests
 
-    All tests should use sort_multiple to make sure they are in pk ascending order
+        Tests should be moved to the accountancy app.  This will mean creating special models just for tests - will
+        need to read into the best way of doing this.  And when we come to say, include discount, we shouldn't
+        change all our tests.  Instead we just create a new mock model for a new set of tests to test discount.
 
-    Line ordering.  I think we just need to make sure the lines are ordered by line no at the model level.
-    This way they show correctly in the edit view.... Need to test this.
+        Tests need to also check GET requests for CREATE and EDIT.
+        
+        Need to test header_form failing for create.  Check other failures tested also.
+
+        Line ordering.  I think we just need to make sure the lines are ordered by line no at the model level.
+        This way they show correctly in the edit view.... Need to test this.
+
+        Test that credit note entered as positive is negative.  Same for refund etc.  Do for Edit and Create.
+        Just one test for each.  But this shouldn't be a problem.
+
+        Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
+        testing the forms work as this has been checked in views already.
+
+        Test entering blank lines is ok
+
+    Transaction Enquiry -
+
+        The search function ignores "A", "the" etc so my supplier called "A" is ignored.  I think the solution
+        is to use Trigram search but the question is how do i do this over multiple fields?  I think this is possible
+        but cannot find an example.  The Q object is rumoured to be the answer but i couldn't get it to work.  A question
+        therefore for SO probably.
+
+        The select2 widget probably should be replaced with selectize which is what we are using in create / edit views.
 
     Edit -
 
@@ -14,35 +37,30 @@ PRIORITY 1
         But for edit view it would be better to just highlight the line reddish in case the user accidentally deletes it;
         this way they can click the button again to undo the delete.
 
-        Add table-bordered to the 'New Matching Transactions' table
-
         If an invoice is changed to a payment should we bother deleting the lines?  I suppose it should
         and we should also warn the user about this.
 
     Create -
 
-        Test that credit note entered as positive is negative.  Same for refund etc
-
-        Test entering blank lines is ok
-
         Subtotal, vat, total needs to be set on the server - for errors and editing
 
         Add supplier does not work.  Need to create a pop up form on the fly
 
-        Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
-        testing the forms work as this has been checked in views already.
 
-    Fix the __len__ method of the model choice field override in accountancy.fields
+    Templates -
 
-    Enable Ordering for the Outstanding transactions table
+        FIX ME - change 'matching_formset" to "match_formset" in the template
 
-    FIX ME - change 'matching_formset" to "match_formset" in the template
 
-    save is called on the header_obj potentially twice in CreateTransactions.  I assume the second time
-    will not hit the DB because Django first checks if the fields have changed.  But i need to confirm this.
+    MISC -
 
-    Many times i am checking whether the transaction type is a payment or not.  Need a global helper to do this
-    instead of repeating the code all over the place.
+        Fix the __len__ method of the model choice field override in accountancy.fields
+
+        save is called on the header_obj potentially twice in CreateTransactions.  I assume the second time
+        will not hit the DB because Django first checks if the fields have changed.  But i need to confirm this.
+
+        Many times i am checking whether the transaction type is a payment or not.  Need a global helper to do this
+        instead of repeating the code all over the place.
 
 PRIORITY 2
 

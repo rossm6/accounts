@@ -5,14 +5,16 @@
 {% endblock head %}
 
 {% block content %}
-    <div class="container">
+    <div class="custom-container">
         <div class="upper mb-5">
             <div class="container mt-5">
                 <h1 class="h4 font-weight-bold pb-2 border-bottom">Bills</h1>
                 <div>
-                    <div class="mt-4">
-                        {% comment %} row of buttons here {% endcomment %}
-                        Button here
+                    <div class="mt-4 d-flex">
+                        <a href="{% url 'purchases:create' %}?t=i" class="btn button mr-2">New Invoice</a>
+                        <a href="{% url 'purchases:create' %}?t=c" class="btn button mr-2">New Credit Note</a>
+                        <a href="{% url 'purchases:create' %}?t=p" class="btn button mr-2">New Payment</a>
+                        <a href="{% url 'purchases:create' %}?t=r" class="btn button mr-2">New Refund</a>
                     </div>
                 </div>
             </div>
