@@ -1,5 +1,13 @@
 PRIORITY 1
 
+    Refactor the create and edit views and assets used.  In doing so look to accomplish the following also -
+
+        Enable transaction changing in edit mode.  Means hiding elements on client side.
+        Add line management formset data to tests so they pass.  Previous point addresses this in UI
+        Input_grid.js is used on create and in edit.  But for edit the deleting lines is no good.  Instead we want
+        something else.
+
+
     Tests
 
         Tests should be moved to the accountancy app.  This will mean creating special models just for tests - will
@@ -37,20 +45,20 @@ PRIORITY 1
         But for edit view it would be better to just highlight the line reddish in case the user accidentally deletes it;
         this way they can click the button again to undo the delete.
 
+        There is a noticable lag between the document loading and the dates populating
+        on the client side and the subtotal, vat and total calculating clientside.  I suggest
+        we hide the grid until this is done and show the user a nice loading icon.
+
         If an invoice is changed to a payment should we bother deleting the lines?  I suppose it should
         and we should also warn the user about this.
 
     Create -
 
-        Subtotal, vat, total needs to be set on the server - for errors and editing
-
         Add supplier does not work.  Need to create a pop up form on the fly
-
 
     Templates -
 
         FIX ME - change 'matching_formset" to "match_formset" in the template
-
 
     MISC -
 

@@ -350,11 +350,9 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
             kwargs['payment_form'] = self.is_payment_form(kwargs["header_form"]) # as self.header_form not set for GET requests
         return super().get_context_data(**kwargs)
 
-
     def invalid_forms(self):
         self.header_is_invalid()
         if not self.header_is_payment_type():
-            print("is invoice")
             self.lines_are_invalid()
         self.matching_is_invalid()
         return self.render_to_response(self.get_context_data())

@@ -98,7 +98,6 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
 
 class PurchaseLineFormset(BaseTransactionModelFormSet):
-    # Might be helpful one day - https://reinbach.com/blog/django-formsets-with-extra-params/
 
     def __init__(self, *args, **kwargs):
         if 'header' in kwargs:

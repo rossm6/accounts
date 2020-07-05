@@ -8,7 +8,6 @@ $(document).ready(function () {
         return "";
     }
 
-
     function get_elements(tr) {
         var goods = tr.find(":input").filter(function (index) {
             return this.name.match(/line-\d+-goods/);
@@ -25,7 +24,6 @@ $(document).ready(function () {
             vat: vat
         };
     }
-
 
     function calculate_totals() {
         var lines = $("table.line").find("tbody").find("tr").not("tr.empty-form");
@@ -49,7 +47,6 @@ $(document).ready(function () {
         $("div.vat-total-lines").text(vat);
         $("div.total-lines").text(total);
     }
-
 
     $("table.line").on("change", ":input", function (event) {
 
@@ -81,4 +78,8 @@ $(document).ready(function () {
         calculate_totals();
 
     });
+
+
+    $("table.line tbody tr").not(".empty-form").eq(0).find("input").trigger("change");
+
 });
