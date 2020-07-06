@@ -2,11 +2,7 @@ PRIORITY 1
 
     Refactor the create and edit views and assets used.  In doing so look to accomplish the following also -
 
-        Enable transaction changing in edit mode.  Means hiding elements on client side.
-        Add line management formset data to tests so they pass.  Previous point addresses this in UI
-        Input_grid.js is used on create and in edit.  But for edit the deleting lines is no good.  Instead we want
-        something else.
-
+        Add line management formset data to tests so they pass.
 
     Tests
 
@@ -47,14 +43,16 @@ PRIORITY 1
 
         There is a noticable lag between the document loading and the dates populating
         on the client side and the subtotal, vat and total calculating clientside.  I suggest
-        we hide the grid until this is done and show the user a nice loading icon.
+        we hide the grid until this is done and show the user a nice loading icon.  The simplest
+        way to do this would be to hide the dom element server side and show the loading icon
+        and then have a script loaded onto the page last which just shows the content.
 
         If an invoice is changed to a payment should we bother deleting the lines?  I suppose it should
         and we should also warn the user about this.
 
     Create -
 
-        Add supplier does not work.  Need to create a pop up form on the fly
+        'Add supplier' does not work.  Need to create a pop up form on the fly.
 
     Templates -
 

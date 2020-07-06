@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_dropdown.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.2/css/buttons.dataTables.min.css">
+    <link rel="stylesheet" href"https://cdn.datatables.net/scroller/2.0.2/css/scroller.dataTables.min.css">
+    <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+    <div class="cont">
+        <div>
+            <div class="d-flex justify-content-center">
+                <div>
+                    <div class="border data-grid p-4">
+                        {% include 'accountancy/grid_errors.html' %}
+                        {% block action %}
+                        {% endblock action %}
+                        <div>
+                            <form class="formset" method="POST">
+                                {% csrf_token %}
+                                {% load crispy_forms_tags %}
+                                {% crispy header_form %}
+                                {% include 'accountancy/grid_lines.html' %}
+                                {% block buttons_footer %}
+                                {% endblock buttons_footer %}
+                                {% block matching %}
+                                {% endblock matching %}
+                            </form>
+                        </div>
+                        {% block under_form %}
+                        {% endblock under_form %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% include 'messages.html' with messages=messages %}
+    </div>
+{% endblock content %}
+
+{% block js %}
+    {% block extra_js %}
+    {% endblock extra_js %}
+{% endblock js %}

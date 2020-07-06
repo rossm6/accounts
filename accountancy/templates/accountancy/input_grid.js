@@ -49,10 +49,42 @@ $(document).ready(function () {
         event.stopPropagation();
     });
 
+    {% if edit %}
+
+        $("td.col-close-icon").on("click", function (event) {
+            var $tr = $(this).parents("tr");
+            var val = $tr.find("input.delete-line").val();
+            if(val){
+                $(this).parents("tr").find("input.delete-line").val("");
+                $tr.removeClass("deleted-row");
+            }
+            else{
+                $(this).parents("tr").find("input.delete-line").val("on"); // any value would do as it is a boolean field on the server
+                $tr.addClass("deleted-row");
+            }
+        });
+
+        // in case the server returns errors loop through lines with deleted set
+        // and change color
+        $("td.col-close-icon").each(function(){
+            var $tr = $(this).parents("tr");
+            var val = $tr.find("input.delete-line").val();
+            if(val){
+                $tr.addClass("deleted-row");
+            }
+            else{
+                $tr.removeClass("deleted-row");
+            }
+        });
+
+    {% else %}
+
     $("td.col-close-icon").on("click", function (event) {
         main_grid.delete_line($(this));
         event.stopPropagation();
     });
+
+    {% endif %}
 
     $("html").on("click focusin", function () {
         $("td input.can_highlight").removeClass("data-input-focus-border");

@@ -600,6 +600,11 @@ class BaseEditTransaction(BaseCreateTransaction):
         header = get_object_or_404(self.get_header_model(), pk=pk)
         self.header_to_edit = header
         
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["edit"] = self.header_to_edit.pk
+        return context
+
     def lines_are_valid(self):
         line_no = 1
         self.header_obj.save() # this could have been updated by line formset clean method already
@@ -657,6 +662,3 @@ class BaseEditTransaction(BaseCreateTransaction):
             )
         kwargs["instance"] = self.header_to_edit
         return kwargs
-
-        # Create method to get type of processing i.e. is it a payment or an invoice ?
-        # Create specific header, line, and matching invalid form methods

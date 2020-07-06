@@ -1,0 +1,38 @@
+{% extends 'accountancy/create_new.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
+{% endblock extra_head %}
+
+{% block matching %}
+<div class="my-4">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">Matching</h2>
+        <small class="form-text text-muted">The transactions you have already selected to match to this new transaction to</small>
+    </div>
+    <div>
+        <div class="d-none matching_transactions_formset">
+            {{ matching_formset.management_form|crispy }}
+        </div>
+        <div class="matched_transactions_wrapper">
+            <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="matched_transactions">
+                    {% crispy matching_formset %}
+                    {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock matching %}
+
+{% block under_form %}
+    {% include 'accountancy/outstanding.html' %}
+{% endblock under_form %}
+
+{% block extra_js %}
+    {% include 'accountancy/grid_js.html' with header_form=header_form %}
+    {% include 'accountancy/matching_js.html' %}
+{% endblock extra_js %}

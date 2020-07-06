@@ -6,6 +6,7 @@
 <script src="{% static 'js/error_tooltip.js' %}"></script>
 <script>
     {% include "accountancy/input_grid.js" %}
+    {% comment %} this requires server side input so is a template {% endcomment %}
 </script>
 <script src="{% static 'accountancy/js/calculator.js' %}"></script>
 <script src="{% static 'js/selectize.min.js' %}"></script>
@@ -18,11 +19,15 @@
 
     $(".transaction-type-select").selectize();
 
-    $("select.transaction-type-select").on("change", function() {
-        var transaction_type = $(this).val();
-        var url = window.location.href.split('?')[0];
-        window.location.href = url + "?t=" + transaction_type;
-    });
+    {% if not edit %}
+
+        $("select.transaction-type-select").on("change", function() {
+            var transaction_type = $(this).val();
+            var url = window.location.href.split('?')[0];
+            window.location.href = url + "?t=" + transaction_type;
+        });
+
+    {% endif %}
 
     {% comment %} 
     

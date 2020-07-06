@@ -1,0 +1,16 @@
+{% extends 'accountancy/grid.html' %}
+
+{% block action %}
+<div>
+    <h2 class="h6 font-weight-bold">Enter</h2>
+</div>
+{% endblock action %}
+
+{% block buttons_footer %}
+<div class="d-flex justify-content-end align-items-center p-2 border bg-white">
+    <div>
+        <button type="submit" class="btn btn-success xero-btn approve" name="approve" value="add_another">Approve and add another</button>
+        <button type="submit" class="btn btn-success xero-btn approve" name="approve" value="do_not_add_another">Approve</button>
+    </div>
+</div>
+{% endblock buttons_footer %}
