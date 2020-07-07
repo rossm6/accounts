@@ -3055,6 +3055,7 @@ class EditPayment(TestCase):
         matching_forms[1]["id"] = matches[1].pk
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
+        data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
 
         response = self.client.post(url, data)
@@ -3333,6 +3334,7 @@ class EditPayment(TestCase):
         matching_forms[1]["id"] = matches[1].pk
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
+        data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
 
         response = self.client.post(url, data)
@@ -3619,6 +3621,7 @@ class EditPayment(TestCase):
         matching_forms[1]["id"] = matches[1].pk
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
+        data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
 
         response = self.client.post(url, data)
@@ -3969,6 +3972,7 @@ class EditPayment(TestCase):
         # So we are trying to match 3 x 1000.00 invoices fully to a 2000.00 payment
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
+        data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
 
         response = self.client.post(url, data)
@@ -4316,6 +4320,7 @@ class EditPayment(TestCase):
         matching_forms[1]["id"] = matches[1].pk
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
+        data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
 
         response = self.client.post(url, data)

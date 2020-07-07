@@ -1,28 +1,38 @@
-{% extends 'base.html' %}
+{% extends 'accountancy/create.html' %}
 
-{% block head %}
-    {% include 'accountancy/create_css.html' %}
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/input_trans_grid.css' %}">
-    <link rel="stylesheet" href="{% static 'css/purchases/purchase_input.css' %}">
-    <link rel="stylesheet" href="{% static 'css/input_dropdown.css' %}">
-    {% include 'accountancy/matching_css.html' %}
-    <link rel="stylesheet" href="{% static 'css/matching.css' %}">
-{% endblock head %}
+{% load static %}
+{% load crispy_forms_tags %}
 
-{% block content %}
-    <div class="cont">
-        <div>
-            {% include 'accountancy/create.html' %}
-        </div>
-        {% include 'messages.html' with messages=messages %}
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
+{% endblock extra_head %}
+
+{% block matching %}
+<div class="my-4">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">Matching</h2>
+        <small class="form-text text-muted">The transactions you have already selected to match to this new transaction to</small>
     </div>
-{% endblock content %}
+    <div>
+        <div class="d-none matching_transactions_formset">
+            {{ matching_formset.management_form|crispy }}
+        </div>
+        <div class="matched_transactions_wrapper">
+            <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="matched_transactions">
+                    {% crispy matching_formset %}
+                    {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock matching %}
 
-{% block js %}
-    {% include 'accountancy/create_js.html' with header_form=header_form %}
+{% block under_form %}
+    {% include 'accountancy/outstanding.html' %}
+{% endblock under_form %}
+
+{% block extra_js %}
+    {% include 'accountancy/grid_js.html' with header_form=header_form %}
     {% include 'accountancy/matching_js.html' %}
-    <script>
-        {% include 'purchases/type_dependent_layout.js' with header_form_prefix=header_form_prefix %}
-    </script>
-{% endblock js %}
+{% endblock extra_js %}

@@ -1,8 +1,19 @@
 PRIORITY 1
 
-    Refactor the create and edit views and assets used.  In doing so look to accomplish the following also -
+    To do -
 
-        Add line management formset data to tests so they pass.
+        There is a noticable lag between the document loading and the dates populating
+        on the client side and the subtotal, vat and total calculating clientside.  I suggest
+        we hide the grid until this is done and show the user a nice loading icon.  The simplest
+        way to do this would be to hide the dom element server side and show the loading icon
+        and then have a script loaded onto the page last which just shows the content.
+
+        Rather than allow deleting transactions, like Xero, i prefer voiding.  So give the
+        purchase ledger transaction a status 'x' and leave the lines.  The only thing to
+        delete would be the nominal ledger transactions.  This way the 'void' action can
+        be undone - just pass the PL tran to the create_nominal_entries function again.
+
+        Create items, suppliers and vat codes on the fly.
 
     Tests
 
@@ -35,17 +46,6 @@ PRIORITY 1
         The select2 widget probably should be replaced with selectize which is what we are using in create / edit views.
 
     Edit -
-
-        I've tested deleting lines in the edit view but have not yet done the work client side.
-        For the create view, delete might as well literally remove the line i.e. dom element
-        But for edit view it would be better to just highlight the line reddish in case the user accidentally deletes it;
-        this way they can click the button again to undo the delete.
-
-        There is a noticable lag between the document loading and the dates populating
-        on the client side and the subtotal, vat and total calculating clientside.  I suggest
-        we hide the grid until this is done and show the user a nice loading icon.  The simplest
-        way to do this would be to hide the dom element server side and show the loading icon
-        and then have a script loaded onto the page last which just shows the content.
 
         If an invoice is changed to a payment should we bother deleting the lines?  I suppose it should
         and we should also warn the user about this.

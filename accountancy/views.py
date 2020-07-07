@@ -537,7 +537,6 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
                 return self.match_formset
             else:
                 formset_class = self.match.get('formset')
-                print(header)
                 return formset_class(**self.get_match_formset_kwargs(header))
 
     
@@ -584,7 +583,7 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
                     return self.invalid_forms()
             # other scenarios to consider later on ...
         else:
-            self.header_invalid()
+            self.header_is_invalid()
             return self.render_to_response(self.get_context_data())
 
         # So we were successful

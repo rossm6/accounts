@@ -43,7 +43,7 @@ class CreateTransaction(BaseCreateTransaction):
         "formset": match,
         "prefix": "match"
     }
-    template_name = "purchases/create_new.html"
+    template_name = "purchases/create.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
 
 
@@ -67,7 +67,7 @@ class EditTransaction(BaseEditTransaction):
         "formset": match,
         "prefix": "match"
     }
-    template_name = "purchases/edit_new.html"
+    template_name = "purchases/edit.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
 
 
