@@ -213,3 +213,9 @@ div.has_errors::after {
     border-left-color: red;
     border-bottom-color: red;
 }
+
+.loading-icon {
+    top: 10%;
+    left: 50%;
+    position: absolute;
+}

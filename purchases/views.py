@@ -5,7 +5,7 @@ from itertools import chain
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.urls import reverse_lazy
 from django.views.generic import ListView
@@ -18,7 +18,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                input_dropdown_widget_validate_choice_factory, jQueryDataTable)
 from items.models import Item
 
-from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match
+from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match, SupplierForm
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
@@ -42,6 +42,9 @@ class CreateTransaction(BaseCreateTransaction):
         "model": PurchaseMatching,
         "formset": match,
         "prefix": "match"
+    }
+    create_on_the_fly = {
+        "supplier_form": SupplierForm
     }
     template_name = "purchases/create.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")

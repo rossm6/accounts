@@ -2,18 +2,19 @@ PRIORITY 1
 
     To do -
 
-        There is a noticable lag between the document loading and the dates populating
-        on the client side and the subtotal, vat and total calculating clientside.  I suggest
-        we hide the grid until this is done and show the user a nice loading icon.  The simplest
-        way to do this would be to hide the dom element server side and show the loading icon
-        and then have a script loaded onto the page last which just shows the content.
+       Create items, suppliers and vat codes on the fly.
+
+            We need to create a general create_on_the_fly view which
+            all POST requests are sent to in order to create objects
+            on the fly so we are not repeating ourselves.  I guess the
+            identifiers should be in the POST request too -
+
+                form=supplier_form&code=abc&name=charles
 
         Rather than allow deleting transactions, like Xero, i prefer voiding.  So give the
         purchase ledger transaction a status 'x' and leave the lines.  The only thing to
         delete would be the nominal ledger transactions.  This way the 'void' action can
         be undone - just pass the PL tran to the create_nominal_entries function again.
-
-        Create items, suppliers and vat codes on the fly.
 
     Tests
 

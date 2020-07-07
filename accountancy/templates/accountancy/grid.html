@@ -20,30 +20,36 @@
         <div>
             <div class="d-flex justify-content-center">
                 <div>
-                    <div class="border data-grid p-4">
-                        {% include 'accountancy/grid_errors.html' %}
-                        {% block action %}
-                        {% endblock action %}
-                        <div>
-                            <form class="formset" method="POST">
-                                {% csrf_token %}
-                                {% load crispy_forms_tags %}
-                                {% crispy header_form %}
-                                {% include 'accountancy/grid_lines.html' %}
-                                {% block buttons_footer %}
-                                {% endblock buttons_footer %}
-                                {% block matching %}
-                                {% endblock matching %}
-                            </form>
+                    <div class="border data-grid p-4 position-relative">
+                        <div class="invisible">
+                            {% include 'accountancy/grid_errors.html' %}
+                            {% block action %}
+                            {% endblock action %}
+                            <div>
+                                <form class="formset" method="POST">
+                                    {% csrf_token %}
+                                    {% load crispy_forms_tags %}
+                                    {% crispy header_form %}
+                                    {% include 'accountancy/grid_lines.html' %}
+                                    {% block buttons_footer %}
+                                    {% endblock buttons_footer %}
+                                    {% block matching %}
+                                    {% endblock matching %}
+                                </form>
+                            </div>
+                            {% block under_form %}
+                            {% endblock under_form %}
                         </div>
-                        {% block under_form %}
-                        {% endblock under_form %}
+                        <div class="spinner-border color-b-1 loading-icon" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         {% include 'messages.html' with messages=messages %}
     </div>
+    
 {% endblock content %}
 
 {% block js %}

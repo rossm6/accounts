@@ -331,6 +331,7 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def get_context_data(self, **kwargs):
         # FIX ME - change 'matching_formset" to "match_formset" in the template
+
         if 'header_form' not in kwargs:
             kwargs["header_form"] = self.get_header_form()
         if 'line_formset' not in kwargs:
@@ -348,6 +349,10 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
                 kwargs['non_field_errors'] = self.non_field_errors
         if 'payment_form' not in kwargs:
             kwargs['payment_form'] = self.is_payment_form(kwargs["header_form"]) # as self.header_form not set for GET requests
+        
+        for form in self.create_on_the_fly:
+            kwargs[form] = self.create_on_the_fly[form]()
+
         return super().get_context_data(**kwargs)
 
     def invalid_forms(self):
@@ -661,3 +666,33 @@ class BaseEditTransaction(BaseCreateTransaction):
             )
         kwargs["instance"] = self.header_to_edit
         return kwargs
+
+
+
+def create_on_the_fly(*forms):
+    
+    """
+    Rather than have a multiple views for all the different
+    objects which can be created on the fly we have one
+    """
+
+    def view(request):
+        if request.is_ajax() and request.method == "POST":
+            form = request.POST.get("form")
+            if form in forms:
+                prefix = forms[form][prefix]
+                form = forms[form][form](request.POST, prefix=prefix)
+                if form.is_valid():
+                    inst = form.save()
+                    return JsonResponse(
+                        data={
+                            "id": inst.pk,
+                            "text": str(inst)
+                        }
+                    )
+                else:
+                    return JsonResponse(data={})
+        else:
+            return HttpResponseBadRequest()
+
+    return view

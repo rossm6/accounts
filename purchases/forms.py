@@ -1,14 +1,16 @@
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout
 
 from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField,
                                 ModelChoiceIteratorWithFields)
 from accountancy.forms import (AjaxForm, DataTableTdField, LabelAndFieldOnly,
-                               PlainFieldErrors, TableHelper,
+                               PlainFieldErrors, TableHelper, Field,
                                create_payment_transaction_header_helper,
-                               create_transaction_header_helper, BaseTransactionMixin)
+                               create_transaction_header_helper, BaseTransactionMixin, Div)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.widgets import InputDropDown
 from items.models import Item
@@ -16,6 +18,32 @@ from nominals.models import Nominal
 from vat.models import Vat
 
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
+
+
+
+
+class SupplierForm(forms.ModelForm):
+
+    class Meta:
+        model = Supplier
+        fields = ('code', 'name',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    Field('code', css_class="w-100 input"),
+                    css_class="col"
+                ),
+                Div(
+                    Field('name', css_class="w-100 input"),
+                    css_class="col"
+                ),
+                css_class="row"
+            )
+        )
 
 
 class BaseTransactionModelFormSet(forms.BaseModelFormSet):
