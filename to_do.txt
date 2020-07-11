@@ -1,5 +1,8 @@
 PRIORITY 1
 
+
+    Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
+
     To do -
 
        Create items, suppliers and vat codes on the fly.
@@ -52,8 +55,6 @@ PRIORITY 1
         and we should also warn the user about this.
 
     Create -
-
-        'Add supplier' does not work.  Need to create a pop up form on the fly.
 
     Templates -
 

@@ -20,31 +20,13 @@ from vat.models import Vat
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
-
-
-class SupplierForm(forms.ModelForm):
-
+class QuickSupplierForm(forms.ModelForm):
+    """
+    Used to create a supplier on the fly in the transaction views
+    """
     class Meta:
         model = Supplier
-        fields = ('code', 'name',)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            Div(
-                Div(
-                    Field('code', css_class="w-100 input"),
-                    css_class="col"
-                ),
-                Div(
-                    Field('name', css_class="w-100 input"),
-                    css_class="col"
-                ),
-                css_class="row"
-            )
-        )
-
+        fields = ('code', )
 
 class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
@@ -173,7 +155,7 @@ class PurchaseLineForm(AjaxForm):
         inst_queryset= lambda inst : Item.objects.filter(pk=inst.item_id),
         widget=InputDropDown(
             attrs={
-                "data-newitem": "#new_item",
+                "data-new": "#new_item",
                 "data-load-url": delay_reverse_lazy("purchases:load_options", "field=item"),
                 "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=item")
             }
@@ -185,7 +167,7 @@ class PurchaseLineForm(AjaxForm):
     nominal = AjaxRootAndLeavesModelChoiceField(
         widget=InputDropDown(
             attrs={
-                "data-newitem": "#new_nominal",
+                "data-new": "#new-nominal",
                 "data-load-url": delay_reverse_lazy("purchases:load_options", "field=nominal"),
                 "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=nominal")
             }
@@ -201,7 +183,7 @@ class PurchaseLineForm(AjaxForm):
     vat_code = AjaxModelChoiceField(
         widget=InputDropDown(
             attrs={
-                "data-new-vat-code": "#new-vat-code",
+                "data-new": "#new-vat-code",
                 "data-load-url": delay_reverse_lazy("purchases:load_options", "field=vat_code"),
                 "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=vat_code")
             },

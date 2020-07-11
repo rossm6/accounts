@@ -350,8 +350,9 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
         if 'payment_form' not in kwargs:
             kwargs['payment_form'] = self.is_payment_form(kwargs["header_form"]) # as self.header_form not set for GET requests
         
-        for form in self.create_on_the_fly:
-            kwargs[form] = self.create_on_the_fly[form]()
+        if hasattr(self, 'create_on_the_fly'):
+            for form in self.create_on_the_fly:
+                kwargs[form] = self.create_on_the_fly[form] # this is a form instance already
 
         return super().get_context_data(**kwargs)
 
@@ -669,7 +670,7 @@ class BaseEditTransaction(BaseCreateTransaction):
 
 
 
-def create_on_the_fly(*forms):
+def create_on_the_fly(**forms):
     
     """
     Rather than have a multiple views for all the different
@@ -678,21 +679,27 @@ def create_on_the_fly(*forms):
 
     def view(request):
         if request.is_ajax() and request.method == "POST":
-            form = request.POST.get("form")
-            if form in forms:
-                prefix = forms[form][prefix]
-                form = forms[form][form](request.POST, prefix=prefix)
+            form_name = request.POST.get("form")
+            if form_name in forms:
+                prefix = forms[form_name].get("prefix")
+                form = forms[form_name]["form"](data=request.POST, prefix=prefix)
                 if form.is_valid():
                     inst = form.save()
-                    return JsonResponse(
+                    if 'serializer' in forms[form_name]:
+                        data=forms[form_name]["serializer"](inst)
+                    else:
                         data={
-                            "id": inst.pk,
-                            "text": str(inst)
+                            'id': result.id,
+                            'text': str(result)
                         }
+                    return JsonResponse(
+                        data=data
                     )
                 else:
                     return JsonResponse(data={})
+            else:
+                raise Http404("Form not found")
         else:
-            return HttpResponseBadRequest()
+            raise Http404()
 
     return view

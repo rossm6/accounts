@@ -15,12 +15,16 @@ from accountancy.forms import AdvancedTransactionSearchForm
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseTransactionsList,
                                input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory, jQueryDataTable)
+                               input_dropdown_widget_validate_choice_factory, jQueryDataTable, create_on_the_fly)
 from items.models import Item
 
-from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match, SupplierForm
+from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match, QuickSupplierForm
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
+from nominals.forms import NominalForm
+
+from vat.forms import QuickVatForm
+from vat.serializers import vat_object_for_input_dropdown_widget
 
 class CreateTransaction(BaseCreateTransaction):
     header = {
@@ -44,7 +48,8 @@ class CreateTransaction(BaseCreateTransaction):
         "prefix": "match"
     }
     create_on_the_fly = {
-        "supplier_form": SupplierForm
+        "nominal_form": NominalForm(prefix="nominal"),
+        "vat_form": QuickVatForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="vat")
     }
     template_name = "purchases/create.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
@@ -166,7 +171,7 @@ class LoadSuppliers(ListView):
         if q := self.request.GET.get('q'):
             return (
                 Supplier.objects.annotate(
-                    similarity=TrigramSimilarity('name', q),
+                    similarity=TrigramSimilarity('code', q),
                 ).filter(similarity__gt=0.3).order_by('-similarity')
             )
         return Supplier.objects.none()
@@ -175,7 +180,7 @@ class LoadSuppliers(ListView):
         suppliers = []
         for supplier in context["page_obj"].object_list:
             s = {
-                'name': supplier.name,
+                'code': supplier.code,
                 "id": supplier.id
             }
             suppliers.append(s)
@@ -220,3 +225,20 @@ class TransactionEnquiry(BaseTransactionsList):
 
 
 validate_choice = input_dropdown_widget_validate_choice_factory(PurchaseLineForm())
+
+
+create_on_the_fly_view = create_on_the_fly(
+    nominal={
+        "form": NominalForm,
+        "prefix": "nominal"
+    },
+    supplier={
+        "form": QuickSupplierForm,
+        "prefix": "supplier"
+    },
+    vat={
+        "form": QuickVatForm,
+        "serializer": vat_object_for_input_dropdown_widget,
+        "prefix": "vat"
+    }
+)

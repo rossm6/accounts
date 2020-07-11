@@ -2,7 +2,6 @@
     root.input_dropdown_widget = module();
 })(window, function () {
 
-
     // NOTES -
     // When the widget opens the input field
     // will not necessarily be the same height
@@ -51,6 +50,48 @@
         }
     }
 
+
+    Widget.prototype.create = function (text, attrs) {
+        if(!text){
+            return;
+        }
+        this.get_$dom().find("ul.dropdown").children().not(".new-btn").remove();
+        var new_option = $("<li>");
+        new_option.text(text);
+        for(var attr in attrs){
+            new_option.attr(attr, attrs[attr]);
+        }
+        this.get_$dom().find("ul.dropdown").append(new_option);
+        this.update_choice({
+            // this object just mocks the event object
+            target: new_option.get(0),
+            stopPropagation: function(){
+                return; // do absolutely nothing
+            }
+        });
+    };
+
+
+    Widget.prototype.show_create_new_object_form = function (event) {
+        var modal_form_identifier = this.$dom.find("input").attr("data-new");
+        var modal_form = $(modal_form_identifier);
+        var self = this;
+        new ModalForm({
+            modal: modal_form,
+            input: this.$dom.find("input").val(),
+            callback: function (result) {
+                self.create(
+                    result.text,
+                    {
+                        'data-value': result.id,
+                        'data-model-attr-rate': result.rate
+                    }
+                );
+            }
+        });
+        this.close();
+        event.stopPropagation();
+    };
 
     Widget.prototype.search = function () {
         var $widget = this.get_$dom();
@@ -223,6 +264,8 @@
         // and 'this' is bound to the object instance
         $widget = this.get_$dom();
         var $event_target = $(event.target);
+        console.log("event target");
+        console.log($event_target);
         if ($event_target.is("li")) {
             var label;
             var value = $event_target.attr("data-value");
@@ -265,7 +308,8 @@
         this.$dom = $widget;
 
         this.add_events(
-            [{
+            [
+                {
                     "elem": this.$dom.find(".dropdown-btn"),
                     "event": "click",
                     "callback": this.show_dropdown.bind(this)
@@ -280,6 +324,11 @@
                     "event": "keyup",
                     "callback": this.search.bind(this)
                 },
+                {
+                    "elem": this.$dom.find(".new-btn"),
+                    "event": "click",
+                    "callback": this.show_create_new_object_form.bind(this)
+                }
             ]
         );
 

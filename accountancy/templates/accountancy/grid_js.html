@@ -10,6 +10,8 @@
 </script>
 <script src="{% static 'accountancy/js/calculator.js' %}"></script>
 <script src="{% static 'js/selectize.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+<script src="{% static 'js/modal_form.js' %}"></script>
 {{ header_form.media }}
 <script>
 
@@ -40,72 +42,35 @@
     {% endcomment %}
 
 
-    ModalForm.prototype.create = function (event) {
-        event.stopPropagation();
-        var self = this;
-        $.ajax({
-            url: self.form.attr("action"),
-            method: "POST",
-            data: self.form.serialize(),
-            success: function (result) {
-                if(result) {
-                    self.callback({
-                        value: result.id,
-                        text: opts.input
-                    });
-                }
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
-                self.callback({
-                    value: '',
-                    text: ''
-                });
-            },
-            complete: function (jqXHR, textStatus) {
-                self.remove_events();
-            }
-        });
-    };
-
-    ModalForm.prototype.cancel = function () {
-        // it seems we have to call callback else it breaks the plugin
-        // so we just pass an empty value and text
-        this.callback({
-            value: '',
-            text: ''
-        });
-        this.remove_events();
-    };
-
-
-    ModalForm.prototype.remove_events = function () {
-        this.form.off("submit", this.create);
-        this.cancel_btn.off("click", this.cancel);
-    };
-
-    function ModalForm (opts) {
-        this.modal = opts.modal;
-        this.input = opts.input;
-        this.callback = opts.callback;
-        this.form = this.modal.find("form");
-        this.cancel_btn = this.modal.find("button.cancel");
-        this.modal.modal("show");
-        this.form.on("submit", this.create.bind(this));
-        this.cancel_btn.on("click", this.cancel.bind(this));
-    }
-
-
     $(".supplier-select").selectize({
         valueField: 'id',
-        labelField: 'name',
-        searchField: 'name',
-        insert: false,
+        labelField: 'code',
+        searchField: 'code',
+        insert: true,
         create: function(input, callback) {
-            new ModalForm({
-                modal: $("#exampleModal"),
-                input: input,
-                callback: callback
+            $.ajax({
+                url: "{% url 'purchases:create_on_the_fly'  %}",
+                method: "POST",
+                data: "form=supplier&code=" + input + "&csrfmiddlewaretoken=" + Cookies.get('csrftoken'),
+                success: function (result) {
+                    if(result) {
+                        callback({
+                            id: result.id,
+                            code: result.text
+                        });
+                        // spent ages on this
+                        // selectize.js says the keys should be value and text but according to below this is wrong
+                        // https://github.com/selectize/selectize.js/issues/1329#issuecomment-358857146
+                        // https://stackoverflow.com/questions/24366365/creating-an-item-if-not-already-exists-in-selectize-js-select-box-and-ajax-updat
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
+                    callback({
+                        value: '',
+                        text: ''
+                    });
+                }
             });
         },
         load: function(query, callback) {
@@ -118,7 +83,7 @@
                     page_limit: 10,
                 },
                 error: function() {
-                    console.log("error");
+                    console.log("error loading suppliers...");
                 },
                 success: function(res) {
                     callback(res.data);

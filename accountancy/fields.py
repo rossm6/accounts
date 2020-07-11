@@ -4,7 +4,9 @@ from operator import attrgetter
 
 from django.forms.models import ModelChoiceField, ModelChoiceIterator
 
+
 class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
+
     """
     Based on the Xero accounts software we wish to show a
     list of account nominals where an account structure like -
@@ -53,6 +55,31 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
 #         return self.queryset.count() + (1 if self.field.empty_label is not None else 0)
 
 
+
+class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
+    """
+    When creating nominal codes one needs to pick the account type i.e.
+    the child of a root.
+
+    This structure is built into the software.  Might make the whole thing
+    user definable later on.
+    """
+
+    def __iter__(self):
+        if self.field.empty_label is not None:
+            yield ("", self.field.empty_label)
+        tree = self.queryset # must be Model.objects.all().prefetch_related('children')
+        children = []
+        root_and_children = (None, children)
+        for node in tree:
+            if node.is_root_node():
+                if children:
+                    yield root_and_children
+                    children = []
+                root_and_children = (node.name, children)
+            elif node.is_child_node() and not node.is_leaf_node():
+                children.append(self.choice(node))
+        yield root_and_children 
 
 
 class ModelChoiceIteratorWithFields(ModelChoiceIterator):
@@ -124,6 +151,12 @@ class RootAndLeavesModelChoiceField(object):
     def __init__(self, *args, **kwargs):
         self.iterator = RootAndLeavesModelChoiceIterator
 
+
+class RootAndChildrenModelChoiceField(ModelChoiceField):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.iterator = RootAndChildrenModelChoiceIterator
 
 class AjaxRootAndLeavesModelChoiceField(AjaxModelChoiceField, RootAndLeavesModelChoiceField):
     pass
