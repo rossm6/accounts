@@ -1,23 +1,17 @@
 PRIORITY 1
 
-
-    Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
-
     To do -
-
-       Create items, suppliers and vat codes on the fly.
-
-            We need to create a general create_on_the_fly view which
-            all POST requests are sent to in order to create objects
-            on the fly so we are not repeating ourselves.  I guess the
-            identifiers should be in the POST request too -
-
-                form=supplier_form&code=abc&name=charles
 
         Rather than allow deleting transactions, like Xero, i prefer voiding.  So give the
         purchase ledger transaction a status 'x' and leave the lines.  The only thing to
         delete would be the nominal ledger transactions.  This way the 'void' action can
         be undone - just pass the PL tran to the create_nominal_entries function again.
+
+    UI
+
+        Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
+
+            I WILL DO THIS WHEN I HAVE PUT THE APP UP ON HEROKU 
 
     Tests
 
@@ -25,20 +19,14 @@ PRIORITY 1
         need to read into the best way of doing this.  And when we come to say, include discount, we shouldn't
         change all our tests.  Instead we just create a new mock model for a new set of tests to test discount.
 
-        Tests need to also check GET requests for CREATE and EDIT.
-        
-        Need to test header_form failing for create.  Check other failures tested also.
-
-        Line ordering.  I think we just need to make sure the lines are ordered by line no at the model level.
-        This way they show correctly in the edit view.... Need to test this.
-
-        Test that credit note entered as positive is negative.  Same for refund etc.  Do for Edit and Create.
-        Just one test for each.  But this shouldn't be a problem.
+            THIS WOULD MEAN ALSO COPYING ALL THE VIEWS AND URLS.  EASIER TO JUST KEEP THE PURCHASES APP BUT RENAME
+            TO "DUMMY_PURCHASES" OR SOMETHING
 
         Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
         testing the forms work as this has been checked in views already.
 
-        Test entering blank lines is ok
+        Test that credit note entered as positive is negative.  Same for refund etc.  Do for Edit and Create.
+        Just one test for each.  But this shouldn't be a problem.
 
     Transaction Enquiry -
 
@@ -56,6 +44,9 @@ PRIORITY 1
 
     Create -
 
+        Implement the "add" or "add and add another" logic.  Former should redirect to read afterwards - perhaps check Xero.
+        The other should obviously redirect to create view again
+
     Templates -
 
         FIX ME - change 'matching_formset" to "match_formset" in the template
@@ -69,10 +60,3 @@ PRIORITY 1
 
         Many times i am checking whether the transaction type is a payment or not.  Need a global helper to do this
         instead of repeating the code all over the place.
-
-PRIORITY 2
-
-    Warn user if the vat value they override is not the goods * rate
-
-    Refactor the styles in styles.css and ui_elem_styles.css.  Styles in the first sheet probably belong to the second.
-    The second sheet could do with being renamed

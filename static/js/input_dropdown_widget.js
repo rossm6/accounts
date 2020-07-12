@@ -52,6 +52,7 @@
 
 
     Widget.prototype.create = function (text, attrs) {
+        console.log(text);
         if(!text){
             return;
         }
@@ -81,10 +82,10 @@
             input: this.$dom.find("input").val(),
             callback: function (result) {
                 self.create(
-                    result.text,
+                    result && result.text,
                     {
-                        'data-value': result.id,
-                        'data-model-attr-rate': result.rate
+                        'data-value': result && result.id,
+                        'data-model-attr-rate': result && result.rate
                     }
                 );
             }

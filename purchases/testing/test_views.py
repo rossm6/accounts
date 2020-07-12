@@ -150,6 +150,64 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
 
 
 
+
+class CreateBroughtForwardInvoice(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("purchases:create")
+
+    # CORRECT USAGE
+    # Can request create brought forward invoice view with t=bi GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=bi")
+        self.assertEqual(response.status_code, 200)
+        # This HTML fragment is before the selectize widget does its thing
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi" selected>Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+class CreateBroughtForwardCreditNote(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("purchases:create")
+
+    # CORRECT USAGE
+    # Can request create brought forward invoice view with t=bi GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=bc")
+        self.assertEqual(response.status_code, 200)
+        # This HTML fragment is before the selectize widget does its thing
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc" selected>Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
 class CreateInvoice(TestCase):
 
     @classmethod
@@ -187,6 +245,234 @@ class CreateInvoice(TestCase):
             Enter negative -> Positive values saved in DB
 
     """
+
+
+    # CORRECT USAGE
+    # Can request create invoice view without GET parameters
+    def test_get_request(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    # CORRECT USAGE
+    # Can request create invoice view with t=i GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=i")
+        self.assertEqual(response.status_code, 200)
+        # This HTML fragment is before the selectize widget does its thing
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i" selected>Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+    # CORRECT USAGE
+    # Test the line no is correct
+    def test_line_no(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        line_forms = ([{
+                'item': self.item.pk,
+                'description': self.description,
+                'goods': 100,
+                'nominal': self.nominal.pk,
+                'vat_code': self.vat_code.pk,
+                'vat': 20
+            }]) * 20
+        line_no = 0
+        for line_form in line_forms:
+            line_form["ORDER"] = line_no
+            line_no = line_no + 1
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            20 * (100 + 20)
+        )
+        self.assertEqual(
+            header.goods,
+            20 * 100
+        )
+        self.assertEqual(
+            header.vat,
+            20 * 20
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 20)
+        line_no = 1
+        for line in lines:
+            self.assertEqual(
+                line.item,
+                self.item
+            )
+            self.assertEqual(
+                line.description,
+                self.description
+            )
+            self.assertEqual(
+                line.goods,
+                100
+            )
+            self.assertEqual(
+                line.nominal,
+                self.nominal
+            )
+            self.assertEqual(
+                line.vat_code,
+                self.vat_code
+            )
+            self.assertEqual(
+                line.vat,
+                20
+            )
+            self.assertEqual(
+                line.line_no,
+                line_no
+            )
+            line_no = line_no + 1
+
+
+
+    def test_entering_blank_lines(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        line_forms = ([{
+                'item': self.item.pk,
+                'description': self.description,
+                'goods': 100,
+                'nominal': self.nominal.pk,
+                'vat_code': self.vat_code.pk,
+                'vat': 20
+            }]) * 10
+        line_forms += ([{
+                'item': '',
+                'description': '',
+                'goods': '',
+                'nominal': '',
+                'vat_code': '',
+                'vat': ''
+            }]) * 10
+        # NOTE THIS WILL NOT WORK IF WE ORDER OR DELETE ON EMPTY LINES
+        # SO ON THE CLIENT WE MUST NOT SET EITHER IF ALL THE FIELDS ARE BLANK
+        line_no = 1
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            10 * (100 + 20)
+        )
+        self.assertEqual(
+            header.goods,
+            10 * 100
+        )
+        self.assertEqual(
+            header.vat,
+            10 * 20
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 10)
+        line_no = 1
+        for line in lines:
+            self.assertEqual(
+                line.item,
+                self.item
+            )
+            self.assertEqual(
+                line.description,
+                self.description
+            )
+            self.assertEqual(
+                line.goods,
+                100
+            )
+            self.assertEqual(
+                line.nominal,
+                self.nominal
+            )
+            self.assertEqual(
+                line.vat_code,
+                self.vat_code
+            )
+            self.assertEqual(
+                line.vat,
+                20
+            )
+            self.assertEqual(
+                line.line_no,
+                line_no
+            )
+            line_no = line_no + 1
+
 
 
 
@@ -1837,6 +2123,95 @@ class CreateInvoice(TestCase):
         )
     
 
+class CreateCreditNote(TestCase):
+
+    """
+    Remember we have to POST to /purchases/create?t=p
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("purchases:create")
+
+
+    # CORRECT USAGE
+    # Can request create payment view only with t=p GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=c")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c" selected>Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+class CreateBroughtForwardPayment(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("purchases:create")
+
+    # CORRECT USAGE
+    # Can request create payment view only with t=bp GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=bp")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp" selected>Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+class CreateBroughtForwardRefund(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("purchases:create")
+
+    # CORRECT USAGE
+    # Can request create payment view only with t=bp GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=br")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br" selected>Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
 
 # THIS WAS WRITTEN BACK WHEN PAYMENTS USED A DIFFERENT FORM TO INVOICES
 # STILL KEEPS IT ANYWAY BUT NOT SO IMPORTANT NOW
@@ -1863,6 +2238,28 @@ class CreatePayment(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")
+
+
+    # CORRECT USAGE
+    # Can request create payment view only with t=p GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=p")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p" selected>Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
 
 
     def test_payment_with_positive_input_is_saved_as_negative(self):
@@ -2903,6 +3300,37 @@ class EditPayment(TestCase):
     """
     First no new matching transactions are added
     """
+
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="p",
+            supplier=self.supplier,
+            ref="ref",
+            date=timezone.now(),
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p" selected>Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
 
     # CORRECT USAGE
     # Payment total is increased.  Payment was previously fully matched
@@ -5325,6 +5753,129 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, -600) 
 
 
+class CreateRefund(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("purchases:create")
+
+    # CORRECT USAGE
+    # Can request create refund view only with t=bp GET parameter
+    def test_get_request_with_query_parameter(self):
+        response = self.client.get(self.url + "?t=r")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r" selected>Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+class EditBroughtForwardInvoice(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="bi",
+            supplier=self.supplier,
+            ref="ref",
+            date=self.date,
+            due_date=self.due_date,
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi" selected>Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+class EditBroughtForwardCreditNote(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="bc",
+            supplier=self.supplier,
+            ref="ref",
+            date=self.date,
+            due_date=self.due_date,
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc" selected>Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+
 class EditInvoice(TestCase):
 
     @classmethod
@@ -5353,6 +5904,295 @@ class EditInvoice(TestCase):
     """
     First no new matching transactions are added
     """
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="i",
+            supplier=self.supplier,
+            ref="ref",
+            date=self.date,
+            due_date=self.due_date,
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i" selected>Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+
+    # CORRECT USAGE
+    # Invoice total is increased (the invoice this time is the matched_to transaction)
+    # Lines are added to match the header total
+    # Payment was previously fully matched
+    def test_line_no_changed(self):
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines_orig = lines
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 1)
+        self.assertEqual(headers[0].pk, invoices[0].pk)
+        self.assertEqual(headers[0].total, 1200)
+        self.assertEqual(headers[0].paid, 0)
+        self.assertEqual(headers[0].due, 1200)
+
+        line_no = 1
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            self.assertEqual(line.line_no, line_no)
+            line_no = line_no + 1
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1200
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_forms = lines_as_dicts
+        line_no = 1
+        # THIS MIRRORS WHAT WOULD HAPPEN THROUGH THE UI
+        # THE API IS A DIFFERENT STORY THOUGH
+        # THE USER WOULD WANT TO JUST CHANGE THE LINE_NO OF THE LINE
+        # AND NOT HAVE TO SET THE ORDER FOR THE OTHERS
+        for line_form in line_forms:
+            line_form["ORDER"] = line_no
+            line_no = line_no + 1
+        line_forms[-2]["ORDER"] = 10
+        line_forms[-1]["ORDER"] = 9
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+
+
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 1)
+        self.assertEqual(headers[0].pk, invoices[0].pk)
+        self.assertEqual(headers[0].total, 1200)
+        self.assertEqual(headers[0].paid, 0)
+        self.assertEqual(headers[0].due, 1200)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 10)
+
+        line_no = 1
+        for index, line in enumerate(lines[:8]):
+            self.assertEqual(line.pk, lines_orig[index].pk)
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            self.assertEqual(line.line_no, line_no)
+            line_no = line_no + 1
+
+        self.assertEqual(lines[8].pk, lines_orig[-1].pk)
+        self.assertEqual(lines[8].item, self.item)
+        self.assertEqual(lines[8].description, self.description)
+        self.assertEqual(lines[8].goods, 100)
+        self.assertEqual(lines[8].nominal, self.nominal)
+        self.assertEqual(lines[8].vat_code, self.vat_code)
+        self.assertEqual(lines[8].vat, 20)
+        self.assertEqual(lines[8].line_no, 9)
+
+        self.assertEqual(lines[9].pk, lines_orig[-2].pk)
+        self.assertEqual(lines[9].item, self.item)
+        self.assertEqual(lines[9].description, self.description)
+        self.assertEqual(lines[9].goods, 100)
+        self.assertEqual(lines[9].nominal, self.nominal)
+        self.assertEqual(lines[9].vat_code, self.vat_code)
+        self.assertEqual(lines[9].vat, 20)
+        self.assertEqual(lines[9].line_no, 10)
+        
+
+
+    # CORRECT USAGE
+    # Invoice total is increased (the invoice this time is the matched_to transaction)
+    # Lines are added to match the header total
+    # Payment was previously fully matched
+    def test_line_delete_line(self):
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines_orig = lines
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 1)
+        self.assertEqual(headers[0].pk, invoices[0].pk)
+        self.assertEqual(headers[0].total, 1200)
+        self.assertEqual(headers[0].paid, 0)
+        self.assertEqual(headers[0].due, 1200)
+
+        line_no = 1
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            self.assertEqual(line.line_no, line_no)
+            line_no = line_no + 1
+
+        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1080
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_forms = lines_as_dicts
+        line_no = 1
+
+        # THIS MIRRORS WHAT WOULD HAPPEN THROUGH THE UI
+        # THE API IS A DIFFERENT STORY THOUGH
+        # THE USER WOULD WANT TO JUST CHANGE THE LINE_NO OF THE LINE
+        # AND NOT HAVE TO SET THE ORDER FOR THE OTHERS
+
+        # DELETING A LINE IN THE UI MUST REORDER TOO
+        for line_form in line_forms:
+            line_form["ORDER"] = line_no
+            line_no = line_no + 1
+        line_forms[-2]["DELETE"] = 'yes'
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 1)
+        self.assertEqual(headers[0].pk, invoices[0].pk)
+        self.assertEqual(headers[0].total, 1080)
+        self.assertEqual(headers[0].paid, 0)
+        self.assertEqual(headers[0].due, 1080)
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(len(lines), 9)
+
+        line_no = 1
+        for index, line in enumerate(lines[:8]):
+            self.assertEqual(line.pk, lines_orig[index].pk)
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            self.assertEqual(line.line_no, line_no)
+            line_no = line_no + 1
+
+        self.assertEqual(lines[8].pk, lines_orig[-1].pk)
+        self.assertEqual(lines[8].item, self.item)
+        self.assertEqual(lines[8].description, self.description)
+        self.assertEqual(lines[8].goods, 100)
+        self.assertEqual(lines[8].nominal, self.nominal)
+        self.assertEqual(lines[8].vat_code, self.vat_code)
+        self.assertEqual(lines[8].vat, 20)
+        self.assertEqual(lines[8].line_no, 9)
+
+
+
+
+
+
+
+
 
     # CORRECT USAGE
     # Invoice total is increased (the invoice this time is the matched_to transaction)
@@ -11442,3 +12282,193 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, payment)
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
+
+
+class EditCreditNote(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="c",
+            supplier=self.supplier,
+            ref="ref",
+            date=self.date,
+            due_date=self.due_date,
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c" selected>Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+class EditBroughtForwardPayment(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="bp",
+            supplier=self.supplier,
+            ref="ref",
+            date=self.date,
+            due_date=self.due_date,
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp" selected>Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+class EditBroughtForwardRefund(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="br",
+            supplier=self.supplier,
+            ref="ref",
+            date=self.date,
+            due_date=self.due_date,
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br" selected>Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r">Refund</option>'
+            '</select>',
+            html=True
+        )
+
+
+# EDITPAYMENT IS ABOVE
+
+class EditRefund(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+    # CORRECT USAGE
+    def test_get_request(self):
+        transaction = PurchaseHeader.objects.create(
+            type="r",
+            supplier=self.supplier,
+            ref="ref",
+            date=self.date,
+            due_date=self.due_date,
+            total=120,
+            goods=100,
+            vat=20
+        )
+        url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+                '<option value="">---------</option>'
+                '<option value="bi">Brought Forward Invoice</option>'
+                '<option value="bc">Brought Forward Credit Note</option>'
+                '<option value="i">Invoice</option>'
+                '<option value="c">Credit Note</option>'
+                '<option value="bp">Brought Forward Payment</option>'
+                '<option value="br">Brought Forward Refund</option>'
+                '<option value="p">Payment</option>'
+                '<option value="r" selected>Refund</option>'
+            '</select>',
+            html=True
+        )

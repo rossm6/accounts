@@ -2,7 +2,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, HTML
 from django import forms
 
-from accountancy.forms import Div, Field
+from accountancy.forms import Div, LabelAndFieldAndErrors, Field
 
 from .models import Vat
 
@@ -28,19 +28,19 @@ class QuickVatForm(forms.ModelForm):
         self.helper.layout = Layout(
             Div(
                 Div(
-                    Field('code', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('code', css_class="w-100 input"),
                     css_class="mt-2"
                 ),
                 Div(
-                    Field('name', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('name', css_class="w-100 input"),
                     css_class="mt-2"
                 ),
                 Div(
-                    Field('rate', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('rate', css_class="w-100 input"),
                     css_class="mt-2"
                 ),
                 Div(
-                    Field('registered'),
+                    LabelAndFieldAndErrors('registered'),
                     css_class="mt-3"
                 ),
                 css_class="modal-body"

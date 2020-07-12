@@ -33,43 +33,11 @@
 {% endblock under_form %}
 
 {% block modal_forms %}
-
-    <div class="modal fade" id="new-vat-code" tabindex="-1" role="dialog"  aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title font-weight-bold" id="exampleModalLabel">New Vat Code</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            {% crispy vat_form %}
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="new-nominal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title font-weight-bold" id="exampleModalLabel">New Nominal</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            {% crispy nominal_form %}
-            </div>
-        </div>
-    </div>
-
+    {% include 'purchases/on_the_fly.html' %}
 {% endblock modal_forms %}
 
 {% block extra_js %}
     {% include 'accountancy/grid_js.html' with header_form=header_form %}
     {% include 'accountancy/matching_js.html' %}
-    <script>
-        $(document).ready(function(){
-            $("select[name=nominal-account_type]").selectize();
-        });
-    </script>
+    <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
 {% endblock extra_js %}

@@ -4,20 +4,21 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, HTML
 
 from accountancy.fields import RootAndChildrenModelChoiceField
-from accountancy.forms import Div, Field
+from accountancy.forms import Div, Field, LabelAndFieldAndErrors
 
 from .models import Nominal
 
 
 class NominalForm(forms.ModelForm):
     
-    account_type = RootAndChildrenModelChoiceField(
+    parent = RootAndChildrenModelChoiceField(
+        label="Account Type",
         queryset=Nominal.objects.all().prefetch_related("children"),
     )
 
     class Meta:
         model = Nominal
-        fields = ('name',)
+        fields = ('name', 'parent')
 
     def __init__(self, *args, **kwargs):
         if 'action' in kwargs:
@@ -35,11 +36,11 @@ class NominalForm(forms.ModelForm):
         self.helper.layout = Layout(
             Div(
                 Div(
-                    Field('account_type', css_class="w-100"),
+                    LabelAndFieldAndErrors('parent', css_class="w-100"),
                     css_class="mt-2"
                 ),
                 Div(
-                    Field('name', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('name', css_class="w-100 input can-highlight"),
                     css_class="mt-2"
                 ),
                 css_class="modal-body"
@@ -50,3 +51,5 @@ class NominalForm(forms.ModelForm):
                 css_class="modal-footer"
             )
         )
+
+        

@@ -1,4 +1,8 @@
+from datetime import timedelta
+
 from django.urls import reverse_lazy
+from django.utils import timezone
+
 
 def delay_reverse_lazy(viewname, query_params=""):
     def _delay_reverse_lazy():

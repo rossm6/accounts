@@ -75,9 +75,14 @@
     {% include 'accountancy/outstanding.html' %}
 {% endblock under_form %}
 
+{% block modal_forms %}
+    {% include 'purchases/on_the_fly.html' %}
+{% endblock modal_forms %}
+
 {% block extra_js %}
     {% include 'accountancy/grid_js.html' with header_form=header_form %}
     {% include 'accountancy/edit_matching_js.html' %}
+    <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
     <script>
         {% include 'purchases/type_dependent_layout.js' with header_form_prefix=header_form_prefix %}
     </script>

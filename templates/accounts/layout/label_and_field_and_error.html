@@ -1,5 +1,6 @@
-<label for="{{ field.id_for_label }}">{{ field.label|safe }}</label>
 {% load crispy_forms_field %}
+<label {% if field|is_checkbox %} class="d-block" {% endif %} for="{{ field.id_for_label }}">{{ field.label|safe }}</label>
+{% comment %} changed this so that the registered checkbox for the on the fly vat object form looked better {% endcomment %}
 {% crispy_field field %}
 {% if field.errors %}
     <div class="invalid-feedback d-block">

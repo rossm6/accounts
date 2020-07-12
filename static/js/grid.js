@@ -30,9 +30,22 @@
             .find("tr")
             .not(this.empty_form_identifier)
             .each(function (index, element) {
-                $(element)
+                var element = $(element);
+                var blank = true;
+                element.find(":input").each(function(index, field){
+                    if($(field).val()){
+                        blank = false;
+                        return false;
+                    }
+                });
+                if(blank == false){
+                    // we only want to set ORDER on if all the fields are not blank
+                    // otherwise server side validation will consider the form to have changed
+                    // blank forms will then fail en masse
+                    $(element)
                     .find("input" + instance.order_identifier)
                     .val(index);
+                }
             });
     };
 

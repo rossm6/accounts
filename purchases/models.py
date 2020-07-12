@@ -37,6 +37,9 @@ class PurchaseLine(TransactionLine):
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
 
+    class Meta:
+        ordering = ['line_no']
+
 class Payment(PurchaseHeader):
     class Meta:
         proxy = True

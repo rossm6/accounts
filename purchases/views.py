@@ -48,7 +48,7 @@ class CreateTransaction(BaseCreateTransaction):
         "prefix": "match"
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(prefix="nominal"),
+        "nominal_form": NominalForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="nominal"),
         "vat_form": QuickVatForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="vat")
     }
     template_name = "purchases/create.html"
@@ -74,6 +74,10 @@ class EditTransaction(BaseEditTransaction):
         "model": PurchaseMatching,
         "formset": match,
         "prefix": "match"
+    }
+    create_on_the_fly = {
+        "nominal_form": NominalForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="nominal"),
+        "vat_form": QuickVatForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="vat")
     }
     template_name = "purchases/edit.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")

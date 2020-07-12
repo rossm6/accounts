@@ -22,7 +22,7 @@ def create_suppliers(n):
 def create_lines(header, lines):
     tmp = []
     for i, line in enumerate(lines):
-        line["line_no"] = i
+        line["line_no"] = i + 1
         line["header"] = header
         tmp.append(PurchaseLine(**line))
     return PurchaseLine.objects.bulk_create(tmp)

@@ -17,3 +17,8 @@ Django Formsets
     Forms in a formset will have empty_permitted = True for new creations i.e. forms not corresponding to DB instances
     For forms with a DB instance, the INITIAL_FORMS count must be correct, so that empty_permitted = False
     This caught me out in testing.
+
+
+Testing
+
+    https://www.valentinog.com/blog/testing-django/

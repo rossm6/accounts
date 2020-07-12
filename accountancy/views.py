@@ -1,6 +1,7 @@
 import functools
 from copy import deepcopy
 
+from crispy_forms.utils import render_crispy_form
 from django.contrib import messages
 from django.contrib.postgres.search import SearchVector
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -8,6 +9,7 @@ from django.db.models import Q
 from django.http import (Http404, HttpResponse, HttpResponseRedirect,
                          JsonResponse)
 from django.shortcuts import get_object_or_404, render, reverse
+from django.template.context_processors import csrf
 from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
@@ -324,7 +326,7 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 #         formset: PurchaseMatchingFormset
 #     }
 
-class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
+class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def get_success_url(self):
         return self.success_url
@@ -384,6 +386,7 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
             if self.line_formset.non_form_errors():
                 self.non_field_errors = True
             for form in self.line_formset:
+                print(form.errors)
                 if form.non_field_errors():
                     self.non_field_errors = True
 
@@ -406,16 +409,16 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
             self.non_field_errors = True
 
     def lines_are_valid(self):
-        line_no = 0
+        line_no = 1
         lines = []
         self.header_obj.save() # this could have been updated by line formset clean method already
         for form in self.line_formset.ordered_forms:
             if form.empty_permitted and form.has_changed():
-                line_no = line_no + 1
                 line = form.save(commit=False)
                 line.header = self.header_obj
                 line.line_no = line_no
                 lines.append(line)
+                line_no = line_no + 1
         if lines:
             self.get_line_model().objects.bulk_create(lines)
 
@@ -442,10 +445,6 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
     def get_match_model(self):
         return self.match.get('model')
 
-    def get_header_form_type(self):
-        t = self.request.GET.get("t", "i")
-        return t
-
     def get_header_prefix(self):
         return self.header.get('prefix', 'header')
 
@@ -466,10 +465,6 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
             kwargs.update({
                 'data': self.request.POST,
             })
-        elif self.request.method in ('GET'):
-            kwargs["initial"] = {
-                "type": self.get_header_form_type()
-            }
         
         return kwargs
 
@@ -597,7 +592,22 @@ class BaseCreateTransaction(TemplateResponseMixin, ContextMixin, View):
 
 
 
-class BaseEditTransaction(BaseCreateTransaction):
+class BaseCreateTransaction(BaseTransaction):
+
+    def get_header_form_type(self):
+        t = self.request.GET.get("t", "i")
+        return t
+
+    def get_header_form_kwargs(self):
+        kwargs = super().get_header_form_kwargs()
+        if self.request.method in ('GET'):
+            kwargs["initial"] = {
+                "type": self.get_header_form_type()
+            }
+        return kwargs
+
+
+class BaseEditTransaction(BaseTransaction):
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
@@ -614,20 +624,31 @@ class BaseEditTransaction(BaseCreateTransaction):
         line_no = 1
         self.header_obj.save() # this could have been updated by line formset clean method already
         self.line_formset.save(commit=False)
+        lines_to_delete = [ line.pk for line in self.line_formset.deleted_objects ]
+        forms = []
         for form in self.line_formset.ordered_forms:
+            if form.empty_permitted and form.has_changed():
+                forms.append(form)
+            elif not form.empty_permitted and form.instance.pk not in lines_to_delete:
+                forms.append(form)
+        updated = []
+        for form in forms:
             if form.empty_permitted and form.has_changed():
                 form.instance.header = self.header_obj
                 form.instance.line_no = line_no
                 line_no = line_no + 1
             elif not form.empty_permitted:
                 form.instance.line_no = line_no
+                updated.append(form.instance)
                 line_no = line_no + 1
         self.get_line_model().objects.bulk_create(self.line_formset.new_objects)
+        # FIXED.  I was updating the objects in changed_objects but this is no good
+        # because i'm changing the line_no always
         self.get_line_model().objects.bulk_update(
-            [ obj for obj, _tuple in self.line_formset.changed_objects ],
+            updated,
             ['line_no', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']
         )
-        self.get_line_model().objects.filter(pk__in=[ line.pk for line in self.line_formset.deleted_objects ]).delete()
+        self.get_line_model().objects.filter(pk__in=lines_to_delete).delete()
 
     def matching_is_valid(self):
         self.header_obj.save()
@@ -683,20 +704,37 @@ def create_on_the_fly(**forms):
             if form_name in forms:
                 prefix = forms[form_name].get("prefix")
                 form = forms[form_name]["form"](data=request.POST, prefix=prefix)
+                success = False
                 if form.is_valid():
+                    success = True
                     inst = form.save()
                     if 'serializer' in forms[form_name]:
                         data=forms[form_name]["serializer"](inst)
                     else:
-                        data={
-                            'id': result.id,
-                            'text': str(result)
+                        data = {
+                            'success': success,
+                            'result': {
+                                'id': inst.id,
+                                'text': str(inst)
+                            }
                         }
                     return JsonResponse(
                         data=data
                     )
                 else:
-                    return JsonResponse(data={})
+                    ctx = {}
+                    ctx.update(csrf(request))
+                    form_html = render_crispy_form(form, context=ctx)
+                    data = {
+                        'success': success,
+                        'result': {
+                            'form_html': form_html
+                        }
+                    }
+                    return JsonResponse(
+                        data=data,
+                        safe=False
+                    )
             else:
                 raise Http404("Form not found")
         else:
