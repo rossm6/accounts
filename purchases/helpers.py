@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from .models import Invoice, Payment, PurchaseHeader, PurchaseLine, Supplier
 
+PERIOD = '202007'
 
 def create_suppliers(n):
     suppliers = []
@@ -43,7 +44,8 @@ def create_invoices(supplier, ref_prefix, n, value=100):
             due=1.2 * value,
             date=date,
             due_date=due_date,
-            type="i"
+            type="i",
+            period=PERIOD 
         )
         invoices.append(i)
     return PurchaseHeader.objects.bulk_create(invoices)
@@ -61,7 +63,8 @@ def create_payments(supplier, ref_prefix, n, value=100):
             paid=0,
             due= -1 * value,
             date=date,
-            type="p"
+            type="p",
+            period=PERIOD
         )
         payments.append(p)
     return PurchaseHeader.objects.bulk_create(payments)

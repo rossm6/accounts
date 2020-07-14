@@ -19,9 +19,8 @@
         </div>
         <div class="matched_transactions_wrapper">
             <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="matched_transactions">
-                    {% crispy matching_formset %}
-                    {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
-                </tbody>
+                {% crispy matching_formset %}
+                {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
             </table>
         </div>
     </div>

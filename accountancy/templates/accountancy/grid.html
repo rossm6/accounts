@@ -26,8 +26,10 @@
                             {% block action %}
                             {% endblock action %}
                             <div>
+                                {% if create or edit %}
                                 <form class="formset" method="POST">
                                     {% csrf_token %}
+                                {% endif %}
                                     {% load crispy_forms_tags %}
                                     {% crispy header_form %}
                                     {% include 'accountancy/grid_lines.html' %}
@@ -35,7 +37,9 @@
                                     {% endblock buttons_footer %}
                                     {% block matching %}
                                     {% endblock matching %}
-                                </form>
+                                {% if create or edit %}
+                                    </form>
+                                {% endif %}
                             </div>
                             {% block under_form %}
                             {% endblock under_form %}
@@ -55,4 +59,6 @@
 {% block js %}
     {% block extra_js %}
     {% endblock extra_js %}
+    {% block module_js %}
+    {% endblock module_js %}
 {% endblock js %}

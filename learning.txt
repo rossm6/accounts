@@ -19,6 +19,12 @@ Django Formsets
     This caught me out in testing.
 
 
+Django Model Stackoverflow
+
+    I wrongly assumed that Django does not update the DB again if twice is called a second time despite no
+    further changes.
+
+
 Testing
 
     https://www.valentinog.com/blog/testing-django/

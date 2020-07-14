@@ -87,59 +87,7 @@ class AjaxForm(forms.ModelForm):
             self.fields[field].queryset = queryset
 
 
-
-def create_payment_transaction_header_helper(generic_to_fields_map):
-    # differs to the other only by the exclusion of the due_date field
-
-    class StandardHeaderHelper(FormHelper):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form_tag = False
-            self.disable_csrf = True
-            self.form_show_errors = False
-            self.include_media = False
-            self.layout = Layout(
-                Div(
-                    Div(
-                        # this field does not show errrors but there shouldn't ever be any errors for this field
-                        PlainField(generic_to_fields_map.get("type", "type"), css_class="transaction-type-select"),
-                        css_class="form-group mr-2"
-                    ),
-                    Div(
-                        Div(
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class="supplier-select"), # FIX ME - change to contact-select
-                                css_class="form-group mr-2"
-                            ),
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="w-100 input"),
-                                css_class="form-group mr-2"
-                            ),
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="w-100 input"),
-                                css_class="form-group mr-2 position-relative"
-                            ),
-                            css_class="d-flex justify-content-between" 
-                        ),
-                        Div(
-                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="w-100 input"),
-                            css_class="form-group"
-                        ),
-                        css_class="mb-4 d-flex justify-content-between"
-                    ),
-                )
-            )
-    
-    return StandardHeaderHelper()
-
-
-
-
-
-
-
-# FIX ME - This ought to be 'create_invoice_transaction_header_helper'
-def create_transaction_header_helper(generic_to_fields_map, payment_form=False):
+def create_transaction_header_helper(generic_to_fields_map, payment_form=False, read_only=False):
 
     """
 
@@ -163,31 +111,35 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False):
                 Div(
                     Div(
                         # this field does not show errrors but there shouldn't ever be any errors for this field
-                        PlainField(generic_to_fields_map.get("type", "type"), css_class="transaction-type-select"),
+                        PlainField(generic_to_fields_map.get("type", "type"), css_class=( "input input-disabled text-left border" if read_only else "transaction-type-select")),
                         css_class="form-group mr-2"
                     ),
                     Div(
                         Div(
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class="supplier-select"), # FIX ME - change to contact-select
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class=( "input input-disabled text-left border" if read_only else "supplier-select")), # FIX ME - change to contact-select
                                 css_class="form-group mr-2"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2 position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("due_date", "due_date"), css_class="w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                css_class="form-group mr-2 position-relative"
+                            ),
+                            Div(
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("due_date", "due_date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2 position-relativen" + ( " d-none" if payment_form else "")
                             ),
                             css_class="d-flex justify-content-between" 
                         ),
                         Div(
-                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="w-100 input"),
+                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                             css_class="form-group"
                         ),
                         css_class="mb-4 d-flex justify-content-between"
@@ -196,71 +148,6 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False):
             )
     
     return StandardHeaderHelper()
-
-
-
-
-# def create_transaction_table_formset_helper(field_columns, tr_class=""):
-#     class TransactionHelper(FormHelper):
-#         def __init__(self, *args, **kwargs):
-#             super().__init__(*args, **kwargs)
-#             self.form_tag = False
-#             self.disable_csrf = True
-#             self.layout = Layout(
-#                 Tr(
-#                     *field_columns,
-#                     css_class=tr_class
-#                 )
-#             )
-#     return TransactionHelper()
-
-
-# def create_field_columns(fields, column_layout_object, field_layout_object, css_classes={}):
-#     return [ 
-#         column_layout_object(
-#             field_layout_object(
-#                 field,
-#                 css_class=css_classes.get(field, "")
-#             ), 
-#             css_class="col-" + field
-#         ) 
-#         for field in fields 
-#     ]
-
-
-# def create_thead_helper(fields, tr_class="", css_classes={}):
-#     field_columns = [ 
-#         Th(
-#             HTML(''), css_class="pointer col-draggable-icon"
-#         ) 
-#     ]
-#     field_columns += create_field_columns(fields, Th, Label, css_classes) # Th class defined above
-#     field_columns += [
-#         Th(
-#             HTML(''),
-#             css_class="pointer col-draggable-icon" # FIX ME - change this from col-draggable-icon to col-deletable-icon
-#         )
-#     ]
-#     return create_transaction_table_formset_helper(field_columns, tr_class)
-
-
-# def create_tbody_helper(fields, tr_class="", css_classes={}):
-#     field_columns = [ 
-#         Td(
-#             Draggable(),
-#             css_class="pointer col-draggable-icon"
-#         ),
-#     ]
-#     field_columns += create_field_columns(fields, Td, PlainField, css_classes) # Th class defined above
-#     field_columns += [
-#         Td(
-#             Delete(),
-#             PlainField('ORDER', type="hidden", css_class="ordering"),
-#             css_class="pointer col-close-icon"
-#         )
-#     ]
-#     return create_transaction_table_formset_helper(field_columns, tr_class)
-
 
 
 class TableHelper(object):
@@ -335,7 +222,13 @@ class TableHelper(object):
         return self.create_transaction_table_formset_helper(field_columns, tr_class)
 
     def create_tbody(self, tr_class=""):
-        field_columns = self.create_thead_or_tbody(Td, PlainField, Draggable(), Delete(), "Td")
+        field_columns = self.create_thead_or_tbody(
+            Td, 
+            PlainField, 
+            Draggable(), 
+            Delete(), 
+            "Td"
+        )
         return self.create_transaction_table_formset_helper(field_columns, tr_class)
 
     def render(self):

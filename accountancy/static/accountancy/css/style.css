@@ -2,6 +2,14 @@
     background-color: #0078c8;
 }
 
+header.header-nav a.nav-link {
+    color: white !important;
+}
+
+header.header-nav div.dropdown-menu {
+    margin-top: 10px;
+}
+
 .cont {
     position: relative;
 }
@@ -32,7 +40,7 @@ input, input[type="password"], textarea, select {
     border: 1px solid #048fc2 !important;
 }
 
-.dropdown {
+.input-dropdown-widget-dropdown {
     display: none;
     margin-left: -1px;
     margin-top: 1px;
@@ -45,12 +53,12 @@ input, input[type="password"], textarea, select {
     padding: 0px;
 }
 
-.dropdown > li {
+.input-dropdown-widget-dropdown > li {
     padding: 0.5em;
     border: 1px solid transparent;
 }
 
-.dropdown > li:hover {
+.input-dropdown-widget-dropdown > li:hover {
     background-color: #e6f5fa;
     border: 1px dotted #a3bae9;
     cursor: pointer;

@@ -47,17 +47,19 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
         yield root_and_leaves
 
 
-#    PRETTY SURE THIS IS WRONG SO NEEDS CORRECTING, ALTHOUGH WE DON'T SEEM TO DO len(self.choices)
-#    def __len__(self):
-#         # count() adds a query but uses less memory since the QuerySet results
-#         # won't be cached. In most cases, the choices will only be iterated on,
-#         # and __len__() won't be called.
-#         return self.queryset.count() + (1 if self.field.empty_label is not None else 0)
+    def __len__(self):
+        length = 0
+        tree = self.queryset
+        for node in tree:
+            if node.is_root_node() or node.is_leaf_node():
+                length = length + 1
+        return length + (1 if self.field.empty_label is not None else 0)
 
 
 
 class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
     """
+
     When creating nominal codes one needs to pick the account type i.e.
     the child of a root.
 
@@ -79,7 +81,15 @@ class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
                 root_and_children = (node.name, children)
             elif node.is_child_node() and not node.is_leaf_node():
                 children.append(self.choice(node))
-        yield root_and_children 
+        yield root_and_children
+
+    def __len__(self):
+        length = 0
+        tree = self.queryset
+        for node in tree:
+            if node.is_root_node() or (node.is_child_node() and not node.is_leaf_node()):
+                length = length + 1
+        return length + (1 if self.field.empty_label is not None else 0)
 
 
 class ModelChoiceIteratorWithFields(ModelChoiceIterator):

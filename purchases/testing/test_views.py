@@ -24,6 +24,7 @@ from ..models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 MATCHING_FORM_PREFIX = "match"
+PERIOD = '202007' # the calendar month i made the change !
 
 
 def match(match_by, matched_to):
@@ -38,7 +39,8 @@ def match(match_by, matched_to):
             PurchaseMatching(
                 matched_by=match_by, 
                 matched_to=match_to, 
-                value=match_value
+                value=match_value,
+                period=PERIOD
             )
         )
         headers_to_update.append(match_to)
@@ -83,6 +85,7 @@ def create_header(prefix, form):
     data = {}
     for field in form:
         data[prefix + "-" + field] = form[field]
+    data[prefix + "-" + "period"] = PERIOD
     return data
 
 
@@ -128,7 +131,8 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             due=value,
             date=date,
             due_date=due_date,
-            type=type
+            type=type,
+            period=PERIOD
         )
         headers.append(i)
     for i in range(n):
@@ -143,7 +147,8 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             due=value * -1,
             date=date,
             due_date=due_date,
-            type=type
+            type=type,
+            period=PERIOD
         )
         headers.append(i)
     return PurchaseHeader.objects.bulk_create(headers)    

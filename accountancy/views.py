@@ -3,7 +3,8 @@ from copy import deepcopy
 
 from crispy_forms.utils import render_crispy_form
 from django.contrib import messages
-from django.contrib.postgres.search import SearchVector
+from django.contrib.postgres.search import (SearchQuery, SearchRank,
+                                            SearchVector, TrigramSimilarity)
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.http import (Http404, HttpResponse, HttpResponseRedirect,
@@ -36,6 +37,14 @@ def get_search_vectors(searchable_fields):
         for field in searchable_fields
     ]
     return functools.reduce(lambda a, b: a + b, search_vectors)
+
+
+def get_trig_vectors(searchable_fields, search_text):
+    trig_vectors = [
+        TrigramSimilarity(field, search_text)
+        for field in searchable_fields
+    ]
+    return functools.reduce(lambda a, b: a + b, trig_vectors)
 
 
 def input_dropdown_widget_validate_choice_factory(form):
@@ -179,23 +188,6 @@ class jQueryDataTable(object):
 
 class BaseTransactionsList(jQueryDataTable, ListView):
     
-    # model = Transaction -- subclass implements
-    # fields = [
-    #     ('supplier__name', 'Supplier'), 
-    #     ('ref1', 'Reference 1'),
-    #     ('date', 'Date'),
-    #     ('due_date', 'Due date'),
-    #     ('paid', 'Paid'),
-    #     ('due', 'Due'),
-    #     ('status', 'Status')
-    # ] ( actual db field name, label for UI )
-    # template_name = "accounting/transactions.html"
-    # advanced_search_form_class -- subclass implements
-    # searchable_fields = ['supplier__name', 'ref1', 'total'] -- subclass implements
-    # datetime_fields = ['date', 'due_date'] -- subclass implements
-    # datetime_format = '%d %b %Y' -- subclass implements
-
-
     # at the moment we assume these fields exist
     # but may want to make this configurable at later stage
     def apply_advanced_search(self, cleaned_data):
@@ -226,12 +218,6 @@ class BaseTransactionsList(jQueryDataTable, ListView):
                 q_object_end_date |= Q(due_date__lte=end_date)
             queryset = queryset.filter(q_object_end_date)
         return queryset
-
-    # defined on the parent class in case the subclass doesn't
-    # care about providing a url to the transaction
-    # but often times this will surely be implemented by the subclass
-    def get_transaction_url(self, **kwargs):
-        pass
 
     def get_context_data(self, **kwargs):
         context_data = {}
@@ -278,20 +264,6 @@ class BaseTransactionsList(jQueryDataTable, ListView):
         context_data["data"] = rows
         return context_data
         
-    # Example -
-    # subclass implements this
-    # def get_queryset(self):
-    #     return (
-    #         Transaction.objects
-    #         .select_related('supplier')
-    #         .all()
-    #         .values(
-    #             'id',
-    #             *self.fields
-    #         )
-    #         .order_by(*self.order_by())
-    #     )
-
     def render_to_response(self, context, **response_kwargs):
         if self.request.is_ajax():
             data = {
@@ -386,7 +358,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             if self.line_formset.non_form_errors():
                 self.non_field_errors = True
             for form in self.line_formset:
-                print(form.errors)
                 if form.non_field_errors():
                     self.non_field_errors = True
 
@@ -412,6 +383,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         line_no = 1
         lines = []
         self.header_obj.save() # this could have been updated by line formset clean method already
+        self.header_has_been_saved = True
         for form in self.line_formset.ordered_forms:
             if form.empty_permitted and form.has_changed():
                 line = form.save(commit=False)
@@ -423,7 +395,8 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             self.get_line_model().objects.bulk_create(lines)
 
     def matching_is_valid(self):
-        self.header_obj.save()
+        if not hasattr(self, 'header_has_been_saved'):
+            self.header_obj.save()
         matches = []
         for form in self.match_formset:
             if form.empty_permitted and form.has_changed():
@@ -514,6 +487,11 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         if t := self.header_form.initial.get('type'):
             if t in ("bp", "p", "br", "r"):
                 return True
+            # we need this because read only forms used for the detail transaction view
+            # convert the initial choice value to the choice label
+            if t in ("Brought Forward Payment", "Payment", "Brought Forward Refund", "Refund"):
+                print("yes")
+                return True
         else:
             return False
 
@@ -591,8 +569,12 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         return HttpResponseRedirect(self.get_success_url())
 
 
-
 class BaseCreateTransaction(BaseTransaction):
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["create"] = True # some javascript templates depend on this
+        return context
 
     def get_header_form_type(self):
         t = self.request.GET.get("t", "i")
@@ -623,6 +605,7 @@ class BaseEditTransaction(BaseTransaction):
     def lines_are_valid(self):
         line_no = 1
         self.header_obj.save() # this could have been updated by line formset clean method already
+        self.header_has_been_saved = True
         self.line_formset.save(commit=False)
         lines_to_delete = [ line.pk for line in self.line_formset.deleted_objects ]
         forms = []
@@ -651,7 +634,8 @@ class BaseEditTransaction(BaseTransaction):
         self.get_line_model().objects.filter(pk__in=lines_to_delete).delete()
 
     def matching_is_valid(self):
-        self.header_obj.save()
+        if not hasattr(self, 'header_has_been_saved'):
+            self.header_obj.save()
         self.match_formset.save(commit=False)
         self.get_match_model().objects.bulk_create(self.match_formset.new_objects)
         self.get_match_model().objects.bulk_update(
@@ -689,6 +673,22 @@ class BaseEditTransaction(BaseTransaction):
         kwargs["instance"] = self.header_to_edit
         return kwargs
 
+
+
+class BaseViewTransaction(BaseEditTransaction):
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["edit"] = False
+        context["view"] = self.header_to_edit.pk
+        context["void_form"] = self.void_form(prefix="void", initial={"id": self.header_to_edit.pk})
+        return context    
+
+    def post(self, request, *args, **kwargs):
+        # read only view
+        # what about on the fly payments though ?
+        # like Xero does
+        raise Http404("Read only view.  Use Edit transaction to make changes.")
 
 
 def create_on_the_fly(**forms):

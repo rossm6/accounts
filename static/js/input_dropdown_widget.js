@@ -56,13 +56,13 @@
         if(!text){
             return;
         }
-        this.get_$dom().find("ul.dropdown").children().not(".new-btn").remove();
+        this.get_$dom().find("ul.input-dropdown-widget-dropdown").children().not(".new-btn").remove();
         var new_option = $("<li>");
         new_option.text(text);
         for(var attr in attrs){
             new_option.attr(attr, attrs[attr]);
         }
-        this.get_$dom().find("ul.dropdown").append(new_option);
+        this.get_$dom().find("ul.input-dropdown-widget-dropdown").append(new_option);
         this.update_choice({
             // this object just mocks the event object
             target: new_option.get(0),
@@ -97,7 +97,7 @@
     Widget.prototype.search = function () {
         var $widget = this.get_$dom();
         var url = $widget.find("input").attr("data-load-url");
-        var $dropdown = $widget.find(".dropdown");
+        var $dropdown = $widget.find(".input-dropdown-widget-dropdown");
         $dropdown.children().not(new_btn_selector).remove();
         var search_for = $widget.find("input").val();
         if (search_for) {
@@ -211,7 +211,7 @@
         $input_wrapper = $widget.find(".input-wrapper");
         $input_wrapper.addClass("px");
         $input_wrapper.removeClass("data-input-focus-border");
-        $widget.find(".dropdown").hide();
+        $widget.find(".input-dropdown-widget-dropdown").hide();
         this.destroy_cloned_dropdown();
         $widget.find("input").val(value);
         $widget.find(".label")
@@ -242,7 +242,7 @@
         // with 'this' bound to object instance
         var $widget = this.get_$dom();
         var $input = $widget.find("input");
-        var $dropdown = $widget.find(".dropdown");
+        var $dropdown = $widget.find(".input-dropdown-widget-dropdown");
         // populate the dropdown menu
         var url = $input.attr("data-load-url");
         $dropdown.children().not(new_btn_selector).remove();
@@ -256,7 +256,7 @@
             }
         });
         // show the dropdown menu
-        $widget.find(".dropdown").toggle();
+        $widget.find(".input-dropdown-widget-dropdown").toggle();
         event.stopPropagation();
     };
 
@@ -316,7 +316,7 @@
                     "callback": this.show_dropdown.bind(this)
                 },
                 {
-                    "elem": this.$dom.find(".dropdown"),
+                    "elem": this.$dom.find(".input-dropdown-widget-dropdown"),
                     "event": "click",
                     "callback": this.update_choice.bind(this)
                 },
@@ -334,7 +334,7 @@
         );
 
         var inst = infinite_scroll({
-            container: this.$dom.find(".dropdown"),
+            container: this.$dom.find(".input-dropdown-widget-dropdown"),
             simple_bar: false,
             get_next_url: function (elem) {
                 // elem is the element being scrolled
@@ -359,7 +359,7 @@
         // add to the events so it can be re-added
         // when widget is re-opened
         this.events.push({
-            "elem": this.$dom.find(".dropdown"),
+            "elem": this.$dom.find(".input-dropdown-widget-dropdown"),
             "event": "scroll",
             "callback": inst.old_callback
         });

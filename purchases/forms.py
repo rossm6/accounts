@@ -1,16 +1,17 @@
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import HTML, Layout
 from django import forms
+from django.shortcuts import reverse
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout
 
 from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField,
                                 ModelChoiceIteratorWithFields)
-from accountancy.forms import (AjaxForm, DataTableTdField, LabelAndFieldOnly,
-                               PlainFieldErrors, TableHelper, Field,
-                               create_payment_transaction_header_helper,
-                               create_transaction_header_helper, BaseTransactionMixin, Div)
+from accountancy.forms import (AjaxForm, BaseTransactionMixin,
+                               DataTableTdField, Div, Field, LabelAndFieldOnly,
+                               PlainFieldErrors, TableHelper,
+                               create_transaction_header_helper)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.widgets import InputDropDown
 from items.models import Item
@@ -64,7 +65,7 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     class Meta:
         model = PurchaseHeader
-        fields = ('supplier', 'ref', 'date', 'due_date', 'total', 'type',)
+        fields = ('supplier', 'ref', 'date', 'due_date', 'total', 'type', 'period')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,6 +108,32 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
         return instance
 
 
+
+class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].disabled = True
+        self.fields["type"].widget = forms.TextInput(attrs={"class": "w-100 input"})
+        self.fields["supplier"].widget = forms.TextInput()
+        supplier = self.fields["supplier"].queryset[0]
+        self.initial["supplier"] = str(supplier)
+        if self.initial.get('type') in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
+            # as we are repeating ourselves
+            payment_form = True
+        else:
+            payment_form = False
+        self.helper = create_transaction_header_helper(
+            {
+                'contact': 'supplier',
+            },
+            payment_form,
+            True # read only
+        )
+        # must do this afterwards
+        self.initial["type"] = self.instance.get_type_display()
+
+
 class PurchaseLineFormset(BaseTransactionModelFormSet):
 
     def __init__(self, *args, **kwargs):
@@ -145,6 +172,18 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
             # IMPORTANT TO ONLY SET THIS IF WE ARE CREATING
             self.header.due = total
         
+
+line_css_classes = {
+    "Td": {
+        "item": "h-100 w-100 border-0",
+        "description": "can_highlight h-100 w-100 border-0",
+        "nominal": "h-100 w-100 border-0",
+        "goods": "can_highlight h-100 w-100 border-0",
+        "vat_code": "h-100 w-100 border-0",
+        "vat": "can_highlight w-100 h-100 border-0"
+    }
+}
+
 
 class PurchaseLineForm(AjaxForm):
 
@@ -205,21 +244,11 @@ class PurchaseLineForm(AjaxForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        css_classes = {
-            "Td": {
-                "item": "h-100 w-100 border-0",
-                "description": "can_highlight h-100 w-100 border-0",
-                "nominal": "h-100 w-100 border-0",
-                "goods": "can_highlight h-100 w-100 border-0",
-                "vat_code": "h-100 w-100 border-0",
-                "vat": "can_highlight w-100 h-100 border-0"
-            }
-        }
         self.helpers = TableHelper(
             PurchaseLineForm.Meta.fields,
             order=True,
             delete=True,
-            css_classes=css_classes,
+            css_classes=line_css_classes,
             field_layout_overrides={
                 'Td': {
                     'item': PlainFieldErrors,
@@ -231,11 +260,34 @@ class PurchaseLineForm(AjaxForm):
         ).render()
 
 
-    # testing purposes to check if non_field_errors come through in UI
-    # def clean(self):
-    #     cleaned_data = super().clean()
-    #     raise forms.ValidationError("non field error on line form")
-    #     return cleaned_data
+class ReadOnlyPurchaseLineForm(PurchaseLineForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].disabled = True
+        self.helpers = TableHelper(
+            PurchaseLineForm.Meta.fields,
+            order=False,
+            delete=False,
+            css_classes={
+                "Td": {
+                    "item": "input-disabled text-left",
+                    "description": "input-disabled text-left",
+                    "nominal": "input-disabled text-left",
+                    "goods": "input-disabled text-left",
+                    "vat_code": "input-disabled text-left",
+                    "vat": "input-disabled text-left"
+                }
+            },
+            field_layout_overrides={
+                'Td': {
+                    'item': PlainFieldErrors,
+                    'description': PlainFieldErrors,
+                    'nominal': PlainFieldErrors,
+                    'amount': PlainFieldErrors
+                }
+            },
+        ).render()
 
 
 enter_lines = forms.modelformset_factory(
@@ -245,6 +297,17 @@ enter_lines = forms.modelformset_factory(
     extra=5, 
     can_order=True,
     can_delete=True
+)
+
+
+read_only_lines = forms.modelformset_factory(
+    PurchaseLine,
+    form=ReadOnlyPurchaseLineForm,
+    formset=PurchaseLineFormset,
+    extra=0,
+    can_order=True,
+    can_delete=True # both these keep the django crispy form template happy
+    # there are of no actual use for the user
 )
 
 
@@ -292,21 +355,26 @@ class PurchaseMatchingForm(forms.ModelForm):
         fields = ('matched_by','matched_to', 'value', 'id') # matched_to is only needed for create
         widgets = {
             'matched_by': forms.TextInput(attrs={"readonly": True}),
-            'matched_to': forms.TextInput(attrs={"readonly": True})
+            'matched_to': forms.TextInput(attrs={"readonly": True}),
         }
 
     def __init__(self, *args, **kwargs):
+
         # this logic is in case we ever need the form without the formset
         # but with a formset the keyword argument will not be passed
+
         if 'match_by' in kwargs:
             if match_by := kwargs.get('match_by'): # match_by could be None
                 self.match_by = match_by
             kwargs.pop("match_by")
 
-        # print(self.fields["matched_to"].widget.__dict__)
-        # Question - will the matched_to.pk show in the input field when editing ?
-
         super().__init__(*args, **kwargs)
+
+        # # Setting the disabled attribute means even if the user tampers
+        # # with the html widget django discounts the change
+        # for field in self.fields:
+        #     if field != "value":
+        #         self.fields[field].disabled = True
 
         # GET request for CREATE
         if not self.data and not self.instance.pk:
@@ -409,12 +477,44 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # this a major BUG !!!
         instance.matched_by = self.match_by
         if commit:
             instance.save()
         return instance
 
+
+
+class ReadOnlyPurchaseMatchingForm(PurchaseMatchingForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].disabled = True
+
+        self.helpers = TableHelper(
+            ('type', 'ref', 'total', 'paid', 'due',) + 
+            PurchaseMatchingForm.Meta.fields,
+            css_classes={
+                "Td": {
+                    "type": "input-disabled",
+                    "ref": "input-disabled",
+                    "total": "input-disabled",
+                    "paid": "input-disabled",
+                    "due": "input-disabled",
+                    "value": "input-disabled"
+                }
+            },
+            field_layout_overrides={
+                'Td': {
+                    'type': DataTableTdField,
+                    'ref': DataTableTdField,
+                    'total': DataTableTdField,
+                    'paid': DataTableTdField,
+                    'due': DataTableTdField,
+                    'value': DataTableTdField,
+                }
+            }
+        ).render()      
 
 
 class PurchaseMatchingFormset(BaseTransactionModelFormSet):
@@ -453,7 +553,6 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
             kwargs["match_by"] = self.match_by
         form = super()._construct_form(i, **kwargs)
         return form
-
 
 
     def clean(self):
@@ -542,3 +641,39 @@ match = forms.modelformset_factory(
     extra=0,
     formset=PurchaseMatchingFormset
 )
+
+
+read_only_match = forms.modelformset_factory(
+    PurchaseMatching,
+    form=ReadOnlyPurchaseMatchingForm,
+    extra=0,
+    formset=PurchaseMatchingFormset
+)
+
+
+
+class VoidTransaction(forms.Form):
+
+    id = forms.IntegerField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = "void-form dropdown-item pointer"
+        self.helper.form_action = reverse("purchases:void")
+        self.helper.form_method = "POST"
+        self.helper.layout = Layout(
+            Field('id', type="hidden"),
+            HTML("<a class='small'>Void</a>")
+        )
+
+    def clean(self):
+        try:
+            self.instance = PurchaseHeader.objects.get(pk=self.cleaned_data.get("id"))
+        except:
+            raise forms.ValidationError(
+                _(
+                    "Transaction does not exist",
+                    code="invalid-transaction-to-void"
+                )
+            )

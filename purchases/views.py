@@ -4,27 +4,31 @@ from itertools import chain
 
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Q
-from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.db.models import Q, Sum
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import ListView
 from querystring_parser import parser
 
 from accountancy.forms import AdvancedTransactionSearchForm
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
-                               BaseTransactionsList,
+                               BaseTransactionsList, BaseViewTransaction,
+                               create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory, jQueryDataTable, create_on_the_fly)
+                               input_dropdown_widget_validate_choice_factory,
+                               jQueryDataTable)
 from items.models import Item
-
-from .forms import PurchaseHeaderForm, PurchaseLineForm, enter_lines, match, QuickSupplierForm
-from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
-
 from nominals.forms import NominalForm
-
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
+
+from .forms import (PurchaseHeaderForm, PurchaseLineForm, QuickSupplierForm,
+                    ReadOnlyPurchaseHeaderForm,
+                    enter_lines, match, read_only_lines, read_only_match, VoidTransaction)
+from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
+
 
 class CreateTransaction(BaseCreateTransaction):
     header = {
@@ -81,6 +85,92 @@ class EditTransaction(BaseEditTransaction):
     }
     template_name = "purchases/edit.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
+
+
+class ViewTransaction(BaseViewTransaction):
+    header = {
+        "model": PurchaseHeader,
+        "form": ReadOnlyPurchaseHeaderForm,
+        "prefix": "header",
+        "override_choices": ["supplier"],
+    }
+    line = {
+        "model": PurchaseLine,
+        "formset": read_only_lines,
+        "prefix": "line",
+        "override_choices": ["item", "nominal"] # VAT would not work at the moment
+        # because VAT requires (value, label, [ model field attrs ])
+        # but VAT codes will never be that numerous
+    }
+    match = {
+        "model": PurchaseMatching,
+        "formset": read_only_match,
+        "prefix": "match"
+    }
+    void_form = VoidTransaction
+    template_name = "purchases/view.html"
+
+
+def void(request):
+    if request.method == "POST":
+        success = False
+        form = VoidTransaction(data=request.POST, prefix="void", )
+        if form.is_valid():
+            success = True
+            transaction_to_void = form.instance
+            transaction_to_void.status = "v"
+            matches = (
+                PurchaseMatching.objects
+                .filter(Q(matched_to=transaction_to_void) | Q(matched_by=transaction_to_void))
+                .select_related("matched_to")
+                .select_related("matched_by")        
+            )
+            headers_to_update = []
+            headers_to_update.append(transaction_to_void)
+            for match in matches:
+                if match.matched_by == transaction_to_void:
+                    # value is the amount of the matched_to transaction that was matched
+                    # e.g. transaction_to_void is 120.00 payment and matched to 120.00 invoice
+                    # value = 120.00
+                    transaction_to_void.paid += match.value
+                    transaction_to_void.due -= match.value
+                    match.matched_to.paid -= match.value
+                    match.matched_to.due += match.value
+                    headers_to_update.append(match.matched_to)
+                else:
+                    # value is the amount of the transaction_to_void which was matched
+                    # matched_by is an invoice for 120.00 and matched_to is a payment for 120.00
+                    # value is -120.00
+                    transaction_to_void.paid -= match.value
+                    transaction_to_void.due += match.value
+                    match.matched_by.paid += match.value
+                    match.matched_by.due -= match.value
+                    headers_to_update.append(match.matched_by)
+            PurchaseHeader.objects.bulk_update(
+                headers_to_update,
+                ["paid", "due", "status"]
+            )
+            PurchaseMatching.objects.filter(pk__in=[ match.pk for match in matches ]).delete()
+            return JsonResponse(
+                data={
+                    "success": success,
+                    "href": reverse("purchases:transaction_enquiry")
+                }
+            )
+        else:
+            non_field_errors = form.non_field_errors()
+            field_errors = form.errors
+            errors = {
+                "non_field_errors": non_field_errors,
+                "field_errors": field_errors
+            }
+            return JsonResponse(
+                data={
+                    "success": success,
+                    "errors": errors
+                }
+            )
+    raise Http404("Only post requests are allowed")
 
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):
@@ -150,8 +240,10 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
             if edit := self.request.GET.get("edit"):
                 matches = PurchaseMatching.objects.filter(Q(matched_to=edit) | Q(matched_by=edit))
                 matches = [ (match.matched_by_id, match.matched_to_id) for match in matches ]
-                matched_headers = list(chain(*matches)) # List of primary keys.  Includes the primary key for edit record itself
-                return q.exclude(pk__in=[ header for header in matched_headers ]).order_by(*self.order_by())
+                matched_headers = list(chain(*matches))
+                pk_to_exclude = [ header for header in matched_headers ]
+                pk_to_exclude.append(edit) # at least exclude the record being edited itself !!!
+                return q.exclude(pk__in=pk_to_exclude).order_by(*self.order_by())
             else:
                 return q
         else:
@@ -213,12 +305,12 @@ class TransactionEnquiry(BaseTransactionsList):
 
     def get_transaction_url(self, **kwargs):
         pk = kwargs.pop("pk")
-        return reverse_lazy("purchases:edit", kwargs={"pk": pk})
+        return reverse_lazy("purchases:view", kwargs={"pk": pk})
 
     def get_queryset(self):
         return (
-            PurchaseHeader.objects
-            .select_related("supplier__name")
+            self.get_querysets()
+            .select_related('supplier__name')
             .all()
             .values(
                 'id',
@@ -227,9 +319,24 @@ class TransactionEnquiry(BaseTransactionsList):
             .order_by(*self.order_by())
         )
 
+    def get_querysets(self):
+        group = self.request.GET.get("group", 'a')
+        # add querysets to the instance
+        # in context_data get the summed value for each
+        self.all_queryset = PurchaseHeader.objects.all()
+        self.awaiting_payment_queryset = PurchaseHeader.objects.exclude(due=0)
+        self.overdue_queryset = PurchaseHeader.objects.exclude(due=0).filter(due_date__lt=timezone.now())
+        self.paid_queryset = PurchaseHeader.objects.filter(due=0)
+        if group == "a":
+            return self.all_queryset
+        elif group == "ap":
+            return self.awaiting_payment_queryset
+        elif group == "o":
+            return self.overdue_queryset
+        elif group == "p":
+            return self.paid_queryset
 
 validate_choice = input_dropdown_widget_validate_choice_factory(PurchaseLineForm())
-
 
 create_on_the_fly_view = create_on_the_fly(
     nominal={

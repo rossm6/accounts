@@ -14,30 +14,36 @@
   </head>
   <body>
 
-    <header class="p-3 bg-primary-blue text-white font-weight-bold">
-      <div>
-        <ul class="nav">
-          <li class="nav-item">
-            <a class="nav-link">Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link">Business</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link">Accounting</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link">Projects</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link">Contacts</a>
-          </li>
-        </ul>
-      </div>
-      <div>
-      
-      </div>
-      
+    <header class="header-nav bg-primary-blue font-weight-bold">
+      <nav class="navbar navbar-expand-lg text-white">
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+          <ul class="navbar-nav">
+            <li class="nav-item active">
+              <a class="nav-link" href="#">Dashboard</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Purchases
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                <a class="dropdown-item" href="{% url 'purchases:transaction_enquiry' %}">View Transactions</a>
+                <a class="dropdown-item" href="{% url 'purchases:create' %}">Post Transaction</a>
+                <a class="dropdown-item" href="#">Reports</a>
+              </div>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Sales
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                <a class="dropdown-item" href="#">View Transactions</a>
+                <a class="dropdown-item" href="#">Post Transaction</a>
+                <a class="dropdown-item" href="#">Reports</a>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </nav>
     </header>
 
     {% block content %}

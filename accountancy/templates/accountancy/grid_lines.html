@@ -11,6 +11,7 @@
         </tbody>
     </table>
     <div class="mt-3 mb-5">
+        {% if create or edit %}
         <div>
             <div class="dropdown-split-button">
                 <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
@@ -24,6 +25,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         <div class="d-flex justify-content-end totals pr-3">
             <div>
                 <div class="row small black-single-border-bottom text-right">

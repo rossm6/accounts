@@ -37,7 +37,10 @@
             ],
             scrollY: "200px",
             scrollCollapse: true,
-            paging: false
+            paging: false,
+            language: {
+                emptyTable: "This transaction isn't matched to anything yet"
+            }
         });
 
 
@@ -54,125 +57,124 @@
         });
 
 
-        $("table.outstanding_table").on("click", "input.match-checkbox", function() {
-            var checkbox = $(this);
-            var tr = $(this).parents("tr").eq(0);
-            var fields = tr.data()["fields"];
-            var id_of_transaction = fields.matched_to.value;
-            if(checkbox.prop("checked")){
-                var new_tr = matched_transactions_table_formset.create(fields);
-                matched_transactions_table_formset.add(id_of_transaction, new_tr);
-            }
-            else{
-                matched_transactions_table_formset.delete(id_of_transaction);
-            }
-        });
 
+        {% if create or edit %}
 
-        // How to sort when you have elements inside the td element?
-        // https://stackoverflow.com/questions/2862322/how-to-sort-by-date-with-datatables-jquery-plugin
+            // How to sort when you have elements inside the td element?
+            // https://stackoverflow.com/questions/2862322/how-to-sort-by-date-with-datatables-jquery-plugin
 
+            $("table.outstanding_table").on("click", "input.match-checkbox", function() {
+                var checkbox = $(this);
+                var tr = $(this).parents("tr").eq(0);
+                var fields = tr.data()["fields"];
+                var id_of_transaction = fields.matched_to.value;
+                if(checkbox.prop("checked")){
+                    var new_tr = matched_transactions_table_formset.create(fields);
+                    matched_transactions_table_formset.add(id_of_transaction, new_tr);
+                }
+                else{
+                    matched_transactions_table_formset.delete(id_of_transaction);
+                }
+            });
 
-        var edit = "{{ edit }}"; // if we are editing a transaction set the transaction primary key here
+            var edit = "{{ edit }}"; // if we are editing a transaction set the transaction primary key here
 
-        var outstanding_table = $("table.outstanding_table")
-        .on('init.dt', function (e, settings, json) {
-            
-        })
-        .DataTable({
-            ajax: {
-                url: "{% url 'purchases:load_matching_transactions' %}",
-                data: function (d) {
-                    // the user can change the supplier
-                    // each time they do we need to load new matching transactions
-                    // there may be other changes which require a reload
-                    var supplier = $(supplier_field).val();
-                    if (supplier){
-                        d["s"] = supplier;
-                        if(edit){
-                            d["edit"] = edit;
+            var outstanding_table = $("table.outstanding_table")
+            .on('init.dt', function (e, settings, json) {
+                
+            })
+            .DataTable({
+                ajax: {
+                    url: "{% url 'purchases:load_matching_transactions' %}",
+                    data: function (d) {
+                        // the user can change the supplier
+                        // each time they do we need to load new matching transactions
+                        // there may be other changes which require a reload
+                        var supplier = $(supplier_field).val();
+                        if (supplier){
+                            d["s"] = supplier;
+                            if(edit){
+                                d["edit"] = edit;
+                            }
                         }
                     }
-                }
-            },
-            columns: [
-                { 
-                    'data': 'type',
-                    'render': function (data, type, full, meta) {
-                        return '<span data-order="' + full.type.value + '">' + data.label + '</span>';
-                    }
                 },
-                { 
-                    'data': 'ref',
-                    'render': function (data, type, full, meta) {
-                        return '<span data-order="' + data + '">' + data + '</span>';
-                    }
-                },
-                { 
-                    'data': 'total',
-                    'render': function (data, type, full, meta) {
-                        return '<span data-order="' + data + '">' + data + '</span>';
-                    }
-                },
-                { 
-                    'data': 'paid',
-                    'render': function (data, type, full, meta) {
-                        return '<span data-order="' + data + '">' + data + '</span>';
-                    }
-                },
-                {
-                    'data': 'due',
-                    'render': function (data, type, full, meta) {
-                        console.log("due", data);
-                        return '<span data-order="' + data + '">' + data + '</span>';
-                    }
-                },
-                { 
-                    'data': null,
-                    'searchable': false,
-                    'orderable': false,
-                    'classname': 'dt-body-center',
-                    'render': function (data, type, full, meta) {
-                        var id = full["DT_RowData"].pk;
-                        var checked = matched_transactions_table_formset.lookup(id) ? "checked" : "";
-                        return '<input ' + checked + ' type="checkbox" name="matching_transaction" value="' + id + '" class="match-checkbox">';
-                    }
-                },
-            ],
-            columnDefs: [
-                {"className": "dt-center", "targets": "_all"},
-            ],
-            dom: 't',
-            scrollY: 500,
-            deferRender: true,
-            scroller: true,
-            serverSide: true,
-            scrollCollapse: true,
-        });
-
-
-        $(":input.input-disabled").on("focus", function(event){
-            event.preventDefault();
-            return false;
-        });
-
-
-        outstanding_table.on("draw", function(){
-            console.log("drawing");
-        });
-
-        $(supplier_field).on("change", function() {
-            outstanding_table.ajax.reload();
-        });
-
-        // Unlike input elements we cannot set a readonly attribute on the select element
-        // So we disable it but then enable it before the data is sent to the server 
-        $("form.formset").on("submit", function(){
-            var selects = $("select").filter(function(){
-                return this.disabled;
+                columns: [
+                    { 
+                        'data': 'type',
+                        'render': function (data, type, full, meta) {
+                            return '<span data-order="' + full.type.value + '">' + data.label + '</span>';
+                        }
+                    },
+                    { 
+                        'data': 'ref',
+                        'render': function (data, type, full, meta) {
+                            return '<span data-order="' + data + '">' + data + '</span>';
+                        }
+                    },
+                    { 
+                        'data': 'total',
+                        'render': function (data, type, full, meta) {
+                            return '<span data-order="' + data + '">' + data + '</span>';
+                        }
+                    },
+                    { 
+                        'data': 'paid',
+                        'render': function (data, type, full, meta) {
+                            return '<span data-order="' + data + '">' + data + '</span>';
+                        }
+                    },
+                    {
+                        'data': 'due',
+                        'render': function (data, type, full, meta) {
+                            console.log("due", data);
+                            return '<span data-order="' + data + '">' + data + '</span>';
+                        }
+                    },
+                    { 
+                        'data': null,
+                        'searchable': false,
+                        'orderable': false,
+                        'classname': 'dt-body-center',
+                        'render': function (data, type, full, meta) {
+                            var id = full["DT_RowData"].pk;
+                            var checked = matched_transactions_table_formset.lookup(id) ? "checked" : "";
+                            return '<input ' + checked + ' type="checkbox" name="matching_transaction" value="' + id + '" class="match-checkbox">';
+                        }
+                    },
+                ],
+                columnDefs: [
+                    {"className": "dt-center", "targets": "_all"},
+                ],
+                dom: 't',
+                scrollY: 500,
+                deferRender: true,
+                scroller: true,
+                serverSide: true,
+                scrollCollapse: true,
             });
-            selects.prop("disabled", false);
-        });
+
+
+            $(":input.input-disabled").on("focus", function(event){
+                event.preventDefault();
+                return false;
+            });
+
+
+            $(supplier_field).on("change", function() {
+                outstanding_table.ajax.reload();
+            });
+
+            // Unlike input elements we cannot set a readonly attribute on the select element
+            // So we disable it but then enable it before the data is sent to the server 
+            $("form.formset").on("submit", function(){
+                var selects = $("select").filter(function(){
+                    return this.disabled;
+                });
+                selects.prop("disabled", false);
+            });
+
+        {% endif %}
 
     });
 </script>

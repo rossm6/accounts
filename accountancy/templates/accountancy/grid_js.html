@@ -19,7 +19,11 @@
         $(".datepicker").removeClass("form-control");
     });
 
+    {% if create or edit %}
+
     $(".transaction-type-select").selectize();
+
+    {% endif %}
 
     {% if not edit %}
 
@@ -41,54 +45,57 @@
     
     {% endcomment %}
 
-
-    $(".supplier-select").selectize({
-        valueField: 'id',
-        labelField: 'code',
-        searchField: 'code',
-        insert: true,
-        create: function(input, callback) {
-            $.ajax({
-                url: "{% url 'purchases:create_on_the_fly'  %}",
-                method: "POST",
-                data: "form=supplier&code=" + input + "&csrfmiddlewaretoken=" + Cookies.get('csrftoken'),
-                success: function (result) {
-                    if(result) {
+    {% if create or edit %}
+        $(".supplier-select").selectize({
+            valueField: 'id',
+            labelField: 'code',
+            searchField: 'code',
+            insert: true,
+            create: function(input, callback) {
+                $.ajax({
+                    url: "{% url 'purchases:create_on_the_fly'  %}",
+                    method: "POST",
+                    // here we hard code the form prefix 'supplier'
+                    data: "form=supplier&supplier-code=" + input + "&csrfmiddlewaretoken=" + Cookies.get('csrftoken'),
+                    success: function (data) {
+                        if(data.success) {
+                            callback({
+                                id: data.result.id,
+                                code: data.result.text
+                            });
+                            // spent ages on this
+                            // selectize.js says the keys should be value and text but according to below this is wrong
+                            // https://github.com/selectize/selectize.js/issues/1329#issuecomment-358857146
+                            // https://stackoverflow.com/questions/24366365/creating-an-item-if-not-already-exists-in-selectize-js-select-box-and-ajax-updat
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
                         callback({
-                            id: result.id,
-                            code: result.text
+                            id: '',
+                            code: ''
                         });
-                        // spent ages on this
-                        // selectize.js says the keys should be value and text but according to below this is wrong
-                        // https://github.com/selectize/selectize.js/issues/1329#issuecomment-358857146
-                        // https://stackoverflow.com/questions/24366365/creating-an-item-if-not-already-exists-in-selectize-js-select-box-and-ajax-updat
                     }
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
-                    callback({
-                        value: '',
-                        text: ''
-                    });
-                }
-            });
-        },
-        load: function(query, callback) {
-            $.ajax({
-                url: '{% url "purchases:load_suppliers" %}',
-                type: 'GET',
-                dataType: 'json',
-                data: {
-                    q: query,
-                    page_limit: 10,
-                },
-                error: function() {
-                    console.log("error loading suppliers...");
-                },
-                success: function(res) {
-                    callback(res.data);
-                }
-            });
-        }
-	});
+                });
+            },
+            load: function(query, callback) {
+                $.ajax({
+                    url: '{% url "purchases:load_suppliers" %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {
+                        q: query,
+                        page_limit: 10,
+                    },
+                    error: function() {
+                        console.log("error loading suppliers...");
+                    },
+                    success: function(res) {
+                        callback(res.data);
+                    }
+                });
+            }
+        });
+    {% endif %}
+
 </script>

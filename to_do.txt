@@ -7,11 +7,20 @@ PRIORITY 1
         delete would be the nominal ledger transactions.  This way the 'void' action can
         be undone - just pass the PL tran to the create_nominal_entries function again.
 
+        We need to make a decision about where to show the outstanding amount.  I think
+        I favour below the subtotal, vat and total amounts.  Also need to consider updating
+        this on the fly whilst the user edits, and, creates the transaction in the first place.
+
     UI
 
         Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
 
             I WILL DO THIS WHEN I HAVE PUT THE APP UP ON HEROKU 
+
+    Create on the fly
+
+        The supplier form prefix, 'supplier', is hard coded into the javascript.  This should be programmatically
+        controlled instead.
 
     Tests
 
@@ -35,7 +44,33 @@ PRIORITY 1
         but cannot find an example.  The Q object is rumoured to be the answer but i couldn't get it to work.  A question
         therefore for SO probably.
 
+            This is a start -
+
+            >>> from django.contrib.postgres.search import TrigramSimilarity
+            >>> from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+            >>> trig_vector = (TrigramSimilarity('supplier__name', text) + TrigramSimilarity('ref', text))
+            >>> vector = SearchVector('total')
+            >>> query = SearchQuery('120.00')
+            >>> PurchaseHeader.objects.annotate(rank=SearchRank(vector, query), similarity=trig_vector).filter(Q(rank__gte=0) | Q(similarity__gt=0.3))
+
         The select2 widget probably should be replaced with selectize which is what we are using in create / edit views.
+
+    ERRORS -
+
+        I created a payment for 120.00 and on editing tried to match 150.00 of the same invoice it was already matched to.
+        The error was about the lines not equalling the total.  This didn't make sense because it was a payment.
+        This is probably easiest to address through a combination of checking the error message is in the HTML and
+        manual UI testing.
+
+        Edit also takes a long time to render errors.  I imagine we aren't overriding the large choices.  That is all.
+
+    View -
+
+        Apply CSS class so the disabled fields don't look disabled.
+
+        We need to show how much is outstanding.
+
+        Add "void" option.
 
     Edit -
 
@@ -45,18 +80,23 @@ PRIORITY 1
     Create -
 
         Implement the "add" or "add and add another" logic.  Former should redirect to read afterwards - perhaps check Xero.
-        The other should obviously redirect to create view again
+        The other should obviously redirect to create view again.
+
+        The redirection to transaction enquiry at the moment does not show the "Transaction successfully posted" message.
+        Only when the user goes back to the create view does it show...
+
+        Check that a transaction cannot be matched to itself.  At form level as well as UI.  UI shouldn't be a problem now
+        as i have fixed the bug in the outstanding transactions query.
+
+        The fields for the match form should have the disabled attribute set really.  Except for those we are setting.
+        Need to look into this.  At the moment i just set readonly as an attribute on the widget which i don't think
+        is the same.
 
     Templates -
 
         FIX ME - change 'matching_formset" to "match_formset" in the template
 
     MISC -
-
-        Fix the __len__ method of the model choice field override in accountancy.fields
-
-        save is called on the header_obj potentially twice in CreateTransactions.  I assume the second time
-        will not hit the DB because Django first checks if the fields have changed.  But i need to confirm this.
 
         Many times i am checking whether the transaction type is a payment or not.  Need a global helper to do this
         instead of repeating the code all over the place.

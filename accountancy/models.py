@@ -12,7 +12,7 @@ class Contact(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.name
+        return self.code
 
     class Meta:
         abstract = True
@@ -57,6 +57,10 @@ class TransactionHeader(DecimalBaseModel):
 
     Examples below for sales ledger
     """
+    statuses = [
+        ("c", "cleared"),
+        ("v", "void"),
+    ]
     ref = models.CharField(max_length=20)
     goods = models.DecimalField(
         decimal_places=2,
@@ -96,14 +100,8 @@ class TransactionHeader(DecimalBaseModel):
     )
     date = models.DateField()
     due_date = models.DateField(null=True, blank=True) # payments do not require due dates
-    # type = models.CharField(
-    #     max_length=1,
-    #     choices=[
-    #         ('r', 'receipt'),
-    #         ('i', 'invoice')
-    #     ]
-    # )
-    # matched_to = models.ManyToManyField('self', through='Matching')
+    period = models.CharField(max_length=6) # example 202001, 202002.  This way we can sort easily.
+    status = models.CharField(max_length=2, choices=statuses, default="c")
 
     class Meta:
         abstract = True
@@ -153,85 +151,7 @@ class MatchedHeaders(models.Model):
         blank=True,
         default=0
     )
+    period = models.CharField(max_length=6) # example 202001, 202002.  This way we can sort easily.
 
     class Meta:
         abstract = True
-
-
-
-"""
-
-The following models are used for testing.
-
-Except this would mean copying all the views too.  I can't see the point of this.  Just keep the purchase app we have but rename the
-app so that it is "dummy_purchases" or something and use this for continuous integration.
-
-"""
-
-class TestSupplier(Contact):
-    pass
-
-class TestPurchaseHeader(TransactionHeader):
-    type_non_payments = [
-        ('bi', 'Brought Forward Invoice'),
-        ('bc', 'Brought Forward Credit Note'),
-        ('i', 'Invoice'),
-        ('c', 'Credit Note'),
-    ]
-    type_payments = [
-        ('bp', 'Brought Forward Payment'),
-        ('br', 'Brought Forward Refund'),
-        ('p', 'Payment'),
-        ('r', 'Refund'),
-    ]
-    type_choices = type_non_payments + type_payments
-    supplier = models.ForeignKey(TestSupplier, on_delete=models.CASCADE)
-    type = models.CharField(
-        max_length=2,
-        choices=type_choices
-    )
-    matched_to = models.ManyToManyField('self', through='TestPurchaseMatching', symmetrical=False)
-
-
-class TestPurchaseLine(TransactionLine):
-    header = models.ForeignKey(TestPurchaseHeader, on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
-    vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
-
-class TestPayment(TestPurchaseHeader):
-    class Meta:
-        proxy = True
-
-class TestInvoice(TestPurchaseHeader):
-    class Meta:
-        proxy = True
-
-class TestCreditNote(TestPurchaseHeader):
-    class Meta:
-        proxy = True
-
-class TestRefund(TestPurchaseHeader):
-    class Meta:
-        proxy = True
-
-
-class TestPurchaseMatching(MatchedHeaders):
-    # matched_by is the header record through which
-    # all the other transactions were matched
-    matched_by = models.ForeignKey(
-        TestPurchaseHeader, 
-        on_delete=models.CASCADE, 
-        related_name="matched_by_these",
-    )
-    # matched_to is a header record belonging to
-    # the set 'all the other transactions' described above
-    matched_to = models.ForeignKey(
-        TestPurchaseHeader, 
-        on_delete=models.CASCADE, 
-        related_name="matched_to_these"
-    )
-
-    # So we can do for two trans, t1 and t2
-    # t1.matched_to_these.all()
-    # t2.matched_by_these.all()
