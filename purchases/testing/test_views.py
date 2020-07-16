@@ -377,7 +377,7 @@ class CreateInvoice(TestCase):
             line_no = line_no + 1
 
 
-
+    # CORRECT USAGE
     def test_entering_blank_lines(self):
         data = {}
         header_data = create_header(
@@ -488,7 +488,7 @@ class CreateInvoice(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "i",
-                "supplier": '1025', # non existent primary key for supplier to make form invalid
+                "supplier": '999999999999', # non existent primary key for supplier to make form invalid
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -504,8 +504,12 @@ class CreateInvoice(TestCase):
         self.assertEqual(response.status_code, 200)
         headers = PurchaseHeader.objects.all()
         self.assertEqual(len(headers), 0)
+        self.assertContains(
+            response,
+            '<li>Select a valid choice. That choice is not one of the available choices.</li>',
+            html=True
+        )
         
-
 
     # CORRECT USAGE
     def test_invoice_with_positive_input_is_saved_as_positive(self):
@@ -805,6 +809,12 @@ class CreateInvoice(TestCase):
             ),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">You are trying to match a total value of 20.'
+            '  Because you are entering a zero value transaction the total amount to match must be zero also.</li>',
+            html=True
+        )
 
 
     # INCORRECT USUAGE
@@ -835,6 +845,12 @@ class CreateInvoice(TestCase):
         )
         matches = PurchaseMatching.objects.all()
         self.assertEqual(len(matches), 0)
+        self.assertContains(
+            response,
+			'<li class="py-1">You are trying to enter a zero value transaction without matching to anything.'
+            "  This isn't allowed because it is pointless.</li>",
+            html=True
+        )
 
 
     """
@@ -1200,7 +1216,11 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
-
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            html=True
+        )
 
     # INCORRECT - Cannot match header to matching transactions with same sign
     def test_header_total_is_zero_with_lines_and_with_matching_transactions_have_same_sign_as_new_header(self):
@@ -1250,7 +1270,11 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
-
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            html=True
+        )
 
     # CORRECT USAGE
     # CHECK THE TOTAL OF THE LINES THEREFORE EQUALS THE TOTAL ENTERED
@@ -1373,7 +1397,11 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
-
+        self.assertContains(
+            response,
+			'<li class="py-1">The total of the lines does not equal the total you entered.</li>',
+            html=True
+        )
 
     """
     These are the same kind of tests but this time we test the user entering negative figures - UNUSUAL but acceptable because a
@@ -1725,7 +1753,6 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -1740,6 +1767,12 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+			'<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            html=True
+        )
+
 
     # INCORRECT - Cannot match header to matching transactions with same sign
     def test_header_total_is_zero_with_lines_and_with_matching_transactions_have_same_sign_as_new_header(self):
@@ -1789,6 +1822,14 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+			'<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            html=True
+        )
+
+
+
 
     # CORRECT USAGE
     # CHECK THE TOTAL OF THE LINES THEREFORE EQUALS THE TOTAL ENTERED
@@ -1910,6 +1951,11 @@ class CreateInvoice(TestCase):
         self.assertEqual(
             len(PurchaseMatching.objects.all()),
             0
+        )
+        self.assertContains(
+            response,
+			'<li class="py-1">The total of the lines does not equal the total you entered.</li>',
+            html=True
         )
 
 

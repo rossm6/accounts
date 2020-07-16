@@ -1,17 +1,21 @@
+Objectives -
+
+    1. Complete CRUD system for purchase ledger
+    2. Create the nominal ledger
+    3. Modify the CRUD system so that nominal entries can be created
+
 PRIORITY 1
 
     To do -
-
-        Rather than allow deleting transactions, like Xero, i prefer voiding.  So give the
-        purchase ledger transaction a status 'x' and leave the lines.  The only thing to
-        delete would be the nominal ledger transactions.  This way the 'void' action can
-        be undone - just pass the PL tran to the create_nominal_entries function again.
 
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating
         this on the fly whilst the user edits, and, creates the transaction in the first place.
 
     UI
+
+        When the supplier errors the error div is too wide.  Like the grid we need to
+        set a width constraint of these header fields so the design is respected.
 
         Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
 
@@ -66,11 +70,9 @@ PRIORITY 1
 
     View -
 
-        Apply CSS class so the disabled fields don't look disabled.
+        Show errors if void fails.
 
         We need to show how much is outstanding.
-
-        Add "void" option.
 
     Edit -
 

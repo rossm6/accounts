@@ -79,7 +79,8 @@ $(document).ready(function () {
 
     });
 
-
-    $("table.line tbody tr").not(".empty-form").eq(0).find("input").trigger("change");
+    // on page load.  So either for editing, or errors returned when
+    // trying to create
+    calculate_totals();
 
 });

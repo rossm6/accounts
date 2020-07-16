@@ -7,8 +7,6 @@
 <div {% if payment_form  %} class="lines d-none" {% else %} class="lines" {% endif %}>
     <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="{{ line_form_prefix }}">
             {% crispy line_formset %}
-            {% crispy line_formset.empty_form line_formset.empty_form.helpers.empty_form %}
-        </tbody>
     </table>
     <div class="mt-3 mb-5">
         {% if create or edit %}

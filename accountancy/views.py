@@ -332,7 +332,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def invalid_forms(self):
         self.header_is_invalid()
-        if not self.header_is_payment_type():
+        if not self.is_payment_form(self.get_header_form()):
             self.lines_are_invalid()
         self.matching_is_invalid()
         return self.render_to_response(self.get_context_data())
@@ -373,9 +373,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
 
     def header_is_invalid(self):
-        """
-        No point checking whether other forms are invalid if header is not
-        """
         if self.header_form.non_field_errors():
             self.non_field_errors = True
 
@@ -519,6 +516,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 return formset_class(**self.get_match_formset_kwargs(header))
 
     
+    # MIGHT BE OBSOLETE NOW
     def header_is_payment_type(self):
         return self.header_obj.type in ("bp", "p", "br", "r")
 
@@ -562,8 +560,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                     return self.invalid_forms()
             # other scenarios to consider later on ...
         else:
-            self.header_is_invalid()
-            return self.render_to_response(self.get_context_data())
+            return self.invalid_forms()
 
         # So we were successful
         return HttpResponseRedirect(self.get_success_url())

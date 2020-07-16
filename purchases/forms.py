@@ -21,6 +21,15 @@ from vat.models import Vat
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
+"""
+
+A note on formsets -
+
+    For all the formsets, match, read_only_match, enter_lines, read_only_lines, i have added a "include_empty_form" attribute.
+    I use this in my django crispy forms template to decide whether to include the empty form.
+
+"""
+
 class QuickSupplierForm(forms.ModelForm):
     """
     Used to create a supplier on the fly in the transaction views
@@ -299,6 +308,7 @@ enter_lines = forms.modelformset_factory(
     can_delete=True
 )
 
+enter_lines.include_empty_form = True
 
 read_only_lines = forms.modelformset_factory(
     PurchaseLine,
@@ -310,7 +320,7 @@ read_only_lines = forms.modelformset_factory(
     # there are of no actual use for the user
 )
 
-
+read_only_lines.include_empty_form = True
 
 """
 
@@ -596,7 +606,7 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
             if overall_change_in_value != 0:
                 raise forms.ValidationError(
                     _(
-                        f"You are trying to match a total value of { self.match_by.paid - overall_change_in_value }.  "
+                        f"You are trying to match a total value of { self.match_by.paid + overall_change_in_value }.  "
                         "Because you are entering a zero value transaction the total amount to match must be zero also."
                     ),
                     code="invalid-match"
@@ -617,7 +627,7 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                 else:
                     raise forms.ValidationError(
                         _(
-                            "Please ensure the total of the transactions you are matching is below the due amount."
+                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.match_by.due}"
                         ),
                         code="invalid-match"
                     )
@@ -629,7 +639,7 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                 else:
                     raise forms.ValidationError(
                         _(
-                            "Please ensure the total of the transactions you are matching is below the due amount."
+                            f"Please ensure the total of the transactions you are matching is between 0 and {-1 * self.match_by.due}"
                         )
                     )   
 
@@ -642,6 +652,7 @@ match = forms.modelformset_factory(
     formset=PurchaseMatchingFormset
 )
 
+match.include_empty_form = False
 
 read_only_match = forms.modelformset_factory(
     PurchaseMatching,
@@ -650,6 +661,7 @@ read_only_match = forms.modelformset_factory(
     formset=PurchaseMatchingFormset
 )
 
+read_only_match.include_empty_form = False
 
 
 class VoidTransaction(forms.Form):
