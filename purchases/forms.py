@@ -78,11 +78,25 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.initial.get('type') in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
-            # as we are repeating ourselves
-            payment_form = True
+
+        # it might be tempting to change the url the form is posted to on the client
+        # to include the GET parameter but this means adding a further script to
+        # the edit view on the clientside because we do not reload the edit view on changing
+        # the type
+        
+        if self.data:
+            type = self.data.get(self.prefix + "-" + "type")
+            if type in ("bp", 'p', 'br', 'r'):
+                payment_form = True
+            else:
+                payment_form = False
         else:
-            payment_form = False
+            if self.initial.get('type') in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
+                # as we are repeating ourselves
+                payment_form = True
+            else:
+                payment_form = False
+
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
@@ -443,7 +457,7 @@ class PurchaseMatchingForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         initial_value = self.initial.get("value", 0)
-        matched_by = self.cleaned_data.get("matched_by")
+        matched_by = cleaned_data.get("matched_by")
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
         header = matched_to
@@ -457,30 +471,44 @@ class PurchaseMatchingForm(forms.ModelForm):
         if header and value:
             if header.total > 0:
                 if value < 0:
-                    raise forms.ValidationError(
-                        _(
-                            "Cannot match less than value outstanding"
-                        ),
-                        code="invalid-match"
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"Value must be between 0 and {header.due + initial_value}"
+                            ),
+                            code="invalid-match"
+                        )
                     )
                 elif value > header.due + initial_value:
-                    raise forms.ValidationError(
-                        _(
-                            'Cannot match more than value outstanding'
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"Value must be between 0 and {header.due + initial_value}"
+                            ),
+                            code="invalid-match"
                         )
                     )
             elif header.total < 0:
                 if value > 0:
-                    raise forms.ValidationError(
-                        _(
-                            "Cannot match less than value outstanding"
-                        ),
-                        code="invalid-match"
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"Value must be between 0 and {header.due + initial_value}"
+                            ),
+                            code="invalid-match"
+                        )
                     )
                 elif value < header.due + initial_value:
-                    raise forms.ValidationError(
-                        _(
-                            'Cannot match more than value outstanding'
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"Value must be between 0 and {header.due + initial_value}"
+                            ),
+                            code="invalid-match"
                         )
                     )
 

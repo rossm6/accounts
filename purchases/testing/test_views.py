@@ -1980,7 +1980,6 @@ class CreateInvoice(TestCase):
             
     """
 
-
     def test_illegal_matching_situation_1(self):
         data = {}
         header_data = create_header(
@@ -2028,6 +2027,12 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+			'<li class="py-1">Value must be between 0 and 120.00</li>',
+            html=True
+        )
+
 
     def test_illegal_matching_situation_2(self):
         data = {}
@@ -2075,6 +2080,11 @@ class CreateInvoice(TestCase):
         self.assertEqual(
             len(PurchaseMatching.objects.all()),
             0
+        )
+        self.assertContains(
+            response,
+			'<li class="py-1">Value must be between 0 and 120.00</li>',
+            html=True
         )
 
     def test_illegal_matching_situation_3(self):
@@ -2124,6 +2134,11 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+			'<li class="py-1">Value must be between 0 and -120.00</li>',
+            html=True
+        )
 
     def test_illegal_matching_situation_4(self):
         data = {}
@@ -2172,7 +2187,12 @@ class CreateInvoice(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
-    
+        self.assertContains(
+            response,
+			'<li class="py-1">Value must be between 0 and -120.00</li>',
+            html=True
+        )
+
 
 class CreateCreditNote(TestCase):
 
@@ -2312,7 +2332,7 @@ class CreatePayment(TestCase):
             html=True
         )
 
-
+    # CORRECT USAGE
     def test_payment_with_positive_input_is_saved_as_negative(self):
         data = {}
         header_data = create_header(
@@ -2358,6 +2378,7 @@ class CreatePayment(TestCase):
             header.total
         )
 
+    # CORRECT USAGE
     def test_payment_with_negative_input_is_saved_as_positive(self):
         data = {}
         header_data = create_header(
@@ -2525,6 +2546,13 @@ class CreatePayment(TestCase):
             ),
             0
         )
+        self.assertContains(
+            response,
+			'<li class="py-1">You are trying to match a total value of 20. '
+            "Because you are entering a zero value transaction the total amount to match must be zero also.</li>",
+            html=True
+        )
+
 
     # INCORRECT USUAGE
     def test_header_total_is_zero_and_with_no_matching_transactions(self):
@@ -2553,6 +2581,13 @@ class CreatePayment(TestCase):
         )
         matches = PurchaseMatching.objects.all()
         self.assertEqual(len(matches), 0)
+        self.assertContains(
+            response,
+			'<li class="py-1">You are trying to enter a zero value transaction without matching to anything.'  
+            "  This isn't allowed because it is pointless.</li>",
+            html=True
+        )
+
 
     # CORRECT USAGE -- BUT THIS MEANS THE TOTAL OF THE LINES IS USED FOR THE HEADER
     # SO THIS IS NOT A ZERO VALUE MATCHING TRANSACTION
@@ -2806,6 +2841,11 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            html=True
+        )
 
 
     # INCORRECT - Cannot match header to matching transactions with same sign
@@ -2848,6 +2888,12 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 100</li>',
+            html=True
+        )
+
 
     """
     As with the invoice tests we now test the non-zero total tests but this time entering negatives

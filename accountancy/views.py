@@ -376,6 +376,15 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         if self.header_form.non_field_errors():
             self.non_field_errors = True
 
+        if override_choices := self.header.get('override_choices'):
+            form = self.header_form
+            for choice in override_choices:
+                field = form.fields[choice]
+                if chosen := form.cleaned_data.get(choice):
+                    field.widget.choices = [ (chosen.pk, str(chosen)) ]
+                else:
+                    field.widget.choices = []
+
     def lines_are_valid(self):
         line_no = 1
         lines = []
@@ -448,8 +457,13 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         }
 
         if self.request.method in ('POST', 'PUT'):
+            # passing in data will mean the form will use the POST queryset
+            # which means potentially huge choices rendered on the client
+            if not self.is_payment_form(self.header_form):
+                kwargs.update({
+                    'data': self.request.POST
+                })
             kwargs.update({
-                'data': self.request.POST,
                 'header': header
             })
         

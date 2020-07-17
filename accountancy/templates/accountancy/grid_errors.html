@@ -29,7 +29,7 @@
                             {% for error in matching_formset.non_form_errors %}
                                 <li class="py-1">{{ error }}</li>                                               
                             {% endfor %}
-                            {% for form in matching_formset.non_field_errors %}
+                            {% for form in matching_formset %}
                                 {% if form.non_field_errors %}
                                     {% for error in form.non_field_errors %}
                                         <li class="py-1">{{ error }}</li>
