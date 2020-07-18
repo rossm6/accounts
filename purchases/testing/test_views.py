@@ -251,6 +251,111 @@ class CreateInvoice(TestCase):
 
     """
 
+    # CORRECT USAGE ... well, acceptable usage rather
+    def test_match_with_zero_value_is_ignored(self):
+        # should the user choose a transaction to match to but enter a 0 value
+        # the match record should not be created
+        # likewise with edit, any match record changed so that value = 0
+        # should entail removing the matching record
+        # this second requirements is tested in EditInvoice
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+            "type": "i",
+            "supplier": self.supplier.pk,
+            "ref": self.ref,
+            "date": self.date,
+            "due_date": self.due_date,
+            "total": 0
+            }
+        )
+        data.update(header_data)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "i", 100)
+        headers_to_match_against_orig = headers_to_match_against
+        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(headers_to_match_against[:5], {"id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects(headers_to_match_against[5:], {"id": "matched_to"}, {"value": -100})
+        matching_forms[4]["value"] = 0 # last of the positives
+        matching_forms[-1]["value"] = 0 # last of the negatives
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        line_data = create_formset_data(LINE_FORM_PREFIX, []) # NO LINES NEED BUT CODE STILL NEEDS THE LINE MANAGEMENT FORM
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        new_header = PurchaseHeader.objects.filter(ref=self.ref)
+        self.assertEqual(len(list(new_header)), 1)
+        new_header = new_header[0]
+        self.assertEqual(new_header.total, 0)
+        self.assertEqual(new_header.paid, 0)
+        self.assertEqual(new_header.due, 0)
+        map_pk_to_header = { header.pk : header for header in headers_to_match_against_orig }
+        headers_to_match_against_updated  = new_header.matched_to.all()
+        # CHECK THE HEADERS WE ELECTED TO MATCH AGAINST HAVE BEEN UPDATED CORRECTLY
+        for header in headers_to_match_against_updated:
+            # total should not have changed
+            self.assertEqual(
+                header.total,
+                map_pk_to_header[header.pk].total
+            )
+            self.assertEqual(
+                header.due,
+                0
+            )
+            # should be all paid
+            self.assertEqual(
+                header.paid,
+                map_pk_to_header[header.pk].total
+            )
+        # THE MATCHING TABLE IS THE MEANS THROUGH WHICH THIS MANYTOMANY RELATIONSHIP BETWEEN HEADERS IS ESTABLISHED
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(len(matches), 8)
+        for match in matches:
+            matched_to_header_before_update = map_pk_to_header[match.matched_to_id]
+            self.assertEqual(
+                match.matched_by_id,
+                new_header.pk
+            )
+            self.assertEqual(
+                match.value,
+                matched_to_header_before_update.due
+            )
+            self.assertEqual(
+                match.matched_to_id,
+                matched_to_header_before_update.pk
+            )
+        # check now that the headers which had match values of 0 are ok
+        unaffected_headers = PurchaseHeader.objects.filter(
+            pk__in=[
+                matching_forms[4]["matched_to"],
+                matching_forms[-1]["matched_to"]
+            ]
+        )
+        self.assertEqual(
+            len(unaffected_headers),
+            2
+        )
+        self.assertEqual(
+            unaffected_headers[0].due,
+            100
+        )
+        self.assertEqual(
+            unaffected_headers[0].paid,
+            0
+        )
+        self.assertEqual(
+            unaffected_headers[1].due,
+            -100
+        )
+        self.assertEqual(
+            unaffected_headers[1].paid,
+            0
+        )
+    
 
     # CORRECT USAGE
     # Can request create invoice view without GET parameters
@@ -375,7 +480,6 @@ class CreateInvoice(TestCase):
                 line_no
             )
             line_no = line_no + 1
-
 
     # CORRECT USAGE
     def test_entering_blank_lines(self):
@@ -3152,10 +3256,15 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            html=True
+        )
 
 
     # INCORRECT - Cannot match header to matching transactions with same sign
-    def test_header_total_is_non_zero_and_with_matching_transactions_have_same_sign_as_new_header_NEGATIVE(self):
+    def test_header_total_is_non_zero_and_with_matching_transactions_which_have_same_sign_as_new_header_NEGATIVE(self):
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -3194,6 +3303,12 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -100</li>',
+            html=True
+        )
+
 
 
     """
@@ -3258,6 +3373,13 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">Value must be between 0 and 100.00</li>',
+            html=True
+        )
+
+
 
     def test_illegal_matching_situation_2(self):
         data = {}
@@ -3297,6 +3419,12 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">Value must be between 0 and 100.00</li>',
+            html=True
+        )
+
 
     def test_illegal_matching_situation_3(self):
         data = {}
@@ -3335,6 +3463,12 @@ class CreatePayment(TestCase):
             len(PurchaseMatching.objects.all()),
             0
         )
+        self.assertContains(
+            response,
+            '<li class="py-1">Value must be between 0 and -100.00</li>',
+            html=True
+        )
+
 
     def test_illegal_matching_situation_4(self):
         data = {}
@@ -3373,6 +3507,11 @@ class CreatePayment(TestCase):
         self.assertEqual(
             len(PurchaseMatching.objects.all()),
             0
+        )
+        self.assertContains(
+            response,
+            '<li class="py-1">Value must be between 0 and -100.00</li>',
+            html=True
         )
 
 
@@ -3605,6 +3744,12 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_by, payment)
         self.assertEqual(matches[1].matched_to, invoices[1])
         self.assertEqual(matches[1].value, 500)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 500</li>',
+            html=True
+        )
 
 
     # CORRECT USAGE
@@ -3887,6 +4032,12 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_by, payment)
         self.assertEqual(matches[1].matched_to, invoices[1])
         self.assertEqual(matches[1].value, 500)  
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1500</li>',
+            html=True
+        )
 
 
     # CORRECT USAGE 
@@ -4175,7 +4326,11 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_to, invoices[1])
         self.assertEqual(matches[1].value, -1000)
 
-
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 800</li>',
+            html=True
+        )
 
     """
     Now we repeat tests 3 to 8 but this time try the same thing but by adding new transactions
@@ -4532,6 +4687,13 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_to, invoices[1])
         self.assertEqual(matches[1].value, 500)  
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2000</li>',
+            html=True
+        )
+
+
     # test_6 again but this time including a new transaction to match
     # CORRECT USAGE 
     # Payment total is decreased
@@ -4878,6 +5040,12 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_by, payment)
         self.assertEqual(matches[1].matched_to, invoices[1])
         self.assertEqual(matches[1].value, -1000)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 800</li>',
+            html=True
+        )
 
 
     """
@@ -5532,9 +5700,16 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Value must be between 0 and 1200.00</li>',
+            html=True
+        )
+
 
     # INCORRECT USAGE
-    # Same as above two tests but this time we do incorrect matching overall i.e. match is ok at match record level when taken in isolation
+    # match is ok at match record level when taken in isolation
+    # but incorrect overall
     def test_21(self):
 
         # create the payment
@@ -5599,7 +5774,7 @@ class EditPayment(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = -1000
+        matching_trans[1]["value"] = 1000
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
@@ -5636,6 +5811,13 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_by, invoices[1])
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 900</li>',
+            html=True
+        )
+
 
     # NOW I CHECK AN INVALID HEADER, INVALID LINES AND INVALID MATCHING
     # AGAIN JUST USE TEST_33 AS A BASE
@@ -5744,6 +5926,12 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600) 
 
+        self.assertContains(
+            response,
+            '<li>Select a valid choice. That choice is not one of the available choices.</li>',
+            html=True
+        )
+
 
     # INCORRECT USAGE
     # INVALID MATCHING
@@ -5848,6 +6036,12 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].matched_by, invoices[1])
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600) 
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1000</li>',
+            html=True
+        )
 
 
 class CreateRefund(TestCase):
@@ -6755,6 +6949,12 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600) 
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1080</li>',
+            html=True
+        )
+
 
     # INCORRECT USAGE
     # Same as above but this time we lower the line value rather than delete a line
@@ -6901,6 +7101,14 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, invoices[0])
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600) 
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1080</li>',
+            html=True
+        )
+
+
 
     # CORRECT USAGE
     # Invoice total is increased by adding new lines
@@ -7696,6 +7904,12 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2100</li>',
+            html=True
+        )
+
     # INCORRECT USAGE
     # Same test as above except we increase the invoice by increasing an existing line value this time
     def test_10(self):
@@ -7839,6 +8053,13 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, invoices[0])
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1320</li>',
+            html=True
+        )
+
 
     # CORRECT USAGE
     # Delete a line so the total decreases - like test_3
@@ -8613,6 +8834,13 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1080</li>',
+            html=True
+        )
+
+
     # INCORRECT USAGE
     # Decrease line value so the total decreases
     # Matching is not right though
@@ -8760,6 +8988,12 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, invoices[0])
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1140</li>',
+            html=True
+        )
 
 
     # Same as test_5 but this time we match a new transaction
@@ -9658,6 +9892,13 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2100</li>',
+            html=True
+        )
+
+
     # test_10 again but this time creating a new transaction
     # INCORRECT USAGE
     # Same test as above except we increase the invoice by increasing an existing line value this time
@@ -9819,6 +10060,13 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, invoices[0])
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1320</li>',
+            html=True
+        )
+
 
     # test_11 again but this time creating a new matching transaction
     # CORRECT USAGE
@@ -10689,6 +10937,12 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1080</li>',
+            html=True
+        )
+
     # test_16 again but this time we create a new matching transaction
     # INCORRECT USAGE
     # Decrease line value so the total decreases
@@ -10853,6 +11107,12 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, invoices[0])
         self.assertEqual(matches[1].matched_to, payment)
         self.assertEqual(matches[1].value, -600)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1140</li>',
+            html=True
+        )
 
 
     """
@@ -11772,6 +12032,13 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
 
+        self.assertContains(
+            response,
+            '<li class="py-1">Value must be between 0 and -1000.00</li>',
+            html=True
+        )
+
+
     # INCORRECT USAGE
     # Same as above two tests but this time we do incorrect matching overall i.e. match is ok at match record level when taken in isolation
     def test_35(self):
@@ -11920,6 +12187,12 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, payment)
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1140</li>',
+            html=True
+        )
 
     # NOW I CHECK AN INVALID HEADER, INVALID LINES AND INVALID MATCHING
     # AGAIN JUST USE TEST_33 AS A BASE
@@ -12075,6 +12348,13 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
 
+        self.assertContains(
+            response,
+            '<li>Select a valid choice. That choice is not one of the available choices.</li>',
+            html=True
+        )
+
+
     # INCORRECT USAGE
     # INVALID LINES
     def test_37(self):
@@ -12227,7 +12507,11 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
 
-
+        self.assertContains(
+            response,
+            '<li class="py-1">Select a valid choice. That choice is not one of the available choices.</li>',
+            html=True
+        )
 
     # INCORRECT USAGE
     # INVALID MATCHING.  Already covered i think but include it here just so next to the other two tests.
@@ -12380,6 +12664,13 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
 
+        print(response.__dict__)
+
+        self.assertContains(
+            response,
+            '<li class="py-1">Value must be between 0 and -1000.00</li>',
+            html=True
+        )
 
 class EditCreditNote(TestCase):
 
@@ -12568,4 +12859,102 @@ class EditRefund(TestCase):
                 '<option value="r" selected>Refund</option>'
             '</select>',
             html=True
+        )
+
+
+
+
+class GeneralTransactionTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.ref = "test matching"
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+
+        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        cls.description = "a line description"
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+        cls.url = reverse("purchases:create")
+
+    # CORRECT USAGE
+    def test_approve_and_another_redirection(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        line_forms = ([{
+                'item': self.item.pk,
+                'description': self.description,
+                'goods': 100,
+                'nominal': self.nominal.pk,
+                'vat_code': self.vat_code.pk,
+                'vat': 20
+            }]) * 20
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(matching_data)
+        data.update(line_data)
+        data.update({
+            'approve': 'add_another'
+        })
+        response = self.client.post(self.url, data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.request["PATH_INFO"],
+            "/purchases/create"
+        )
+
+
+    # CORRECT USAGE
+    def test_add_redirection(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "i",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        line_forms = ([{
+                'item': self.item.pk,
+                'description': self.description,
+                'goods': 100,
+                'nominal': self.nominal.pk,
+                'vat_code': self.vat_code.pk,
+                'vat': 20
+            }]) * 20
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(matching_data)
+        data.update(line_data)
+        data.update({
+            'approve': 'do_not_add_another'
+        })
+        response = self.client.post(self.url, data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.request["PATH_INFO"],
+            "/purchases/transactions"
         )

@@ -301,6 +301,9 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def get_success_url(self):
+        if creation_type := self.request.POST.get('approve'):
+            if creation_type == "add_another":
+                return self.request.get_full_path() # the relative path including the GET parameters e.g. /purchases/create?t=i
         return self.success_url
 
     def get_context_data(self, **kwargs):
@@ -407,7 +410,8 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         for form in self.match_formset:
             if form.empty_permitted and form.has_changed():
                 match = form.save(commit=False)
-                matches.append(match)
+                if match.value != 0:
+                    matches.append(match)
         if matches:
             self.get_header_model().objects.bulk_update(
                 self.match_formset.headers,
@@ -540,6 +544,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def post(self, request, *args, **kwargs):
         """
+
         Handle POST requests: instantiate forms with the passed POST variables
         and then check if it is valid
 

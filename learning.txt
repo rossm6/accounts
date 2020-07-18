@@ -28,3 +28,10 @@ Django Model Stackoverflow
 Testing
 
     https://www.valentinog.com/blog/testing-django/
+
+
+Django Responses
+
+    Remember that a HttpRedirect with a status code of 302 is the standard response for a successful POST.
+    This will have a content of 0 bytes.  This response tells the browser to issue a request to the said
+    url.  The server then responds to this further request.
