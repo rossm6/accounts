@@ -100,6 +100,14 @@ class TransactionHeader(DecimalBaseModel):
     class Meta:
         abstract = True
 
+    @classmethod
+    def get_types_requiring_analysis(cls):
+        return [ type[0] for type in cls.analysis_required ]
+
+    @classmethod
+    def get_type_names_requiring_analysis(cls):
+        return [ type[1] for type in cls.analysis_required ]
+
 
 # class Invoice(TransactionHeader):
 #     class Meta:

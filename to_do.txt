@@ -11,16 +11,13 @@ PRIORITY 1
 
     To do -
 
-
-        I need to spend some time improving the BaseTransaction class.  It needs a
-        way of allowing the consumer to define the transaction types.  At the moment
-        i just assume the PL transaction types, which incidentally, have changed
-        to include a 'p' in front of the type code.  So it is now 'pi' and not
-        'i'.
-
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating
         this on the fly whilst the user edits, and, creates the transaction in the first place.
+
+    SALES
+
+        Create a bad debt write off journal transaction type for the sales ledger
 
     UI
 

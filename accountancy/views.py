@@ -303,8 +303,8 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         if 'non_field_errors' not in kwargs:
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
-        if 'payment_form' not in kwargs:
-            kwargs['payment_form'] = self.is_payment_form(kwargs["header_form"]) # as self.header_form not set for GET requests
+        if 'requires_analysis' not in kwargs:
+            kwargs['requires_analysis'] = self.requires_analysis(kwargs["header_form"]) # as self.header_form not set for GET requests
         
         if hasattr(self, 'create_on_the_fly'):
             for form in self.create_on_the_fly:
@@ -314,7 +314,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def invalid_forms(self):
         self.header_is_invalid()
-        if not self.is_payment_form(self.get_header_form()):
+        if self.requires_analysis(self.get_header_form()):
             self.lines_are_invalid()
         self.matching_is_invalid()
         return self.render_to_response(self.get_context_data())
@@ -443,7 +443,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         if self.request.method in ('POST', 'PUT'):
             # passing in data will mean the form will use the POST queryset
             # which means potentially huge choices rendered on the client
-            if not self.is_payment_form(self.header_form):
+            if self.requires_analysis(self.header_form):
                 kwargs.update({
                     'data': self.request.POST
                 })
@@ -475,19 +475,19 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         
         return kwargs
 
-    def is_payment_form(self, header_form):
+    def requires_analysis(self, header_form):
         if hasattr(header_form, "cleaned_data"):
             if t := header_form.cleaned_data.get("type"):
-                if t in ("pbp", "pp", "pbr", "pr"):
+                if t in self.get_header_model().get_types_requiring_analysis():
                     return True
                 else:
                     return False
         if t := self.header_form.initial.get('type'):
-            if t in ("pbp", "pp", "pbr", "pr"):
+            if t in self.get_header_model().get_types_requiring_analysis():
                 return True
             # we need this because read only forms used for the detail transaction view
             # convert the initial choice value to the choice label
-            if t in ("Brought Forward Payment", "Payment", "Brought Forward Refund", "Refund"):
+            if t in self.get_header_model().get_type_names_requiring_analysis():
                 return True
         else:
             return False
@@ -538,7 +538,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             self.header_obj = self.header_form.save(commit=False) # changed name from header because this is a cls attribute of course
             self.line_formset = self.get_line_formset(self.header_obj)
             self.match_formset = self.get_match_formset(self.header_obj)
-            if self.header_is_payment_type():
+            if not self.requires_analysis(self.header_form):
                 # e.g. processing payments on PL
                 if self.match_formset.is_valid():
                     self.matching_is_valid()
@@ -580,10 +580,6 @@ class BaseCreateTransaction(BaseTransaction):
         context = super().get_context_data(**kwargs)
         context["create"] = True # some javascript templates depend on this
         return context
-
-    def get_header_form_type(self):
-        t = self.request.GET.get("t", "pi")
-        return t
 
     def get_header_form_kwargs(self):
         kwargs = super().get_header_form_kwargs()

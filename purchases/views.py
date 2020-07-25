@@ -37,6 +37,7 @@ class CreateTransaction(BaseCreateTransaction):
         "prefix": "header",
         "override_choices": ["supplier"],
         "initial": {"total": 0},
+        
     }
     line = {
         "model": PurchaseLine,
@@ -57,6 +58,11 @@ class CreateTransaction(BaseCreateTransaction):
     }
     template_name = "purchases/create.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
+
+    # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
+    def get_header_form_type(self):
+        t = self.request.GET.get("t", "pi")
+        return t
 
 
 class EditTransaction(BaseEditTransaction):

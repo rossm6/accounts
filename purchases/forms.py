@@ -49,22 +49,21 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         # it might be tempting to change the url the form is posted to on the client
         # to include the GET parameter but this means adding a further script to
         # the edit view on the clientside because we do not reload the edit view on changing
         # the type
+        
         if self.data:
             type = self.data.get(self.prefix + "-" + "type")
-            if type in ("pbp", 'pp', 'pbr', 'pr'):
-                payment_form = True
-            else:
-                payment_form = False
         else:
-            if self.initial.get('type') in ("pbp", 'pp', 'pbr', 'pr'): # FIX ME - we need a global way of checking this
-                # as we are repeating ourselves
-                payment_form = True
-            else:
-                payment_form = False
+            type = self.initial.get('type')
+
+        if type in self._meta.model.requires_bank:
+            payment_form = True
+        else:
+            payment_form = False
 
         self.helper = create_transaction_header_helper(
             {
@@ -85,7 +84,7 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         type = cleaned_data.get("type")
         total = cleaned_data.get("total")
         if total:
-            if type in ("pc", "pbc", "pp", "pbp"):
+            if type in self._meta.model.credits:
                 cleaned_data["total"] = -1 * total
         return cleaned_data
 
@@ -99,17 +98,17 @@ class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
         self.fields["supplier"].widget = forms.TextInput()
         supplier = self.fields["supplier"].queryset[0]
         self.initial["supplier"] = str(supplier)
-        if self.initial.get('type') in ("pbp", 'pp', 'pbr', 'pr'): # FIX ME - we need a global way of checking this
+        if self.initial.get('type') in self._meta.model.get_types_requiring_analysis(): # FIX ME - we need a global way of checking this
             # as we are repeating ourselves
-            payment_form = True
+            transaction_requires_analysis = True
         else:
-            payment_form = False
+            transaction_requires_analysis = False
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
             },
-            payment_form,
-            True # read only
+            transaction_requires_analysis,
+            True
         )
         # must do this afterwards
         self.initial["type"] = self.instance.get_type_display()

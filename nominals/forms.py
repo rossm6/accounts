@@ -162,18 +162,25 @@ class NominalLineFormset(BaseLineFormset):
                     this_vat = form.instance.vat
                     if this_goods > 0:
                         debits += this_goods
+                        goods += this_goods
+                        vat += this_vat
                     else:
                         credits += this_goods
                     if this_vat > 0:
                         debits += this_vat
                     else:
                         credits += this_vat
-                    goods += this_goods
-                    vat += this_vat
+        if not self.header.total:
+            raise forms.ValidationError(
+                _(
+                    "No total entered.  This should be the total value of the debit side of the journal i.e. the total of the positive values"
+                ),
+                code="invalid-total"
+            )
         if self.header.total != debits:
             raise forms.ValidationError(
                 _(
-                    "The total of the lines does not equal the total you entered."
+                    "The total of the debits does not equal the total you entered."
                 ),
                 code="invalid-total"
             )
@@ -187,7 +194,7 @@ class NominalLineFormset(BaseLineFormset):
             )  
         self.header.goods = goods
         self.header.vat = vat
-        self.header.total = goods + vat
+        self.header.total = debits
 
 enter_lines = forms.modelformset_factory(
     NominalLine,

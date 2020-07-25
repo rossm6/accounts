@@ -9,25 +9,46 @@ class Supplier(Contact):
     pass
 
 class PurchaseHeader(TransactionHeader):
-    type_non_payments = [
+    no_analysis_required = [
         ('pbi', 'Brought Forward Invoice'),
         ('pbc', 'Brought Forward Credit Note'),
-        ('pi', 'Invoice'),
-        ('pc', 'Credit Note'),
-    ]
-    type_payments = [
         ('pbp', 'Brought Forward Payment'),
         ('pbr', 'Brought Forward Refund'),
         ('pp', 'Payment'),
         ('pr', 'Refund'),
     ]
-    type_choices = type_non_payments + type_payments
+    analysis_required = [
+        ('pi', 'Invoice'),
+        ('pc', 'Credit Note'),
+    ]
+    credits = [
+        'pbc',
+        'pbp',
+        'pp',
+        'pc'
+    ]
+    debits = [
+        'pbi',
+        'pbr',
+        'pr',
+        'pi'
+    ]
+    requires_bank = [
+        'pbp',
+        'pbr',
+        'pp',
+        'pr'
+    ]
+    # TO DO - issue an improperly configured warning if all the types are not all the
+    # credit types plus the debit types
+    type_choices = no_analysis_required + analysis_required
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
         choices=type_choices
     )
     matched_to = models.ManyToManyField('self', through='PurchaseMatching', symmetrical=False)
+
 
 
 class PurchaseLine(TransactionLine):

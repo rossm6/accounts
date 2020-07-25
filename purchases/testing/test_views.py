@@ -5,6 +5,7 @@ from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
+from accountancy.testing.helpers import *
 from items.models import Item
 from nominals.models import Nominal
 from utils.helpers import sort_multiple
@@ -80,14 +81,12 @@ def to_dict(instance):
         data[f.name] = [i.id for i in f.value_from_object(instance)]
     return data
 
-
 def create_header(prefix, form):
     data = {}
     for field in form:
         data[prefix + "-" + field] = form[field]
     data[prefix + "-" + "period"] = PERIOD
     return data
-
 
 def create_formset_data(prefix, forms):
     data = {}
@@ -174,12 +173,12 @@ class CreateBroughtForwardInvoice(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi" selected>Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -202,12 +201,12 @@ class CreateBroughtForwardCreditNote(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc" selected>Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -375,12 +374,12 @@ class CreateInvoice(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi" selected>Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi" selected>Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -2320,12 +2319,12 @@ class CreateCreditNote(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc" selected>Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc" selected>Credit Note</option>'
             '</select>',
             html=True
         )
@@ -2348,12 +2347,12 @@ class CreateBroughtForwardPayment(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp" selected>Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -2376,12 +2375,12 @@ class CreateBroughtForwardRefund(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr" selected>Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -2426,12 +2425,12 @@ class CreatePayment(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp" selected>Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -3558,12 +3557,12 @@ class EditPayment(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp" selected>Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -6058,12 +6057,12 @@ class CreateRefund(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr" selected>Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -6105,12 +6104,12 @@ class EditBroughtForwardInvoice(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi" selected>Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -6152,12 +6151,12 @@ class EditBroughtForwardCreditNote(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc" selected>Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -6516,12 +6515,12 @@ class EditInvoice(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi" selected>Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi" selected>Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -12997,12 +12996,12 @@ class EditCreditNote(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc" selected>Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc" selected>Credit Note</option>'
             '</select>',
             html=True
         )
@@ -13044,12 +13043,12 @@ class EditBroughtForwardPayment(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp" selected>Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -13091,12 +13090,12 @@ class EditBroughtForwardRefund(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr" selected>Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr">Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -13140,12 +13139,12 @@ class EditRefund(TestCase):
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
                 '<option value="pbp">Brought Forward Payment</option>'
                 '<option value="pbr">Brought Forward Refund</option>'
                 '<option value="pp">Payment</option>'
                 '<option value="pr" selected>Refund</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )

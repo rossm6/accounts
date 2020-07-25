@@ -37,7 +37,7 @@ class CreateTransaction(BaseCreateTransaction):
     success_url = reverse_lazy("nominals:transaction_enquiry")
 
     def get_header_form_type(self):
-        t = self.request.GET.get("t", "j")
+        t = self.request.GET.get("t", "nj")
         return t
 
 

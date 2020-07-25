@@ -14,13 +14,15 @@ class Nominal(MPTTModel):
         return self.name
 
 class NominalHeader(TransactionHeader):
-    types = [
+    analysis_required = [
         ('nj', 'Journal')
     ]
     type = models.CharField(
         max_length=2,
-        choices=types
+        choices=analysis_required
     )
+
+
 
 class NominalLine(TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
@@ -28,7 +30,7 @@ class NominalLine(TransactionLine):
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
 
 
-all_module_types = PurchaseHeader.type_choices + NominalHeader.types
+all_module_types = PurchaseHeader.type_choices + NominalHeader.analysis_required
 
 class NominalTransactions(DecimalBaseModel):
     module = models.CharField(max_length=3) # e.g. 'PL' for purchase ledger
