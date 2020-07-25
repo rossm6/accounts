@@ -23,17 +23,23 @@ class NominalHeader(TransactionHeader):
     )
 
 
-
 class NominalLine(TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
-
+    nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE)
 
 all_module_types = PurchaseHeader.type_choices + NominalHeader.analysis_required
 
-class NominalTransactions(DecimalBaseModel):
+class NominalTransaction(DecimalBaseModel):
     module = models.CharField(max_length=3) # e.g. 'PL' for purchase ledger
+    # we don't bother with ForeignKeys to the header and line models
+    # because this would require generic foreign keys which means extra overhead
+    # in the SQL queries
+    # and we only need the header and line number anyway to group within
+    # the nominal transactions table
+    header = models.PositiveIntegerField()
+    line = models.PositiveIntegerField()
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     value = models.DecimalField(
         decimal_places=2,
@@ -49,5 +55,5 @@ class NominalTransactions(DecimalBaseModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['id', 'module'], name="unique_batch")
+            models.UniqueConstraint(fields=['module', 'header', 'line'], name="unique_batch")
         ]

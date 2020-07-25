@@ -10,7 +10,7 @@ from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import NominalForm
-from .models import NominalHeader, NominalLine, NominalTransactions
+from .models import NominalHeader, NominalLine, NominalTransaction
 
 
 class CreateTransaction(BaseCreateTransaction):
@@ -35,6 +35,8 @@ class CreateTransaction(BaseCreateTransaction):
     }
     template_name = "nominals/create.html"
     success_url = reverse_lazy("nominals:transaction_enquiry")
+    nominal_model = NominalTransaction
+    module = "NL"    
 
     def get_header_form_type(self):
         t = self.request.GET.get("t", "nj")
@@ -58,7 +60,7 @@ create_on_the_fly_view = create_on_the_fly(
 )
 
 class TransactionEnquiry(BaseTransactionsList):
-    model = NominalTransactions
+    model = NominalTransaction
     fields = [
         ("nominal__name", "Nominal"),
         ("period", "Period"),

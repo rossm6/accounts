@@ -381,7 +381,20 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 lines.append(line)
                 line_no = line_no + 1
         if lines:
-            self.get_line_model().objects.bulk_create(lines)
+            lines = self.get_line_model().objects.bulk_create(lines)
+            nominal_transactions = []
+            for line in lines:
+                nominal_transaction = self.create_nominal_transaction(self.header_obj, line)
+                nominal_transactions.append(nominal_transaction)      
+            if nominal_transactions:
+                nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
+                for line in lines:
+                    tmp = [ 
+                        nominal_transaction for nominal_transaction in nominal_transactions if nominal_transaction.line == line.pk 
+                    ]
+                    nominal_transaction_for_line = tmp[0]
+                    line.nominal_transaction = nominal_transaction_for_line
+                self.get_line_model().objects.bulk_update(lines, ['nominal_transaction'])
 
     def matching_is_valid(self):
         if not hasattr(self, 'header_has_been_saved'):
@@ -407,6 +420,9 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def get_match_model(self):
         return self.match.get('model')
+
+    def get_nominal_model(self):
+        return self.nominal_model
 
     def get_header_prefix(self):
         return self.header.get('prefix', 'header')
@@ -589,6 +605,18 @@ class BaseCreateTransaction(BaseTransaction):
             }
         return kwargs
 
+    def create_nominal_transaction(self, header, line):
+        return self.get_nominal_model()(
+            module=self.module,
+            header=header.pk,
+            line=line.pk,
+            nominal=line.nominal,
+            value=line.goods,
+            ref=header.ref,
+            period=header.period,
+            date=header.date,
+            type=header.type
+        )
 
 class BaseEditTransaction(BaseTransaction):
 

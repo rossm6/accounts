@@ -1,7 +1,6 @@
 Objectives -
 
-    2. Create the nominal ledger
-    3. Modify the CRUD system so that nominal entries can be created
+    3. Modify the CRUD system so that nominal entries can be created.  EditJournal to test and write next.  Then test nominal entry creation on PL side
     4. Create Cash Book
     5. Create the Sales ledger
 

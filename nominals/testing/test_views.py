@@ -10,7 +10,7 @@ from nominals.models import Nominal
 from utils.helpers import sort_multiple
 from vat.models import Vat
 
-from ..models import NominalHeader, NominalLine
+from ..models import NominalHeader, NominalLine, NominalTransaction
 
 """
 These tests just check that the nominal module uses the accountancy general classes correctly.
@@ -185,6 +185,67 @@ class CreateJournal(TestCase):
         self.assertEqual(
             credit.vat,
             -20
+        )
+        nominal_transactions = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nominal_transactions),
+            2
+        )
+        self.assertEqual(
+            nominal_transactions[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            nominal_transactions[0].line,
+            debit.pk
+        )
+        self.assertEqual(
+            nominal_transactions[0].nominal,
+            self.bank_nominal
+        )
+        self.assertEqual(
+            nominal_transactions[0].value,
+            100
+        )
+        self.assertEqual(
+            nominal_transactions[0].ref,
+            header.ref
+        )
+        self.assertEqual(
+            nominal_transactions[0].period,
+            PERIOD
+        )
+        self.assertEqual(
+            nominal_transactions[0].type,
+            "nj"
+        )
+        self.assertEqual(
+            nominal_transactions[1].header,
+            header.pk
+        )
+        self.assertEqual(
+            nominal_transactions[1].line,
+            credit.pk
+        )
+        self.assertEqual(
+            nominal_transactions[1].nominal,
+            self.debtors_nominal
+        )
+        self.assertEqual(
+            nominal_transactions[1].value,
+            -100
+        )
+        self.assertEqual(
+            nominal_transactions[1].ref,
+            header.ref
+        )
+        self.assertEqual(
+            nominal_transactions[1].period,
+            PERIOD
+        )
+        self.assertEqual(
+            nominal_transactions[1].type,
+            "nj"
         )
 
 

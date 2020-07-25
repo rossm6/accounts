@@ -21,6 +21,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                jQueryDataTable)
 from items.models import Item
 from nominals.forms import NominalForm
+from nominals.models import NominalTransaction
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
@@ -58,6 +59,8 @@ class CreateTransaction(BaseCreateTransaction):
     }
     template_name = "purchases/create.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
+    nominal_model = NominalTransaction
+    module = "PL"
 
     # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
     def get_header_form_type(self):
