@@ -44,7 +44,7 @@ def create_invoices(supplier, ref_prefix, n, value=100):
             due=1.2 * value,
             date=date,
             due_date=due_date,
-            type="i",
+            type="pi",
             period=PERIOD 
         )
         invoices.append(i)
@@ -63,7 +63,7 @@ def create_payments(supplier, ref_prefix, n, value=100):
             paid=0,
             due= -1 * value,
             date=date,
-            type="p",
+            type="pp",
             period=PERIOD
         )
         payments.append(p)

@@ -165,21 +165,21 @@ class CreateBroughtForwardInvoice(TestCase):
     # CORRECT USAGE
     # Can request create brought forward invoice view with t=bi GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=bi")
+        response = self.client.get(self.url + "?t=pbi")
         self.assertEqual(response.status_code, 200)
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi" selected>Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi" selected>Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -193,21 +193,21 @@ class CreateBroughtForwardCreditNote(TestCase):
     # CORRECT USAGE
     # Can request create brought forward invoice view with t=bi GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=bc")
+        response = self.client.get(self.url + "?t=pbc")
         self.assertEqual(response.status_code, 200)
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc" selected>Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc" selected>Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -263,7 +263,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "i",
+            "type": "pi",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -272,7 +272,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "i", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -366,21 +366,21 @@ class CreateInvoice(TestCase):
     # CORRECT USAGE
     # Can request create invoice view with t=i GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=i")
+        response = self.client.get(self.url + "?t=pi")
         self.assertEqual(response.status_code, 200)
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i" selected>Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi" selected>Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -393,7 +393,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -487,7 +487,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -591,7 +591,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": '999999999999', # non existent primary key for supplier to make form invalid
                 "ref": self.ref,
                 "date": self.date,
@@ -621,7 +621,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -704,7 +704,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -800,7 +800,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "i",
+            "type": "pi",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -809,7 +809,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "i", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -868,7 +868,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "i",
+            "type": "pi",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -877,7 +877,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "i", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -928,7 +928,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "i",
+            "type": "pi",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -968,7 +968,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1052,7 +1052,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1165,7 +1165,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1278,7 +1278,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1332,7 +1332,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1387,7 +1387,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1470,7 +1470,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1522,7 +1522,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1605,7 +1605,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1718,7 +1718,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1830,7 +1830,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1884,7 +1884,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1942,7 +1942,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2025,7 +2025,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2089,7 +2089,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2143,7 +2143,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2196,7 +2196,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2249,7 +2249,7 @@ class CreateInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2312,20 +2312,20 @@ class CreateCreditNote(TestCase):
     # CORRECT USAGE
     # Can request create payment view only with t=p GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=c")
+        response = self.client.get(self.url + "?t=pc")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c" selected>Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc" selected>Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -2340,20 +2340,20 @@ class CreateBroughtForwardPayment(TestCase):
     # CORRECT USAGE
     # Can request create payment view only with t=bp GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=bp")
+        response = self.client.get(self.url + "?t=pbp")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp" selected>Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp" selected>Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -2368,20 +2368,20 @@ class CreateBroughtForwardRefund(TestCase):
     # CORRECT USAGE
     # Can request create payment view only with t=bp GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=br")
+        response = self.client.get(self.url + "?t=pbr")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br" selected>Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr" selected>Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -2418,20 +2418,20 @@ class CreatePayment(TestCase):
     # CORRECT USAGE
     # Can request create payment view only with t=p GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=p")
+        response = self.client.get(self.url + "?t=pp")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p" selected>Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp" selected>Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -2442,7 +2442,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2488,7 +2488,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2540,7 +2540,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "p",
+            "type": "pp",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -2548,7 +2548,7 @@ class CreatePayment(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "p", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pp", 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2606,7 +2606,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "p",
+            "type": "pp",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -2614,7 +2614,7 @@ class CreatePayment(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "p", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pp", 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2665,7 +2665,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "p",
+            "type": "pp",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -2700,7 +2700,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2753,7 +2753,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2833,7 +2833,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2911,7 +2911,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -2958,7 +2958,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3011,7 +3011,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3064,7 +3064,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3144,7 +3144,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3222,7 +3222,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3269,7 +3269,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3340,7 +3340,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3386,7 +3386,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3431,7 +3431,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3475,7 +3475,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -3541,7 +3541,7 @@ class EditPayment(TestCase):
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="p",
+            type="pp",
             supplier=self.supplier,
             ref="ref",
             date=timezone.now(),
@@ -3556,14 +3556,14 @@ class EditPayment(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p" selected>Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp" selected>Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -3602,7 +3602,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -3611,7 +3611,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -3639,7 +3639,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, -1000)
         self.assertEqual(payment.paid, -1000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 1200)
         self.assertEqual(invoices[0].due, 700)
@@ -3692,7 +3692,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -3701,7 +3701,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -3727,7 +3727,7 @@ class EditPayment(TestCase):
         payment = PurchaseHeader.objects.get(pk=payment.pk)
         self.assertEqual(payment.total, -1000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 1200)
         self.assertEqual(invoices[0].due, 700)
@@ -3788,7 +3788,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -3797,7 +3797,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -3824,7 +3824,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -2000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 1200)
         self.assertEqual(invoices[0].due, 200)
@@ -3878,7 +3878,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -3887,7 +3887,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -3915,7 +3915,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, -200)
         self.assertEqual(payment.paid, -1800)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 1200)
         self.assertEqual(invoices[0].due, 300)
@@ -3976,7 +3976,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -3985,7 +3985,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4014,7 +4014,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -1000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 2400)
         self.assertEqual(invoices[0].due, 1900)
@@ -4075,7 +4075,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -4084,7 +4084,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4112,7 +4112,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -500)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 2400)
         self.assertEqual(invoices[0].due, 2150)
@@ -4168,7 +4168,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -4177,7 +4177,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment0",
                 "date": payment.date,
@@ -4205,7 +4205,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, -100)
         self.assertEqual(payment.paid, -400)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 2400)
         self.assertEqual(invoices[0].due, 2200)
@@ -4268,7 +4268,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, -1000)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
 
@@ -4277,7 +4277,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4307,7 +4307,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -1000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         self.assertEqual(len(invoices), 2)
         self.assertEqual(invoices[0].total, 2400)
         self.assertEqual(invoices[0].due, 400)
@@ -4384,7 +4384,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
@@ -4394,7 +4394,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4425,7 +4425,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -2000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         self.assertEqual(len(invoices), 3)
@@ -4501,7 +4501,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
@@ -4511,7 +4511,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4542,7 +4542,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, -400)
         self.assertEqual(payment.paid, -1600)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         self.assertEqual(len(invoices), 3)
@@ -4622,7 +4622,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
@@ -4632,7 +4632,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4662,7 +4662,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -1000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         self.assertEqual(len(invoices), 3)
@@ -4741,7 +4741,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
@@ -4751,7 +4751,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4780,7 +4780,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -500)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         self.assertEqual(len(invoices), 3)
@@ -4855,7 +4855,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, 500)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda h : h.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
@@ -4865,7 +4865,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -4894,7 +4894,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, -50)
         self.assertEqual(payment.paid, -450)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         self.assertEqual(len(invoices), 3)
@@ -4978,7 +4978,7 @@ class EditPayment(TestCase):
         self.assertEqual(matches[1].value, -1000)
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": payment.pk})
@@ -4988,7 +4988,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
                 "date": payment.date,
@@ -5017,7 +5017,7 @@ class EditPayment(TestCase):
         self.assertEqual(payment.due, 0)
         self.assertEqual(payment.paid, -1000)
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         self.assertEqual(len(invoices), 3)
         self.assertEqual(invoices[0].total, 2400)
@@ -5113,7 +5113,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5219,7 +5219,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5266,13 +5266,10 @@ class EditPayment(TestCase):
 
         matches = PurchaseMatching.objects.all()
         matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
-        self.assertEqual(len(matches), 2)
+        self.assertEqual(len(matches), 1)
         self.assertEqual(matches[0].matched_by, payment)
         self.assertEqual(matches[0].matched_to, invoices[0])
         self.assertEqual(matches[0].value, 200)
-        self.assertEqual(matches[1].matched_by, invoices[1])
-        self.assertEqual(matches[1].matched_to, payment)
-        self.assertEqual(matches[1].value, 0) 
 
 
     # CORRECT USAGE
@@ -5326,7 +5323,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5433,7 +5430,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5540,7 +5537,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5645,7 +5642,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5757,7 +5754,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5871,7 +5868,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": 99999999,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -5982,7 +5979,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "p",
+                "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
                 "date": headers[0].date,
@@ -6053,20 +6050,20 @@ class CreateRefund(TestCase):
     # CORRECT USAGE
     # Can request create refund view only with t=bp GET parameter
     def test_get_request_with_query_parameter(self):
-        response = self.client.get(self.url + "?t=r")
+        response = self.client.get(self.url + "?t=pr")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r" selected>Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr" selected>Refund</option>'
             '</select>',
             html=True
         )
@@ -6090,7 +6087,7 @@ class EditBroughtForwardInvoice(TestCase):
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="bi",
+            type="pbi",
             supplier=self.supplier,
             ref="ref",
             date=self.date,
@@ -6106,14 +6103,14 @@ class EditBroughtForwardInvoice(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi" selected>Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi" selected>Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -6137,7 +6134,7 @@ class EditBroughtForwardCreditNote(TestCase):
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="bc",
+            type="pbc",
             supplier=self.supplier,
             ref="ref",
             date=self.date,
@@ -6153,14 +6150,14 @@ class EditBroughtForwardCreditNote(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc" selected>Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc" selected>Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -6196,10 +6193,312 @@ class EditInvoice(TestCase):
     First no new matching transactions are added
     """
 
+
+    # CORRECT USAGE
+    # add a new matching transaction for 0 value
+    # edit an existing to zero value
+    def test_match_value_of_zero_is_removed_where_edit_tran_is_matched_by_for_all_match_records(self):
+
+        # SET UP
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
+        matching_trans = [ invoices[1], payment ]
+
+        # MATCH A 1000.00 invoice to a -1000 invoice and 1000 payment; 600.00 of each is matched
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 1200)
+        self.assertEqual(headers[1].due, 0)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, -1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, -1200)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+        self.assertEqual(matches[1].matched_by, invoices[0])
+        self.assertEqual(matches[1].matched_to, payment)
+        self.assertEqual(matches[1].value, -600)        
+
+        payment.refresh_from_db()
+        invoices = PurchaseHeader.objects.filter(type="pi")
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "ref": "invoice1",
+                "date": invoices[0].date,
+                "total": 1200
+            }
+        )
+        data.update(header_data)
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
+        matching_forms[-1]["value"] = 0
+        # Remember we changing EXISTING instances so we need to post the id of the instance also
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[1]["id"] = matches[1].pk
+        # These are the existing matches increased
+        # Now add the new
+        matching_forms += add_and_replace_objects(
+            [ 
+                get_fields(to_dict(invoices[2]), ['type', 'ref', 'total', 'paid', 'due', 'id']) 
+            ], 
+            {"id": "matched_to"}, 
+            {"value": 0}
+        )
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 4)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, 0)
+        self.assertEqual(headers[0].due, -1000)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 600)
+        self.assertEqual(headers[1].due, 600)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -600)
+        self.assertEqual(headers[2].due, -600)
+        self.assertEqual(headers[3].pk, invoices[2].pk)
+        self.assertEqual(headers[3].total, -1200)
+        self.assertEqual(headers[3].paid, 0)
+        self.assertEqual(headers[3].due, -1200)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        line_no = 1
+        for line in lines:
+            self.assertEqual(line.line_no, line_no)
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            line_no = line_no + 1
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -600)
+
+
+    def test_match_value_of_zero_is_removed_where_edit_tran_is_not_matched_by_for_all_match_records(self):
+
+        # create the payment
+        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        # create the invoice - THIS IS WHAT WE ARE EDITING
+        invoices = []
+        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        lines = create_lines(
+            invoices[0], 
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ]
+            * 10
+        )
+        # SECOND INVOICE
+        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
+        match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
+        invoices[0] = match_by
+        invoices[1] = match_to[0]
+        match_by, match_to = match(payment, [ (invoices[0], 600) ]) # SECOND MATCH
+
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, -600)
+        self.assertEqual(headers[0].due, -400)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 800)
+        self.assertEqual(headers[1].due, 400)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, -200)
+        self.assertEqual(headers[2].due, -1000)
+
+        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 2)
+        self.assertEqual(matches[0].matched_by, invoices[0])
+        self.assertEqual(matches[0].matched_to, invoices[1])
+        self.assertEqual(matches[0].value, -200)
+        self.assertEqual(matches[1].matched_by, payment)
+        self.assertEqual(matches[1].matched_to, invoices[0])
+        self.assertEqual(matches[1].value, 600)   
+    
+        url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
+
+        # CHANGES
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "ref": headers[1].ref,
+                "date": headers[1].date,
+                "total": 1200
+            }
+        )
+        data.update(header_data)
+        matching_trans = [ invoices[1], payment ]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([matching_trans[0]], {"id": "matched_to"}, {"value": 0}) # THIS IS LIKE ALL THE OTHER TESTS
+        matching_forms[0]["id"] = matches[0].pk
+        # THIS IS THE DIFFERENCE
+        matching_trans[1]["id"] = matches[1].pk
+        matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
+        matching_trans[1]["value"] = 0 # USER WANTS TO ENTER A NEGATIVE HERE EVEN THOUGH WILL BE SAVED AS POSITIVE
+        matching_forms.append(matching_trans[1])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 2 
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_forms = line_trans
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 10
+        data.update(line_data)
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+
+        self.assertEqual(len(headers), 3)
+        self.assertEqual(headers[0].pk, payment.pk)
+        self.assertEqual(headers[0].total, -1000)
+        self.assertEqual(headers[0].paid, 0)
+        self.assertEqual(headers[0].due, -1000)
+        self.assertEqual(headers[1].pk, invoices[0].pk)
+        self.assertEqual(headers[1].total, 1200)
+        self.assertEqual(headers[1].paid, 0)
+        self.assertEqual(headers[1].due, 1200)
+        self.assertEqual(headers[2].pk, invoices[1].pk)
+        self.assertEqual(headers[2].total, -1200)
+        self.assertEqual(headers[2].paid, 0)
+        self.assertEqual(headers[2].due, -1200)
+
+        lines = list(PurchaseLine.objects.all())
+        self.assertEqual(len(lines), 10)
+
+        for line in lines:
+            self.assertEqual(line.item, self.item)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+
+        matches = PurchaseMatching.objects.all()
+        matches = sort_multiple(matches, *[ (lambda m : m.pk, False) ])
+        self.assertEqual(len(matches), 0)
+
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="i",
+            type="pi",
             supplier=self.supplier,
             ref="ref",
             date=self.date,
@@ -6215,14 +6514,14 @@ class EditInvoice(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i" selected>Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi" selected>Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -6272,7 +6571,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.line_no, line_no)
             line_no = line_no + 1
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -6282,7 +6581,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -6401,7 +6700,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.line_no, line_no)
             line_no = line_no + 1
 
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -6411,7 +6710,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -6476,14 +6775,6 @@ class EditInvoice(TestCase):
         self.assertEqual(lines[8].vat_code, self.vat_code)
         self.assertEqual(lines[8].vat, 20)
         self.assertEqual(lines[8].line_no, 9)
-
-
-
-
-
-
-
-
 
     # CORRECT USAGE
     # Invoice total is increased (the invoice this time is the matched_to transaction)
@@ -6554,7 +6845,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -6564,7 +6855,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -6711,7 +7002,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -6721,7 +7012,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -6870,7 +7161,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -6880,7 +7171,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -7022,7 +7313,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -7032,7 +7323,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -7179,7 +7470,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -7189,7 +7480,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -7344,7 +7635,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -7354,7 +7645,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -7506,7 +7797,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -7516,7 +7807,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -7659,7 +7950,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -7669,7 +7960,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -7816,7 +8107,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -7826,7 +8117,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -7975,7 +8266,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -7985,7 +8276,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -8129,7 +8420,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -8139,7 +8430,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -8281,7 +8572,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -8291,7 +8582,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -8443,7 +8734,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -8453,7 +8744,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -8593,7 +8884,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -8603,7 +8894,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -8755,7 +9046,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -8765,7 +9056,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -8909,7 +9200,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -8919,7 +9210,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -9070,7 +9361,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -9080,7 +9371,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -9255,7 +9546,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -9265,7 +9556,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -9439,7 +9730,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -9449,7 +9740,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -9614,7 +9905,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -9624,7 +9915,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -9791,7 +10082,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -9801,7 +10092,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -9969,7 +10260,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -9979,7 +10270,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -10141,7 +10432,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -10151,7 +10442,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -10312,7 +10603,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -10322,7 +10613,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -10494,7 +10785,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -10504,7 +10795,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -10664,7 +10955,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -10674,7 +10965,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -10846,7 +11137,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -10856,7 +11147,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -11016,7 +11307,7 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].value, -600)        
 
         payment.refresh_from_db()
-        invoices = PurchaseHeader.objects.filter(type="i")
+        invoices = PurchaseHeader.objects.filter(type="pi")
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         url = reverse("purchases:edit", kwargs={"pk": invoices[0].pk})
@@ -11026,7 +11317,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": "invoice1",
                 "date": invoices[0].date,
@@ -11197,7 +11488,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -11343,7 +11634,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -11490,7 +11781,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -11647,7 +11938,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -11804,7 +12095,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -11959,7 +12250,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -12113,7 +12404,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -12271,7 +12562,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": 999999999, # INVALID SUPPLIER PRIMARY KEY VALUE
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -12429,7 +12720,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -12587,7 +12878,7 @@ class EditInvoice(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": headers[1].ref,
                 "date": headers[1].date,
@@ -12664,8 +12955,6 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
 
-        print(response.__dict__)
-
         self.assertContains(
             response,
             '<li class="py-1">Value must be between 0 and -1000.00</li>',
@@ -12690,7 +12979,7 @@ class EditCreditNote(TestCase):
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="c",
+            type="pc",
             supplier=self.supplier,
             ref="ref",
             date=self.date,
@@ -12706,14 +12995,14 @@ class EditCreditNote(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c" selected>Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc" selected>Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -12737,7 +13026,7 @@ class EditBroughtForwardPayment(TestCase):
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="bp",
+            type="pbp",
             supplier=self.supplier,
             ref="ref",
             date=self.date,
@@ -12753,14 +13042,14 @@ class EditBroughtForwardPayment(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp" selected>Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp" selected>Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -12784,7 +13073,7 @@ class EditBroughtForwardRefund(TestCase):
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="br",
+            type="pbr",
             supplier=self.supplier,
             ref="ref",
             date=self.date,
@@ -12800,14 +13089,14 @@ class EditBroughtForwardRefund(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br" selected>Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r">Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr" selected>Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr">Refund</option>'
             '</select>',
             html=True
         )
@@ -12833,7 +13122,7 @@ class EditRefund(TestCase):
     # CORRECT USAGE
     def test_get_request(self):
         transaction = PurchaseHeader.objects.create(
-            type="r",
+            type="pr",
             supplier=self.supplier,
             ref="ref",
             date=self.date,
@@ -12849,14 +13138,14 @@ class EditRefund(TestCase):
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
-                '<option value="bi">Brought Forward Invoice</option>'
-                '<option value="bc">Brought Forward Credit Note</option>'
-                '<option value="i">Invoice</option>'
-                '<option value="c">Credit Note</option>'
-                '<option value="bp">Brought Forward Payment</option>'
-                '<option value="br">Brought Forward Refund</option>'
-                '<option value="p">Payment</option>'
-                '<option value="r" selected>Refund</option>'
+                '<option value="pbi">Brought Forward Invoice</option>'
+                '<option value="pbc">Brought Forward Credit Note</option>'
+                '<option value="pi">Invoice</option>'
+                '<option value="pc">Credit Note</option>'
+                '<option value="pbp">Brought Forward Payment</option>'
+                '<option value="pbr">Brought Forward Refund</option>'
+                '<option value="pp">Payment</option>'
+                '<option value="pr" selected>Refund</option>'
             '</select>',
             html=True
         )
@@ -12890,7 +13179,7 @@ class GeneralTransactionTests(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -12928,7 +13217,7 @@ class GeneralTransactionTests(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "type": "i",
+                "type": "pi",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
                 "date": self.date,

@@ -1,0 +1,33 @@
+.errors {
+    width: 100%;
+    max-width: 750px;
+    border-width: 2px !important;
+}
+
+table {
+    width: 1250px;
+}
+
+.col-description {
+    width: 250px;
+}
+
+.col-nominal {
+    width: 150px;
+}
+
+.col-vat_code {
+    width: 150px;
+}
+
+.col-goods {
+    width: 150px;
+}
+
+div.selectize-control.supplier-select {
+    width: 200px;
+}
+
+.totals > div {
+    width: 400px;
+}

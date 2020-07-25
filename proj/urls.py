@@ -20,6 +20,7 @@ from django.views.generic.base import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('nominals/', include("nominals.urls")),
     path('purchases/', include("purchases.urls")),
     path('', RedirectView.as_view(url=reverse_lazy("purchases:transaction_enquiry")), name="home")
 ]

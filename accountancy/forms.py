@@ -1,7 +1,7 @@
-from crispy_forms.layout import (HTML, Div, Field, Hidden, Layout,)
 from crispy_forms.helper import FormHelper
+from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 from django import forms
-
+from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
 
 # do we need to import Hidden ??
@@ -62,7 +62,7 @@ class AjaxForm(forms.ModelForm):
     attributes but with forms this DOES seem to work.
 
     THIS FORM ONLY MAKES SENSE TO USE WITH THE AJAXMODELCHOICE
-    FIELD I CREATED.  OR ANOTHER FIELD WHICH CAN TAKE THE
+    FIELD I CREATED, OR ANOTHER FIELD WHICH CAN TAKE THE
     SAME ATTRIBUTES.
 
     """
@@ -86,68 +86,6 @@ class AjaxForm(forms.ModelForm):
                 queryset = queryset(self.instance)
             self.fields[field].queryset = queryset
 
-
-def create_transaction_header_helper(generic_to_fields_map, payment_form=False, read_only=False):
-
-    """
-
-    This will returns the standard header help for transaction forms
-
-    The only difference with the header form for a payment or refund is we don't need
-    the due date field.  Because we are using the same form either way we need to hide
-    this field.  If later the decision is made to use a different form remember that
-    the edit form needs the ability to change transaction on the client side....
-
-    """
-
-    class StandardHeaderHelper(FormHelper):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form_tag = False
-            self.disable_csrf = True
-            self.form_show_errors = False
-            self.include_media = False
-            self.layout = Layout(
-                Div(
-                    Div(
-                        # this field does not show errrors but there shouldn't ever be any errors for this field
-                        PlainField(generic_to_fields_map.get("type", "type"), css_class=( "input input-disabled text-left border" if read_only else "transaction-type-select")),
-                        css_class="form-group mr-2"
-                    ),
-                    Div(
-                        Div(
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class=( "input input-disabled text-left border" if read_only else "supplier-select")), # FIX ME - change to contact-select
-                                css_class="form-group mr-2"
-                            ),
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2"
-                            ),
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relative"
-                            ),
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relative"
-                            ),
-                            Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("due_date", "due_date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relativen" + ( " d-none" if payment_form else "")
-                            ),
-                            css_class="d-flex justify-content-between" 
-                        ),
-                        Div(
-                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                            css_class="form-group"
-                        ),
-                        css_class="mb-4 d-flex justify-content-between"
-                    ),
-                )
-            )
-    
-    return StandardHeaderHelper()
 
 
 class TableHelper(object):
@@ -265,7 +203,7 @@ class BaseTransactionMixin(object):
         if self.instance.pk:
             for field in self.fields:
                 if isinstance(self.fields[field], forms.DecimalField):
-                    if self.instance.type in ('c', 'p', 'bc', 'bp'):
+                    if self.instance.type in ('pc', 'pp', 'pbc', 'pbp'):
                         tmp = self.initial[field]
                         self.initial[field] = -1 * tmp
 
@@ -363,3 +301,60 @@ class AdvancedTransactionSearchForm(forms.Form):
     def clean_start_date(self):
         start_date = self.cleaned_data["start_date"]
         return start_date
+
+
+
+class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
+
+    date = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        )
+    )
+    due_date = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        ),
+        required=False
+    )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # the user should never have the option to directly
+        # change the due amount or the paid amount
+        # paid will default to zero
+        instance.due = instance.total - instance.paid
+        if commit:
+            instance.save()
+        return instance
+
+
+
+class BaseTransactionModelFormSet(forms.BaseModelFormSet):
+
+    def get_ordering_widget(self):
+        return forms.HiddenInput(attrs={'class': 'ordering'})
+
+
+class BaseLineFormset(BaseTransactionModelFormSet):
+
+    def __init__(self, *args, **kwargs):
+        if 'header' in kwargs:
+            if header := kwargs.get('header'): # header could be None
+                self.header = header
+            kwargs.pop("header")
+        super().__init__(*args, **kwargs)

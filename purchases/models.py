@@ -3,7 +3,6 @@ from django.db import models
 from accountancy.models import (Contact, MatchedHeaders, TransactionHeader,
                                 TransactionLine)
 from items.models import Item
-from nominals.models import Nominal
 from vat.models import Vat
 
 class Supplier(Contact):
@@ -11,21 +10,21 @@ class Supplier(Contact):
 
 class PurchaseHeader(TransactionHeader):
     type_non_payments = [
-        ('bi', 'Brought Forward Invoice'),
-        ('bc', 'Brought Forward Credit Note'),
-        ('i', 'Invoice'),
-        ('c', 'Credit Note'),
+        ('pbi', 'Brought Forward Invoice'),
+        ('pbc', 'Brought Forward Credit Note'),
+        ('pi', 'Invoice'),
+        ('pc', 'Credit Note'),
     ]
     type_payments = [
-        ('bp', 'Brought Forward Payment'),
-        ('br', 'Brought Forward Refund'),
-        ('p', 'Payment'),
-        ('r', 'Refund'),
+        ('pbp', 'Brought Forward Payment'),
+        ('pbr', 'Brought Forward Refund'),
+        ('pp', 'Payment'),
+        ('pr', 'Refund'),
     ]
     type_choices = type_non_payments + type_payments
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     type = models.CharField(
-        max_length=2,
+        max_length=3,
         choices=type_choices
     )
     matched_to = models.ManyToManyField('self', through='PurchaseMatching', symmetrical=False)
@@ -34,7 +33,7 @@ class PurchaseHeader(TransactionHeader):
 class PurchaseLine(TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
+    nominal = models.ForeignKey('nominals.Nominal', on_delete=models.CASCADE)
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
 
     class Meta:
@@ -55,7 +54,6 @@ class CreditNote(PurchaseHeader):
 class Refund(PurchaseHeader):
     class Meta:
         proxy = True
-
 
 class PurchaseMatching(MatchedHeaders):
     # matched_by is the header record through which

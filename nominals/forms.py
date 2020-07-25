@@ -1,12 +1,23 @@
-from django import forms
-
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, HTML
+from crispy_forms.layout import HTML, Layout
+from django import forms
+from django.utils.translation import ugettext_lazy as _
 
-from accountancy.fields import RootAndChildrenModelChoiceField
-from accountancy.forms import Div, Field, LabelAndFieldAndErrors
+from accountancy.fields import (AjaxModelChoiceField,
+                                AjaxRootAndLeavesModelChoiceField,
+                                ModelChoiceIteratorWithFields,
+                                RootAndChildrenModelChoiceField)
+from accountancy.forms import (AjaxForm, BaseLineFormset,
+                               BaseTransactionHeaderForm, Div, Field,
+                               LabelAndFieldAndErrors, PlainFieldErrors,
+                               TableHelper)
+from accountancy.helpers import delay_reverse_lazy
+from accountancy.layouts import (create_journal_header_helper,
+                                 create_transaction_header_helper)
+from accountancy.widgets import InputDropDown
+from vat.models import Vat
 
-from .models import Nominal
+from .models import Nominal, NominalHeader, NominalLine
 
 
 class NominalForm(forms.ModelForm):
@@ -52,4 +63,139 @@ class NominalForm(forms.ModelForm):
             )
         )
 
-        
+class NominalHeaderForm(BaseTransactionHeaderForm):
+
+    class Meta:
+        model = NominalHeader
+        fields = ('ref', 'date', 'total', 'type', 'period')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["total"].help_text = "<span class='d-block'>The total value of the debit side of the journal<span class='d-block'>i.e. the total of the positive values</span></span>"
+        self.helper = create_journal_header_helper()
+
+
+line_css_classes = {
+    "Td": {
+        "description": "can_highlight h-100 w-100 border-0",
+        "nominal": "h-100 w-100 border-0",
+        "goods": "can_highlight h-100 w-100 border-0",
+        "vat_code": "h-100 w-100 border-0",
+        "vat": "can_highlight w-100 h-100 border-0"
+    }
+}
+
+class NominalLineForm(AjaxForm):
+
+    nominal = AjaxRootAndLeavesModelChoiceField(
+        widget=InputDropDown(
+            attrs={
+                "data-new": "#new-nominal",
+                "data-load-url": delay_reverse_lazy("nominals:load_options", "field=nominal"),
+                "data-validation-url": delay_reverse_lazy("nominals:validate_choice", "field=nominal")
+            }
+        ),
+        empty_label=None,
+        get_queryset=Nominal.objects.none(),
+        load_queryset=Nominal.objects.all().prefetch_related("children"),
+        post_queryset=Nominal.objects.filter(children__isnull=True),
+        inst_queryset= lambda inst : Nominal.objects.filter(pk=inst.nominal_id),
+        searchable_fields=('name',)
+    )
+
+    vat_code = AjaxModelChoiceField(
+        widget=InputDropDown(
+            attrs={
+                "data-new": "#new-vat-code",
+                "data-load-url": delay_reverse_lazy("nominals:load_options", "field=vat_code"),
+                "data-validation-url": delay_reverse_lazy("nominals:validate_choice", "field=vat_code")
+            },
+            model_attrs=['rate']
+        ),
+        empty_label=None,
+        get_queryset=Vat.objects.none(),
+        load_queryset=Vat.objects.all(),
+        post_queryset=Vat.objects.all(),
+        inst_queryset= lambda inst : Vat.objects.filter(pk=inst.vat_code_id),
+        searchable_fields=('code', 'rate',),
+        iterator=ModelChoiceIteratorWithFields
+    )
+
+    class Meta:
+        model = NominalLine
+        fields = ('id', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
+        ajax_fields = ('nominal', 'vat_code', ) # used in Transaction form set_querysets method
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helpers = TableHelper(
+            NominalLineForm.Meta.fields,
+            order=False,
+            delete=True,
+            css_classes=line_css_classes,
+            field_layout_overrides={
+                'Td': {
+                    'description': PlainFieldErrors,
+                    'nominal': PlainFieldErrors,
+                }
+            }
+        ).render()
+
+
+class NominalLineFormset(BaseLineFormset):
+
+    def clean(self):
+        super().clean()
+        if(any(self.errors) or not hasattr(self, 'header')):
+            return
+        goods = 0
+        vat = 0
+        total = 0
+        debits = 0
+        credits = 0
+        for form in self.forms:
+            # empty_permitted = False is set on forms for existing data
+            # empty_permitted = True is set new forms i.e. for non existent data
+            if not form.empty_permitted or (form.empty_permitted and form.has_changed()):
+                if not form.cleaned_data.get("DELETE"):
+                    this_goods = form.instance.goods
+                    this_vat = form.instance.vat
+                    if this_goods > 0:
+                        debits += this_goods
+                    else:
+                        credits += this_goods
+                    if this_vat > 0:
+                        debits += this_vat
+                    else:
+                        credits += this_vat
+                    goods += this_goods
+                    vat += this_vat
+        if self.header.total != debits:
+            raise forms.ValidationError(
+                _(
+                    "The total of the lines does not equal the total you entered."
+                ),
+                code="invalid-total"
+            )
+        if debits + credits != 0:
+            raise forms.ValidationError(
+                _(
+                    f"Debits and credits must total zero.  Total debits entered i.e. positives values entered is {debits}, "
+                    f"and total credits entered i.e. negative values entered, is {credits}.  This gives a non-zero total of { debits + credits }"
+                ),
+                code="invalid-total"
+            )  
+        self.header.goods = goods
+        self.header.vat = vat
+        self.header.total = goods + vat
+
+enter_lines = forms.modelformset_factory(
+    NominalLine,
+    form=NominalLineForm, 
+    formset=NominalLineFormset, 
+    extra=5, 
+    can_order=False,
+    can_delete=True
+)
+
+enter_lines.include_empty_form = True

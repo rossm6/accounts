@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    {% include 'accountancy/transactions_css.html' %}
+{% endblock head %}
+
+{% block content %}
+    <div class="custom-container">
+        <div class="upper mb-5 border-bottom">
+            <div class="container mt-5">
+                <h1 class="h4 font-weight-bold pb-2 border-bottom">Nominal Transactions</h1>
+                <div class="mb-3">
+                    <div class="mt-4 d-flex">
+                        <a href="{% url 'purchases:create' %}?t=i" class="btn button mr-2">New Journal</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="lower d-flex justify-content-center">
+            <div class="w-100 trans-table-cont">
+                {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block js %}
+    {% include 'accountancy/transactions_js.html' %}
+{% endblock js %}

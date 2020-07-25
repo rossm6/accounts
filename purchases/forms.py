@@ -8,11 +8,13 @@ from tempus_dominus.widgets import DatePicker
 from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField,
                                 ModelChoiceIteratorWithFields)
-from accountancy.forms import (AjaxForm, BaseTransactionMixin,
-                               DataTableTdField, Div, Field, LabelAndFieldOnly,
-                               PlainFieldErrors, TableHelper,
-                               create_transaction_header_helper)
+from accountancy.forms import (AjaxForm, BaseLineFormset,
+                               BaseTransactionHeaderForm, BaseTransactionMixin,
+                               BaseTransactionModelFormSet, DataTableTdField,
+                               Div, Field, LabelAndFieldOnly, PlainFieldErrors,
+                               TableHelper)
 from accountancy.helpers import delay_reverse_lazy
+from accountancy.layouts import create_transaction_header_helper
 from accountancy.widgets import InputDropDown
 from items.models import Item
 from nominals.models import Nominal
@@ -38,39 +40,8 @@ class QuickSupplierForm(forms.ModelForm):
         model = Supplier
         fields = ('code', )
 
-class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
-    def get_ordering_widget(self):
-        return forms.HiddenInput(attrs={'class': 'ordering'})
-
-
-class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
-
-    date = forms.DateField(
-        widget=DatePicker(
-            options={
-                "useCurrent": True,
-                "collapse": True,
-            },
-            attrs={
-                "icon_toggle": True,
-                "input_group": False
-            }
-        )
-    )
-    due_date = forms.DateField(
-        widget=DatePicker(
-            options={
-                "useCurrent": True,
-                "collapse": True,
-            },
-            attrs={
-                "icon_toggle": True,
-                "input_group": False
-            }
-        ),
-        required=False
-    )
+class PurchaseHeaderForm(BaseTransactionHeaderForm):
 
     class Meta:
         model = PurchaseHeader
@@ -78,20 +49,18 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         # it might be tempting to change the url the form is posted to on the client
         # to include the GET parameter but this means adding a further script to
         # the edit view on the clientside because we do not reload the edit view on changing
         # the type
-        
         if self.data:
             type = self.data.get(self.prefix + "-" + "type")
-            if type in ("bp", 'p', 'br', 'r'):
+            if type in ("pbp", 'pp', 'pbr', 'pr'):
                 payment_form = True
             else:
                 payment_form = False
         else:
-            if self.initial.get('type') in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
+            if self.initial.get('type') in ("pbp", 'pp', 'pbr', 'pr'): # FIX ME - we need a global way of checking this
                 # as we are repeating ourselves
                 payment_form = True
             else:
@@ -116,20 +85,9 @@ class PurchaseHeaderForm(BaseTransactionMixin, forms.ModelForm):
         type = cleaned_data.get("type")
         total = cleaned_data.get("total")
         if total:
-            if type in ("c", "bc", "p", "bp"):
+            if type in ("pc", "pbc", "pp", "pbp"):
                 cleaned_data["total"] = -1 * total
         return cleaned_data
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        # the user should never have the option to directly
-        # change the due amount or the paid amount
-        # paid will default to zero
-        instance.due = instance.total - instance.paid
-        if commit:
-            instance.save()
-        return instance
-
 
 
 class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
@@ -141,7 +99,7 @@ class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
         self.fields["supplier"].widget = forms.TextInput()
         supplier = self.fields["supplier"].queryset[0]
         self.initial["supplier"] = str(supplier)
-        if self.initial.get('type') in ("bp", 'p', 'br', 'r'): # FIX ME - we need a global way of checking this
+        if self.initial.get('type') in ("pbp", 'pp', 'pbr', 'pr'): # FIX ME - we need a global way of checking this
             # as we are repeating ourselves
             payment_form = True
         else:
@@ -157,14 +115,7 @@ class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
         self.initial["type"] = self.instance.get_type_display()
 
 
-class PurchaseLineFormset(BaseTransactionModelFormSet):
-
-    def __init__(self, *args, **kwargs):
-        if 'header' in kwargs:
-            if header := kwargs.get('header'): # header could be None
-                self.header = header
-            kwargs.pop("header")
-        super().__init__(*args, **kwargs)
+class PurchaseLineFormset(BaseLineFormset):
 
     def clean(self):
         super().clean()
@@ -195,7 +146,6 @@ class PurchaseLineFormset(BaseTransactionModelFormSet):
             # IMPORTANT TO ONLY SET THIS IF WE ARE CREATING
             self.header.due = total
         
-
 line_css_classes = {
     "Td": {
         "item": "h-100 w-100 border-0",
@@ -206,7 +156,6 @@ line_css_classes = {
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }
-
 
 class PurchaseLineForm(AjaxForm):
 
@@ -262,6 +211,7 @@ class PurchaseLineForm(AjaxForm):
 
     class Meta:
         model = PurchaseLine
+        # WHY DO WE INCLUDE THE ID?
         fields = ('id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
         ajax_fields = ('item', 'nominal', 'vat_code', ) # used in Transaction form set_querysets method
 
@@ -277,7 +227,6 @@ class PurchaseLineForm(AjaxForm):
                     'item': PlainFieldErrors,
                     'description': PlainFieldErrors,
                     'nominal': PlainFieldErrors,
-                    'amount': PlainFieldErrors
                 }
             }
         ).render()

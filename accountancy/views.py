@@ -277,27 +277,6 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 
 
 
-
-
-# E.G USAGE -
-
-# class CreatePurchaseTransactions(CreateTransactions):
-#     header = {
-#         model: PurchaseHeader,
-#         form: PaymentForm,
-#         prefix: 'header'
-#     }
-#     line = {
-#         model: PurchaseLine,
-#         form: PurchaseLineForm,
-#         formset: PurchaseLineFormSet
-#     }
-#     match = {
-#         model: PurchaseMatching,
-#         form: PurchaseMatchingForm,
-#         formset: PurchaseMatchingFormset
-#     }
-
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def get_success_url(self):
@@ -393,7 +372,8 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         lines = []
         self.header_obj.save() # this could have been updated by line formset clean method already
         self.header_has_been_saved = True
-        for form in self.line_formset.ordered_forms:
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        for form in line_forms:
             if form.empty_permitted and form.has_changed():
                 line = form.save(commit=False)
                 line.header = self.header_obj
@@ -473,6 +453,9 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         
         return kwargs
 
+    def lines_should_be_ordered(self):
+        if hasattr(self, "line"):
+            return self.line.get("can_order", True)
 
     def get_match_formset_queryset(self):
         return self.get_match_model().objects.none()
@@ -495,17 +478,16 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
     def is_payment_form(self, header_form):
         if hasattr(header_form, "cleaned_data"):
             if t := header_form.cleaned_data.get("type"):
-                if t in ("bp", "p", "br", "r"):
+                if t in ("pbp", "pp", "pbr", "pr"):
                     return True
                 else:
                     return False
         if t := self.header_form.initial.get('type'):
-            if t in ("bp", "p", "br", "r"):
+            if t in ("pbp", "pp", "pbr", "pr"):
                 return True
             # we need this because read only forms used for the detail transaction view
             # convert the initial choice value to the choice label
             if t in ("Brought Forward Payment", "Payment", "Brought Forward Refund", "Refund"):
-                print("yes")
                 return True
         else:
             return False
@@ -536,7 +518,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
     
     # MIGHT BE OBSOLETE NOW
     def header_is_payment_type(self):
-        return self.header_obj.type in ("bp", "p", "br", "r")
+        return self.header_obj.type in ("pbp", "pp", "pbr", "pr")
 
     def get(self, request, *args, **kwargs):
         """ Handle GET requests: instantiate a blank version of the form. """
@@ -567,21 +549,28 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 else:
                     return self.invalid_forms()
             else:
-                # e.g. processing invoice on PL
-                if self.line_formset.is_valid() and self.match_formset.is_valid():
-                    self.lines_are_valid() # has to come before matching_is_valid because this formset could alter header_obj
-                    self.matching_is_valid()
-                    messages.success(
-                        request,
-                        'Transaction successfully created'
-                    )
-                else:
-                    return self.invalid_forms()
-            # other scenarios to consider later on ...
+                if self.line_formset and self.match_formset:
+                    if self.line_formset.is_valid() and self.match_formset.is_valid():
+                        self.lines_are_valid() # has to come before matching_is_valid because this formset could alter header_obj
+                        self.matching_is_valid()
+                        messages.success(
+                            request,
+                            'Transaction successfully created'
+                        )
+                    else:
+                        return self.invalid_forms()
+                elif self.line_formset and not self.match_formset:
+                    if self.line_formset.is_valid():
+                        self.lines_are_valid()
+                        messages.success(
+                            request,
+                            'Transaction successfully created'
+                        )
+                    else:
+                        return self.invalid_forms()
         else:
             return self.invalid_forms()
 
-        # So we were successful
         return HttpResponseRedirect(self.get_success_url())
 
 
@@ -593,7 +582,7 @@ class BaseCreateTransaction(BaseTransaction):
         return context
 
     def get_header_form_type(self):
-        t = self.request.GET.get("t", "i")
+        t = self.request.GET.get("t", "pi")
         return t
 
     def get_header_form_kwargs(self):
@@ -653,11 +642,18 @@ class BaseEditTransaction(BaseTransaction):
         if not hasattr(self, 'header_has_been_saved'):
             self.header_obj.save()
         self.match_formset.save(commit=False)
-        self.get_match_model().objects.bulk_create(self.match_formset.new_objects)
+        new_matches = filter(lambda o: True if o.value else False, self.match_formset.new_objects)
+        self.get_match_model().objects.bulk_create(new_matches)
+        changed_objects = [ obj for obj, _tuple in self.match_formset.changed_objects ]
+        # exclude zeros from update
+        to_update = filter(lambda o: True if o.value else False, changed_objects)
+        # delete the zero values
+        to_delete = filter(lambda o: True if not o.value else False, changed_objects)
         self.get_match_model().objects.bulk_update(
-            [ obj for obj, _tuple in self.match_formset.changed_objects ],
+            to_update,
             [ 'value' ]
         )
+        self.get_match_model().objects.filter(pk__in=[ o.pk for o in to_delete ]).delete()
         self.get_header_model().objects.bulk_update(
             self.match_formset.headers,
             ['due', 'paid']
@@ -688,7 +684,6 @@ class BaseEditTransaction(BaseTransaction):
             )
         kwargs["instance"] = self.header_to_edit
         return kwargs
-
 
 
 class BaseViewTransaction(BaseEditTransaction):

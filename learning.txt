@@ -4,6 +4,10 @@ Django Crispy Forms
     and css_classes defined in the library were just appended.  This does not appear to be
     the case.
 
+Django Templates
+
+    You cannot have a block inside a html template which is included by the include tag
+    in the django template.  I realised this with grid_lines.html.
 
 Python MRO
 

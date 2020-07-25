@@ -2,10 +2,6 @@ from decimal import Decimal
 
 from django.db import models
 
-from items.models import Item
-from nominals.models import Nominal
-from vat.models import Vat
-
 
 class Contact(models.Model):
     code = models.CharField(max_length=10)
@@ -16,8 +12,6 @@ class Contact(models.Model):
 
     class Meta:
         abstract = True
-
-
 
 
 class DecimalBaseModel(models.Model):

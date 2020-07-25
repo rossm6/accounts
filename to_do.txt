@@ -1,8 +1,9 @@
 Objectives -
 
-    1. Complete CRUD system for purchase ledger
     2. Create the nominal ledger
     3. Modify the CRUD system so that nominal entries can be created
+    4. Create Cash Book
+    5. Create the Sales ledger
 
     Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
 
@@ -10,14 +11,12 @@ PRIORITY 1
 
     To do -
 
-        What about matching a value of 0 ?  I don't think this has been tested.  We need to
-        test the limits of 0 and the due amount (which probably has been tested already).  For
-        create a value of 0 would mean do not create the match record and for edit it would
-        mean delete any existing match record.
 
-            CREATE SIDE HAS BEEN CHECKED FOR 0 values.  Perhaps do a test for max due amount also.
-
-            EDIT SIDE STILL TO DO ....
+        I need to spend some time improving the BaseTransaction class.  It needs a
+        way of allowing the consumer to define the transaction types.  At the moment
+        i just assume the PL transaction types, which incidentally, have changed
+        to include a 'p' in front of the type code.  So it is now 'pi' and not
+        'i'.
 
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating
