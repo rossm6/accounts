@@ -1,12 +1,12 @@
 from django.urls import path
 
-from .views import (CreateTransaction, TransactionEnquiry,
+from .views import (CreateTransaction, EditTransaction, TransactionEnquiry,
                     create_on_the_fly_view, load_options, validate_choice)
 
 app_name = "nominals"
 urlpatterns = [
     path("create", CreateTransaction.as_view(), name="create"),
-    # path("edit/<int:pk>", EditTransaction.as_view(), name="edit"),
+    path("edit/<int:pk>", EditTransaction.as_view(), name="edit"),
     # path("view/<int:pk>", ViewTransaction.as_view(), name="view"),
     # path("void", void, name="void"),
     path("create_on_the_fly", create_on_the_fly_view, name="create_on_the_fly"),

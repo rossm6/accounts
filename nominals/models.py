@@ -27,7 +27,8 @@ class NominalLine(TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
-    nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE)
+    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="nominal_good_line")
+    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="nominal_vat_line")
 
 all_module_types = PurchaseHeader.type_choices + NominalHeader.analysis_required
 
@@ -51,9 +52,20 @@ class NominalTransaction(DecimalBaseModel):
     period = models.CharField(max_length=6)
     date = models.DateField()
     created = models.DateTimeField(auto_now=True)
+    # User should never see this
+    field_choices = [
+        ('g', 'Goods'),
+        ('v', 'Vat')
+    ]
+    field = models.CharField(max_length=2, choices=field_choices)
+    # We had uniqueness set on the fields "module", "header" and "line"
+    # but of course an analysis line can map to many different nominal transactions
+    # at a minimum there is the goods and the vat on the analysis line
+    # field is therefore a way of distinguishing the transactions and
+    # guranteeing uniqueness
     type = models.CharField(max_length=10, choices=all_module_types)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['module', 'header', 'line'], name="unique_batch")
+            models.UniqueConstraint(fields=['module', 'header', 'line', 'field'], name="unique_batch")
         ]

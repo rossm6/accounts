@@ -98,6 +98,9 @@ PRIORITY 1
 
     Create -
 
+        The part where we assign nominal transactions to line in the lines_are_valid is crazily inefficient.
+        I need to sort the lines and nominal transactions and put them into a dictionary to improve performance.
+
         BaseTransaction has the matching_is_valid method for BaseCreateTransaction.  Should moved to this latter
         class.  Need to check other methods to see whether should be moved also.
 

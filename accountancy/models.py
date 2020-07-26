@@ -139,6 +139,12 @@ class TransactionLine(DecimalBaseModel):
     class Meta:
         abstract = True
 
+    def add_nominal_transactions(self, nominal_trans):
+        if "g" in nominal_trans:
+            self.goods_nominal_transaction = nominal_trans["g"]
+        if "v" in nominal_trans:
+            self.vat_nominal_transaction = nominal_trans["v"]
+
 
 class MatchedHeaders(models.Model):
     """

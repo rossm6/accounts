@@ -2,6 +2,7 @@ import functools
 from copy import deepcopy
 
 from crispy_forms.utils import render_crispy_form
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.postgres.search import (SearchQuery, SearchRank,
                                             SearchVector, TrigramSimilarity)
@@ -14,6 +15,8 @@ from django.template.context_processors import csrf
 from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
+
+from nominals.models import Nominal
 
 from .widgets import InputDropDown
 
@@ -382,19 +385,26 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 line_no = line_no + 1
         if lines:
             lines = self.get_line_model().objects.bulk_create(lines)
+            # need the vat nominal for those lines which have vat values
+            name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
+            try:
+                vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
+            except Nominal.DoesNotExist:
+                vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
             nominal_transactions = []
             for line in lines:
-                nominal_transaction = self.create_nominal_transaction(self.header_obj, line)
-                nominal_transactions.append(nominal_transaction)      
+                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)     
             if nominal_transactions:
                 nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
+                # THIS IS CRAZILY INEFFICIENT !!!!
                 for line in lines:
-                    tmp = [ 
-                        nominal_transaction for nominal_transaction in nominal_transactions if nominal_transaction.line == line.pk 
-                    ]
-                    nominal_transaction_for_line = tmp[0]
-                    line.nominal_transaction = nominal_transaction_for_line
-                self.get_line_model().objects.bulk_update(lines, ['nominal_transaction'])
+                    line_nominal_trans = {
+                        nominal_transaction.field : nominal_transaction
+                        for nominal_transaction in nominal_transactions 
+                        if nominal_transaction.line == line.pk 
+                    }
+                    line.add_nominal_transactions(line_nominal_trans)
+                self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
     def matching_is_valid(self):
         if not hasattr(self, 'header_has_been_saved'):
@@ -605,18 +615,40 @@ class BaseCreateTransaction(BaseTransaction):
             }
         return kwargs
 
-    def create_nominal_transaction(self, header, line):
-        return self.get_nominal_model()(
-            module=self.module,
-            header=header.pk,
-            line=line.pk,
-            nominal=line.nominal,
-            value=line.goods,
-            ref=header.ref,
-            period=header.period,
-            date=header.date,
-            type=header.type
+    def create_nominal_transaction(self, header, line, vat_nominal):
+        # LATER ON FIELDS OTHER THAN GOODS AND VAT MAY BE CREATED
+        # LIKE DISCOUNT AND RETENTION
+        trans = []
+        trans.append(
+            self.get_nominal_model()(
+                module=self.module,
+                header=header.pk,
+                line=line.pk,
+                nominal=line.nominal,
+                value=line.goods,
+                ref=header.ref,
+                period=header.period,
+                date=header.date,
+                type=header.type,
+                field="g"
+            )
         )
+        if line.vat != 0:
+            trans.append(
+                self.get_nominal_model()(
+                    module=self.module,
+                    header=header.pk,
+                    line=line.pk,
+                    nominal=vat_nominal,
+                    value=line.vat,
+                    ref=header.ref,
+                    period=header.period,
+                    date=header.date,
+                    type=header.type,
+                    field="v"
+                )
+            )
+        return trans
 
 class BaseEditTransaction(BaseTransaction):
 
