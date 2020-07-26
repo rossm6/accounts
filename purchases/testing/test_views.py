@@ -225,9 +225,18 @@ class CreateInvoice(TestCase):
 
         cls.item = Item.objects.create(code="aa", description="aa-aa")
         cls.description = "a line description"
+
+        # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
+        # LIABILITIES
+        liabilities = Nominal.objects.create(name="Liabilities")
+        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+
+
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")
@@ -2406,9 +2415,17 @@ class CreatePayment(TestCase):
 
         cls.item = Item.objects.create(code="aa", description="aa-aa")
         cls.description = "a line description"
+
+        # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
+        # LIABILITIES
+        liabilities = Nominal.objects.create(name="Liabilities")
+        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")
@@ -3522,6 +3539,12 @@ class EditPayment(TestCase):
 
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
+
+        # LIABILITIES
+        liabilities = Nominal.objects.create(name="Liabilities")
+        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+
 
     """
 
@@ -6174,9 +6197,17 @@ class EditInvoice(TestCase):
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
         cls.item = Item.objects.create(code="aa", description="aa-aa")
         cls.description = "a line description"
+
+        # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
+        # LIABILITIES
+        liabilities = Nominal.objects.create(name="Liabilities")
+        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
     """
@@ -6590,8 +6621,8 @@ class EditInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
 
-
         lines_as_dicts = [ to_dict(line) for line in lines ]
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = lines_as_dicts
         line_no = 1
         # THIS MIRRORS WHAT WOULD HAPPEN THROUGH THE UI
@@ -6721,6 +6752,7 @@ class EditInvoice(TestCase):
 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = lines_as_dicts
         line_no = 1
 
@@ -6874,6 +6906,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [
                 {
                     'item': self.item.pk,
@@ -6884,7 +6917,7 @@ class EditInvoice(TestCase):
                     'vat': 20
                 }
         ] * 10
-        line_forms = lines_as_dicts + new_lines
+        line_forms = line_trans + new_lines
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 10
         data.update(line_data)
@@ -7499,6 +7532,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
                     'item': self.item.pk,
@@ -7664,6 +7698,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
                     'item': self.item.pk,
@@ -7825,6 +7860,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -7979,6 +8015,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -8136,6 +8173,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
                     'item': self.item.pk,
@@ -8294,6 +8332,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -9399,6 +9438,8 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+
         new_lines = [ # whereas new here so no ID
                 {
                     'item': self.item.pk,
@@ -9584,6 +9625,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
                     'item': self.item.pk,
@@ -9768,6 +9810,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -9943,6 +9986,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -10120,6 +10164,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
                     'item': self.item.pk,
@@ -10297,6 +10342,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
+        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -13165,9 +13211,17 @@ class GeneralTransactionTests(TestCase):
 
         cls.item = Item.objects.create(code="aa", description="aa-aa")
         cls.description = "a line description"
+
+        # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
+        # LIABILITIES
+        liabilities = Nominal.objects.create(name="Liabilities")
+        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+        
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")

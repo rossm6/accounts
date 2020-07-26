@@ -22,6 +22,20 @@ class NominalHeader(TransactionHeader):
         choices=analysis_required
     )
 
+class NominalLineQuerySet(models.QuerySet):
+
+    def line_bulk_update(self, instances):
+        return self.bulk_update(
+            instances,
+            [
+                "line_no",
+                'description',
+                'goods',
+                'vat',
+                "nominal",
+                "vat_code",
+            ]
+        )
 
 class NominalLine(TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
@@ -30,7 +44,25 @@ class NominalLine(TransactionLine):
     goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="nominal_good_line")
     vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="nominal_vat_line")
 
+    objects = NominalLineQuerySet.as_manager()
+
 all_module_types = PurchaseHeader.type_choices + NominalHeader.analysis_required
+
+
+class NominalTransactionQuerySet(models.QuerySet):
+
+    def line_bulk_update(self, instances):
+        return self.bulk_update(
+            instances,
+            [
+                "nominal",
+                "value",
+                "ref",
+                "period",
+                "date",
+                "type"
+            ]
+        )
 
 class NominalTransaction(DecimalBaseModel):
     module = models.CharField(max_length=3) # e.g. 'PL' for purchase ledger
@@ -64,6 +96,8 @@ class NominalTransaction(DecimalBaseModel):
     # field is therefore a way of distinguishing the transactions and
     # guranteeing uniqueness
     type = models.CharField(max_length=10, choices=all_module_types)
+
+    objects = NominalTransactionQuerySet.as_manager()
 
     class Meta:
         constraints = [

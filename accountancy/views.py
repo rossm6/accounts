@@ -282,6 +282,41 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
+    def create_nominal_transaction(self, header, line, vat_nominal):
+        # LATER ON FIELDS OTHER THAN GOODS AND VAT MAY BE CREATED
+        # LIKE DISCOUNT AND RETENTION
+        trans = []
+        trans.append(
+            self.get_nominal_model()(
+                module=self.module,
+                header=header.pk,
+                line=line.pk,
+                nominal=line.nominal,
+                value=line.goods,
+                ref=header.ref,
+                period=header.period,
+                date=header.date,
+                type=header.type,
+                field="g"
+            )
+        )
+        if line.vat != 0:
+            trans.append(
+                self.get_nominal_model()(
+                    module=self.module,
+                    header=header.pk,
+                    line=line.pk,
+                    nominal=vat_nominal,
+                    value=line.vat,
+                    ref=header.ref,
+                    period=header.period,
+                    date=header.date,
+                    type=header.type,
+                    field="v"
+                )
+            )
+        return trans
+
     def get_success_url(self):
         if creation_type := self.request.POST.get('approve'):
             if creation_type == "add_another":
@@ -615,41 +650,6 @@ class BaseCreateTransaction(BaseTransaction):
             }
         return kwargs
 
-    def create_nominal_transaction(self, header, line, vat_nominal):
-        # LATER ON FIELDS OTHER THAN GOODS AND VAT MAY BE CREATED
-        # LIKE DISCOUNT AND RETENTION
-        trans = []
-        trans.append(
-            self.get_nominal_model()(
-                module=self.module,
-                header=header.pk,
-                line=line.pk,
-                nominal=line.nominal,
-                value=line.goods,
-                ref=header.ref,
-                period=header.period,
-                date=header.date,
-                type=header.type,
-                field="g"
-            )
-        )
-        if line.vat != 0:
-            trans.append(
-                self.get_nominal_model()(
-                    module=self.module,
-                    header=header.pk,
-                    line=line.pk,
-                    nominal=vat_nominal,
-                    value=line.vat,
-                    ref=header.ref,
-                    period=header.period,
-                    date=header.date,
-                    type=header.type,
-                    field="v"
-                )
-            )
-        return trans
-
 class BaseEditTransaction(BaseTransaction):
 
     def setup(self, request, *args, **kwargs):
@@ -658,6 +658,28 @@ class BaseEditTransaction(BaseTransaction):
         header = get_object_or_404(self.get_header_model(), pk=pk)
         self.header_to_edit = header
         
+    def edit_nominal_transactions(self, nominal_trans, header, line, vat_nominal):
+        updated_trans = []
+        if 'g' in nominal_trans:
+            tran = nominal_trans["g"]
+            tran.nominal = line.nominal
+            tran.value = line.goods
+            tran.ref = header.ref
+            tran.period = header.period
+            tran.date = header.date
+            tran.type = header.type
+            updated_trans.append(tran)
+        if 'v' in nominal_trans:
+            tran = nominal_trans["v"]
+            tran.nominal = vat_nominal
+            tran.value = line.vat
+            tran.ref = header.ref
+            tran.period = header.period
+            tran.date = header.date
+            tran.type = header.type
+            updated_trans.append(tran)
+        return updated_trans
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["edit"] = self.header_to_edit.pk
@@ -669,29 +691,52 @@ class BaseEditTransaction(BaseTransaction):
         self.header_has_been_saved = True
         self.line_formset.save(commit=False)
         lines_to_delete = [ line.pk for line in self.line_formset.deleted_objects ]
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
         forms = []
-        for form in self.line_formset.ordered_forms:
+        for form in line_forms:
             if form.empty_permitted and form.has_changed():
                 forms.append(form)
             elif not form.empty_permitted and form.instance.pk not in lines_to_delete:
                 forms.append(form)
-        updated = []
+        updated = [] # list for lines to be updated
+        all_nominal_trans = self.get_nominal_model().objects.filter(header=self.header_obj.pk)
+        new_nominal_trans = []
+        updated_nominals = []
+        name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
+        try:
+            vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
+        except Nominal.DoesNotExist:
+            vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
         for form in forms:
             if form.empty_permitted and form.has_changed():
                 form.instance.header = self.header_obj
                 form.instance.line_no = line_no
                 line_no = line_no + 1
+                new_nominal_trans += self.create_nominal_transaction(
+                    self.header_obj, 
+                    form.instance,
+                    vat_nominal
+                )
             elif not form.empty_permitted:
                 form.instance.line_no = line_no
                 updated.append(form.instance)
                 line_no = line_no + 1
+                nominal_trans = {
+                    tran.field : tran
+                    for tran in all_nominal_trans
+                    if tran.line == form.instance.pk
+                }
+                updated_nominals += self.edit_nominal_transactions(
+                    nominal_trans,
+                    self.header_obj,
+                    form.instance,
+                    vat_nominal
+                )
         self.get_line_model().objects.bulk_create(self.line_formset.new_objects)
         # FIXED.  I was updating the objects in changed_objects but this is no good
         # because i'm changing the line_no always
-        self.get_line_model().objects.bulk_update(
-            updated,
-            ['line_no', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']
-        )
+        self.get_line_model().objects.line_bulk_update(updated)
+        self.get_nominal_model().objects.line_bulk_update(updated_nominals)
         self.get_line_model().objects.filter(pk__in=lines_to_delete).delete()
 
     def matching_is_valid(self):

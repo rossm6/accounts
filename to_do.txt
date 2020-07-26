@@ -10,6 +10,9 @@ PRIORITY 1
 
     To do -
 
+        What about brought forwards?  Payments will need nominal transactions
+        but brought forwards will not.
+
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating
         this on the fly whilst the user edits, and, creates the transaction in the first place.

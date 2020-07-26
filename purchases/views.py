@@ -94,6 +94,8 @@ class EditTransaction(BaseEditTransaction):
     }
     template_name = "purchases/edit.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
+    nominal_model = NominalTransaction
+    module = "PL"
 
 
 class ViewTransaction(BaseViewTransaction):
