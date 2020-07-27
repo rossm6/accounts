@@ -87,7 +87,8 @@ class NominalTransaction(DecimalBaseModel):
     # User should never see this
     field_choices = [
         ('g', 'Goods'),
-        ('v', 'Vat')
+        ('v', 'Vat'),
+        ('t', 'Total')
     ]
     field = models.CharField(max_length=2, choices=field_choices)
     # We had uniqueness set on the fields "module", "header" and "line"

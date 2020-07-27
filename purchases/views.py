@@ -13,7 +13,7 @@ from django.views.generic import ListView
 from querystring_parser import parser
 
 from accountancy.forms import AdvancedTransactionSearchForm
-from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
+from accountancy.views import (CreatePurchaseOrSalesTransaction, BaseEditTransaction,
                                BaseTransactionsList, BaseViewTransaction,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
@@ -31,7 +31,7 @@ from .forms import (PurchaseHeaderForm, PurchaseLineForm, QuickSupplierForm,
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
-class CreateTransaction(BaseCreateTransaction):
+class CreateTransaction(CreatePurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
@@ -61,6 +61,7 @@ class CreateTransaction(BaseCreateTransaction):
     success_url = reverse_lazy("purchases:transaction_enquiry")
     nominal_model = NominalTransaction
     module = "PL"
+    control_account_name = "Purchase Ledger Control"
 
     # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
     def get_header_form_type(self):
@@ -96,6 +97,7 @@ class EditTransaction(BaseEditTransaction):
     success_url = reverse_lazy("purchases:transaction_enquiry")
     nominal_model = NominalTransaction
     module = "PL"
+    control_account_name = "Purchase Ledger Control"
 
 
 class ViewTransaction(BaseViewTransaction):

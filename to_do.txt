@@ -1,6 +1,8 @@
 Objectives -
 
-    3. Modify the CRUD system so that nominal entries can be created.  EditJournal to test and write next.  Then test nominal entry creation on PL side
+    1. Create Payment and Create Brought Forward
+    2. Edit Invoice, Edit Payment, Edit Brought Forward
+
     4. Create Cash Book
     5. Create the Sales ledger
 
@@ -8,14 +10,23 @@ Objectives -
 
 PRIORITY 1
 
-    To do -
-
         What about brought forwards?  Payments will need nominal transactions
         but brought forwards will not.
+
+        If the vat analysis is removed the nominal transaction needs deleting.
+        More generally nominal transactions which have zero values should be deleted.
 
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating
         this on the fly whilst the user edits, and, creates the transaction in the first place.
+
+    LINES - ANALYSIS
+
+        Nominal transactions with zero values should not be permitted
+
+    VAT
+
+        The system should let you enter a VAT only invoice.  I.e. goods = 0 and vat = total
 
     SALES
 

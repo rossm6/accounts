@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     # third party
     'crispy_forms',
     # 'debug_toolbar',
+    # custom widgets will slow down page loads massively
     'django_extensions',
     'mptt',
     'tempus_dominus',
@@ -167,5 +168,4 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
 
 DEFAULT_VAT_NOMINAL = "Vat"
-DEFAULT_SUSPENSE_ACCOUNT = "System Suspense"
-PURCHASES_CONTROL_NOMINAL = "Sales Control"
+DEFAULT_SYSTEM_SUSPENSE = "System Suspense"

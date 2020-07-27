@@ -286,20 +286,21 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         # LATER ON FIELDS OTHER THAN GOODS AND VAT MAY BE CREATED
         # LIKE DISCOUNT AND RETENTION
         trans = []
-        trans.append(
-            self.get_nominal_model()(
-                module=self.module,
-                header=header.pk,
-                line=line.pk,
-                nominal=line.nominal,
-                value=line.goods,
-                ref=header.ref,
-                period=header.period,
-                date=header.date,
-                type=header.type,
-                field="g"
+        if line.goods != 0:
+            trans.append(
+                self.get_nominal_model()(
+                    module=self.module,
+                    header=header.pk,
+                    line=line.pk,
+                    nominal=line.nominal,
+                    value=line.goods,
+                    ref=header.ref,
+                    period=header.period,
+                    date=header.date,
+                    type=header.type,
+                    field="g"
+                )
             )
-        )
         if line.vat != 0:
             trans.append(
                 self.get_nominal_model()(
@@ -316,6 +317,32 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 )
             )
         return trans
+
+
+    def create_total_nominal_transaction(self, header, details):
+        """
+        Whereas create_nominal_transactions will create the goods and vat
+        nominal entries per each line of analysis, this will create the
+        nominal entry which is the total of the goods and the vat for the
+        lines so that each nominal batch is zero
+        """
+
+        if details["value"] != 0:
+            return ([
+                    self.get_nominal_model()(
+                        module=self.module,
+                        header=header.pk,
+                        line=details["line"],
+                        nominal=details["nominal"],
+                        value=details["value"],
+                        ref=header.ref,
+                        period=header.period,
+                        date=header.date,
+                        type=header.type,
+                        field="t"
+                    )
+                ])
+
 
     def get_success_url(self):
         if creation_type := self.request.POST.get('approve'):
@@ -404,58 +431,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                     field.widget.choices = [ (chosen.pk, str(chosen)) ]
                 else:
                     field.widget.choices = []
-
-    def lines_are_valid(self):
-        line_no = 1
-        lines = []
-        self.header_obj.save() # this could have been updated by line formset clean method already
-        self.header_has_been_saved = True
-        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
-        for form in line_forms:
-            if form.empty_permitted and form.has_changed():
-                line = form.save(commit=False)
-                line.header = self.header_obj
-                line.line_no = line_no
-                lines.append(line)
-                line_no = line_no + 1
-        if lines:
-            lines = self.get_line_model().objects.bulk_create(lines)
-            # need the vat nominal for those lines which have vat values
-            name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
-            try:
-                vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
-            except Nominal.DoesNotExist:
-                vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
-            nominal_transactions = []
-            for line in lines:
-                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)     
-            if nominal_transactions:
-                nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
-                # THIS IS CRAZILY INEFFICIENT !!!!
-                for line in lines:
-                    line_nominal_trans = {
-                        nominal_transaction.field : nominal_transaction
-                        for nominal_transaction in nominal_transactions 
-                        if nominal_transaction.line == line.pk 
-                    }
-                    line.add_nominal_transactions(line_nominal_trans)
-                self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
-
-    def matching_is_valid(self):
-        if not hasattr(self, 'header_has_been_saved'):
-            self.header_obj.save()
-        matches = []
-        for form in self.match_formset:
-            if form.empty_permitted and form.has_changed():
-                match = form.save(commit=False)
-                if match.value != 0:
-                    matches.append(match)
-        if matches:
-            self.get_header_model().objects.bulk_update(
-                self.match_formset.headers,
-                ['due', 'paid']
-            )
-            self.get_match_model().objects.bulk_create(matches)
 
     def get_header_model(self):
         return self.header.get('model')
@@ -649,6 +624,117 @@ class BaseCreateTransaction(BaseTransaction):
                 "type": self.get_header_form_type()
             }
         return kwargs
+
+    def lines_are_valid(self):
+        line_no = 1
+        lines = []
+        self.header_obj.save() # this could have been updated by line formset clean method already
+        self.header_has_been_saved = True
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        for form in line_forms:
+            if form.empty_permitted and form.has_changed():
+                line = form.save(commit=False)
+                line.header = self.header_obj
+                line.line_no = line_no
+                lines.append(line)
+                line_no = line_no + 1
+        if lines:
+            lines = self.get_line_model().objects.bulk_create(lines)
+            # need the vat nominal for those lines which have vat values
+            name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
+            try:
+                vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
+            except Nominal.DoesNotExist:
+                vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+            nominal_transactions = []
+            for line in lines:
+                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)     
+            if nominal_transactions:
+                nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
+                # THIS IS CRAZILY INEFFICIENT !!!!
+                for line in lines:
+                    line_nominal_trans = {
+                        nominal_transaction.field : nominal_transaction
+                        for nominal_transaction in nominal_transactions 
+                        if nominal_transaction.line == line.pk 
+                    }
+                    line.add_nominal_transactions(line_nominal_trans)
+                self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
+
+    def matching_is_valid(self):
+        if not hasattr(self, 'header_has_been_saved'):
+            self.header_obj.save()
+        matches = []
+        for form in self.match_formset:
+            if form.empty_permitted and form.has_changed():
+                match = form.save(commit=False)
+                if match.value != 0:
+                    matches.append(match)
+        if matches:
+            self.get_header_model().objects.bulk_update(
+                self.match_formset.headers,
+                ['due', 'paid']
+            )
+            self.get_match_model().objects.bulk_create(matches)
+
+
+
+class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
+
+    def lines_are_valid(self):
+        line_no = 1
+        lines = []
+        self.header_obj.save() # this could have been updated by line formset clean method already
+        self.header_has_been_saved = True
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        for form in line_forms:
+            if form.empty_permitted and form.has_changed():
+                line = form.save(commit=False)
+                line.header = self.header_obj
+                line.line_no = line_no
+                lines.append(line)
+                line_no = line_no + 1
+        if lines:
+            lines = self.get_line_model().objects.bulk_create(lines)
+            # need the vat nominal for those lines which have vat values
+            name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
+            try:
+                vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
+            except Nominal.DoesNotExist:
+                vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+            nominal_transactions = []
+            total_line_value = 0
+            for line in lines:
+                total_line_value = total_line_value + line.goods + line.vat
+                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)  
+            try:
+                control_account = Nominal.objects.get(name=self.control_account_name) 
+            except Nominal.DoesNotExist:
+                control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+            if (
+                total_nominal_transaction := self.create_total_nominal_transaction(
+                        self.header_obj,
+                        {
+                            "line": line.pk + 1,
+                            "nominal": control_account,
+                            "value": -1 * total_line_value
+                        }
+                    )
+                ):
+                    nominal_transactions += total_nominal_transaction
+            if nominal_transactions:
+                nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
+                # FIX ME - THIS IS CRAZILY INEFFICIENT FOR A LARGE NUMBER OF LINES !!!!
+                for line in lines:
+                    line_nominal_trans = {
+                        nominal_transaction.field : nominal_transaction
+                        for nominal_transaction in nominal_transactions 
+                        if nominal_transaction.line == line.pk 
+                    }
+                    line.add_nominal_transactions(line_nominal_trans)
+                self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
+
+
 
 class BaseEditTransaction(BaseTransaction):
 
