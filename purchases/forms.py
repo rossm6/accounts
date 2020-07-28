@@ -60,7 +60,7 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         else:
             type = self.initial.get('type')
 
-        if type in self._meta.model.requires_bank:
+        if type in self._meta.model.payment_type:
             payment_form = True
         else:
             payment_form = False
@@ -115,6 +115,25 @@ class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
 
 
 class PurchaseLineFormset(BaseLineFormset):
+
+    def _construct_form(self, i, **kwargs):
+        if hasattr(self, 'brought_forward'):
+            kwargs["brought_forward"] = self.brought_forward
+        form = super()._construct_form(i, **kwargs)
+        return form
+
+    def get_form_kwargs(self, index):
+        if index is None:
+            # we are getting form kwargs for new empty_form only - 
+            # https://github.com/django/django/blob/master/django/forms/formsets.py
+            # see method of same name
+            kwargs = super().get_form_kwargs(index)
+            kwargs.update({
+                "brought_forward":self.brought_forward
+            })
+            return kwargs
+        return super().get_form_kwargs(index)
+
 
     def clean(self):
         super().clean()
@@ -215,12 +234,34 @@ class PurchaseLineForm(AjaxForm):
         ajax_fields = ('item', 'nominal', 'vat_code', ) # used in Transaction form set_querysets method
 
     def __init__(self, *args, **kwargs):
+
+        column_layout_object_css_classes = {
+            "Th": {},
+            "Td": {}
+        }
+
+        if 'brought_forward' in kwargs:
+            if brought_forward := kwargs.get('brought_forward'):
+                self.brought_forward = brought_forward
+                if self.brought_forward:
+                    column_layout_object_css_classes["Th"]["nominal"] = "d-none"
+                    column_layout_object_css_classes["Th"]["vat_code"] = "d-none"
+                    column_layout_object_css_classes["Td"]["nominal"] = "d-none"
+                    column_layout_object_css_classes["Td"]["vat_code"] = "d-none"
+            kwargs.pop("brought_forward")
+
         super().__init__(*args, **kwargs)
+        # if the type is a payment type we will hide the line_formset
+        # on the client.
+        # if the type is a brought forward type the line_formset will show
+        # but the columns containing the irrelevant fields will be hidden
+
         self.helpers = TableHelper(
             PurchaseLineForm.Meta.fields,
             order=True,
             delete=True,
             css_classes=line_css_classes,
+            column_layout_object_css_classes=column_layout_object_css_classes,
             field_layout_overrides={
                 'Td': {
                     'item': PlainFieldErrors,

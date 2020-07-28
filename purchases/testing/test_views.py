@@ -227,6 +227,7 @@ class CreateInvoice(TestCase):
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
 
 
@@ -13213,6 +13214,7 @@ class GeneralTransactionTests(TestCase):
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
         
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
@@ -14239,3 +14241,257 @@ class CreateInvoiceNominalEntries(TestCase):
             total,
             0
         )
+
+
+
+
+# class CreateBroughtForwardInvoice(TestCase):
+
+#     """
+#     A brought forward transaction differs to a non brought forward
+#     transaction only in that the transaction does not update the nominal accounts.
+#     """
+
+#     @classmethod
+#     def setUpTestData(cls):
+
+#         cls.factory = RequestFactory()
+#         cls.supplier = Supplier.objects.create(name="test_supplier")
+#         cls.ref = "test matching"
+#         cls.date = datetime.now().strftime('%Y-%m-%d')
+#         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+
+
+
+#         # ASSETS
+#         assets = Nominal.objects.create(name="Assets")
+#         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+#         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
+#         # LIABILITIES
+#         liabilities = Nominal.objects.create(name="Liabilities")
+#         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+#         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
+#         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+
+
+#         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+#         cls.url = reverse("purchases:create")
+
+
+#     # CORRECT USAGE
+#     # Each line has a goods value above zero and the vat is 20% of the goods
+#     def test_nominals_created_for_lines_with_goods_and_vat_above_zero(self):
+
+#         data = {}
+#         header_data = create_header(
+#             HEADER_FORM_PREFIX,
+#             {
+#                 "type": "pi",
+#                 "supplier": self.supplier.pk,
+#                 "ref": self.ref,
+#                 "date": self.date,
+#                 "due_date": self.due_date,
+#                 "total": 0
+#             }
+#         )
+#         data.update(header_data)
+#         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+#         line_forms = ([{
+#                 'item': self.item.pk,
+#                 'description': self.description,
+#                 'goods': 100,
+#                 'nominal': self.nominal.pk,
+#                 'vat_code': self.vat_code.pk,
+#                 'vat': 20
+#             }]) * 20
+#         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+#         data.update(matching_data)
+#         data.update(line_data)
+#         response = self.client.post(self.url, data)
+#         self.assertEqual(response.status_code, 302)
+#         headers = PurchaseHeader.objects.all()
+#         self.assertEqual(len(headers), 1)
+#         header = headers[0]
+#         self.assertEqual(
+#             header.total,
+#             20 * (100 + 20)
+#         )
+#         self.assertEqual(
+#             header.goods,
+#             20 * 100
+#         )
+#         self.assertEqual(
+#             header.vat,
+#             20 * 20
+#         )
+#         self.assertEqual(
+#             header.ref,
+#             self.ref
+#         )
+#         self.assertEqual(
+#             header.paid,
+#             0
+#         )
+#         self.assertEqual(
+#             header.due,
+#             header.total
+#         )
+#         lines = PurchaseLine.objects.all()
+#         for line in lines:
+#             self.assertEqual(
+#                 line.item,
+#                 self.item
+#             )
+#             self.assertEqual(
+#                 line.description,
+#                 self.description
+#             )
+#             self.assertEqual(
+#                 line.goods,
+#                 100
+#             )
+#             self.assertEqual(
+#                 line.nominal,
+#                 self.nominal
+#             )
+#             self.assertEqual(
+#                 line.vat_code,
+#                 self.vat_code
+#             )
+#             self.assertEqual(
+#                 line.vat,
+#                 20
+#             )
+#         nom_trans = NominalTransaction.objects.all()
+#         self.assertEqual(
+#             len(nom_trans),
+#             20 + 20 + 1
+#             # i.e. 20 nominal entries for each goods value
+#             # 20 nominal entries for each vat value
+#             # 1 nominal entry for the total value
+#         )
+#         # assuming the lines are created in the same order
+#         # as the nominal entries....
+#         goods_and_vat_nom_trans = nom_trans[:40]
+#         goods_trans = goods_and_vat_nom_trans[::2]
+#         vat_trans = goods_and_vat_nom_trans[1::2]
+#         for i, tran in enumerate(goods_trans):
+#             self.assertEqual(
+#                 tran.module,
+#                 PL_MODULE
+#             )
+#             self.assertEqual(
+#                 tran.header,
+#                 header.pk
+#             )
+#             self.assertEqual(
+#                 tran.line,
+#                 lines[i].pk
+#             )
+#             self.assertEqual(
+#                 tran.nominal,
+#                 self.nominal
+#             )
+#             self.assertEqual(
+#                 tran.value,
+#                 100
+#             )
+#             self.assertEqual(
+#                 tran.ref,
+#                 header.ref
+#             )
+#             self.assertEqual(
+#                 tran.period,
+#                 PERIOD
+#             )     
+#             self.assertEqual(
+#                 tran.date,
+#                 header.date
+#             )
+#             self.assertEqual(
+#                 tran.field,
+#                 'g'
+#             )
+#         for i, tran in enumerate(vat_trans):
+#             self.assertEqual(
+#                 tran.module,
+#                 PL_MODULE
+#             )
+#             self.assertEqual(
+#                 tran.header,
+#                 header.pk
+#             )
+#             self.assertEqual(
+#                 tran.line,
+#                 lines[i].pk
+#             )
+#             self.assertEqual(
+#                 tran.nominal,
+#                 self.vat_nominal
+#             )
+#             self.assertEqual(
+#                 tran.value,
+#                 20
+#             )
+#             self.assertEqual(
+#                 tran.ref,
+#                 header.ref
+#             )
+#             self.assertEqual(
+#                 tran.period,
+#                 PERIOD
+#             )     
+#             self.assertEqual(
+#                 tran.date,
+#                 header.date
+#             )
+#             self.assertEqual(
+#                 tran.field,
+#                 'v'
+#             )
+#         total_nominal_entry = list(nom_trans)[-1] # i.e. purchase ledger control normally
+#         self.assertEqual(
+#             total_nominal_entry.module,
+#             PL_MODULE
+#         )
+#         self.assertEqual(
+#             total_nominal_entry.header,
+#             header.pk
+#         )
+#         self.assertEqual(
+#             total_nominal_entry.line,
+#             lines[i].pk + 1
+#         )
+#         self.assertEqual(
+#             total_nominal_entry.nominal,
+#             self.purchase_control
+#         )
+#         self.assertEqual(
+#             total_nominal_entry.value,
+#             -2400
+#         )
+#         self.assertEqual(
+#             total_nominal_entry.ref,
+#             header.ref
+#         )
+#         self.assertEqual(
+#             total_nominal_entry.period,
+#             PERIOD
+#         )     
+#         self.assertEqual(
+#             total_nominal_entry.date,
+#             header.date
+#         )
+#         self.assertEqual(
+#             total_nominal_entry.field,
+#             't'
+#         )
+#         total = 0
+#         for tran in nom_trans:
+#             total = total + tran.value
+#         self.assertEqual(
+#             total,
+#             0
+#         )

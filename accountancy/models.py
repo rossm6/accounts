@@ -108,6 +108,14 @@ class TransactionHeader(DecimalBaseModel):
     def get_type_names_requiring_analysis(cls):
         return [ type[1] for type in cls.analysis_required ]
 
+    @classmethod
+    def get_types_requiring_lines(cls):
+        return [ type[0] for type in cls.lines_required ]
+
+    @classmethod
+    def get_type_names_requiring_lines(cls):
+        return [ type[1] for type in cls.lines_required ]
+
 
 # class Invoice(TransactionHeader):
 #     class Meta:

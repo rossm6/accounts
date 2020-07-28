@@ -96,19 +96,21 @@ class TableHelper(object):
         self.delete=delete
         self.css_classes = kwargs.get("css_classes", {})
         self.field_layout_overrides = kwargs.get("field_layout_overrides", {})
+        self.column_layout_object_css_classes = kwargs.get("column_layout_object_css_classes", {})
         # example {"Td": {"type": LabelAndField}}
         # must use Td namespace
 
     def create_field_columns(self, fields, column_layout_object, field_layout_object, _type):
         css_classes = self.css_classes.get(_type, {})
         field_overrides = self.field_layout_overrides.get(_type, {})
+        column_layout_object_css_classes = self.column_layout_object_css_classes.get(_type, {})
         return [ 
             column_layout_object(
                 field_overrides.get(field, field_layout_object)(
                     field,
                     css_class=css_classes.get(field, '')
                 ),
-                css_class="col-" + field + ( " d-none" if field == "id" else "" )
+                css_class="col-" + field + ( " d-none" if field == "id" else "" ) + " " + column_layout_object_css_classes.get(field, '')
             ) 
             for field in fields 
         ]
@@ -357,4 +359,8 @@ class BaseLineFormset(BaseTransactionModelFormSet):
             if header := kwargs.get('header'): # header could be None
                 self.header = header
             kwargs.pop("header")
+        if 'brought_forward' in kwargs:
+            if brought_forward := kwargs.get('brought_forward'):
+                self.brought_forward = brought_forward
+            kwargs.pop("brought_forward")
         super().__init__(*args, **kwargs)

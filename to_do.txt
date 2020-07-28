@@ -1,6 +1,6 @@
 Objectives -
 
-    1. Create Payment and Create Brought Forward
+    1. Create Brought Forward Invoice tests both UI and python based.  Create Payment test follows afterwards.
     2. Edit Invoice, Edit Payment, Edit Brought Forward
 
     4. Create Cash Book
@@ -27,6 +27,11 @@ PRIORITY 1
     VAT
 
         The system should let you enter a VAT only invoice.  I.e. goods = 0 and vat = total
+
+        Brought forward transactions cannot select a vat code so vat cannot be analysed.  Instead
+        vat analsis must be enabled for nominal journals.  At the moment vat nominal entries
+        are created.  Later on we need to let the user choose whether this vat should be input
+        or output on the vat return.
 
     SALES
 

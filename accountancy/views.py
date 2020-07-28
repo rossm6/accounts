@@ -368,8 +368,8 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         if 'non_field_errors' not in kwargs:
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
-        if 'requires_analysis' not in kwargs:
-            kwargs['requires_analysis'] = self.requires_analysis(kwargs["header_form"]) # as self.header_form not set for GET requests
+        if 'requires_lines' not in kwargs:
+            kwargs['requires_lines'] = self.requires_lines(kwargs["header_form"]) # as self.header_form not set for GET requests
         
         if hasattr(self, 'create_on_the_fly'):
             for form in self.create_on_the_fly:
@@ -379,7 +379,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def invalid_forms(self):
         self.header_is_invalid()
-        if self.requires_analysis(self.get_header_form()):
+        if self.requires_lines(self.get_header_form()):
             self.lines_are_invalid()
         self.matching_is_invalid()
         return self.render_to_response(self.get_context_data())
@@ -471,6 +471,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         return self.get_line_model().objects.none()
 
     def get_line_formset_kwargs(self, header=None):
+
         kwargs = {
             'prefix': self.get_line_prefix(),
             'queryset': self.get_line_formset_queryset()
@@ -479,14 +480,22 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         if self.request.method in ('POST', 'PUT'):
             # passing in data will mean the form will use the POST queryset
             # which means potentially huge choices rendered on the client
-            if self.requires_analysis(self.header_form):
+            if self.requires_lines(self.header_form):
                 kwargs.update({
                     'data': self.request.POST
                 })
             kwargs.update({
                 'header': header
             })
-        
+
+        if (self.requires_lines(self.header_form) and not self.requires_analysis(self.header_form)):
+            brought_forward = True
+        else:
+            brought_forward = False
+
+        kwargs["brought_forward"] = brought_forward 
+        # need to tell the formset the forms contained should have the nominal and vat code field hidden
+
         return kwargs
 
     def lines_should_be_ordered(self):
@@ -498,6 +507,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
 
     def get_match_formset_kwargs(self, header=None):
+
         kwargs = {
             'prefix': self.get_match_prefix(),
             'queryset': self.get_match_formset_queryset(),
@@ -524,6 +534,23 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             # we need this because read only forms used for the detail transaction view
             # convert the initial choice value to the choice label
             if t in self.get_header_model().get_type_names_requiring_analysis():
+                return True
+        else:
+            return False
+
+    def requires_lines(self, header_form):
+        if hasattr(header_form, "cleaned_data"):
+            if t := header_form.cleaned_data.get("type"):
+                if t in self.get_header_model().get_types_requiring_lines():
+                    return True
+                else:
+                    return False
+        if t := self.header_form.initial.get('type'):
+            if t in self.get_header_model().get_types_requiring_lines():
+                return True
+            # we need this because read only forms used for the detail transaction view
+            # convert the initial choice value to the choice label
+            if t in self.get_header_model().get_type_names_requiring_lines():
                 return True
         else:
             return False
@@ -574,7 +601,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             self.header_obj = self.header_form.save(commit=False) # changed name from header because this is a cls attribute of course
             self.line_formset = self.get_line_formset(self.header_obj)
             self.match_formset = self.get_match_formset(self.header_obj)
-            if not self.requires_analysis(self.header_form):
+            if not self.requires_lines(self.header_form):
                 # e.g. processing payments on PL
                 if self.match_formset.is_valid():
                     self.matching_is_valid()

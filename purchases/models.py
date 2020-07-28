@@ -21,6 +21,18 @@ class PurchaseHeader(TransactionHeader):
         ('pi', 'Invoice'),
         ('pc', 'Credit Note'),
     ]
+    no_lines_required = [
+        ('pbp', 'Brought Forward Payment'),
+        ('pbr', 'Brought Forward Refund'),
+        ('pp', 'Payment'),
+        ('pr', 'Refund'),
+    ]
+    lines_required = [
+        ('pbi', 'Brought Forward Invoice'),
+        ('pbc', 'Brought Forward Credit Note'),
+        ('pi', 'Invoice'),
+        ('pc', 'Credit Note'),
+    ]
     credits = [
         'pbc',
         'pbp',
@@ -33,7 +45,7 @@ class PurchaseHeader(TransactionHeader):
         'pr',
         'pi'
     ]
-    requires_bank = [
+    payment_type = [
         'pbp',
         'pbr',
         'pp',
