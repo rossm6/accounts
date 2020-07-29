@@ -596,6 +596,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         WARNING - LINE FORMSET MUST BE VALIDATED BEFORE MATCH FORMSET
 
         """
+
         self.header_form = self.get_header_form()
         if self.header_form.is_valid():
             self.header_obj = self.header_form.save(commit=False) # changed name from header because this is a cls attribute of course
@@ -723,43 +724,44 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
                 line_no = line_no + 1
         if lines:
             lines = self.get_line_model().objects.bulk_create(lines)
-            # need the vat nominal for those lines which have vat values
-            name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
-            try:
-                vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
-            except Nominal.DoesNotExist:
-                vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
-            nominal_transactions = []
-            total_line_value = 0
-            for line in lines:
-                total_line_value = total_line_value + line.goods + line.vat
-                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)  
-            try:
-                control_account = Nominal.objects.get(name=self.control_account_name) 
-            except Nominal.DoesNotExist:
-                control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
-            if (
-                total_nominal_transaction := self.create_total_nominal_transaction(
-                        self.header_obj,
-                        {
-                            "line": line.pk + 1,
-                            "nominal": control_account,
-                            "value": -1 * total_line_value
-                        }
-                    )
-                ):
-                    nominal_transactions += total_nominal_transaction
-            if nominal_transactions:
-                nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
-                # FIX ME - THIS IS CRAZILY INEFFICIENT FOR A LARGE NUMBER OF LINES !!!!
+            if self.requires_analysis(self.header_form):
+                # need the vat nominal for those lines which have vat values
+                name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
+                try:
+                    vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
+                except Nominal.DoesNotExist:
+                    vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+                nominal_transactions = []
+                total_line_value = 0
                 for line in lines:
-                    line_nominal_trans = {
-                        nominal_transaction.field : nominal_transaction
-                        for nominal_transaction in nominal_transactions 
-                        if nominal_transaction.line == line.pk 
-                    }
-                    line.add_nominal_transactions(line_nominal_trans)
-                self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
+                    total_line_value = total_line_value + line.goods + line.vat
+                    nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)  
+                try:
+                    control_account = Nominal.objects.get(name=self.control_account_name) 
+                except Nominal.DoesNotExist:
+                    control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+                if (
+                    total_nominal_transaction := self.create_total_nominal_transaction(
+                            self.header_obj,
+                            {
+                                "line": line.pk + 1,
+                                "nominal": control_account,
+                                "value": -1 * total_line_value
+                            }
+                        )
+                    ):
+                        nominal_transactions += total_nominal_transaction
+                if nominal_transactions:
+                    nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
+                    # FIX ME - THIS IS CRAZILY INEFFICIENT FOR A LARGE NUMBER OF LINES !!!!
+                    for line in lines:
+                        line_nominal_trans = {
+                            nominal_transaction.field : nominal_transaction
+                            for nominal_transaction in nominal_transactions 
+                            if nominal_transaction.line == line.pk 
+                        }
+                        line.add_nominal_transactions(line_nominal_trans)
+                    self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
 
 

@@ -360,7 +360,7 @@ class BaseLineFormset(BaseTransactionModelFormSet):
                 self.header = header
             kwargs.pop("header")
         if 'brought_forward' in kwargs:
-            if brought_forward := kwargs.get('brought_forward'):
-                self.brought_forward = brought_forward
+            brought_forward = kwargs.get('brought_forward')
+            self.brought_forward = brought_forward
             kwargs.pop("brought_forward")
         super().__init__(*args, **kwargs)

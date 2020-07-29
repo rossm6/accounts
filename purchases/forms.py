@@ -129,7 +129,7 @@ class PurchaseLineFormset(BaseLineFormset):
             # see method of same name
             kwargs = super().get_form_kwargs(index)
             kwargs.update({
-                "brought_forward":self.brought_forward
+                "brought_forward": self.brought_forward
             })
             return kwargs
         return super().get_form_kwargs(index)
@@ -241,16 +241,22 @@ class PurchaseLineForm(AjaxForm):
         }
 
         if 'brought_forward' in kwargs:
-            if brought_forward := kwargs.get('brought_forward'):
-                self.brought_forward = brought_forward
-                if self.brought_forward:
-                    column_layout_object_css_classes["Th"]["nominal"] = "d-none"
-                    column_layout_object_css_classes["Th"]["vat_code"] = "d-none"
-                    column_layout_object_css_classes["Td"]["nominal"] = "d-none"
-                    column_layout_object_css_classes["Td"]["vat_code"] = "d-none"
+            brought_forward = kwargs.get('brought_forward')
+            self.brought_forward = brought_forward
+            if self.brought_forward:
+                column_layout_object_css_classes["Th"]["nominal"] = "d-none"
+                column_layout_object_css_classes["Th"]["vat_code"] = "d-none"
+                column_layout_object_css_classes["Td"]["nominal"] = "d-none"
+                column_layout_object_css_classes["Td"]["vat_code"] = "d-none"
             kwargs.pop("brought_forward")
 
         super().__init__(*args, **kwargs)
+
+        if hasattr(self, 'brought_forward') and self.brought_forward:
+            self.fields["item"].required = False
+            self.fields["nominal"].required = False
+            self.fields["vat_code"].required = False
+
         # if the type is a payment type we will hide the line_formset
         # on the client.
         # if the type is a brought forward type the line_formset will show

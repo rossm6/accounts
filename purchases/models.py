@@ -82,11 +82,11 @@ class PurchaseLineQuerySet(models.QuerySet):
 
 class PurchaseLine(TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    nominal = models.ForeignKey('nominals.Nominal', on_delete=models.CASCADE)
-    vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
-    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="purchase_good_line")
-    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="purchase_vat_line")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, null=True, blank=True)
+    nominal = models.ForeignKey('nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
+    vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Vat Code")
+    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="purchase_good_line")
+    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="purchase_vat_line")
 
     # It does not make sense that a line would exist without a nominal transaction but the purchase line is created
     # before the nominal transaction so it must do the create without the id for the nominal transaction

@@ -1,6 +1,6 @@
 Objectives -
 
-    1. Create Brought Forward Invoice tests both UI and python based.  Create Payment test follows afterwards.
+    1. Create Payment
     2. Edit Invoice, Edit Payment, Edit Brought Forward
 
     4. Create Cash Book
@@ -94,7 +94,7 @@ PRIORITY 1
             CANNOT REPLICATE THIS
 
         If field errors occur in the grid they are marked by a red tip in the bottom right of the cell.  This isn't
-        exactly obvious so we reallly need a banner at the top which tells the user of the field errors.  Even better
+        exactly obvious so we really need a banner at the top which tells the user of the field errors.  Even better
         would be a simple widget which when clicked focuses on the error.  Imagine a grid with hundreds of rows.
         Without this widget it would be very boring looking for the error.
 
