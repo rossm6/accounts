@@ -54,6 +54,7 @@ class PurchaseHeader(TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
     type_choices = no_analysis_required + analysis_required
+    cash_book = models.ForeignKey('cashbook.CashBook', on_delete=models.CASCADE, null=True, blank=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,

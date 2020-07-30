@@ -320,6 +320,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
 
     def create_total_nominal_transaction(self, header, details):
+
         """
         Whereas create_nominal_transactions will create the goods and vat
         nominal entries per each line of analysis, this will create the
@@ -603,8 +604,31 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             self.line_formset = self.get_line_formset(self.header_obj)
             self.match_formset = self.get_match_formset(self.header_obj)
             if not self.requires_lines(self.header_form):
-                # e.g. processing payments on PL
                 if self.match_formset.is_valid():
+                    self.header_obj.save()
+                    self.header_has_been_saved = True
+                    try:
+                        control_account = Nominal.objects.get(name=self.control_account_name)
+                    except Nominal.DoesNotExist:
+                        control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE)
+                    nom_trans = []
+                    nom_trans += (self.create_total_nominal_transaction(
+                        self.header_obj,
+                        {
+                            'line': '1',
+                            'nominal': self.header_obj.cash_book.nominal, # will hit the DB again
+                            'value': self.header_obj.total
+                        }
+                    ))
+                    nom_trans += (self.create_total_nominal_transaction(
+                        self.header_obj,
+                        {
+                            'line': '2',
+                            'nominal': control_account,
+                            'value': -1 * self.header_obj.total
+                        }
+                    ))
+                    self.get_nominal_model().objects.bulk_create(nom_trans)
                     self.matching_is_valid()
                     messages.success(
                         request,
@@ -690,6 +714,7 @@ class BaseCreateTransaction(BaseTransaction):
                 self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
     def matching_is_valid(self):
+        # Q - This flag may be obsolete now
         if not hasattr(self, 'header_has_been_saved'):
             self.header_obj.save()
         matches = []

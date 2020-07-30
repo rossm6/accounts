@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
     # ours
     'accountancy',
+    'cashbook',
     'items',
     'nominals',
     'purchases',

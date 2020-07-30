@@ -43,6 +43,7 @@ class DecimalBaseModel(models.Model):
 
 class TransactionHeader(DecimalBaseModel):
     """
+
     Base transaction which can be sub classed.
     Subclasses will likely need to include a
     type property.  And a proxy model for each
@@ -50,6 +51,7 @@ class TransactionHeader(DecimalBaseModel):
     class.
 
     Examples below for sales ledger
+    
     """
     statuses = [
         ("c", "cleared"),

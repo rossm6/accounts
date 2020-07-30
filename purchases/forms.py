@@ -45,7 +45,7 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
 
     class Meta:
         model = PurchaseHeader
-        fields = ('supplier', 'ref', 'date', 'due_date', 'total', 'type', 'period')
+        fields = ('cash_book', 'supplier', 'ref', 'date', 'due_date', 'total', 'type', 'period')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -62,6 +62,7 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
 
         if type in self._meta.model.payment_type:
             payment_form = True
+            self.fields["cash_book"].required = True
         else:
             payment_form = False
 

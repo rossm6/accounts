@@ -6,6 +6,7 @@ from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
 from accountancy.testing.helpers import *
+from cashbook.models import CashBook
 from items.models import Item
 from nominals.models import Nominal, NominalTransaction
 from utils.helpers import sort_multiple
@@ -13,7 +14,6 @@ from vat.models import Vat
 
 from ..helpers import create_invoices, create_lines, create_payments
 from ..models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
-
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
@@ -2420,8 +2420,10 @@ class CreatePayment(TestCase):
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
 
-        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+        # Cash book
+        cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
 
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         cls.url = reverse("purchases:create")
 
 
@@ -2452,6 +2454,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -2498,6 +2501,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -2550,7 +2554,8 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "pp",
+            "cash_book": self.cash_book.pk,   
+                "type": "pp",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -2616,7 +2621,8 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "pp",
+            "cash_book": self.cash_book.pk,   
+                "type": "pp",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -2675,7 +2681,8 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "pp",
+            "cash_book": self.cash_book.pk,   
+                "type": "pp",
             "supplier": self.supplier.pk,
             "ref": self.ref,
             "date": self.date,
@@ -2710,6 +2717,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -2763,6 +2771,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -2843,6 +2852,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -2864,7 +2874,8 @@ class CreatePayment(TestCase):
         # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
-        headers = PurchaseHeader.objects.all()
+        headers = PurchaseHeader.objects.all().order_by("-pk")
+        # this was seemingly ordering by primary key in ascending order but now does not.  So added order_by('-pk').
         self.assertEqual(len(headers), 25)
         header = headers[0]
         self.assertEqual(
@@ -2921,6 +2932,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -2968,6 +2980,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3021,6 +3034,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3074,6 +3088,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3154,6 +3169,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3232,6 +3248,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3279,6 +3296,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3350,6 +3368,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3396,6 +3415,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3441,6 +3461,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3485,6 +3506,7 @@ class CreatePayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -3534,11 +3556,17 @@ class EditPayment(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
 
+        # ASSETS
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.bank_nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
 
+        cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.bank_nominal)
 
     """
 
@@ -3627,6 +3655,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -3717,6 +3746,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -3813,6 +3843,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -3903,6 +3934,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4001,6 +4033,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4100,6 +4133,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4193,6 +4227,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment0",
@@ -4293,6 +4328,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4410,6 +4446,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4527,6 +4564,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4648,6 +4686,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4767,6 +4806,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -4881,6 +4921,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -5004,6 +5045,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": "payment",
@@ -5129,6 +5171,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -5235,6 +5278,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -5339,6 +5383,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -5446,6 +5491,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -5553,6 +5599,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -5658,6 +5705,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -5770,6 +5818,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -5884,6 +5933,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": 99999999,
                 "ref": headers[0].ref,
@@ -5995,6 +6045,7 @@ class EditPayment(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
+                "cash_book": self.cash_book.pk,   
                 "type": "pp",
                 "supplier": self.supplier.pk,
                 "ref": headers[0].ref,
@@ -14350,3 +14401,187 @@ class CreateBroughtForwardInvoice(TestCase):
             )
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(len(nom_trans), 0)
+
+
+
+class CreatePaymentNominalEntries(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.ref = "test matching"
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+
+        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        cls.description = "a line description"
+
+        # ASSETS
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
+        # LIABILITIES
+        liabilities = Nominal.objects.create(name="Liabilities")
+        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
+        cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+
+        cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
+
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+        cls.url = reverse("purchases:create")
+
+
+    # CORRECT USAGE
+    # A payment with no matching
+    def test_zero_invoice_with_analysis(self):
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            -120
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+            # 1 is the bank nominal
+            # 1 is the control account
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )

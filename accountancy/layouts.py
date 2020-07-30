@@ -31,6 +31,15 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                         PlainField(generic_to_fields_map.get("type", "type"), css_class=( "input input-disabled text-left border" if read_only else "transaction-type-select")),
                         css_class="form-group mr-2"
                     ),
+                    ( 
+                        Div(
+                            LabelAndFieldAndErrors('cash_book', css_class=( "input input-disabled text-left border" if read_only else "cashbook-select")),
+                            css_class="form-group mr-2"
+                        ) 
+                        if payment_form 
+                        else 
+                        HTML('') 
+                    ),
                     Div(
                         Div(
                             Div(

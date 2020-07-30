@@ -1,6 +1,6 @@
 Objectives -
 
-    1. Create Payment
+    1. Create Payment with nominal transactions
     2. Edit Invoice, Edit Payment, Edit Brought Forward
 
     4. Create Cash Book
@@ -85,6 +85,10 @@ PRIORITY 1
         The select2 widget probably should be replaced with selectize which is what we are using in create / edit views.
 
     ERRORS -
+
+        We call match_formset.is_valid() even though the header may have failed.  This will cause errors because the
+        clean method of the match formset presupposes a match_by attribute.  I need to create a test which covers
+        this possibility and of course fix the problem.
 
         I created a payment for 120.00 and on editing tried to match 150.00 of the same invoice it was already matched to.
         The error was about the lines not equalling the total.  This didn't make sense because it was a payment.

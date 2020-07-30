@@ -75,7 +75,8 @@ class NominalTransaction(DecimalBaseModel):
     # and we only need the header and line number anyway to group within
     # the nominal transactions table
     header = models.PositiveIntegerField()
-    line = models.PositiveIntegerField()
+    line = models.PositiveIntegerField() # if a line transaction is created e.g. Purchase or Nominal Line, this will just be the primary key of the line record
+    # but sometimes there won't be any lines e.g. a payment.  So the line will have to be set manually
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     value = models.DecimalField(
         decimal_places=2,
