@@ -1,6 +1,5 @@
 Objectives -
 
-    1. Create Payment with nominal transactions
     2. Edit Invoice, Edit Payment, Edit Brought Forward
 
     4. Create Cash Book

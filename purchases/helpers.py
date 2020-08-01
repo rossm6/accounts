@@ -2,6 +2,9 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from nominals.models import NominalTransaction
+from utils.helpers import sort_multiple
+
 from .models import Invoice, Payment, PurchaseHeader, PurchaseLine, Supplier
 
 PERIOD = '202007'
@@ -68,3 +71,67 @@ def create_payments(supplier, ref_prefix, n, value=100):
         )
         payments.append(p)
     return PurchaseHeader.objects.bulk_create(payments)
+
+
+
+def create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal):
+    header = PurchaseHeader.objects.create(**header)
+    lines = create_lines(header, lines)
+    nom_trans = []
+    for line in lines:
+        if line.goods:
+            nom_trans.append(
+                NominalTransaction(
+                    module="PL",
+                    header=header.pk,
+                    line=line.pk,
+                    nominal=line.nominal,
+                    value=line.goods,
+                    ref=header.ref,
+                    period=header.period,
+                    date=header.date,
+                    field="g",
+                    type=header.type
+                )
+            )
+        if line.vat:
+            nom_trans.append(
+                NominalTransaction(
+                    module="PL",
+                    header=header.pk,
+                    line=line.pk,
+                    nominal=vat_nominal,
+                    value=line.vat,
+                    ref=header.ref,
+                    period=header.period,
+                    date=header.date,
+                    field="v",
+                    type=header.type
+                )
+            )
+        if line.goods or line.vat:
+            nom_trans.append(
+                NominalTransaction(
+                    module="PL",
+                    header=header.pk,
+                    line=line.pk,
+                    nominal=control_nominal,
+                    value= -1 * (line.goods + line.vat),
+                    ref=header.ref,
+                    period=header.period,
+                    date=header.date,
+                    field="t",
+                    type=header.type
+                )
+            )
+    nom_trans = NominalTransaction.objects.bulk_create(nom_trans)
+    nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.line, False) ])
+    goods_and_vat = nom_trans[:-1]
+    for i, line in enumerate(lines):
+        line.goods_nominal_transaction = nom_trans[ 3 * i ]
+        line.vat_nominal_transaction = nom_trans[ (3 * i) + 1 ]
+        line.total_nominal_transaction = nom_trans[ (3 * i) + 2 ]
+    PurchaseLine.objects.bulk_update(
+        lines, 
+        ["goods_nominal_transaction", "vat_nominal_transaction", "total_nominal_transaction"]
+    )

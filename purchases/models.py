@@ -88,6 +88,7 @@ class PurchaseLine(TransactionLine):
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Vat Code")
     goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="purchase_good_line")
     vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="purchase_vat_line")
+    total_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="purchase_total_line")
 
     # It does not make sense that a line would exist without a nominal transaction but the purchase line is created
     # before the nominal transaction so it must do the create without the id for the nominal transaction

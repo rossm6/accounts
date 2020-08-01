@@ -607,28 +607,31 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 if self.match_formset.is_valid():
                     self.header_obj.save()
                     self.header_has_been_saved = True
-                    try:
-                        control_account = Nominal.objects.get(name=self.control_account_name)
-                    except Nominal.DoesNotExist:
-                        control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE)
-                    nom_trans = []
-                    nom_trans += (self.create_total_nominal_transaction(
-                        self.header_obj,
-                        {
-                            'line': '1',
-                            'nominal': self.header_obj.cash_book.nominal, # will hit the DB again
-                            'value': self.header_obj.total
-                        }
-                    ))
-                    nom_trans += (self.create_total_nominal_transaction(
-                        self.header_obj,
-                        {
-                            'line': '2',
-                            'nominal': control_account,
-                            'value': -1 * self.header_obj.total
-                        }
-                    ))
-                    self.get_nominal_model().objects.bulk_create(nom_trans)
+                    if self.header_obj.total != 0:
+                        # create nominal transactions for new header only if it is non zero
+                        # zero value transactions are permitted to match only
+                        try:
+                            control_account = Nominal.objects.get(name=self.control_account_name)
+                        except Nominal.DoesNotExist:
+                            control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE)
+                        nom_trans = []
+                        nom_trans += (self.create_total_nominal_transaction(
+                            self.header_obj,
+                            {
+                                'line': '1',
+                                'nominal': self.header_obj.cash_book.nominal, # will hit the DB again
+                                'value': self.header_obj.total
+                            }
+                        ))
+                        nom_trans += (self.create_total_nominal_transaction(
+                            self.header_obj,
+                            {
+                                'line': '2',
+                                'nominal': control_account,
+                                'value': -1 * self.header_obj.total
+                            }
+                        ))
+                        self.get_nominal_model().objects.bulk_create(nom_trans)
                     self.matching_is_valid()
                     messages.success(
                         request,
@@ -700,7 +703,7 @@ class BaseCreateTransaction(BaseTransaction):
                 vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
             nominal_transactions = []
             for line in lines:
-                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)     
+                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal, )     
             if nominal_transactions:
                 nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
                 # THIS IS CRAZILY INEFFICIENT !!!!
@@ -732,7 +735,32 @@ class BaseCreateTransaction(BaseTransaction):
 
 
 
-class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
+
+
+
+class ControlAccountNominalMixin(object):
+
+    def create_nominal_transaction(self, header, line, vat_nominal, control_nominal):
+        trans = super().create_nominal_transaction(header, line, vat_nominal)
+        if trans and (line.goods + line.vat) != 0:
+            trans.append(
+                self.get_nominal_model()(
+                    module=self.module,
+                    header=header.pk,
+                    line=line.pk,
+                    nominal=control_nominal,
+                    value= -1 * (line.goods + line.vat),
+                    ref=header.ref,
+                    period=header.period,
+                    date=header.date,
+                    type=header.type,
+                    field="t"
+                )
+            )
+        return trans 
+
+
+class CreatePurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseCreateTransaction):
 
     def lines_are_valid(self):
         line_no = 1
@@ -756,26 +784,13 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
                     vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
                 except Nominal.DoesNotExist:
                     vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
-                nominal_transactions = []
-                total_line_value = 0
-                for line in lines:
-                    total_line_value = total_line_value + line.goods + line.vat
-                    nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal)  
                 try:
                     control_account = Nominal.objects.get(name=self.control_account_name) 
                 except Nominal.DoesNotExist:
                     control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
-                if (
-                    total_nominal_transaction := self.create_total_nominal_transaction(
-                            self.header_obj,
-                            {
-                                "line": line.pk + 1,
-                                "nominal": control_account,
-                                "value": -1 * total_line_value
-                            }
-                        )
-                    ):
-                        nominal_transactions += total_nominal_transaction
+                nominal_transactions = []
+                for line in lines:
+                    nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal, control_account)  
                 if nominal_transactions:
                     nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
                     # FIX ME - THIS IS CRAZILY INEFFICIENT FOR A LARGE NUMBER OF LINES !!!!
@@ -786,7 +801,7 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
                             if nominal_transaction.line == line.pk 
                         }
                         line.add_nominal_transactions(line_nominal_trans)
-                    self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
+                    self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction', 'total_nominal_transaction'])
 
 
 
@@ -925,6 +940,85 @@ class BaseEditTransaction(BaseTransaction):
             )
         kwargs["instance"] = self.header_to_edit
         return kwargs
+
+
+
+class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransaction):
+
+    def edit_nominal_transactions(self, nominal_trans, header, line, vat_nominal, control_nominal):
+        updated_trans = super().edit_nominal_transactions(nominal_trans, header, line, vat_nominal)
+        if updated_trans and "t" in nominal_trans:
+            tran = nominal_trans["t"]
+            tran.nominal = control_nominal
+            tran.value = -1 * (line.goods + line.vat)
+            tran.ref = header.ref
+            tran.period = header.period
+            tran.date = header.date
+            tran.type = header.type
+            updated_trans.append(tran)
+        return updated_trans
+
+    def lines_are_valid(self):
+        line_no = 1
+        self.header_obj.save() # this could have been updated by line formset clean method already
+        self.header_has_been_saved = True
+        self.line_formset.save(commit=False)
+        lines_to_delete = [ line.pk for line in self.line_formset.deleted_objects ]
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        forms = []
+        for form in line_forms:
+            if form.empty_permitted and form.has_changed():
+                forms.append(form)
+            elif not form.empty_permitted and form.instance.pk not in lines_to_delete:
+                forms.append(form)
+        updated = [] # list for lines to be updated
+        all_nominal_trans = self.get_nominal_model().objects.filter(header=self.header_obj.pk)
+        new_nominal_trans = []
+        updated_nominals = []
+        name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
+        try:
+            vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
+        except Nominal.DoesNotExist:
+            vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+        # DIFFERENCE TO PARENT CLASS
+        try:
+            control_account = Nominal.objects.get(name=self.control_account_name) 
+        except Nominal.DoesNotExist:
+            control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+        for form in forms:
+            if form.empty_permitted and form.has_changed():
+                form.instance.header = self.header_obj
+                form.instance.line_no = line_no
+                line_no = line_no + 1
+                new_nominal_trans += self.create_nominal_transaction(
+                    self.header_obj, 
+                    form.instance,
+                    vat_nominal,
+                    control_account
+                )
+            elif not form.empty_permitted:
+                form.instance.line_no = line_no
+                updated.append(form.instance)
+                line_no = line_no + 1
+                nominal_trans = {
+                    tran.field : tran
+                    for tran in all_nominal_trans
+                    if tran.line == form.instance.pk
+                }
+                updated_nominals += self.edit_nominal_transactions(
+                    nominal_trans,
+                    self.header_obj,
+                    form.instance,
+                    vat_nominal,
+                    control_account # THIS IS THE CONTROL DIFFERENCE TO THE PARENT CLASS !!!
+                )
+        self.get_line_model().objects.bulk_create(self.line_formset.new_objects)
+        # FIXED.  I was updating the objects in changed_objects but this is no good
+        # because i'm changing the line_no always
+        self.get_line_model().objects.line_bulk_update(updated)
+        self.get_nominal_model().objects.line_bulk_update(updated_nominals)
+        self.get_line_model().objects.filter(pk__in=lines_to_delete).delete()
+
 
 
 class BaseViewTransaction(BaseEditTransaction):

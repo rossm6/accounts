@@ -13,7 +13,7 @@ from django.views.generic import ListView
 from querystring_parser import parser
 
 from accountancy.forms import AdvancedTransactionSearchForm
-from accountancy.views import (CreatePurchaseOrSalesTransaction, BaseEditTransaction,
+from accountancy.views import (CreatePurchaseOrSalesTransaction, EditPurchaseOrSalesTransaction,
                                BaseTransactionsList, BaseViewTransaction,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
@@ -69,7 +69,7 @@ class CreateTransaction(CreatePurchaseOrSalesTransaction):
         return t
 
 
-class EditTransaction(BaseEditTransaction):
+class EditTransaction(EditPurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
