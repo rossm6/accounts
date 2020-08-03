@@ -38,13 +38,14 @@ class CreateTransaction(CreatePurchaseOrSalesTransaction):
         "prefix": "header",
         "override_choices": ["supplier"],
         "initial": {"total": 0},
-        
+
     }
     line = {
         "model": PurchaseLine,
         "formset": enter_lines,
         "prefix": "line",
-        "override_choices": ["item", "nominal"] # VAT would not work at the moment
+        # VAT would not work at the moment
+        "override_choices": ["item", "nominal"]
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
     }
@@ -80,7 +81,8 @@ class EditTransaction(EditPurchaseOrSalesTransaction):
         "model": PurchaseLine,
         "formset": enter_lines,
         "prefix": "line",
-        "override_choices": ["item", "nominal"] # VAT would not work at the moment
+        # VAT would not work at the moment
+        "override_choices": ["item", "nominal"]
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
     }
@@ -111,7 +113,8 @@ class ViewTransaction(BaseViewTransaction):
         "model": PurchaseLine,
         "formset": read_only_lines,
         "prefix": "line",
-        "override_choices": ["item", "nominal"] # VAT would not work at the moment
+        # VAT would not work at the moment
+        "override_choices": ["item", "nominal"]
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
     }
@@ -136,7 +139,7 @@ def void(request):
                 PurchaseMatching.objects
                 .filter(Q(matched_to=transaction_to_void) | Q(matched_by=transaction_to_void))
                 .select_related("matched_to")
-                .select_related("matched_by")        
+                .select_related("matched_by")
             )
             headers_to_update = []
             headers_to_update.append(transaction_to_void)
@@ -163,7 +166,8 @@ def void(request):
                 headers_to_update,
                 ["paid", "due", "status"]
             )
-            PurchaseMatching.objects.filter(pk__in=[ match.pk for match in matches ]).delete()
+            PurchaseMatching.objects.filter(
+                pk__in=[match.pk for match in matches]).delete()
             return JsonResponse(
                 data={
                     "success": success,
@@ -249,19 +253,23 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
 
     def get_queryset(self):
         if supplier := self.request.GET.get("s"):
-            q = PurchaseHeader.objects.filter(supplier=supplier).exclude(due__exact=0).order_by(*self.order_by())
+            q = PurchaseHeader.objects.filter(supplier=supplier).exclude(
+                due__exact=0).order_by(*self.order_by())
             if edit := self.request.GET.get("edit"):
-                matches = PurchaseMatching.objects.filter(Q(matched_to=edit) | Q(matched_by=edit))
-                matches = [ (match.matched_by_id, match.matched_to_id) for match in matches ]
+                matches = PurchaseMatching.objects.filter(
+                    Q(matched_to=edit) | Q(matched_by=edit))
+                matches = [(match.matched_by_id, match.matched_to_id)
+                           for match in matches]
                 matched_headers = list(chain(*matches))
-                pk_to_exclude = [ header for header in matched_headers ]
-                pk_to_exclude.append(edit) # at least exclude the record being edited itself !!!
+                pk_to_exclude = [header for header in matched_headers]
+                # at least exclude the record being edited itself !!!
+                pk_to_exclude.append(edit)
                 return q.exclude(pk__in=pk_to_exclude).order_by(*self.order_by())
             else:
                 return q
         else:
-            return PurchaseHeader.objects.none() 
-    
+            return PurchaseHeader.objects.none()
+
     def render_to_response(self, context, **response_kwargs):
         data = {
             "draw": int(self.request.GET.get('draw'), 0),
@@ -284,7 +292,7 @@ class LoadSuppliers(ListView):
                 ).filter(similarity__gt=0.3).order_by('-similarity')
             )
         return Supplier.objects.none()
-    
+
     def render_to_response(self, context, **response_kwargs):
         suppliers = []
         for supplier in context["page_obj"].object_list:
@@ -293,11 +301,12 @@ class LoadSuppliers(ListView):
                 "id": supplier.id
             }
             suppliers.append(s)
-        data = { "data": suppliers }
+        data = {"data": suppliers}
         return JsonResponse(data)
 
 
-load_options = input_dropdown_widget_load_options_factory(PurchaseLineForm(), 25)
+load_options = input_dropdown_widget_load_options_factory(
+    PurchaseLineForm(), 25)
 
 
 class TransactionEnquiry(BaseTransactionsList):
@@ -327,7 +336,7 @@ class TransactionEnquiry(BaseTransactionsList):
             .all()
             .values(
                 'id',
-                *[ field[0] for field in self.fields ]
+                *[field[0] for field in self.fields]
             )
             .order_by(*self.order_by())
         )
@@ -338,7 +347,8 @@ class TransactionEnquiry(BaseTransactionsList):
         # in context_data get the summed value for each
         self.all_queryset = PurchaseHeader.objects.all()
         self.awaiting_payment_queryset = PurchaseHeader.objects.exclude(due=0)
-        self.overdue_queryset = PurchaseHeader.objects.exclude(due=0).filter(due_date__lt=timezone.now())
+        self.overdue_queryset = PurchaseHeader.objects.exclude(
+            due=0).filter(due_date__lt=timezone.now())
         self.paid_queryset = PurchaseHeader.objects.filter(due=0)
         if group == "a":
             return self.all_queryset
@@ -349,7 +359,9 @@ class TransactionEnquiry(BaseTransactionsList):
         elif group == "p":
             return self.paid_queryset
 
-validate_choice = input_dropdown_widget_validate_choice_factory(PurchaseLineForm())
+
+validate_choice = input_dropdown_widget_validate_choice_factory(
+    PurchaseLineForm())
 
 create_on_the_fly_view = create_on_the_fly(
     nominal={

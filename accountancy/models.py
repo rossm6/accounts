@@ -51,7 +51,7 @@ class TransactionHeader(DecimalBaseModel):
     class.
 
     Examples below for sales ledger
-    
+
     """
     statuses = [
         ("c", "cleared"),
@@ -74,7 +74,7 @@ class TransactionHeader(DecimalBaseModel):
         decimal_places=2,
         max_digits=10,
         blank=True,
-        null=True   
+        null=True
     )
     total = models.DecimalField(
         decimal_places=2,
@@ -95,8 +95,10 @@ class TransactionHeader(DecimalBaseModel):
         null=True
     )
     date = models.DateField()
-    due_date = models.DateField(null=True, blank=True) # payments do not require due dates
-    period = models.CharField(max_length=6) # example 202001, 202002.  This way we can sort easily.
+    # payments do not require due dates
+    due_date = models.DateField(null=True, blank=True)
+    # example 202001, 202002.  This way we can sort easily.
+    period = models.CharField(max_length=6)
     status = models.CharField(max_length=2, choices=statuses, default="c")
 
     class Meta:
@@ -104,25 +106,24 @@ class TransactionHeader(DecimalBaseModel):
 
     @classmethod
     def get_types_requiring_analysis(cls):
-        return [ type[0] for type in cls.analysis_required ]
+        return [type[0] for type in cls.analysis_required]
 
     @classmethod
     def get_type_names_requiring_analysis(cls):
-        return [ type[1] for type in cls.analysis_required ]
+        return [type[1] for type in cls.analysis_required]
 
     @classmethod
     def get_types_requiring_lines(cls):
-        return [ type[0] for type in cls.lines_required ]
+        return [type[0] for type in cls.lines_required]
 
     @classmethod
     def get_type_names_requiring_lines(cls):
-        return [ type[1] for type in cls.lines_required ]
+        return [type[1] for type in cls.lines_required]
 
 
 # class Invoice(TransactionHeader):
 #     class Meta:
 #         proxy = True
-
 
 
 # class Receipt(TransactionHeader):
@@ -169,7 +170,8 @@ class MatchedHeaders(models.Model):
         blank=True,
         default=0
     )
-    period = models.CharField(max_length=6) # example 202001, 202002.  This way we can sort easily.
+    # example 202001, 202002.  This way we can sort easily.
+    period = models.CharField(max_length=6)
 
     class Meta:
         abstract = True

@@ -9,6 +9,7 @@ from .models import Invoice, Payment, PurchaseHeader, PurchaseLine, Supplier
 
 PERIOD = '202007'
 
+
 def create_suppliers(n):
     suppliers = []
     i = 0
@@ -30,7 +31,7 @@ def create_lines(header, lines):
         line["header"] = header
         tmp.append(PurchaseLine(**line))
     return PurchaseLine.objects.bulk_create(tmp)
-    
+
 
 def create_invoices(supplier, ref_prefix, n, value=100):
     date = timezone.now()
@@ -48,7 +49,7 @@ def create_invoices(supplier, ref_prefix, n, value=100):
             date=date,
             due_date=due_date,
             type="pi",
-            period=PERIOD 
+            period=PERIOD
         )
         invoices.append(i)
     return PurchaseHeader.objects.bulk_create(invoices)
@@ -62,16 +63,15 @@ def create_payments(supplier, ref_prefix, n, value=100):
         p = PurchaseHeader(
             supplier=supplier,
             ref=ref_prefix + str(i),
-            total= -1 * value,
+            total=-1 * value,
             paid=0,
-            due= -1 * value,
+            due=-1 * value,
             date=date,
             type="pp",
             period=PERIOD
         )
         payments.append(p)
     return PurchaseHeader.objects.bulk_create(payments)
-
 
 
 def create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal):
@@ -116,7 +116,7 @@ def create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal)
                     header=header.pk,
                     line=line.pk,
                     nominal=control_nominal,
-                    value= -1 * (line.goods + line.vat),
+                    value=-1 * (line.goods + line.vat),
                     ref=header.ref,
                     period=header.period,
                     date=header.date,
@@ -125,13 +125,14 @@ def create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal)
                 )
             )
     nom_trans = NominalTransaction.objects.bulk_create(nom_trans)
-    nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.line, False) ])
+    nom_trans = sort_multiple(nom_trans, *[(lambda n: n.line, False)])
     goods_and_vat = nom_trans[:-1]
     for i, line in enumerate(lines):
-        line.goods_nominal_transaction = nom_trans[ 3 * i ]
-        line.vat_nominal_transaction = nom_trans[ (3 * i) + 1 ]
-        line.total_nominal_transaction = nom_trans[ (3 * i) + 2 ]
+        line.goods_nominal_transaction = nom_trans[3 * i]
+        line.vat_nominal_transaction = nom_trans[(3 * i) + 1]
+        line.total_nominal_transaction = nom_trans[(3 * i) + 2]
     PurchaseLine.objects.bulk_update(
-        lines, 
-        ["goods_nominal_transaction", "vat_nominal_transaction", "total_nominal_transaction"]
+        lines,
+        ["goods_nominal_transaction", "vat_nominal_transaction",
+            "total_nominal_transaction"]
     )

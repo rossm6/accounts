@@ -44,8 +44,8 @@ class NominalLine(TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
-    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="nominal_good_line")
-    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.CASCADE, related_name="nominal_vat_line")
+    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_good_line")
+    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_vat_line")
 
     objects = NominalLineQuerySet.as_manager()
 

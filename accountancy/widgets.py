@@ -12,20 +12,20 @@ class InputDropDown(Widget):
     instead.  But to begin with I wanted to inherit from Widget
     so i had a better chance of getting the widget working how
     i wanted it to.
-    
+
     """
 
     template_name = "accountancy/widgets/input_with_dropdown.html"
     option_template_name = "accountancy/widgets/dropdown_options.html"
     option_inherits_attrs = False
-    checked_attribute = { 'data-selected': True }
+    checked_attribute = {'data-selected': True}
     add_id_index = False
 
     def __init__(self, attrs=None, choices=(), model_attrs={}):
         attrs.update(
             {
                 "data-widget": "input-dropdown-widget",
-                "type": "text" # FIX ME - this should be number sometimes
+                "type": "text"  # FIX ME - this should be number sometimes
             }
         )
         super().__init__(attrs)
@@ -52,9 +52,8 @@ class InputDropDown(Widget):
         value = self.format_value(value)
         yield from self.options(name, value, attrs)
 
-
     def build_data_model_attrs(self, model_attrs_and_values):
-        attrs = { attr[0] : attr[1] for attr in model_attrs_and_values }
+        attrs = {attr[0]: attr[1] for attr in model_attrs_and_values}
         tmp = {}
         for attr in attrs:
             if attr in self.model_attrs:
@@ -74,7 +73,6 @@ class InputDropDown(Widget):
         if id_ and self.add_id_index:
             id_ = '%s_%s' % (id_, index)
         return id_
-
 
     def optgroups(self, name, value, attrs=None):
         """Return a list of optgroups for this widget."""
@@ -104,7 +102,8 @@ class InputDropDown(Widget):
                 has_selected |= selected
                 model_attrs = None
                 if model_attrs_and_values:
-                    model_attrs = self.build_data_model_attrs(model_attrs_and_values[0])
+                    model_attrs = self.build_data_model_attrs(
+                        model_attrs_and_values[0])
                 subgroup.append(self.create_option(
                     name, subvalue, sublabel, selected, index,
                     subindex=subindex, attrs=attrs, model_attrs=model_attrs
@@ -135,16 +134,13 @@ class InputDropDown(Widget):
             'wrap_label': True,
         }
 
-
     def return_label(self, val, value, label):
         if val == value:
             if not val:
                 return ""
-            return label        
-
+            return label
 
     def get_label_and_model_attrs(self, value):
-
         """
 
         Copes with the simple -
@@ -154,7 +150,7 @@ class InputDropDown(Widget):
             and the slightly more complex,
 
             (Asset, [(3, Bank Account), (4, Prepayments)]) i.e. account choices which are roots and leaves
-            
+
         """
 
         # FIXED - when data was sent via POST 'value' was a string
@@ -173,15 +169,16 @@ class InputDropDown(Widget):
                 for val, _label, *model_attrs_and_values in label:
                     if l := self.return_label(val, value, _label):
                         if model_attrs_and_values:
-                            attrs = self.build_data_model_attrs(model_attrs_and_values[0])
+                            attrs = self.build_data_model_attrs(
+                                model_attrs_and_values[0])
                         break
             else:
                 if l := self.return_label(val, value, label):
                     if model_attrs_and_values:
-                        attrs = self.build_data_model_attrs(model_attrs_and_values[0])
+                        attrs = self.build_data_model_attrs(
+                            model_attrs_and_values[0])
                     break
         return (l, attrs)
-        
 
     def get_context(self, name, value, attrs):
         context = {}

@@ -33,7 +33,7 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
     def __iter__(self):
         if self.field.empty_label is not None:
             yield ("", self.field.empty_label)
-        tree = self.queryset # must be Model.objects.all().prefetch_related('children')
+        tree = self.queryset  # must be Model.objects.all().prefetch_related('children')
         leaves = []
         root_and_leaves = (None, leaves)
         for node in tree:
@@ -46,7 +46,6 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
                 leaves.append(self.choice(node))
         yield root_and_leaves
 
-
     def __len__(self):
         length = 0
         tree = self.queryset
@@ -54,7 +53,6 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
             if node.is_root_node() or node.is_leaf_node():
                 length = length + 1
         return length + (1 if self.field.empty_label is not None else 0)
-
 
 
 class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
@@ -70,7 +68,7 @@ class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
     def __iter__(self):
         if self.field.empty_label is not None:
             yield ("", self.field.empty_label)
-        tree = self.queryset # must be Model.objects.all().prefetch_related('children')
+        tree = self.queryset  # must be Model.objects.all().prefetch_related('children')
         children = []
         root_and_children = (None, children)
         for node in tree:
@@ -118,7 +116,7 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
     """
 
     def choice(self, obj):
-        c = super().choice(obj) # ('< class ModelChoiceIteratorValue>', 'some_label')
+        c = super().choice(obj)  # ('< class ModelChoiceIteratorValue>', 'some_label')
         value = c[0]
         label = c[1]
         fields = obj._meta.get_fields()
@@ -133,7 +131,6 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
             except:
                 pass
         return (value, label, tmp)
-
 
 
 class AjaxModelChoiceField(ModelChoiceField):
@@ -167,6 +164,7 @@ class RootAndChildrenModelChoiceField(ModelChoiceField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.iterator = RootAndChildrenModelChoiceIterator
+
 
 class AjaxRootAndLeavesModelChoiceField(AjaxModelChoiceField, RootAndLeavesModelChoiceField):
     pass

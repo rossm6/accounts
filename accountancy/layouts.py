@@ -5,7 +5,6 @@ from accountancy.forms import PlainField, LabelAndFieldAndErrors
 
 
 def create_transaction_header_helper(generic_to_fields_map, payment_form=False, read_only=False):
-
     """
 
     This will returns the standard header help for transaction forms
@@ -28,58 +27,64 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                 Div(
                     Div(
                         # this field does not show errrors but there shouldn't ever be any errors for this field
-                        PlainField(generic_to_fields_map.get("type", "type"), css_class=( "input input-disabled text-left border" if read_only else "transaction-type-select")),
+                        PlainField(generic_to_fields_map.get("type", "type"), css_class=(
+                            "input input-disabled text-left border" if read_only else "transaction-type-select")),
                         css_class="form-group mr-2"
                     ),
-                    ( 
+                    (
                         Div(
-                            LabelAndFieldAndErrors('cash_book', css_class=( "input input-disabled text-left border" if read_only else "cashbook-select")),
+                            LabelAndFieldAndErrors('cash_book', css_class=(
+                                "input input-disabled text-left border" if read_only else "cashbook-select")),
                             css_class="form-group mr-2"
-                        ) 
-                        if payment_form 
-                        else 
-                        HTML('') 
+                        )
+                        if payment_form
+                        else
+                        HTML('')
                     ),
                     Div(
                         Div(
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class=( "input input-disabled text-left border" if read_only else "supplier-select")), # FIX ME - change to contact-select
+                                LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class=(
+                                    "input input-disabled text-left border" if read_only else "supplier-select")),  # FIX ME - change to contact-select
                                 css_class="form-group mr-2"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                    "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                    "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2 position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                    "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2 position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("due_date", "due_date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relativen" + ( " d-none" if payment_form else "")
+                                LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                    "due_date", "due_date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                css_class="form-group mr-2 position-relativen" + \
+                                (" d-none" if payment_form else "")
                             ),
-                            css_class="d-flex justify-content-between" 
+                            css_class="d-flex justify-content-between"
                         ),
                         Div(
-                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                            LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                             css_class="form-group"
                         ),
                         css_class="mb-4 d-flex justify-content-between"
                     ),
                 )
             )
-    
+
     return StandardHeaderHelper()
 
 
-
-
 def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
-
     """
 
     This will returns the standard header help for transaction forms
@@ -102,32 +107,37 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
                 Div(
                     Div(
                         # this field does not show errrors but there shouldn't ever be any errors for this field
-                        PlainField(generic_to_fields_map.get("type", "type"), css_class=( "input input-disabled text-left border" if read_only else "transaction-type-select")),
+                        PlainField(generic_to_fields_map.get("type", "type"), css_class=(
+                            "input input-disabled text-left border" if read_only else "transaction-type-select")),
                         css_class="form-group mr-2"
                     ),
                     Div(
                         Div(
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                    "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                    "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2 position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors(generic_to_fields_map.get("date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                                LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                    "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                 css_class="form-group mr-2 position-relative"
                             ),
-                            css_class="d-flex justify-content-between" 
+                            css_class="d-flex justify-content-between"
                         ),
                         Div(
-                            LabelAndFieldAndErrors(generic_to_fields_map.get("total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
+                            LabelAndFieldAndErrors(generic_to_fields_map.get(
+                                "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                             css_class="form-group"
                         ),
                         css_class="mb-4 d-flex justify-content-between"
                     ),
                 )
             )
-    
+
     return StandardHeaderHelper()

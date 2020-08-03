@@ -1,5 +1,7 @@
 Objectives -
 
+    1. BaseTransactionMixin in accountancy.forms needs to be fixed.  See note in code.
+
     2. Edit Invoice, Edit Payment, Edit Brought Forward
 
     4. Create Cash Book

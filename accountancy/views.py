@@ -34,6 +34,7 @@ def format_dates(objects, date_keys, format):
                 except AttributeError:
                     pass
 
+
 def get_search_vectors(searchable_fields):
     search_vectors = [
         SearchVector(field)
@@ -51,15 +52,14 @@ def get_trig_vectors(searchable_fields, search_text):
 
 
 def input_dropdown_widget_validate_choice_factory(form):
-
     """
 
     Given a form which contains input dropdown widgets
     this will return a view which can be called via ajax
     to validate a choice selected in the widget.
-    
+
     """
-    
+
     def validate(request):
         data = {}
         data["success"] = False
@@ -83,7 +83,6 @@ def input_dropdown_widget_validate_choice_factory(form):
 
 
 def input_dropdown_widget_load_options_factory(form, paginate_by):
-
     """
     Forms, or formsets, which have multiple
     input dropdown widgets, need a single view
@@ -116,9 +115,9 @@ def input_dropdown_widget_load_options_factory(form, paginate_by):
                     raise Http404("No searchfields found for searching")
                 queryset = (
                     queryset.annotate(
-                            search=get_search_vectors(searchable_fields)
-                        )
-                        .filter(search=search)
+                        search=get_search_vectors(searchable_fields)
+                    )
+                    .filter(search=search)
                 )
             paginator = Paginator(queryset, paginate_by)
             page_number = request.GET.get('page', 1)
@@ -141,8 +140,8 @@ def input_dropdown_widget_load_options_factory(form, paginate_by):
             # the widget will add a data-selected attribute
             # to the option which has value matching this field_value
             return render(
-                request, 
-                widget.template_name, 
+                request,
+                widget.template_name,
                 widget.get_context(str(field), field_value, widget.attrs)
             )
         else:
@@ -151,13 +150,12 @@ def input_dropdown_widget_load_options_factory(form, paginate_by):
     return load
 
 
-
-
 class jQueryDataTable(object):
 
     def order_by(self):
-        ordering = [] # will pass this to ORM to order the fields correctly
-        d = parser.parse(self.request.GET.urlencode()) # create objects out of GET params
+        ordering = []  # will pass this to ORM to order the fields correctly
+        # create objects out of GET params
+        d = parser.parse(self.request.GET.urlencode())
         improved = {}
         for key in d:
             val = d[key]
@@ -182,7 +180,7 @@ class jQueryDataTable(object):
                             order_by = order.get("dir")
                             if order_by in ["asc", "desc"]:
                                 ordering.append(
-                                    ( "" if order_by == "asc" else "-") + field_name
+                                    ("" if order_by == "asc" else "-") + field_name
                                 )
                     except IndexError as e:
                         break
@@ -190,7 +188,7 @@ class jQueryDataTable(object):
 
 
 class BaseTransactionsList(jQueryDataTable, ListView):
-    
+
     # at the moment we assume these fields exist
     # but may want to make this configurable at later stage
     def apply_advanced_search(self, cleaned_data):
@@ -202,9 +200,9 @@ class BaseTransactionsList(jQueryDataTable, ListView):
         if search:
             queryset = (
                 queryset.annotate(
-                        search=get_search_vectors(self.searchable_fields)
-                    )
-                    .filter(search=search)
+                    search=get_search_vectors(self.searchable_fields)
+                )
+                .filter(search=search)
             )
         if start_date:
             q_object_start_date = Q()
@@ -224,8 +222,8 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 
     def get_context_data(self, **kwargs):
         context_data = {}
-        context_data["columns"] = [ field[0] for field in self.fields]
-        context_data["column_labels"] = [ field[1] for field in self.fields ]
+        context_data["columns"] = [field[0] for field in self.fields]
+        context_data["column_labels"] = [field[1] for field in self.fields]
         if self.request.is_ajax() and self.request.method == "GET" and self.request.GET.get('use_adv_search'):
             form = self.advanced_search_form_class(data=self.request.GET)
             # form = AdvancedTransactionSearchForm(data=self.request.GET)
@@ -266,7 +264,7 @@ class BaseTransactionsList(jQueryDataTable, ListView):
         format_dates(rows, self.datetime_fields, self.datetime_format)
         context_data["data"] = rows
         return context_data
-        
+
     def render_to_response(self, context, **response_kwargs):
         if self.request.is_ajax():
             data = {
@@ -277,7 +275,6 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             }
             return JsonResponse(data)
         return super().render_to_response(context, **response_kwargs)
-
 
 
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
@@ -318,9 +315,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             )
         return trans
 
-
     def create_total_nominal_transaction(self, header, details):
-
         """
         Whereas create_nominal_transactions will create the goods and vat
         nominal entries per each line of analysis, this will create the
@@ -342,13 +337,13 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                         type=header.type,
                         field="t"
                     )
-                ])
-
+                    ])
 
     def get_success_url(self):
         if creation_type := self.request.POST.get('approve'):
             if creation_type == "add_another":
-                return self.request.get_full_path() # the relative path including the GET parameters e.g. /purchases/create?t=i
+                # the relative path including the GET parameters e.g. /purchases/create?t=i
+                return self.request.get_full_path()
         return self.success_url
 
     def get_context_data(self, **kwargs):
@@ -370,11 +365,14 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
         if 'requires_lines' not in kwargs:
-            kwargs['requires_lines'] = self.requires_lines(kwargs["header_form"]) # as self.header_form not set for GET requests
-        
+            # as self.header_form not set for GET requests
+            kwargs['requires_lines'] = self.requires_lines(
+                kwargs["header_form"])
+
         if hasattr(self, 'create_on_the_fly'):
             for form in self.create_on_the_fly:
-                kwargs[form] = self.create_on_the_fly[form] # this is a form instance already
+                # this is a form instance already
+                kwargs[form] = self.create_on_the_fly[form]
 
         return super().get_context_data(**kwargs)
 
@@ -384,7 +382,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             self.lines_are_invalid()
         self.matching_is_invalid()
         return self.render_to_response(self.get_context_data())
-        
+
     def matching_is_invalid(self):
         self.match_formset = self.get_match_formset()
         if self.match_formset:
@@ -415,10 +413,9 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                     for choice in override_choices:
                         field = form.fields[choice]
                         if chosen := form.cleaned_data.get(choice):
-                            field.widget.choices = [ (chosen.pk, str(chosen)) ]
+                            field.widget.choices = [(chosen.pk, str(chosen))]
                         else:
                             field.widget.choices = []
-
 
     def header_is_invalid(self):
         if self.header_form.non_field_errors():
@@ -429,7 +426,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             for choice in override_choices:
                 field = form.fields[choice]
                 if chosen := form.cleaned_data.get(choice):
-                    field.widget.choices = [ (chosen.pk, str(chosen)) ]
+                    field.widget.choices = [(chosen.pk, str(chosen))]
                 else:
                     field.widget.choices = []
 
@@ -465,7 +462,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             kwargs.update({
                 'data': self.request.POST,
             })
-        
+
         return kwargs
 
     def get_line_formset_queryset(self):
@@ -494,7 +491,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         else:
             brought_forward = False
 
-        kwargs["brought_forward"] = brought_forward 
+        kwargs["brought_forward"] = brought_forward
         # need to tell the formset the forms contained should have the nominal and vat code field hidden
 
         return kwargs
@@ -505,7 +502,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
     def get_match_formset_queryset(self):
         return self.get_match_model().objects.none()
-
 
     def get_match_formset_kwargs(self, header=None):
 
@@ -519,7 +515,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             kwargs.update({
                 'data': self.request.POST,
             })
-        
+
         return kwargs
 
     def requires_analysis(self, header_form):
@@ -562,7 +558,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         form_class = self.header.get('form')
         self.header_form = form_class(**self.get_header_form_kwargs())
         return self.header_form
-        
+
     def get_line_formset(self, header=None):
         if hasattr(self, 'line'):
             if hasattr(self, 'line_formset'):
@@ -579,8 +575,8 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 formset_class = self.match.get('formset')
                 return formset_class(**self.get_match_formset_kwargs(header))
 
-    
     # MIGHT BE OBSOLETE NOW
+
     def header_is_payment_type(self):
         return self.header_obj.type in ("pbp", "pp", "pbr", "pr")
 
@@ -600,7 +596,8 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
         self.header_form = self.get_header_form()
         if self.header_form.is_valid():
-            self.header_obj = self.header_form.save(commit=False) # changed name from header because this is a cls attribute of course
+            # changed name from header because this is a cls attribute of course
+            self.header_obj = self.header_form.save(commit=False)
             self.line_formset = self.get_line_formset(self.header_obj)
             self.match_formset = self.get_match_formset(self.header_obj)
             if not self.requires_lines(self.header_form):
@@ -611,15 +608,17 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                         # create nominal transactions for new header only if it is non zero
                         # zero value transactions are permitted to match only
                         try:
-                            control_account = Nominal.objects.get(name=self.control_account_name)
+                            control_account = Nominal.objects.get(
+                                name=self.control_account_name)
                         except Nominal.DoesNotExist:
-                            control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE)
+                            control_account = Nominal.objects.get(
+                                name=settings.DEFAULT_SYSTEM_SUSPENSE)
                         nom_trans = []
                         nom_trans += (self.create_total_nominal_transaction(
                             self.header_obj,
                             {
                                 'line': '1',
-                                'nominal': self.header_obj.cash_book.nominal, # will hit the DB again
+                                'nominal': self.header_obj.cash_book.nominal,  # will hit the DB again
                                 'value': self.header_obj.total
                             }
                         ))
@@ -635,14 +634,15 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                     self.matching_is_valid()
                     messages.success(
                         request,
-                        'Transaction successfully created' # may want to change this
+                        'Transaction successfully created'  # may want to change this
                     )
                 else:
                     return self.invalid_forms()
             else:
                 if self.line_formset and self.match_formset:
                     if self.line_formset.is_valid() and self.match_formset.is_valid():
-                        self.lines_are_valid() # has to come before matching_is_valid because this formset could alter header_obj
+                        # has to come before matching_is_valid because this formset could alter header_obj
+                        self.lines_are_valid()
                         self.matching_is_valid()
                         messages.success(
                             request,
@@ -669,7 +669,7 @@ class BaseCreateTransaction(BaseTransaction):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["create"] = True # some javascript templates depend on this
+        context["create"] = True  # some javascript templates depend on this
         return context
 
     def get_header_form_kwargs(self):
@@ -683,9 +683,11 @@ class BaseCreateTransaction(BaseTransaction):
     def lines_are_valid(self):
         line_no = 1
         lines = []
-        self.header_obj.save() # this could have been updated by line formset clean method already
+        # this could have been updated by line formset clean method already
+        self.header_obj.save()
         self.header_has_been_saved = True
-        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
+        ) else self.line_formset
         for form in line_forms:
             if form.empty_permitted and form.has_changed():
                 line = form.save(commit=False)
@@ -700,21 +702,26 @@ class BaseCreateTransaction(BaseTransaction):
             try:
                 vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
             except Nominal.DoesNotExist:
-                vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+                # bult into system so cannot not exist
+                vat_nominal = Nominal.objects.get(
+                    name=settings.DEFAULT_SYSTEM_SUSPENSE)
             nominal_transactions = []
             for line in lines:
-                nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal, )     
+                nominal_transactions += self.create_nominal_transaction(
+                    self.header_obj, line, vat_nominal, )
             if nominal_transactions:
-                nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
+                nominal_transactions = self.get_nominal_model(
+                ).objects.bulk_create(nominal_transactions)
                 # THIS IS CRAZILY INEFFICIENT !!!!
                 for line in lines:
                     line_nominal_trans = {
-                        nominal_transaction.field : nominal_transaction
-                        for nominal_transaction in nominal_transactions 
-                        if nominal_transaction.line == line.pk 
+                        nominal_transaction.field: nominal_transaction
+                        for nominal_transaction in nominal_transactions
+                        if nominal_transaction.line == line.pk
                     }
                     line.add_nominal_transactions(line_nominal_trans)
-                self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
+                self.get_line_model().objects.bulk_update(
+                    lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
     def matching_is_valid(self):
         # Q - This flag may be obsolete now
@@ -734,10 +741,6 @@ class BaseCreateTransaction(BaseTransaction):
             self.get_match_model().objects.bulk_create(matches)
 
 
-
-
-
-
 class ControlAccountNominalMixin(object):
 
     def create_nominal_transaction(self, header, line, vat_nominal, control_nominal):
@@ -749,7 +752,7 @@ class ControlAccountNominalMixin(object):
                     header=header.pk,
                     line=line.pk,
                     nominal=control_nominal,
-                    value= -1 * (line.goods + line.vat),
+                    value=-1 * (line.goods + line.vat),
                     ref=header.ref,
                     period=header.period,
                     date=header.date,
@@ -757,7 +760,7 @@ class ControlAccountNominalMixin(object):
                     field="t"
                 )
             )
-        return trans 
+        return trans
 
 
 class CreatePurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseCreateTransaction):
@@ -765,9 +768,11 @@ class CreatePurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseCreateTra
     def lines_are_valid(self):
         line_no = 1
         lines = []
-        self.header_obj.save() # this could have been updated by line formset clean method already
+        # this could have been updated by line formset clean method already
+        self.header_obj.save()
         self.header_has_been_saved = True
-        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
+        ) else self.line_formset
         for form in line_forms:
             if form.empty_permitted and form.has_changed():
                 line = form.save(commit=False)
@@ -783,26 +788,33 @@ class CreatePurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseCreateTra
                 try:
                     vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
                 except Nominal.DoesNotExist:
-                    vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+                    # bult into system so cannot not exist
+                    vat_nominal = Nominal.objects.get(
+                        name=settings.DEFAULT_SYSTEM_SUSPENSE)
                 try:
-                    control_account = Nominal.objects.get(name=self.control_account_name) 
+                    control_account = Nominal.objects.get(
+                        name=self.control_account_name)
                 except Nominal.DoesNotExist:
-                    control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+                    # bult into system so cannot not exist
+                    control_account = Nominal.objects.get(
+                        name=settings.DEFAULT_SYSTEM_SUSPENSE)
                 nominal_transactions = []
                 for line in lines:
-                    nominal_transactions += self.create_nominal_transaction(self.header_obj, line, vat_nominal, control_account)  
+                    nominal_transactions += self.create_nominal_transaction(
+                        self.header_obj, line, vat_nominal, control_account)
                 if nominal_transactions:
-                    nominal_transactions = self.get_nominal_model().objects.bulk_create(nominal_transactions)
+                    nominal_transactions = self.get_nominal_model(
+                    ).objects.bulk_create(nominal_transactions)
                     # FIX ME - THIS IS CRAZILY INEFFICIENT FOR A LARGE NUMBER OF LINES !!!!
                     for line in lines:
                         line_nominal_trans = {
-                            nominal_transaction.field : nominal_transaction
-                            for nominal_transaction in nominal_transactions 
-                            if nominal_transaction.line == line.pk 
+                            nominal_transaction.field: nominal_transaction
+                            for nominal_transaction in nominal_transactions
+                            if nominal_transaction.line == line.pk
                         }
                         line.add_nominal_transactions(line_nominal_trans)
-                    self.get_line_model().objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction', 'total_nominal_transaction'])
-
+                    self.get_line_model().objects.bulk_update(lines, [
+                        'goods_nominal_transaction', 'vat_nominal_transaction', 'total_nominal_transaction'])
 
 
 class BaseEditTransaction(BaseTransaction):
@@ -812,9 +824,9 @@ class BaseEditTransaction(BaseTransaction):
         pk = kwargs.get('pk')
         header = get_object_or_404(self.get_header_model(), pk=pk)
         self.header_to_edit = header
-        
-    def edit_nominal_transactions(self, nominal_trans, header, line, vat_nominal):
-        updated_trans = []
+
+    def edit_or_delete_nominal_transactions(self, nominal_trans, header, line, vat_nominal):
+
         if 'g' in nominal_trans:
             tran = nominal_trans["g"]
             tran.nominal = line.nominal
@@ -823,7 +835,6 @@ class BaseEditTransaction(BaseTransaction):
             tran.period = header.period
             tran.date = header.date
             tran.type = header.type
-            updated_trans.append(tran)
         if 'v' in nominal_trans:
             tran = nominal_trans["v"]
             tran.nominal = vat_nominal
@@ -832,8 +843,28 @@ class BaseEditTransaction(BaseTransaction):
             tran.period = header.period
             tran.date = header.date
             tran.type = header.type
-            updated_trans.append(tran)
-        return updated_trans
+
+        if line.goods or line.vat:
+            line_should_be_deleted = False
+        else:
+            line_should_be_deleted = True
+
+        if line_should_be_deleted:
+            self.lines_to_delete.append(line)
+
+        if 'g' in nominal_trans:
+            if nominal_trans["g"].value:
+                self.nom_trans_to_update.append(nominal_trans["g"])
+            else:
+                self.nom_trans_to_delete.append(nominal_trans["g"])
+                line.goods_nominal_transaction = None
+        if 'v' in nominal_trans:
+            if nominal_trans["v"].value:
+                self.nom_trans_to_update.append(nominal_trans["v"])
+            else:
+                self.nom_trans_to_delete.append(nominal_trans["v"])
+                line.vat_nominal_transaction = None
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -842,33 +873,38 @@ class BaseEditTransaction(BaseTransaction):
 
     def lines_are_valid(self):
         line_no = 1
-        self.header_obj.save() # this could have been updated by line formset clean method already
+        # this could have been updated by line formset clean method already
+        self.header_obj.save()
         self.header_has_been_saved = True
         self.line_formset.save(commit=False)
-        lines_to_delete = [ line.pk for line in self.line_formset.deleted_objects ]
-        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        self.lines_to_delete = self.line_formset.deleted_objects
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
+        ) else self.line_formset
         forms = []
         for form in line_forms:
             if form.empty_permitted and form.has_changed():
                 forms.append(form)
-            elif not form.empty_permitted and form.instance.pk not in lines_to_delete:
+            elif not form.empty_permitted and form.instance not in self.lines_to_delete:
                 forms.append(form)
-        updated = [] # list for lines to be updated
-        all_nominal_trans = self.get_nominal_model().objects.filter(header=self.header_obj.pk)
+        updated = []  # list for lines to be updated
+        all_nominal_trans = self.get_nominal_model(
+        ).objects.filter(header=self.header_obj.pk)
         new_nominal_trans = []
-        updated_nominals = []
+        self.nom_trans_to_update = []
         name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
         try:
             vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
         except Nominal.DoesNotExist:
-            vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+            # bult into system so cannot not exist
+            vat_nominal = Nominal.objects.get(
+                name=settings.DEFAULT_SYSTEM_SUSPENSE)
         for form in forms:
             if form.empty_permitted and form.has_changed():
                 form.instance.header = self.header_obj
                 form.instance.line_no = line_no
                 line_no = line_no + 1
                 new_nominal_trans += self.create_nominal_transaction(
-                    self.header_obj, 
+                    self.header_obj,
                     form.instance,
                     vat_nominal
                 )
@@ -877,11 +913,11 @@ class BaseEditTransaction(BaseTransaction):
                 updated.append(form.instance)
                 line_no = line_no + 1
                 nominal_trans = {
-                    tran.field : tran
+                    tran.field: tran
                     for tran in all_nominal_trans
                     if tran.line == form.instance.pk
                 }
-                updated_nominals += self.edit_nominal_transactions(
+                self.edit_or_delete_nominal_transactions(
                     nominal_trans,
                     self.header_obj,
                     form.instance,
@@ -891,25 +927,30 @@ class BaseEditTransaction(BaseTransaction):
         # FIXED.  I was updating the objects in changed_objects but this is no good
         # because i'm changing the line_no always
         self.get_line_model().objects.line_bulk_update(updated)
-        self.get_nominal_model().objects.line_bulk_update(updated_nominals)
-        self.get_line_model().objects.filter(pk__in=lines_to_delete).delete()
+        self.get_nominal_model().objects.line_bulk_update(self.nom_trans_to_update)
+        self.get_line_model().objects.filter(pk__in=[ line.pk for line in self.lines_to_delete ]).delete()
 
     def matching_is_valid(self):
         if not hasattr(self, 'header_has_been_saved'):
             self.header_obj.save()
         self.match_formset.save(commit=False)
-        new_matches = filter(lambda o: True if o.value else False, self.match_formset.new_objects)
+        new_matches = filter(
+            lambda o: True if o.value else False, self.match_formset.new_objects)
         self.get_match_model().objects.bulk_create(new_matches)
-        changed_objects = [ obj for obj, _tuple in self.match_formset.changed_objects ]
+        changed_objects = [obj for obj,
+                           _tuple in self.match_formset.changed_objects]
         # exclude zeros from update
-        to_update = filter(lambda o: True if o.value else False, changed_objects)
+        to_update = filter(
+            lambda o: True if o.value else False, changed_objects)
         # delete the zero values
-        to_delete = filter(lambda o: True if not o.value else False, changed_objects)
+        to_delete = filter(
+            lambda o: True if not o.value else False, changed_objects)
         self.get_match_model().objects.bulk_update(
             to_update,
-            [ 'value' ]
+            ['value']
         )
-        self.get_match_model().objects.filter(pk__in=[ o.pk for o in to_delete ]).delete()
+        self.get_match_model().objects.filter(
+            pk__in=[o.pk for o in to_delete]).delete()
         self.get_header_model().objects.bulk_update(
             self.match_formset.headers,
             ['due', 'paid']
@@ -942,12 +983,12 @@ class BaseEditTransaction(BaseTransaction):
         return kwargs
 
 
-
 class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransaction):
 
-    def edit_nominal_transactions(self, nominal_trans, header, line, vat_nominal, control_nominal):
-        updated_trans = super().edit_nominal_transactions(nominal_trans, header, line, vat_nominal)
-        if updated_trans and "t" in nominal_trans:
+    def edit_or_delete_nominal_transactions(self, nominal_trans, header, line, vat_nominal, control_nominal):
+        super().edit_or_delete_nominal_transactions(nominal_trans, header, line, vat_nominal)
+
+        if "t" in nominal_trans:
             tran = nominal_trans["t"]
             tran.nominal = control_nominal
             tran.value = -1 * (line.goods + line.vat)
@@ -955,43 +996,59 @@ class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransac
             tran.period = header.period
             tran.date = header.date
             tran.type = header.type
-            updated_trans.append(tran)
-        return updated_trans
+
+        if 't' in nominal_trans:
+            if nominal_trans["t"].value:
+                self.nom_trans_to_update.append(nominal_trans["t"])
+            else:
+                self.nom_trans_to_delete.append(nominal_trans["t"])
+                line.total_nominal_transaction = None
 
     def lines_are_valid(self):
         line_no = 1
-        self.header_obj.save() # this could have been updated by line formset clean method already
+        # this could have been updated by line formset clean method already
+        self.header_obj.save()
         self.header_has_been_saved = True
         self.line_formset.save(commit=False)
-        lines_to_delete = [ line.pk for line in self.line_formset.deleted_objects ]
-        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered() else self.line_formset
+        self.lines_to_delete = self.line_formset.deleted_objects
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
+        ) else self.line_formset
         forms = []
         for form in line_forms:
             if form.empty_permitted and form.has_changed():
                 forms.append(form)
-            elif not form.empty_permitted and form.instance.pk not in lines_to_delete:
+            elif not form.empty_permitted and form.instance not in self.lines_to_delete:
                 forms.append(form)
-        updated = [] # list for lines to be updated
-        all_nominal_trans = self.get_nominal_model().objects.filter(header=self.header_obj.pk)
+        updated = []  # list for lines to be updated
+        all_nominal_trans = self.get_nominal_model(
+        ).objects.filter(header=self.header_obj.pk)
         new_nominal_trans = []
-        updated_nominals = []
+        self.nom_trans_to_delete = []
+        self.nom_trans_to_update = []
         name_of_vat_nominal = settings.DEFAULT_VAT_NOMINAL
         try:
             vat_nominal = Nominal.objects.get(name=name_of_vat_nominal)
         except Nominal.DoesNotExist:
-            vat_nominal = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+            # bult into system so cannot not exist
+            vat_nominal = Nominal.objects.get(
+                name=settings.DEFAULT_SYSTEM_SUSPENSE)
         # DIFFERENCE TO PARENT CLASS
         try:
-            control_account = Nominal.objects.get(name=self.control_account_name) 
+            control_account = Nominal.objects.get(
+                name=self.control_account_name)
         except Nominal.DoesNotExist:
-            control_account = Nominal.objects.get(name=settings.DEFAULT_SYSTEM_SUSPENSE) # bult into system so cannot not exist
+            # bult into system so cannot not exist
+            control_account = Nominal.objects.get(
+                name=settings.DEFAULT_SYSTEM_SUSPENSE)
+
+
         for form in forms:
             if form.empty_permitted and form.has_changed():
                 form.instance.header = self.header_obj
                 form.instance.line_no = line_no
                 line_no = line_no + 1
                 new_nominal_trans += self.create_nominal_transaction(
-                    self.header_obj, 
+                    self.header_obj,
                     form.instance,
                     vat_nominal,
                     control_account
@@ -1001,24 +1058,33 @@ class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransac
                 updated.append(form.instance)
                 line_no = line_no + 1
                 nominal_trans = {
-                    tran.field : tran
+                    tran.field: tran
                     for tran in all_nominal_trans
                     if tran.line == form.instance.pk
                 }
-                updated_nominals += self.edit_nominal_transactions(
+                self.edit_or_delete_nominal_transactions(
                     nominal_trans,
                     self.header_obj,
                     form.instance,
                     vat_nominal,
-                    control_account # THIS IS THE CONTROL DIFFERENCE TO THE PARENT CLASS !!!
+                    control_account  # THIS IS THE CONTROL DIFFERENCE TO THE PARENT CLASS !!!
                 )
+
+        for line in self.lines_to_delete:
+            nominal_trans = [
+                tran
+                for tran in all_nominal_trans
+                if tran.line == line.pk
+            ]
+            self.nom_trans_to_delete += nominal_trans
+
         self.get_line_model().objects.bulk_create(self.line_formset.new_objects)
         # FIXED.  I was updating the objects in changed_objects but this is no good
         # because i'm changing the line_no always
         self.get_line_model().objects.line_bulk_update(updated)
-        self.get_nominal_model().objects.line_bulk_update(updated_nominals)
-        self.get_line_model().objects.filter(pk__in=lines_to_delete).delete()
-
+        self.get_nominal_model().objects.line_bulk_update(self.nom_trans_to_update)
+        self.get_nominal_model().objects.filter(pk__in=[ nom_tran.pk for nom_tran in self.nom_trans_to_delete ]).delete()
+        self.get_line_model().objects.filter(pk__in=[ line.pk for line in self.lines_to_delete ]).delete()
 
 
 class BaseViewTransaction(BaseEditTransaction):
@@ -1027,8 +1093,9 @@ class BaseViewTransaction(BaseEditTransaction):
         context = super().get_context_data(**kwargs)
         context["edit"] = False
         context["view"] = self.header_to_edit.pk
-        context["void_form"] = self.void_form(prefix="void", initial={"id": self.header_to_edit.pk})
-        return context    
+        context["void_form"] = self.void_form(
+            prefix="void", initial={"id": self.header_to_edit.pk})
+        return context
 
     def post(self, request, *args, **kwargs):
         # read only view
@@ -1038,7 +1105,6 @@ class BaseViewTransaction(BaseEditTransaction):
 
 
 def create_on_the_fly(**forms):
-    
     """
     Rather than have a multiple views for all the different
     objects which can be created on the fly we have one
@@ -1049,13 +1115,14 @@ def create_on_the_fly(**forms):
             form_name = request.POST.get("form")
             if form_name in forms:
                 prefix = forms[form_name].get("prefix")
-                form = forms[form_name]["form"](data=request.POST, prefix=prefix)
+                form = forms[form_name]["form"](
+                    data=request.POST, prefix=prefix)
                 success = False
                 if form.is_valid():
                     success = True
                     inst = form.save()
                     if 'serializer' in forms[form_name]:
-                        data=forms[form_name]["serializer"](inst)
+                        data = forms[form_name]["serializer"](inst)
                     else:
                         data = {
                             'success': success,

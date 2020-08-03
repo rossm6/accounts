@@ -32,6 +32,7 @@ A note on formsets -
 
 """
 
+
 class QuickSupplierForm(forms.ModelForm):
     """
     Used to create a supplier on the fly in the transaction views
@@ -45,7 +46,8 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
 
     class Meta:
         model = PurchaseHeader
-        fields = ('cash_book', 'supplier', 'ref', 'date', 'due_date', 'total', 'type', 'period')
+        fields = ('cash_book', 'supplier', 'ref', 'date',
+                  'due_date', 'total', 'type', 'period')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,7 +56,7 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         # to include the GET parameter but this means adding a further script to
         # the edit view on the clientside because we do not reload the edit view on changing
         # the type
-        
+
         if self.data:
             type = self.data.get(self.prefix + "-" + "type")
         else:
@@ -78,7 +80,8 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         if not self.data and not self.instance.pk:
             self.fields["supplier"].queryset = Supplier.objects.none()
         if self.instance.pk:
-            self.fields["supplier"].queryset = Supplier.objects.filter(pk=self.instance.supplier_id)
+            self.fields["supplier"].queryset = Supplier.objects.filter(
+                pk=self.instance.supplier_id)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -95,11 +98,13 @@ class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].disabled = True
-        self.fields["type"].widget = forms.TextInput(attrs={"class": "w-100 input"})
+        self.fields["type"].widget = forms.TextInput(
+            attrs={"class": "w-100 input"})
         self.fields["supplier"].widget = forms.TextInput()
         supplier = self.fields["supplier"].queryset[0]
         self.initial["supplier"] = str(supplier)
-        if self.initial.get('type') in self._meta.model.get_types_requiring_analysis(): # FIX ME - we need a global way of checking this
+        # FIX ME - we need a global way of checking this
+        if self.initial.get('type') in self._meta.model.get_types_requiring_analysis():
             # as we are repeating ourselves
             transaction_requires_analysis = True
         else:
@@ -125,7 +130,7 @@ class PurchaseLineFormset(BaseLineFormset):
 
     def get_form_kwargs(self, index):
         if index is None:
-            # we are getting form kwargs for new empty_form only - 
+            # we are getting form kwargs for new empty_form only -
             # https://github.com/django/django/blob/master/django/forms/formsets.py
             # see method of same name
             kwargs = super().get_form_kwargs(index)
@@ -134,7 +139,6 @@ class PurchaseLineFormset(BaseLineFormset):
             })
             return kwargs
         return super().get_form_kwargs(index)
-
 
     def clean(self):
         super().clean()
@@ -150,7 +154,7 @@ class PurchaseLineFormset(BaseLineFormset):
                 if not form.cleaned_data.get("DELETE"):
                     goods += form.instance.goods
                     vat += form.instance.vat
-                    total += ( form.instance.goods + form.instance.vat )
+                    total += (form.instance.goods + form.instance.vat)
         if self.header.total != 0 and self.header.total != total:
             raise forms.ValidationError(
                 _(
@@ -164,7 +168,8 @@ class PurchaseLineFormset(BaseLineFormset):
         if not self.header.pk:
             # IMPORTANT TO ONLY SET THIS IF WE ARE CREATING
             self.header.due = total
-        
+
+
 line_css_classes = {
     "Td": {
         "item": "h-100 w-100 border-0",
@@ -176,13 +181,14 @@ line_css_classes = {
     }
 }
 
+
 class PurchaseLineForm(AjaxForm):
 
     item = AjaxModelChoiceField(
         get_queryset=Item.objects.none(),
         load_queryset=Item.objects.all(),
         post_queryset=Item.objects.all(),
-        inst_queryset= lambda inst : Item.objects.filter(pk=inst.item_id),
+        inst_queryset=lambda inst: Item.objects.filter(pk=inst.item_id),
         widget=InputDropDown(
             attrs={
                 "data-new": "#new_item",
@@ -206,7 +212,7 @@ class PurchaseLineForm(AjaxForm):
         get_queryset=Nominal.objects.none(),
         load_queryset=Nominal.objects.all().prefetch_related("children"),
         post_queryset=Nominal.objects.filter(children__isnull=True),
-        inst_queryset= lambda inst : Nominal.objects.filter(pk=inst.nominal_id),
+        inst_queryset=lambda inst: Nominal.objects.filter(pk=inst.nominal_id),
         searchable_fields=('name',)
     )
 
@@ -223,7 +229,7 @@ class PurchaseLineForm(AjaxForm):
         get_queryset=Vat.objects.none(),
         load_queryset=Vat.objects.all(),
         post_queryset=Vat.objects.all(),
-        inst_queryset= lambda inst : Vat.objects.filter(pk=inst.vat_code_id),
+        inst_queryset=lambda inst: Vat.objects.filter(pk=inst.vat_code_id),
         searchable_fields=('code', 'rate',),
         iterator=ModelChoiceIteratorWithFields
     )
@@ -231,8 +237,10 @@ class PurchaseLineForm(AjaxForm):
     class Meta:
         model = PurchaseLine
         # WHY DO WE INCLUDE THE ID?
-        fields = ('id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
-        ajax_fields = ('item', 'nominal', 'vat_code', ) # used in Transaction form set_querysets method
+        fields = ('id', 'item', 'description', 'goods',
+                  'nominal', 'vat_code', 'vat',)
+        # used in Transaction form set_querysets method
+        ajax_fields = ('item', 'nominal', 'vat_code', )
 
     def __init__(self, *args, **kwargs):
 
@@ -311,9 +319,9 @@ class ReadOnlyPurchaseLineForm(PurchaseLineForm):
 
 enter_lines = forms.modelformset_factory(
     PurchaseLine,
-    form=PurchaseLineForm, 
-    formset=PurchaseLineFormset, 
-    extra=5, 
+    form=PurchaseLineForm,
+    formset=PurchaseLineFormset,
+    extra=5,
     can_order=True,
     can_delete=True
 )
@@ -326,7 +334,7 @@ read_only_lines = forms.modelformset_factory(
     formset=PurchaseLineFormset,
     extra=0,
     can_order=True,
-    can_delete=True # both these keep the django crispy form template happy
+    can_delete=True  # both these keep the django crispy form template happy
     # there are of no actual use for the user
 )
 
@@ -363,16 +371,22 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     """
 
-    type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(attrs={"disabled": True, "readonly": True})) 
+    type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(
+        attrs={"disabled": True, "readonly": True}))
     # readonly not permitted for select element so disable used and on client we enable the element before the form is submitted
-    ref = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"readonly": True}))
-    total = forms.DecimalField(decimal_places=2, max_digits=10, widget=forms.NumberInput(attrs={"readonly": True}))
-    paid = forms.DecimalField(decimal_places=2, max_digits=10, widget=forms.NumberInput(attrs={"readonly": True}))
-    due = forms.DecimalField(decimal_places=2, max_digits=10, widget=forms.NumberInput(attrs={"readonly": True}))
+    ref = forms.CharField(
+        max_length=20, widget=forms.TextInput(attrs={"readonly": True}))
+    total = forms.DecimalField(
+        decimal_places=2, max_digits=10, widget=forms.NumberInput(attrs={"readonly": True}))
+    paid = forms.DecimalField(decimal_places=2, max_digits=10,
+                              widget=forms.NumberInput(attrs={"readonly": True}))
+    due = forms.DecimalField(decimal_places=2, max_digits=10,
+                             widget=forms.NumberInput(attrs={"readonly": True}))
 
     class Meta:
         model = PurchaseMatching
-        fields = ('matched_by','matched_to', 'value', 'id') # matched_to is only needed for create
+        # matched_to is only needed for create
+        fields = ('matched_by', 'matched_to', 'value', 'id')
         widgets = {
             'matched_by': forms.TextInput(attrs={"readonly": True}),
             'matched_to': forms.TextInput(attrs={"readonly": True}),
@@ -384,7 +398,7 @@ class PurchaseMatchingForm(forms.ModelForm):
         # but with a formset the keyword argument will not be passed
 
         if 'match_by' in kwargs:
-            if match_by := kwargs.get('match_by'): # match_by could be None
+            if match_by := kwargs.get('match_by'):  # match_by could be None
                 self.match_by = match_by
             kwargs.pop("match_by")
 
@@ -418,7 +432,8 @@ class PurchaseMatchingForm(forms.ModelForm):
             if self.match_by.pk:
                 self.data = self.data.copy()
                 # we are editing a transaction in the system
-                self.data[self.prefix + "-" + "matched_by"] = self.initial.get('matched_by', self.match_by.pk)
+                self.data[self.prefix + "-" +
+                          "matched_by"] = self.initial.get('matched_by', self.match_by.pk)
         if not self.instance.pk and self.data:
             # creating a new transaction
             # matched_by is not required at form level therefore
@@ -426,7 +441,7 @@ class PurchaseMatchingForm(forms.ModelForm):
             self.fields["matched_by"].required = False
 
         self.helpers = TableHelper(
-            ('type', 'ref', 'total', 'paid', 'due',) + 
+            ('type', 'ref', 'total', 'paid', 'due',) +
             PurchaseMatchingForm.Meta.fields,
             css_classes={
                 "Td": {
@@ -508,14 +523,12 @@ class PurchaseMatchingForm(forms.ModelForm):
                         )
                     )
 
-
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.matched_by = self.match_by
         if commit:
             instance.save()
         return instance
-
 
 
 class ReadOnlyPurchaseMatchingForm(PurchaseMatchingForm):
@@ -526,7 +539,7 @@ class ReadOnlyPurchaseMatchingForm(PurchaseMatchingForm):
             self.fields[field].disabled = True
 
         self.helpers = TableHelper(
-            ('type', 'ref', 'total', 'paid', 'due',) + 
+            ('type', 'ref', 'total', 'paid', 'due',) +
             PurchaseMatchingForm.Meta.fields,
             css_classes={
                 "Td": {
@@ -548,7 +561,7 @@ class ReadOnlyPurchaseMatchingForm(PurchaseMatchingForm):
                     'value': DataTableTdField,
                 }
             }
-        ).render()      
+        ).render()
 
 
 class PurchaseMatchingFormset(BaseTransactionModelFormSet):
@@ -576,11 +589,10 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
 
     def __init__(self, *args, **kwargs):
         if 'match_by' in kwargs:
-            if match_by := kwargs.get('match_by'): # match_by could be None
+            if match_by := kwargs.get('match_by'):  # match_by could be None
                 self.match_by = match_by
             kwargs.pop("match_by")
         super().__init__(*args, **kwargs)
-
 
     def _construct_form(self, i, **kwargs):
         if hasattr(self, 'match_by'):
@@ -588,11 +600,10 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
         form = super()._construct_form(i, **kwargs)
         return form
 
-
     def clean(self):
         super().clean()
         if(any(self.errors) or not hasattr(self, 'match_by')):
-            return 
+            return
         # when a header is being created for the first time only match records where the matched_by equals the new header are possible
         # for edits it is possible to have many matched records where the matched_by equals the header being edited AND many matched records
         # where the matched_to equals the header being edited and the matched_by is another header.  However it is not possible to
@@ -604,10 +615,11 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                 # value
                 if 'value' in form.changed_data:
                     initial_value = form.initial.get("value", 0)
-                    value = form.instance.value - initial_value # change in value therefore
+                    value = form.instance.value - initial_value  # change in value therefore
                     form.instance.matched_to.due -= value
                     form.instance.matched_to.paid += value
-                    self.headers.append(form.instance.matched_to) # matched_to cannot be self.match_by here
+                    # matched_to cannot be self.match_by here
+                    self.headers.append(form.instance.matched_to)
                     overall_change_in_value += value
             else:
                 # value in matched relationship is the value of the matched_to MATCHED to matched_by
@@ -665,8 +677,7 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                         _(
                             f"Please ensure the total of the transactions you are matching is between 0 and {-1 * self.match_by.total}"
                         )
-                    )   
-
+                    )
 
 
 match = forms.modelformset_factory(
@@ -705,7 +716,8 @@ class VoidTransaction(forms.Form):
 
     def clean(self):
         try:
-            self.instance = PurchaseHeader.objects.get(pk=self.cleaned_data.get("id"))
+            self.instance = PurchaseHeader.objects.get(
+                pk=self.cleaned_data.get("id"))
         except:
             raise forms.ValidationError(
                 _(
