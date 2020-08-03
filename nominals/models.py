@@ -20,6 +20,8 @@ class NominalHeader(TransactionHeader):
     lines_required = [
         ('nj', 'Journal')
     ]
+    credits = []
+    debits = []
     type = models.CharField(
         max_length=2,
         choices=analysis_required

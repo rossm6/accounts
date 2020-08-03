@@ -1,13 +1,15 @@
 Objectives -
 
-    1. BaseTransactionMixin in accountancy.forms needs to be fixed.  See note in code.
-
-    2. Edit Invoice, Edit Payment, Edit Brought Forward
+    1. CreateCreditNote and EditCreditNote tests.  I am sure we do not flip the sign for the lines which is a major bug.
+    2. Edit Payment, Edit Brought Forward
+    3. What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
+       create the new nom trans from scratch.
 
     4. Create Cash Book
     5. Create the Sales ledger
 
     Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
+
 
 PRIORITY 1
 

@@ -223,7 +223,7 @@ class BaseTransactionMixin(object):
         if self.instance.pk:
             for field in self.fields:
                 if isinstance(self.fields[field], forms.DecimalField):
-                    if self.instance.type in ('pc', 'pp', 'pbc', 'pbp'): # FIX.  Should use the credit class attribute instead.
+                    if self.instance.type in self._meta.model.credits:
                         tmp = self.initial[field]
                         self.initial[field] = -1 * tmp
 
