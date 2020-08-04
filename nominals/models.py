@@ -27,6 +27,7 @@ class NominalHeader(TransactionHeader):
         choices=analysis_required
     )
 
+
 class NominalLineQuerySet(models.QuerySet):
 
     def line_bulk_update(self, instances):

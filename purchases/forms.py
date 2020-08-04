@@ -87,9 +87,10 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         cleaned_data = super().clean()
         type = cleaned_data.get("type")
         total = cleaned_data.get("total")
-        if total:
+        if type not in self._meta.model.get_types_requiring_lines():
             if type in self._meta.model.credits:
                 cleaned_data["total"] = -1 * total
+        # else it requires lines so this changing of the sign is done in line_formset.clean
         return cleaned_data
 
 
@@ -155,6 +156,7 @@ class PurchaseLineFormset(BaseLineFormset):
                     goods += form.instance.goods
                     vat += form.instance.vat
                     total += (form.instance.goods + form.instance.vat)
+
         if self.header.total != 0 and self.header.total != total:
             raise forms.ValidationError(
                 _(
@@ -162,12 +164,35 @@ class PurchaseLineFormset(BaseLineFormset):
                 ),
                 code="invalid-total"
             )
-        self.header.goods = goods
-        self.header.vat = vat
-        self.header.total = total
-        if not self.header.pk:
-            # IMPORTANT TO ONLY SET THIS IF WE ARE CREATING
-            self.header.due = total
+
+        header_type_is_credit = self.header.is_credit_type()
+
+        if header_type_is_credit:
+            for form in self.forms:
+                if not form.empty_permitted or (form.empty_permitted and form.has_changed()):
+                    if not form.cleaned_data.get("DELETE"):
+                        form.instance.goods = -1 * form.instance.goods
+                        form.instance.vat = -1 * form.instance.vat
+
+        if header_type_is_credit:
+            self.header.goods = -1 * goods
+            self.header.vat = -1 * vat
+            self.header.total = -1 * total
+        else:
+            self.header.goods = goods
+            self.header.vat = vat
+            self.header.total = total
+
+        # THIS SEEMS VERY ODD ON FIRST READING
+        # YOU WILL PROBABLY ASK YOURSELF HOW CAN WE SET DUE AT THIS POINT
+        # BECAUSE AN INVOICE FULLY PAID COULD HAVE BEEN LOWERED IN VALUE SO THE DUE WOULD BE NEGATIVE NOW
+        # E.G. A 1200 invoice is fully paid.  I.e. total = 1200, paid = 1200 and due = 0
+        # Now invoice is lowered to 1000.  So total = 1000, paid = 1200 and due = -200
+        # But if the invoice is paid the matching transactions will always be checked in full
+        # It is therefore in match_formset.clean that due is corrected
+        
+        # FOR TRANS WITHOUT LINES THIS IS SET IN THE CLEAN METHOD OF THE HEADER FORM
+        self.header.due = self.header.total - self.header.paid
 
 
 line_css_classes = {

@@ -351,10 +351,9 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # the user should never have the option to directly
-        # change the due amount or the paid amount
-        # paid will default to zero
-        instance.due = instance.total - instance.paid
+        if instance.type not in instance.get_types_requiring_lines():
+            instance.due = instance.total - instance.paid
+        # else the header total depends on the lines so set in line_formset.clean
         if commit:
             instance.save()
         return instance

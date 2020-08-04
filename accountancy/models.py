@@ -41,6 +41,7 @@ class DecimalBaseModel(models.Model):
                     setattr(self, field_name, Decimal(0.00))
 
 
+
 class TransactionHeader(DecimalBaseModel):
     """
 
@@ -104,6 +105,14 @@ class TransactionHeader(DecimalBaseModel):
     class Meta:
         abstract = True
 
+    def is_credit_type(self):
+        if self.type in self.credits:
+            return True
+
+    def is_debit_type(self):
+        if self.type in self.debits:
+            return True
+
     @classmethod
     def get_types_requiring_analysis(cls):
         return [type[0] for type in cls.analysis_required]
@@ -156,6 +165,12 @@ class TransactionLine(DecimalBaseModel):
         if "v" in nominal_trans:
             self.vat_nominal_transaction = nominal_trans["v"]
 
+
+    def is_non_zero(self):
+        if self.goods or self.vat:
+            return True
+        else:
+            return False
 
 class MatchedHeaders(models.Model):
     """

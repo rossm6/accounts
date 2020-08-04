@@ -1,6 +1,5 @@
 Objectives -
 
-    1. CreateCreditNote and EditCreditNote tests.  I am sure we do not flip the sign for the lines which is a major bug.
     2. Edit Payment, Edit Brought Forward
     3. What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
        create the new nom trans from scratch.
@@ -55,6 +54,11 @@ PRIORITY 1
         controlled instead.
 
     Tests
+
+        Create a negative input for a credit note.
+
+        Might be worth doing negative and positive basic inputs for all the others untested - refund, brought forward credit note etc
+        Also need to do basic matching tests
 
         Tests should be moved to the accountancy app.  This will mean creating special models just for tests - will
         need to read into the best way of doing this.  And when we come to say, include discount, we shouldn't

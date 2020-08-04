@@ -136,3 +136,15 @@ def create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal)
         ["goods_nominal_transaction", "vat_nominal_transaction",
             "total_nominal_transaction"]
     )
+
+
+
+def create_credit_note_with_nom_entries(header, lines, vat_nominal, control_nominal):
+    header["total"] = -1 * header["total"]
+    header["due"] = -1 * header["due"]
+    header["paid"] = -1 * header["paid"]
+    # lines is assumed to be of form [ {} ] * N
+    # thus each object is in fact the same object in memory
+    lines[0]["goods"] = -1 * lines[0]["goods"]
+    lines[0]["vat"] = -1 * lines[0]["vat"]
+    return create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal)

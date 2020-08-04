@@ -844,14 +844,6 @@ class BaseEditTransaction(BaseTransaction):
             tran.date = header.date
             tran.type = header.type
 
-        if line.goods or line.vat:
-            line_should_be_deleted = False
-        else:
-            line_should_be_deleted = True
-
-        if line_should_be_deleted:
-            self.lines_to_delete.append(line)
-
         if 'g' in nominal_trans:
             if nominal_trans["g"].value:
                 self.nom_trans_to_update.append(nominal_trans["g"])
@@ -909,9 +901,12 @@ class BaseEditTransaction(BaseTransaction):
                     vat_nominal
                 )
             elif not form.empty_permitted:
-                form.instance.line_no = line_no
-                updated.append(form.instance)
-                line_no = line_no + 1
+                if form.instance.is_non_zero():
+                    form.instance.line_no = line_no
+                    line_no = line_no + 1
+                    updated.append(form.instance)
+                else:
+                    self.lines_to_delete.append(form.instance)
                 nominal_trans = {
                     tran.field: tran
                     for tran in all_nominal_trans
@@ -986,6 +981,7 @@ class BaseEditTransaction(BaseTransaction):
 class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransaction):
 
     def edit_or_delete_nominal_transactions(self, nominal_trans, header, line, vat_nominal, control_nominal):
+
         super().edit_or_delete_nominal_transactions(nominal_trans, header, line, vat_nominal)
 
         if "t" in nominal_trans:
@@ -1041,7 +1037,7 @@ class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransac
             control_account = Nominal.objects.get(
                 name=settings.DEFAULT_SYSTEM_SUSPENSE)
 
-
+        # this loop 
         for form in forms:
             if form.empty_permitted and form.has_changed():
                 form.instance.header = self.header_obj
@@ -1054,9 +1050,12 @@ class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransac
                     control_account
                 )
             elif not form.empty_permitted:
-                form.instance.line_no = line_no
-                updated.append(form.instance)
-                line_no = line_no + 1
+                if form.instance.is_non_zero():
+                    form.instance.line_no = line_no
+                    line_no = line_no + 1
+                    updated.append(form.instance)
+                else:
+                    self.lines_to_delete.append(form.instance)
                 nominal_trans = {
                     tran.field: tran
                     for tran in all_nominal_trans
@@ -1069,6 +1068,7 @@ class EditPurchaseOrSalesTransaction(ControlAccountNominalMixin, BaseEditTransac
                     vat_nominal,
                     control_account  # THIS IS THE CONTROL DIFFERENCE TO THE PARENT CLASS !!!
                 )
+
 
         for line in self.lines_to_delete:
             nominal_trans = [
