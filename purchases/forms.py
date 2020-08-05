@@ -688,7 +688,7 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                 else:
                     raise forms.ValidationError(
                         _(
-                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.match_by.total}"
+                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.match_by.total }"
                         ),
                         code="invalid-match"
                     )
@@ -700,7 +700,7 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                 else:
                     raise forms.ValidationError(
                         _(
-                            f"Please ensure the total of the transactions you are matching is between 0 and {-1 * self.match_by.total}"
+                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.match_by.total }"
                         )
                     )
 

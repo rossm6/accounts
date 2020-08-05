@@ -12,8 +12,10 @@ from nominals.models import Nominal, NominalTransaction
 from utils.helpers import sort_multiple
 from vat.models import Vat
 
-from ..helpers import (create_invoice_with_nom_entries, create_invoices,
-                       create_lines, create_payments, create_credit_note_with_nom_entries)
+from ..helpers import (create_credit_note_with_nom_entries,
+                       create_invoice_with_nom_entries, create_invoices,
+                       create_lines, create_payment_with_nom_entries,
+                       create_payments)
 from ..models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 HEADER_FORM_PREFIX = "header"
@@ -3814,8 +3816,8 @@ class EditPayment(TestCase):
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
         invoices = create_invoices(self.supplier, "invoice", 2, 1000)
         match(payment, [ ( invoice, 500 ) for invoice in invoices ])
-
         headers = PurchaseHeader.objects.all()
+        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
         self.assertEqual(len(headers), 3)
         self.assertEqual(headers[0].pk, payment.pk)
         self.assertEqual(headers[0].total, -1000)
@@ -15605,7 +15607,6 @@ class CreatePaymentNominalEntries(TestCase):
 
 
     # CORRECT USAGE
-    # A payment with no matching
     def test_zero_payment(self):
 
         data = {}
@@ -19139,4 +19140,735 @@ class EditCreditNoteNominalEntries(TestCase):
         self.assertEqual(
             len(matches),
             0
+        )
+
+
+
+class EditPaymentNominalEntries(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.supplier = Supplier.objects.create(name="test_supplier")
+        cls.ref = "test matching"
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+
+        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        cls.description = "a line description"
+
+        # ASSETS
+        assets = Nominal.objects.create(name="Assets")
+        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
+
+        # LIABILITIES
+        liabilities = Nominal.objects.create(name="Liabilities")
+        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
+        cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
+        cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
+
+        cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
+
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+        cls.url = reverse("purchases:create")
+
+
+    # CORRECT USAGE
+    # A non-zero payment is reduced
+    def test_non_zero_payment(self):
+
+        create_payment_with_nom_entries(
+            {
+                "cash_book": self.cash_book,
+                "type": "pp",
+                "supplier": self.supplier,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120,
+                "due": 120,
+                "paid": 0,
+                "period": PERIOD
+            },
+            self.purchase_control,
+            self.nominal
+        )
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            -120
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+            # 1 is the bank nominal
+            # 1 is the control account
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 100
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        url = reverse("purchases:edit", kwargs={"pk": header.pk})
+        response = self.client.post(url, data)    
+        self.assertEqual(response.status_code, 302)
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            -100
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+            # 1 is the bank nominal
+            # 1 is the control account
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -100
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            100
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+
+
+
+    # CORRECT USAGE
+    def test_non_zero_payment_is_changed_to_zero(self):
+
+        create_payment_with_nom_entries(
+            {
+                "cash_book": self.cash_book,
+                "type": "pp",
+                "supplier": self.supplier,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120,
+                "due": 120,
+                "paid": 0,
+                "period": PERIOD
+            },
+            self.purchase_control,
+            self.nominal
+        )
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            -120
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+            # 1 is the bank nominal
+            # 1 is the control account
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against_orig = headers_to_match_against
+        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+
+        url = reverse("purchases:edit", kwargs={"pk": header.pk})
+        response = self.client.post(url, data)    
+        self.assertEqual(response.status_code, 302)
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 3)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            0
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+    # CORRECT USAGE
+    def test_zero_payment_is_changed_to_non_zero(self):
+
+        create_payment_with_nom_entries(
+            {
+                "cash_book": self.cash_book,
+                "type": "pp",
+                "supplier": self.supplier,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0,
+                "due": 0,
+                "paid": 0,
+                "period": PERIOD
+            },
+            self.purchase_control,
+            self.nominal
+        )
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            0
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+            # 1 is the bank nominal
+            # 1 is the control account
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        url = reverse("purchases:edit", kwargs={"pk": header.pk})
+        response = self.client.post(url, data)    
+        self.assertEqual(response.status_code, 302)
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            -120
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+            # 1 is the bank nominal
+            # 1 is the control account
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
         )

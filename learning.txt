@@ -1,8 +1,3 @@
-Django Model Save and Model Clean
-
-    It seems clean is called after calling save
-
-
 Django Crispy Forms
 
     I had thought you could specify a class on a widget directly in your form

@@ -138,6 +138,44 @@ def create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal)
     )
 
 
+def create_payment_with_nom_entries(header, control_nominal, bank_nominal):
+    header["total"] *= -1
+    header["due"] *= -1
+    header["paid"] *= -1
+    header["goods"] = 0
+    header["vat"] = 0
+    header = PurchaseHeader.objects.create(**header)
+    if header.total != 0:
+        nom_trans = []
+        nom_trans.append(
+            NominalTransaction(
+                module="PL",
+                header=header.pk,
+                line=1,
+                nominal=bank_nominal,
+                value=header.total,
+                ref=header.ref,
+                period=header.period,
+                date=header.date,
+                field="t",
+                type=header.type
+            )
+        )
+        nom_trans.append(
+            NominalTransaction(
+                module="PL",
+                header=header.pk,
+                line=2,
+                nominal=control_nominal,
+                value= -1 *header.total,
+                ref=header.ref,
+                period=header.period,
+                date=header.date,
+                field="t",
+                type=header.type
+            )
+        )
+        nom_trans = NominalTransaction.objects.bulk_create(nom_trans)
 
 def create_credit_note_with_nom_entries(header, lines, vat_nominal, control_nominal):
     header["total"] = -1 * header["total"]

@@ -1,6 +1,6 @@
 Objectives -
 
-    2. Edit Payment, Edit Brought Forward
+    2. Edit Payment, Edit Brought Forward Invoice. We also need to test create brought forward payment
     3. What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
        create the new nom trans from scratch.
 
@@ -12,28 +12,13 @@ Objectives -
 
 PRIORITY 1
 
-        What about brought forwards?  Payments will need nominal transactions
-        but brought forwards will not.
-
-        If the vat analysis is removed the nominal transaction needs deleting.
-        More generally nominal transactions which have zero values should be deleted.
-
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating
         this on the fly whilst the user edits, and, creates the transaction in the first place.
 
-    LINES - ANALYSIS
-
-        Nominal transactions with zero values should not be permitted
-
     VAT
 
-        The system should let you enter a VAT only invoice.  I.e. goods = 0 and vat = total
-
-        Brought forward transactions cannot select a vat code so vat cannot be analysed.  Instead
-        vat analsis must be enabled for nominal journals.  At the moment vat nominal entries
-        are created.  Later on we need to let the user choose whether this vat should be input
-        or output on the vat return.
+        Nominal journal header needs a output or input flag for the vat analysis
 
     SALES
 
@@ -54,6 +39,13 @@ PRIORITY 1
         controlled instead.
 
     Tests
+
+        If we set an ordering on the transaction header models we will need to add a order_by to our ORM queries
+        in the tests.  And probably for all of them ... what joy !
+
+        We call match_formset.is_valid() even though the header may have failed.  This will cause errors because the
+        clean method of the match formset presupposes a match_by attribute.  I need to create a test which covers
+        this possibility and of course fix the problem.
 
         Create a negative input for a credit note.
 

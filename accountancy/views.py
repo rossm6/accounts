@@ -604,33 +604,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 if self.match_formset.is_valid():
                     self.header_obj.save()
                     self.header_has_been_saved = True
-                    if self.header_obj.total != 0:
-                        # create nominal transactions for new header only if it is non zero
-                        # zero value transactions are permitted to match only
-                        try:
-                            control_account = Nominal.objects.get(
-                                name=self.control_account_name)
-                        except Nominal.DoesNotExist:
-                            control_account = Nominal.objects.get(
-                                name=settings.DEFAULT_SYSTEM_SUSPENSE)
-                        nom_trans = []
-                        nom_trans += (self.create_total_nominal_transaction(
-                            self.header_obj,
-                            {
-                                'line': '1',
-                                'nominal': self.header_obj.cash_book.nominal,  # will hit the DB again
-                                'value': self.header_obj.total
-                            }
-                        ))
-                        nom_trans += (self.create_total_nominal_transaction(
-                            self.header_obj,
-                            {
-                                'line': '2',
-                                'nominal': control_account,
-                                'value': -1 * self.header_obj.total
-                            }
-                        ))
-                        self.get_nominal_model().objects.bulk_create(nom_trans)
+                    self.create_or_update_header_with_no_lines_nom_trans()
                     self.matching_is_valid()
                     messages.success(
                         request,
@@ -666,6 +640,35 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
 
 class BaseCreateTransaction(BaseTransaction):
+
+    def create_or_update_header_with_no_lines_nom_trans(self):
+        # create nominal transactions for new header only if it is non zero
+        # zero value transactions are permitted to match only
+        if self.header_obj.total != 0:
+            try:
+                control_account = Nominal.objects.get(
+                    name=self.control_account_name)
+            except Nominal.DoesNotExist:
+                control_account = Nominal.objects.get(
+                    name=settings.DEFAULT_SYSTEM_SUSPENSE)
+            nom_trans = []
+            nom_trans += (self.create_total_nominal_transaction(
+                self.header_obj,
+                {
+                    'line': '1',
+                    'nominal': self.header_obj.cash_book.nominal,  # will hit the DB again
+                    'value': self.header_obj.total
+                }
+            ))
+            nom_trans += (self.create_total_nominal_transaction(
+                self.header_obj,
+                {
+                    'line': '2',
+                    'nominal': control_account,
+                    'value': -1 * self.header_obj.total
+                }
+            ))
+            self.get_nominal_model().objects.bulk_create(nom_trans)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -824,6 +827,53 @@ class BaseEditTransaction(BaseTransaction):
         pk = kwargs.get('pk')
         header = get_object_or_404(self.get_header_model(), pk=pk)
         self.header_to_edit = header
+
+    def create_or_update_header_with_no_lines_nom_trans(self):
+        nom_trans = self.get_nominal_model().objects.filter(header=self.header_obj.pk)
+        try:
+            control_account = Nominal.objects.get(
+                name=self.control_account_name)
+        except Nominal.DoesNotExist:
+            control_account = Nominal.objects.get(
+                name=settings.DEFAULT_SYSTEM_SUSPENSE)
+        if nom_trans and self.header_obj.total != 0:
+            # edit existing
+            if nom_trans[0].line == 1:
+                nom_trans[0].value = self.header_obj.total
+                nom_trans[0].nominal = self.header_obj.cash_book.nominal # will hit the db again
+                nom_trans[1].value = -1 * self.header_obj.total
+                nom_trans[1].nominal = control_account
+            else:
+                nom_trans[0].value = -1 * self.header_obj.total
+                nom_trans[0].nominal = control_account
+                nom_trans[1].value = self.header_obj.total
+                nom_trans[1].nominal = self.header_obj.cash_book.nominal # will hit the db again
+            self.get_nominal_model().objects.bulk_update(nom_trans, ["value", "nominal"])
+        elif nom_trans and self.header_obj.total == 0:
+            self.get_nominal_model().objects.filter(pk__in=[ t.pk for t in nom_trans ]).delete()
+        elif not nom_trans and nom_trans != 0:
+            # create nom trans
+            nom_trans = []
+            nom_trans += (self.create_total_nominal_transaction(
+                self.header_obj,
+                {
+                    'line': '1',
+                    'nominal': self.header_obj.cash_book.nominal,  # will hit the DB again
+                    'value': self.header_obj.total
+                }
+            ))
+            nom_trans += (self.create_total_nominal_transaction(
+                self.header_obj,
+                {
+                    'line': '2',
+                    'nominal': control_account,
+                    'value': -1 * self.header_obj.total
+                }
+            ))
+            self.get_nominal_model().objects.bulk_create(nom_trans)
+        else:
+            # do nothing is header is 0 and there are no trans
+            return
 
     def edit_or_delete_nominal_transactions(self, nominal_trans, header, line, vat_nominal):
 
