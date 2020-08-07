@@ -7,12 +7,15 @@ from vat.models import Vat
 
 from django.conf import settings
 
+
 class Nominal(MPTTModel):
     name = models.CharField(max_length=50, unique=True)
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = TreeForeignKey('self', on_delete=models.CASCADE,
+                            null=True, blank=True, related_name='children')
 
     def __str__(self):
         return self.name
+
 
 class NominalHeader(TransactionHeader):
     analysis_required = [
@@ -28,8 +31,7 @@ class NominalHeader(TransactionHeader):
         choices=analysis_required
     )
 
-
-    def create_nominal_transactions_for_line(self, nom_tran_cls, module, line, vat_nominal):
+    def _create_nominal_transactions_for_line(self, nom_tran_cls, module, line, vat_nominal):
         trans = []
         if line.goods != 0:
             trans.append(
@@ -63,21 +65,59 @@ class NominalHeader(TransactionHeader):
             )
         return trans
 
+    def _edit_nominal_transactions_for_line(self, nom_trans, line, vat_nominal):
+        if 'g' in nom_trans:
+            tran = nom_trans["g"]
+            tran.nominal = line.nominal
+            tran.value = line.goods
+            tran.ref = self.ref
+            tran.period = self.period
+            tran.date = self.date
+            tran.type = self.type
+        if 'v' in nom_trans:
+            tran = nom_trans["v"]
+            tran.nominal = vat_nominal
+            tran.value = line.vat
+            tran.ref = self.ref
+            tran.period = self.period
+            tran.date = self.date
+            tran.type = self.type
 
-    def create_nominal_transactions(self, nom_cls, nom_tran_cls, line_cls, module, vat_control_name, lines):
+        _nom_trans_to_update = []
+        _nom_trans_to_delete = []
+
+        if 'g' in nom_trans:
+            if nom_trans["g"].value:
+                _nom_trans_to_update.append(nominal_trans["g"])
+            else:
+                _nom_trans_to_delete.append(nominal_trans["g"])
+                line.goods_nominal_transaction = None
+        if 'v' in nom_trans:
+            if nom_trans["v"].value:
+                _nom_trans_to_update.append(nominal_trans["v"])
+            else:
+                _nom_trans_to_delete.append(nominal_trans["v"])
+                line.vat_nominal_transaction = None
+
+        return _nom_trans_to_update, _nom_trans_to_delete
+
+
+    def create_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
         try:
-            vat_nominal = nom_cls.objects.get(name=vat_control_name)
+            vat_nominal_name := kwargs.get("vat_nominal_name")
+            vat_nominal = nom_cls.objects.get(name=vat_nominal_name)
         except nom_cls.DoesNotExist:
             # bult into system so cannot not exist
             vat_nominal = nom_cls.objects.get(
                 name=settings.DEFAULT_SYSTEM_SUSPENSE)
         nominal_transactions = []
+        lines = kwargs.get("lines", [])
         for line in lines:
-            nominal_transactions += self.create_nominal_transaction_for_line(
+            nominal_transactions += self._create_nominal_transaction_for_line(
                 nom_tran_cls, module, line, vat_nominal
             )
         if nominal_transactions:
-            nominal_transactions = self.nom_tran_cls.objects.bulk_create(nominal_transactions)
+            nominal_transactions = nom_tran_cls.objects.bulk_create(nominal_transactions)
             # THIS IS CRAZILY INEFFICIENT !!!!
             for line in lines:
                 line_nominal_trans = {
@@ -86,12 +126,67 @@ class NominalHeader(TransactionHeader):
                     if nominal_transaction.line == line.pk
                 }
                 line.add_nominal_transactions(line_nominal_trans)
-            line_cls.objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
+            line_cls.objects.bulk_update(
+                lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
+    def edit_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
+        lines_to_update = []
+        new_nom_trans = []
+        nom_trans_to_update = []
+        nom_trans_to_delete = []
 
-    def edit_nominal_transactions():
-        pass
+        try:
+            vat_nominal_name = kwargs.get("vat_nominal_name")
+            vat_nominal = nom_cls.objects.get(name=vat_nominal_name)
+        except nom_cls.DoesNotExist:
+            # bult into system so cannot not exist
+            vat_nominal = nom_cls.objects.get(
+                name=settings.DEFAULT_SYSTEM_SUSPENSE)
+
+        line_no = 1
+        line_formset = kwargs.get('line_formset')
+        lines_to_create_or_update_only = kwargs.get('lines_to_create_or_update_only')
+        existing_nom_trans = kwargs.get('existing_nom_trans')
+        for form in lines_to_create_or_update_only:
+            if form.empty_permitted and form.has_changed():
+                form.instance.header = self
+                form.instance.line_no = line_no
+                line_no = line_no + 1
+                new_nom_trans += self._create_nominal_transactions_for_line(
+                    nom_tran_cls, module, form.instance, vat_nominal
+                )
+            elif not form.empty_permitted:
+                if form.instance.is_no_zero():
+                    form.instance.line_no = line_no
+                    line_no = line_no + 1
+                    lines_to_update.append(form.instance)
+                else:
+                    line_formset.deleted_objects.append(form.instance)
+                nominal_trans = {
+                    tran.field: tran
+                    for tran in existing_nom_trans
+                    if tran.line == form.instance.pk
+                }
+                to_update, to_update = self._edit_nominal_transactions_for_line(
+                    nominal_trans, form.instance, vat_nominal
+                )
+                nom_trans_to_update += to_update
+                nom_trans_to_delete += to_delete
+
+        line_cls = kwargs.get('line_cls')
+
+        line_cls.objects.bulk_create(line_formset.new_objects)
+        line_cls.objects.line_bulk_update(lines_to_update)
+        line_cls.objects.filter(pk__in=[ line.pk for line in line_formset.deleted_objects ]).delete()
+        nom_tran_cls.objects.bulk_create(new_nom_trans)
+        nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
+        nom_tran_cls.objects.filter(pk__in=[ nom_tran.pk for nom_trans in nom_trans_to_delete ]).delete()
         
+
+
+
+
+
 
 
 class NominalLineQuerySet(models.QuerySet):
@@ -109,14 +204,19 @@ class NominalLineQuerySet(models.QuerySet):
             ]
         )
 
+
 class NominalLine(TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
-    vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
-    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_good_line")
-    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_vat_line")
+    vat_code = models.ForeignKey(
+        Vat, on_delete=models.SET_NULL, null=True, verbose_name="Vat Code")
+    goods_nominal_transaction = models.ForeignKey(
+        'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_good_line")
+    vat_nominal_transaction = models.ForeignKey(
+        'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_vat_line")
 
     objects = NominalLineQuerySet.as_manager()
+
 
 all_module_types = PurchaseHeader.type_choices + NominalHeader.analysis_required
 
@@ -136,15 +236,17 @@ class NominalTransactionQuerySet(models.QuerySet):
             ]
         )
 
+
 class NominalTransaction(DecimalBaseModel):
-    module = models.CharField(max_length=3) # e.g. 'PL' for purchase ledger
+    module = models.CharField(max_length=3)  # e.g. 'PL' for purchase ledger
     # we don't bother with ForeignKeys to the header and line models
     # because this would require generic foreign keys which means extra overhead
     # in the SQL queries
     # and we only need the header and line number anyway to group within
     # the nominal transactions table
     header = models.PositiveIntegerField()
-    line = models.PositiveIntegerField() # if a line transaction is created e.g. Purchase or Nominal Line, this will just be the primary key of the line record
+    # if a line transaction is created e.g. Purchase or Nominal Line, this will just be the primary key of the line record
+    line = models.PositiveIntegerField()
     # but sometimes there won't be any lines e.g. a payment.  So the line will have to be set manually
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     value = models.DecimalField(
@@ -153,7 +255,7 @@ class NominalTransaction(DecimalBaseModel):
         blank=True,
         null=True
     )
-    ref = models.CharField(max_length=100) # CHECK LENGTH
+    ref = models.CharField(max_length=100)  # CHECK LENGTH
     period = models.CharField(max_length=6)
     date = models.DateField()
     created = models.DateTimeField(auto_now=True)
@@ -175,5 +277,6 @@ class NominalTransaction(DecimalBaseModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['module', 'header', 'line', 'field'], name="unique_batch")
+            models.UniqueConstraint(
+                fields=['module', 'header', 'line', 'field'], name="unique_batch")
         ]

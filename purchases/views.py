@@ -65,7 +65,7 @@ class CreateTransaction(CreatePurchaseOrSalesTransaction):
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
     module = "PL"
-    control_account_name = "Purchase Ledger Control"
+    control_nominal_name = "Purchase Ledger Control"
 
     # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
     def get_header_form_type(self):
@@ -103,7 +103,7 @@ class EditTransaction(EditPurchaseOrSalesTransaction):
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
     module = "PL"
-    control_account_name = "Purchase Ledger Control"
+    control_nominal_name = "Purchase Ledger Control"
 
 
 class ViewTransaction(BaseViewTransaction):
