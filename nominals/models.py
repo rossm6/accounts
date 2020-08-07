@@ -5,6 +5,7 @@ from accountancy.models import TransactionHeader, TransactionLine, DecimalBaseMo
 from purchases.models import PurchaseHeader
 from vat.models import Vat
 
+from django.conf import settings
 
 class Nominal(MPTTModel):
     name = models.CharField(max_length=50, unique=True)
@@ -26,6 +27,71 @@ class NominalHeader(TransactionHeader):
         max_length=2,
         choices=analysis_required
     )
+
+
+    def create_nominal_transactions_for_line(self, nom_tran_cls, module, line, vat_nominal):
+        trans = []
+        if line.goods != 0:
+            trans.append(
+                nom_tran_cls(
+                    module=module,
+                    header=self.pk,
+                    line=line.pk,
+                    nominal=line.nominal,
+                    value=line.goods,
+                    ref=self.ref,
+                    period=self.period,
+                    date=self.date,
+                    type=self.type,
+                    field="g"
+                )
+            )
+        if line.vat != 0:
+            trans.append(
+                nom_tran_cls(
+                    module=module,
+                    header=self.pk,
+                    line=line.pk,
+                    nominal=vat_nominal,
+                    value=line.vat,
+                    ref=self.ref,
+                    period=self.period,
+                    date=self.date,
+                    type=self.type,
+                    field="v"
+                )
+            )
+        return trans
+
+
+    def create_nominal_transactions(self, nom_cls, nom_tran_cls, line_cls, module, vat_control_name, lines):
+        try:
+            vat_nominal = nom_cls.objects.get(name=vat_control_name)
+        except nom_cls.DoesNotExist:
+            # bult into system so cannot not exist
+            vat_nominal = nom_cls.objects.get(
+                name=settings.DEFAULT_SYSTEM_SUSPENSE)
+        nominal_transactions = []
+        for line in lines:
+            nominal_transactions += self.create_nominal_transaction_for_line(
+                nom_tran_cls, module, line, vat_nominal
+            )
+        if nominal_transactions:
+            nominal_transactions = self.nom_tran_cls.objects.bulk_create(nominal_transactions)
+            # THIS IS CRAZILY INEFFICIENT !!!!
+            for line in lines:
+                line_nominal_trans = {
+                    nominal_transaction.field: nominal_transaction
+                    for nominal_transaction in nominal_transactions
+                    if nominal_transaction.line == line.pk
+                }
+                line.add_nominal_transactions(line_nominal_trans)
+            line_cls.objects.bulk_update(lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
+
+
+    def edit_nominal_transactions():
+        pass
+        
 
 
 class NominalLineQuerySet(models.QuerySet):

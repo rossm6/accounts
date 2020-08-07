@@ -5,7 +5,8 @@ from itertools import chain
 from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Q, Sum
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse, Http404
+from django.http import (Http404, HttpResponse, HttpResponseBadRequest,
+                         JsonResponse)
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -13,21 +14,22 @@ from django.views.generic import ListView
 from querystring_parser import parser
 
 from accountancy.forms import AdvancedTransactionSearchForm
-from accountancy.views import (CreatePurchaseOrSalesTransaction, EditPurchaseOrSalesTransaction,
-                               BaseTransactionsList, BaseViewTransaction,
+from accountancy.views import (BaseTransactionsList, BaseViewTransaction,
+                               CreatePurchaseOrSalesTransaction,
+                               EditPurchaseOrSalesTransaction,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory,
                                jQueryDataTable)
 from items.models import Item
 from nominals.forms import NominalForm
-from nominals.models import NominalTransaction
+from nominals.models import Nominal, NominalTransaction
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (PurchaseHeaderForm, PurchaseLineForm, QuickSupplierForm,
-                    ReadOnlyPurchaseHeaderForm,
-                    enter_lines, match, read_only_lines, read_only_match, VoidTransaction)
+                    ReadOnlyPurchaseHeaderForm, VoidTransaction, enter_lines,
+                    match, read_only_lines, read_only_match)
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
@@ -60,7 +62,8 @@ class CreateTransaction(CreatePurchaseOrSalesTransaction):
     }
     template_name = "purchases/create.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
-    nominal_model = NominalTransaction
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
     module = "PL"
     control_account_name = "Purchase Ledger Control"
 
@@ -97,7 +100,8 @@ class EditTransaction(EditPurchaseOrSalesTransaction):
     }
     template_name = "purchases/edit.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
-    nominal_model = NominalTransaction
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
     module = "PL"
     control_account_name = "Purchase Ledger Control"
 

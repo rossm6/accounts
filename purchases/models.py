@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from accountancy.models import (Contact, MatchedHeaders, TransactionHeader,
@@ -67,6 +68,101 @@ class PurchaseHeader(TransactionHeader):
         'self', through='PurchaseMatching', symmetrical=False)
 
 
+    def _create_payment_or_refund_nominal_transactions(self, nom_cls, nom_tran_cls, module, control_account_name, **kwargs):
+        if self.total != 0:
+            if control_account := kwargs.get("control_account"):
+                pass
+            else:
+                try:
+                    control_account = nom_cls.objects.get(
+                        name=control_account_name)
+                except nom_cls.DoesNotExist:
+                    control_account = nom_cls.objects.get(
+                        name=settings.DEFAULT_SYSTEM_SUSPENSE)
+            nom_trans = []
+            # create the bank entry first.  line = 1
+            nom_trans.append(
+                nom_tran_cls(
+                    module=module,
+                    header=self.pk, # header field is PositiveInt field, not Foreign key
+                    line="1",
+                    nominal=self.cash_book.nominal,
+                    value=self.total,
+                    ref=self.ref,
+                    period=self.period,
+                    date=self.date,
+                    type=self.type,
+                    field="t"
+                )
+            )
+            # create the control account entry.  line = 2
+            nom_trans.append(
+                nom_tran_cls(
+                    module=module,
+                    header=self.pk, # header field is PositiveInt field, not Foreign key
+                    line="2",
+                    nominal=control_account,
+                    value= -1 * self.total,
+                    ref=self.ref,
+                    period=self.period,
+                    date=self.date,
+                    type=self.type,
+                    field="t"
+                )
+            )
+            nom_tran_cls.objects.bulk_create(nom_trans)
+
+
+    def create_nominal_transactions(self, nom_cls, nom_tran_cls, line_cls, module, control_account_name='', vat_nominal_name='', **kwargs):
+        if self.type in ("pp", "pr"):
+            self._create_payment_or_refund_nominal_transactions(
+                nom_cls, nom_tran_cls, module, control_account_name, **kwargs
+            )
+        if self.type in ("pi", "pc"):
+            self._create_invoice_or_credit_note_nominal_transactions(
+                nom_cls, nom_tran_cls, line_cls, module, control_account_name, vat_nominal_name, **kwargs
+            )
+
+    
+    def _edit_payment_or_refund_nominal_transactions(self, nom_cls, nom_tran_cls, module, control_account_name):
+        nom_trans = nom_tran_cls.objects.filter(header=self.pk)
+        try:
+            control_account = nom_cls.objects.get(
+                name=control_account_name)
+        except nom_cls.DoesNotExist:
+            control_account = nom_cls.objects.get(
+                name=settings.DEFAULT_SYSTEM_SUSPENSE)
+        if nom_trans and self.total != 0:
+            # edit existing
+            if nom_trans[0].line == 1:
+                nom_trans[0].value = self.total
+                nom_trans[0].nominal = self.cash_book.nominal # will hit the db again
+                nom_trans[1].value = -1 * self.total
+                nom_trans[1].nominal = control_account
+            else:
+                nom_trans[0].value = -1 * self.total
+                nom_trans[0].nominal = control_account
+                nom_trans[1].value = self.total
+                nom_trans[1].nominal = self.cash_book.nominal # will hit the db again
+            nom_tran_cls.objects.bulk_update(nom_trans, ["value", "nominal"])
+        elif nom_trans and self.total == 0:
+            nom_tran_cls.objects.filter(pk__in=[ t.pk for t in nom_trans ]).delete()
+        elif not nom_trans and nom_trans != 0:
+            # create nom trans
+            nom_trans = self.create_nominal_transactions(nom_cls, nom_tran_cls, module, control_account=control_account)
+            nom_tran_cls.objects.bulk_create(nom_trans)
+        else:
+            # do nothing is header is 0 and there are no trans
+            return
+
+
+    def edit_nominal_transactions(self, nom_cls, nom_tran_cls, module, control_account_name):
+        if self.type in ("pp", "pr"):
+            self._edit_payment_or_refund_nominal_transactions(
+                nom_cls, nom_tran_cls, module, control_account_name
+            )
+
+
 class PurchaseLineQuerySet(models.QuerySet):
 
     def line_bulk_update(self, instances):
@@ -106,26 +202,6 @@ class PurchaseLine(TransactionLine):
 
     class Meta:
         ordering = ['line_no']
-
-
-class Payment(PurchaseHeader):
-    class Meta:
-        proxy = True
-
-
-class Invoice(PurchaseHeader):
-    class Meta:
-        proxy = True
-
-
-class CreditNote(PurchaseHeader):
-    class Meta:
-        proxy = True
-
-
-class Refund(PurchaseHeader):
-    class Meta:
-        proxy = True
 
 
 class PurchaseMatching(MatchedHeaders):

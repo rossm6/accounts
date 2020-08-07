@@ -1,6 +1,6 @@
 Objectives -
 
-    2. Edit Payment, Edit Brought Forward Invoice. We also need to test create brought forward payment
+    2. Edit Brought Forward Invoice. We also need to test create brought forward payment
     3. What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
        create the new nom trans from scratch.
 
@@ -8,6 +8,8 @@ Objectives -
     5. Create the Sales ledger
 
     Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
+
+    DJANGO ENHANCEMENT LOG - I was surprised that we could not use proxy models based on a parent class instance.
 
 
 PRIORITY 1

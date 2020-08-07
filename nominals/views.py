@@ -9,7 +9,7 @@ from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
-from .models import NominalHeader, NominalLine, NominalTransaction
+from .models import NominalHeader, NominalLine, NominalTransaction, Nominal
 
 
 class CreateTransaction(BaseCreateTransaction):
@@ -34,7 +34,8 @@ class CreateTransaction(BaseCreateTransaction):
     }
     template_name = "nominals/create.html"
     success_url = reverse_lazy("nominals:transaction_enquiry")
-    nominal_model = NominalTransaction
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
     module = "NL"    
 
     def get_header_form_type(self):
@@ -63,7 +64,8 @@ class EditTransaction(BaseEditTransaction):
     }
     template_name = "nominals/edit.html"
     success_url = reverse_lazy("nominals:transaction_enquiry")
-    nominal_model = NominalTransaction
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
     module = "NL"
 
 
