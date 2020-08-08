@@ -671,6 +671,7 @@ class BaseCreateTransaction(BaseTransaction):
         return kwargs
 
     def lines_are_valid(self):
+        line_no = 1
         lines = []
         # this could have been updated by line formset clean method already
         self.header_obj.save()
@@ -726,7 +727,6 @@ class BaseEditTransaction(BaseTransaction):
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
             "line_cls": self.get_line_model(),
-            "control_nominal_name": self.control_nominal_name,
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         self.header_obj.edit_nominal_transactions(

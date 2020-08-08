@@ -1,11 +1,17 @@
 Objectives -
 
-    2. Edit Brought Forward Invoice. We also need to test create brought forward payment
-    3. What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
-       create the new nom trans from scratch.
+    Make sure tests pass
 
-    4. Create Cash Book
-    5. Create the Sales ledger
+    After refactoring i realised i must not have tested creating new nom trans via creating new lines on PL side.  On NL side looks like we have not tested
+    creating and deleting nominal trans.
+
+    Edit Brought Forward Invoice. We also need to test create brought forward payment
+
+    What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
+    create the new nom trans from scratch.
+
+    Create Cash Book
+    Create the Sales ledger
 
     Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
 

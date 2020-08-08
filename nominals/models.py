@@ -88,15 +88,15 @@ class NominalHeader(TransactionHeader):
 
         if 'g' in nom_trans:
             if nom_trans["g"].value:
-                _nom_trans_to_update.append(nominal_trans["g"])
+                _nom_trans_to_update.append(nom_trans["g"])
             else:
-                _nom_trans_to_delete.append(nominal_trans["g"])
+                _nom_trans_to_delete.append(nom_trans["g"])
                 line.goods_nominal_transaction = None
         if 'v' in nom_trans:
             if nom_trans["v"].value:
-                _nom_trans_to_update.append(nominal_trans["v"])
+                _nom_trans_to_update.append(nom_trans["v"])
             else:
-                _nom_trans_to_delete.append(nominal_trans["v"])
+                _nom_trans_to_delete.append(nom_trans["v"])
                 line.vat_nominal_transaction = None
 
         return _nom_trans_to_update, _nom_trans_to_delete
@@ -104,7 +104,7 @@ class NominalHeader(TransactionHeader):
 
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
         try:
-            vat_nominal_name := kwargs.get("vat_nominal_name")
+            vat_nominal_name = kwargs.get("vat_nominal_name")
             vat_nominal = nom_cls.objects.get(name=vat_nominal_name)
         except nom_cls.DoesNotExist:
             # bult into system so cannot not exist
@@ -113,7 +113,7 @@ class NominalHeader(TransactionHeader):
         nominal_transactions = []
         lines = kwargs.get("lines", [])
         for line in lines:
-            nominal_transactions += self._create_nominal_transaction_for_line(
+            nominal_transactions += self._create_nominal_transactions_for_line(
                 nom_tran_cls, module, line, vat_nominal
             )
         if nominal_transactions:
@@ -126,6 +126,7 @@ class NominalHeader(TransactionHeader):
                     if nominal_transaction.line == line.pk
                 }
                 line.add_nominal_transactions(line_nominal_trans)
+            line_cls = kwargs.get('line_cls')
             line_cls.objects.bulk_update(
                 lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
@@ -145,9 +146,9 @@ class NominalHeader(TransactionHeader):
 
         line_no = 1
         line_formset = kwargs.get('line_formset')
-        lines_to_create_or_update_only = kwargs.get('lines_to_create_or_update_only')
+        lines_to_be_created_or_updated_only = kwargs.get('lines_to_be_created_or_updated_only')
         existing_nom_trans = kwargs.get('existing_nom_trans')
-        for form in lines_to_create_or_update_only:
+        for form in lines_to_be_created_or_updated_only:
             if form.empty_permitted and form.has_changed():
                 form.instance.header = self
                 form.instance.line_no = line_no
@@ -156,7 +157,7 @@ class NominalHeader(TransactionHeader):
                     nom_tran_cls, module, form.instance, vat_nominal
                 )
             elif not form.empty_permitted:
-                if form.instance.is_no_zero():
+                if form.instance.is_non_zero():
                     form.instance.line_no = line_no
                     line_no = line_no + 1
                     lines_to_update.append(form.instance)
@@ -167,7 +168,7 @@ class NominalHeader(TransactionHeader):
                     for tran in existing_nom_trans
                     if tran.line == form.instance.pk
                 }
-                to_update, to_update = self._edit_nominal_transactions_for_line(
+                to_update, to_delete = self._edit_nominal_transactions_for_line(
                     nominal_trans, form.instance, vat_nominal
                 )
                 nom_trans_to_update += to_update
@@ -178,9 +179,9 @@ class NominalHeader(TransactionHeader):
         line_cls.objects.bulk_create(line_formset.new_objects)
         line_cls.objects.line_bulk_update(lines_to_update)
         line_cls.objects.filter(pk__in=[ line.pk for line in line_formset.deleted_objects ]).delete()
-        nom_tran_cls.objects.bulk_create(new_nom_trans)
+        # nom_tran_cls.objects.bulk_create(new_nom_trans)
         nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
-        nom_tran_cls.objects.filter(pk__in=[ nom_tran.pk for nom_trans in nom_trans_to_delete ]).delete()
+        nom_tran_cls.objects.filter(pk__in=[ nom_tran.pk for nom_tran in nom_trans_to_delete ]).delete()
         
 
 
