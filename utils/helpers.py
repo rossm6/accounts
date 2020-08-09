@@ -41,6 +41,7 @@ def sort_multiple(sequence, *sort_order):
     sort_multiple(auctions, *[(lambda a : a.finish, True)])
 
     This sorts the auctions in descending finish order.
+
     """
 
     return reduce(

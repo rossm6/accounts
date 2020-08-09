@@ -1,10 +1,5 @@
 Objectives -
 
-    Make sure tests pass
-
-    After refactoring i realised i must not have tested creating new nom trans via creating new lines on PL side.  On NL side looks like we have not tested
-    creating and deleting nominal trans.
-
     Edit Brought Forward Invoice. We also need to test create brought forward payment
 
     What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
@@ -16,7 +11,6 @@ Objectives -
     Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
 
     DJANGO ENHANCEMENT LOG - I was surprised that we could not use proxy models based on a parent class instance.
-
 
 PRIORITY 1
 

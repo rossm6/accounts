@@ -164,6 +164,8 @@ class TransactionLine(DecimalBaseModel):
             self.goods_nominal_transaction = nominal_trans["g"]
         if "v" in nominal_trans:
             self.vat_nominal_transaction = nominal_trans["v"]
+        if "t" in nominal_trans:
+            self.total_nominal_transaction = nominal_trans["t"]
 
 
     def is_non_zero(self):

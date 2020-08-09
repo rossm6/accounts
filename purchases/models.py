@@ -164,21 +164,23 @@ class PurchaseHeader(TransactionHeader):
     def _create_invoice_or_credit_note_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
         if lines := not kwargs.get("lines"):
             return
-        try:
-            vat_nominal_name = kwargs.get('vat_nominal_name')
-            vat_nominal = nom_cls.objects.get(name=vat_nominal_name)
-        except nom_cls.DoesNotExist:
-            # bult into system so cannot not exist
-            vat_nominal = nom_cls.objects.get(
-                name=settings.DEFAULT_SYSTEM_SUSPENSE)
-        try:
-            control_nominal_name = kwargs.get('control_nominal_name')
-            control_nominal = nom_cls.objects.get(
-                name=control_nominal_name)
-        except nom_cls.DoesNotExist:
-            # bult into system so cannot not exist
-            control_nominal = nom_cls.objects.get(
-                name=settings.DEFAULT_SYSTEM_SUSPENSE)
+        if (vat_nominal := kwargs.get("vat_nominal")) is None:
+            try:
+                vat_nominal_name = kwargs.get('vat_nominal_name')
+                vat_nominal = nom_cls.objects.get(name=vat_nominal_name)
+            except nom_cls.DoesNotExist:
+                # bult into system so cannot not exist
+                vat_nominal = nom_cls.objects.get(
+                    name=settings.DEFAULT_SYSTEM_SUSPENSE)
+        if (control_nominal := kwargs.get("control_nominal")) is None:
+            try:
+                control_nominal_name = kwargs.get('control_nominal_name')
+                control_nominal = nom_cls.objects.get(
+                    name=control_nominal_name)
+            except nom_cls.DoesNotExist:
+                # bult into system so cannot not exist
+                control_nominal = nom_cls.objects.get(
+                    name=settings.DEFAULT_SYSTEM_SUSPENSE)
         nominal_transactions = []
         lines = kwargs.get('lines')
         for line in lines:
@@ -211,7 +213,8 @@ class PurchaseHeader(TransactionHeader):
             )
 
     def _edit_payment_or_refund_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
-        nom_trans = nom_tran_cls.objects.filter(header=self.pk)
+        nom_trans = nom_tran_cls.objects.filter(
+            header=self.pk).order_by("line")
         try:
             control_nominal_name = kwargs.get('control_nominal_name')
             control_nominal = nom_cls.objects.get(
@@ -220,26 +223,19 @@ class PurchaseHeader(TransactionHeader):
             control_nominal = nom_cls.objects.get(
                 name=settings.DEFAULT_SYSTEM_SUSPENSE)
         if nom_trans and self.total != 0:
-            # edit existing
-            if nom_trans[0].line == 1:
-                nom_trans[0].value = self.total
-                # will hit the db again
-                nom_trans[0].nominal = self.cash_book.nominal
-                nom_trans[1].value = -1 * self.total
-                nom_trans[1].nominal = control_nominal
-            else:
-                nom_trans[0].value = -1 * self.total
-                nom_trans[0].nominal = control_nominal
-                nom_trans[1].value = self.total
-                # will hit the db again
-                nom_trans[1].nominal = self.cash_book.nominal
+            bank_nom_tran, control_nom_tran = nom_trans
+            bank_nom_tran.value = self.total
+            bank_nom_tran.nominal = self.cash_book.nominal
+            control_nom_tran.value = -1 * self.total
+            control_nom_tran.nominal = control_nominal
             nom_tran_cls.objects.bulk_update(nom_trans, ["value", "nominal"])
         elif nom_trans and self.total == 0:
             nom_tran_cls.objects.filter(
                 pk__in=[t.pk for t in nom_trans]).delete()
         elif not nom_trans and nom_trans != 0:
             # create nom trans
-            self._create_payment_or_refund_nominal_transactions(nom_cls, nom_tran_cls, module, control_nominal=control_nominal)
+            self._create_payment_or_refund_nominal_transactions(
+                nom_cls, nom_tran_cls, module, control_nominal=control_nominal)
         else:
             # do nothing is header is 0 and there are no trans
             return
@@ -329,9 +325,10 @@ class PurchaseHeader(TransactionHeader):
                 form.instance.header = self
                 form.instance.line_no = line_no
                 line_no = line_no + 1
-                new_nom_trans += self._create_nominal_transactions_for_line(
-                    form.instance, nom_tran_cls, module, vat_nominal, control_nominal
-                )
+                # cannot create nom_trans now until lines have been created
+                # new_nom_trans += self._create_nominal_transactions_for_line(
+                #     form.instance, nom_tran_cls, module, vat_nominal, control_nominal
+                # )
             elif not form.empty_permitted:
                 if form.instance.is_non_zero():
                     form.instance.line_no = line_no
@@ -358,13 +355,20 @@ class PurchaseHeader(TransactionHeader):
             nom_trans_to_delete += nominal_trans
 
         line_cls = kwargs.get('line_cls')
-
-        line_cls.objects.bulk_create(line_formset.new_objects)
+        new_lines = line_cls.objects.bulk_create(line_formset.new_objects)
         line_cls.objects.line_bulk_update(lines_to_update)
         line_cls.objects.filter(
             pk__in=[line.pk for line in line_formset.deleted_objects]).delete()
-        # FIX ME - create nom trans
-        #nom_tran_cls.objects.bulk_create(new_nom_trans)
+
+        self._create_invoice_or_credit_note_nominal_transactions(
+            nom_cls, nom_tran_cls, module,
+            line_cls=line_cls,
+            lines=new_lines, 
+            vat_nominal=vat_nominal, 
+            control_nominal=control_nominal
+        )
+
+        nom_tran_cls.objects.bulk_create(new_nom_trans)
         nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
         nom_tran_cls.objects.filter(
             pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()

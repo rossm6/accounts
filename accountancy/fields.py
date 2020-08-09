@@ -117,8 +117,7 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
 
     def choice(self, obj):
         c = super().choice(obj)  # ('< class ModelChoiceIteratorValue>', 'some_label')
-        value = c[0]
-        label = c[1]
+        value, label = c
         fields = obj._meta.get_fields()
         tmp = []
         for field in fields:
