@@ -673,7 +673,6 @@ class BaseCreateTransaction(BaseTransaction):
     def lines_are_valid(self):
         line_no = 1
         lines = []
-        # this could have been updated by line formset clean method already
         self.header_obj.save()
         self.header_has_been_saved = True
         line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
@@ -760,12 +759,36 @@ class BaseEditTransaction(BaseTransaction):
                 lines_to_be_created_or_updated_only.append(form)
             elif not form.empty_permitted and form.instance not in self.lines_to_delete:
                 lines_to_be_created_or_updated_only.append(form)
-        existing_nom_trans = self.get_nominal_transaction_model().objects.filter(header=self.header_obj.pk)
-        self.create_or_update_nominal_transactions(
-            line_formset=self.line_formset,
-            lines_to_be_created_or_updated_only=lines_to_be_created_or_updated_only,
-            existing_nom_trans=existing_nom_trans
-        )
+
+        line_no = 1
+        lines_to_update = []
+        for form in lines_to_be_created_or_updated_only:
+            if form.empty_permitted and form.has_changed():
+                form.instance.header = self.header_obj
+                form.instance.line_no = line_no
+                line_no = line_no + 1
+            elif not form.empty_permitted:
+                if form.instance.is_non_zero():
+                    form.instance.line_no = line_no
+                    line_no = line_no + 1
+                    lines_to_update.append(form.instance)
+                else:
+                    self.line_formset.deleted_objects.append(form.instance)
+
+        new_lines = self.get_line_model().objects.bulk_create(self.line_formset.new_objects)
+        self.get_line_model().objects.line_bulk_update(lines_to_update)
+        self.get_line_model().objects.filter(
+            pk__in=[line.pk for line in self.line_formset.deleted_objects]
+        ).delete()
+
+        if self.requires_analysis(self.header_form):
+            existing_nom_trans = self.get_nominal_transaction_model().objects.filter(header=self.header_obj.pk)
+            self.create_or_update_nominal_transactions(
+                new_lines=new_lines,
+                updated_lines=lines_to_update,
+                deleted_lines=self.line_formset.deleted_objects,
+                existing_nom_trans=existing_nom_trans
+            )
 
     def matching_is_valid(self):
         if not hasattr(self, 'header_has_been_saved'):

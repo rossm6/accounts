@@ -2,8 +2,7 @@ Objectives -
 
     Test editing all B/F types does not create nom trans
 
-    Now we need to test changing the trans type.  It might be easiest to just delete the existing nominal transactions and after updating the lines
-    create the new nom trans from scratch.
+    Disable changing trans type.
 
     Create Cash Book
     Create the Sales ledger

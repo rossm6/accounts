@@ -55,6 +55,11 @@ def create_invoices(supplier, ref_prefix, n, value=100):
     return PurchaseHeader.objects.bulk_create(invoices)
 
 
+def create_invoice_with_lines(header, lines):
+    header = PurchaseHeader.objects.create(**header)
+    lines = create_lines(header, lines)
+    return header, lines
+
 def create_payments(supplier, ref_prefix, n, value=100):
     date = timezone.now()
     due_date = date + timedelta(days=31)

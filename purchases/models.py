@@ -12,15 +12,17 @@ class Supplier(Contact):
 
 
 class PurchaseHeader(TransactionHeader):
+    # FIX ME - rename to "no_nominal_required"
     no_analysis_required = [
         ('pbi', 'Brought Forward Invoice'),
         ('pbc', 'Brought Forward Credit Note'),
         ('pbp', 'Brought Forward Payment'),
         ('pbr', 'Brought Forward Refund'),
-        ('pp', 'Payment'),
-        ('pr', 'Refund'),
     ]
+    # FIX ME - rename to "nominals_required"
     analysis_required = [
+        ("pp", "Payment"),
+        ("pr", "Refund"),
         ('pi', 'Invoice'),
         ('pc', 'Credit Note'),
     ]
@@ -291,9 +293,6 @@ class PurchaseHeader(TransactionHeader):
         return _nom_trans_to_update, _nom_trans_to_delete
 
     def _edit_invoice_or_credit_note_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
-
-        lines_to_update = []
-        new_nom_trans = []
         nom_trans_to_update = []
         nom_trans_to_delete = []
 
@@ -314,61 +313,42 @@ class PurchaseHeader(TransactionHeader):
             control_nominal = nom_cls.objects.get(
                 name=settings.DEFAULT_SYSTEM_SUSPENSE)
 
-        line_no = 1
-        line_formset = kwargs.get('line_formset')
-        lines_to_be_created_or_updated_only = kwargs.get(
-            'lines_to_be_created_or_updated_only')
         existing_nom_trans = kwargs.get('existing_nom_trans')
 
-        for form in lines_to_be_created_or_updated_only:
-            if form.empty_permitted and form.has_changed():
-                form.instance.header = self
-                form.instance.line_no = line_no
-                line_no = line_no + 1
-                # cannot create nom_trans now until lines have been created
-                # new_nom_trans += self._create_nominal_transactions_for_line(
-                #     form.instance, nom_tran_cls, module, vat_nominal, control_nominal
-                # )
-            elif not form.empty_permitted:
-                if form.instance.is_non_zero():
-                    form.instance.line_no = line_no
-                    line_no = line_no + 1
-                    lines_to_update.append(form.instance)
-                else:
-                    line_formset.deleted_objects.append(form.instance)
+        new_lines = kwargs.get("new_lines")
+        updated_lines = kwargs.get("updated_lines")
+        deleted_lines = kwargs.get("deleted_lines")
+
+        if updated_lines:
+            for line in updated_lines:
                 nominal_trans = {
                     tran.field: tran
                     for tran in existing_nom_trans
-                    if tran.line == form.instance.pk
+                    if tran.line == line.pk
                 }
                 to_update, to_delete = self._edit_nominal_transactions_for_line(
-                    nominal_trans, form.instance, vat_nominal, control_nominal)
+                    nominal_trans, line, vat_nominal, control_nominal)
                 nom_trans_to_update += to_update
                 nom_trans_to_delete += to_delete
 
-        for line in line_formset.deleted_objects:
-            nominal_trans = [
-                tran
-                for tran in existing_nom_trans
-                if tran.line == line.pk
-            ]
-            nom_trans_to_delete += nominal_trans
+        if deleted_lines:
+            for line in deleted_lines:
+                nominal_trans = [
+                    tran
+                    for tran in existing_nom_trans
+                    if tran.line == line.pk
+                ]
+                nom_trans_to_delete += nominal_trans
 
         line_cls = kwargs.get('line_cls')
-        new_lines = line_cls.objects.bulk_create(line_formset.new_objects)
-        line_cls.objects.line_bulk_update(lines_to_update)
-        line_cls.objects.filter(
-            pk__in=[line.pk for line in line_formset.deleted_objects]).delete()
-
+        # bulk_creates in this method
         self._create_invoice_or_credit_note_nominal_transactions(
             nom_cls, nom_tran_cls, module,
             line_cls=line_cls,
-            lines=new_lines, 
-            vat_nominal=vat_nominal, 
+            lines=new_lines,
+            vat_nominal=vat_nominal,
             control_nominal=control_nominal
         )
-
-        nom_tran_cls.objects.bulk_create(new_nom_trans)
         nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
         nom_tran_cls.objects.filter(
             pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
@@ -379,7 +359,7 @@ class PurchaseHeader(TransactionHeader):
             self._edit_payment_or_refund_nominal_transactions(
                 nom_cls, nom_tran_cls, module, **kwargs
             )
-        if self.type in ("pbc", "pbi", "pc", "pi"):
+        if self.type in ("pc", "pi"):
             self._edit_invoice_or_credit_note_nominal_transactions(
                 nom_cls, nom_tran_cls, module, **kwargs
             )
