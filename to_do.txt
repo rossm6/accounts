@@ -1,8 +1,8 @@
 Objectives -
 
-    Edit Brought Forward Invoice. We also need to test create brought forward payment
+    Test editing all B/F types does not create nom trans
 
-    What about changing the type?  It might be easiest to just delete the existing nominal transactions and after updating the lines
+    Now we need to test changing the trans type.  It might be easiest to just delete the existing nominal transactions and after updating the lines
     create the new nom trans from scratch.
 
     Create Cash Book
@@ -49,7 +49,10 @@ PRIORITY 1
         clean method of the match formset presupposes a match_by attribute.  I need to create a test which covers
         this possibility and of course fix the problem.
 
-        Create a negative input for a credit note.
+        Create a negative input for a credit note.  We need to some basic tests for credit note and refund in general actually.
+        I don't envisage discovering a problem but we need some checks even if not quite as thorough as the others.  In fact
+        i over tested on invoice and payment so without these unnecessary tests i may be able to test just as well.  Really
+        just a copy and paste exercise and then swapping signs.
 
         Might be worth doing negative and positive basic inputs for all the others untested - refund, brought forward credit note etc
         Also need to do basic matching tests
