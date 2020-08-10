@@ -1,7 +1,5 @@
 Objectives -
 
-    Test editing all B/F types does not create nom trans
-
     Disable changing trans type.
 
     Create Cash Book
@@ -52,6 +50,8 @@ PRIORITY 1
         I don't envisage discovering a problem but we need some checks even if not quite as thorough as the others.  In fact
         i over tested on invoice and payment so without these unnecessary tests i may be able to test just as well.  Really
         just a copy and paste exercise and then swapping signs.
+
+        Test entering a zero value invoice / credit note.  Check nominal entries for editing from zero to non zero and vice versa.
 
         Might be worth doing negative and positive basic inputs for all the others untested - refund, brought forward credit note etc
         Also need to do basic matching tests

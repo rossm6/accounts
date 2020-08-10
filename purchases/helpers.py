@@ -60,6 +60,19 @@ def create_invoice_with_lines(header, lines):
     lines = create_lines(header, lines)
     return header, lines
 
+
+def create_credit_note_with_lines(header, lines):
+    header["paid"] *= -1
+    header["total"] *= -1
+    header["due"] *= -1
+    header = PurchaseHeader.objects.create(**header)
+    # this assumes lines[n] is line[0] for all n
+    lines[0]["goods"] *= -1
+    lines[0]["vat"] *= -1
+    lines = create_lines(header, lines)
+    return header, lines
+
+
 def create_payments(supplier, ref_prefix, n, value=100):
     date = timezone.now()
     due_date = date + timedelta(days=31)
@@ -181,6 +194,16 @@ def create_payment_with_nom_entries(header, control_nominal, bank_nominal):
             )
         )
         nom_trans = NominalTransaction.objects.bulk_create(nom_trans)
+
+
+def create_refund_with_nom_entries(header, control_nominal, bank_nominal):
+    # positive inputted, turn negative, then turned positive again in create_payment_with_nom
+    header["total"] *= -1
+    header["due"] *= -1
+    header["paid"] *= -1
+    # done this way because i created other function first
+    return create_payment_with_nom_entries(header, control_nominal, bank_nominal)
+
 
 def create_credit_note_with_nom_entries(header, lines, vat_nominal, control_nominal):
     header["total"] = -1 * header["total"]
