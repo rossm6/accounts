@@ -39,3 +39,7 @@ def create_items(n):
             )
         )
     return Item.objects.bulk_create(items)
+
+
+def create_default_data():
+    create_items(1000)

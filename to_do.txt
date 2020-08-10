@@ -1,5 +1,7 @@
 Objectives -
 
+    Complete the nominal transaction view
+
     Disable changing trans type.
 
     Create Cash Book
@@ -39,6 +41,8 @@ PRIORITY 1
 
     Tests
 
+        Test voiding a transaction with nominal entries and with matching and with both.  Do this for all trans types.
+
         If we set an ordering on the transaction header models we will need to add a order_by to our ORM queries
         in the tests.  And probably for all of them ... what joy !
 
@@ -62,12 +66,6 @@ PRIORITY 1
 
             THIS WOULD MEAN ALSO COPYING ALL THE VIEWS AND URLS.  EASIER TO JUST KEEP THE PURCHASES APP BUT RENAME
             TO "DUMMY_PURCHASES" OR SOMETHING
-
-        Form testing - test we get the errors first for wrong doing.  Lesser of a priority is
-        testing the forms work as this has been checked in views already.
-
-        Test that credit note entered as positive is negative.  Same for refund etc.  Do for Edit and Create.
-        Just one test for each.  But this shouldn't be a problem.
 
     Transaction Enquiry -
 

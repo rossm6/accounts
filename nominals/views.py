@@ -88,6 +88,9 @@ create_on_the_fly_view = create_on_the_fly(
 class TransactionEnquiry(BaseTransactionsList):
     model = NominalTransaction
     fields = [
+        ("module", "Module"),
+        ("header", "Unique Ref"),
+        ("line", "Line"),
         ("nominal__name", "Nominal"),
         ("period", "Period"),
         ("created", "Date"),
@@ -105,7 +108,7 @@ class TransactionEnquiry(BaseTransactionsList):
 
     def get_queryset(self):
         return (
-            NominalTransactions.objects
+            NominalTransaction.objects
             .select_related('nominal__name')
             .all()
             .values(

@@ -16,12 +16,16 @@ def create_suppliers(n):
     with open('/etc/dictionaries-common/words', 'r') as dictionary:
         for word in dictionary:
             suppliers.append(
-                Supplier(name=word)
+                Supplier(name=word, code=str(i))
             )
             if i > n:
                 break
             i = i + 1
     return Supplier.objects.bulk_create(suppliers)
+
+
+def create_default_data():
+    create_suppliers(1000)
 
 
 def create_lines(header, lines):
