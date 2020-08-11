@@ -349,6 +349,15 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
         required=False
     )
 
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            # VERY IMPORTANT USERS CANNOT CHANGE THE TYPE ONCE A TRANSACTION
+            # HAS BEEN CREATED
+            self.fields["type"].disabled = True    
+
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         if instance.type not in instance.get_types_requiring_lines():

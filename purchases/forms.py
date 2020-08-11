@@ -104,9 +104,7 @@ class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
         self.fields["supplier"].widget = forms.TextInput()
         supplier = self.fields["supplier"].queryset[0]
         self.initial["supplier"] = str(supplier)
-        # FIX ME - we need a global way of checking this
         if self.initial.get('type') in self._meta.model.get_types_requiring_analysis():
-            # as we are repeating ourselves
             transaction_requires_analysis = True
         else:
             transaction_requires_analysis = False

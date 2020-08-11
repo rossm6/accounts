@@ -13279,6 +13279,8 @@ class GeneralTransactionTests(TestCase):
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
         
+        cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
+
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")
@@ -13356,6 +13358,145 @@ class GeneralTransactionTests(TestCase):
         self.assertEqual(
             response.request["PATH_INFO"],
             "/purchases/transactions"
+        )
+
+
+    # INCORRECT USAGE
+    # Try and change the tran type from purchase brought forward refund
+    # to purchase refund
+    # Trans types should never be allowed because it would sometimes the
+    # matching would never to be changed or deleted
+    # In which case just void the transaction
+    def test_type_cannot_be_changed(self):
+
+        PurchaseHeader.objects.create(**{
+            "cash_book": self.cash_book,
+            "type": "pbr",
+            "supplier": self.supplier,
+            "ref": self.ref,
+            "date": self.date,
+            "due_date": self.due_date,
+            "total": 120,
+            "due": 120,
+            "paid": 0,
+            "goods": 0,
+            "vat": 0,
+            "period": PERIOD            
+        })
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.type,
+            "pbr"
+        )
+        self.assertEqual(
+            header.total,
+            120
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+ 
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pr",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 100
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        url = reverse("purchases:edit", kwargs={"pk": header.pk})
+        response = self.client.post(url, data)    
+        self.assertEqual(response.status_code, 302)
+
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.type,
+            "pbr"
+        )
+        self.assertEqual(
+            header.total,
+            100
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
         )
 
 
@@ -25619,3 +25760,5 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             len(nom_trans),
             0
         )
+
+
