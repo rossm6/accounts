@@ -1,16 +1,10 @@
 Objectives -
 
-    Disable changing trans type
-
-    Work through the sections below before creating two more ledgers.
-
-    Create Cash Book
-    Create the Sales ledger
+    Work through the sections below before creating the cash book and sales ledger.
 
     Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
 
     DJANGO ENHANCEMENT LOG - I was surprised that we could not use proxy models based on a parent class instance.
-
 
     VAT
 
@@ -21,6 +15,9 @@ Objectives -
         Create a bad debt write off journal transaction type for the sales ledger
 
     UI
+
+        The cash book field shows for transactions other than payment or refund
+        in the read only view
 
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating

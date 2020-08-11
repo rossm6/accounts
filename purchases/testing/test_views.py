@@ -164,6 +164,7 @@ class CreateBroughtForwardInvoice(TestCase):
     def test_get_request_with_query_parameter(self):
         response = self.client.get(self.url + "?t=pbi")
         self.assertEqual(response.status_code, 200)
+        print(response.content)
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
@@ -3608,7 +3609,7 @@ class EditPayment(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
@@ -6178,7 +6179,7 @@ class EditBroughtForwardInvoice(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi" selected>Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
@@ -6225,7 +6226,7 @@ class EditBroughtForwardCreditNote(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc" selected>Brought Forward Credit Note</option>'
@@ -6598,7 +6599,7 @@ class EditInvoice(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
@@ -13094,7 +13095,7 @@ class EditCreditNote(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
@@ -13141,7 +13142,7 @@ class EditBroughtForwardPayment(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
@@ -13188,7 +13189,7 @@ class EditBroughtForwardRefund(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
@@ -13237,7 +13238,7 @@ class EditRefund(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'

@@ -104,15 +104,15 @@ class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
         self.fields["supplier"].widget = forms.TextInput()
         supplier = self.fields["supplier"].queryset[0]
         self.initial["supplier"] = str(supplier)
-        if self.initial.get('type') in self._meta.model.get_types_requiring_analysis():
-            transaction_requires_analysis = True
+        if type in self._meta.model.payment_type:
+            payment_type = True
         else:
-            transaction_requires_analysis = False
+            payment_type = False
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
             },
-            transaction_requires_analysis,
+            payment_type,
             True
         )
         # must do this afterwards

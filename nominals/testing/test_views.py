@@ -1245,7 +1245,7 @@ class EditJournal(TestCase):
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="nj" selected="selected">Journal</option>'
             '</select>',
