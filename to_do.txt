@@ -1,5 +1,7 @@
 Objectives -
 
+    Good resource - https://hakibenita.com/django-group-by-sql#how-to-group-by-multiple-fields
+
     Work through the sections below before creating the cash book and sales ledger.
 
     Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
@@ -15,9 +17,6 @@ Objectives -
         Create a bad debt write off journal transaction type for the sales ledger
 
     UI
-
-        The cash book field shows for transactions other than payment or refund
-        in the read only view
 
         We need to make a decision about where to show the outstanding amount.  I think
         I favour below the subtotal, vat and total amounts.  Also need to consider updating
@@ -36,6 +35,10 @@ Objectives -
         controlled instead.
 
     Tests
+
+        A problem - my brought forward payments require the cash book field but this field shouldn't even be visible.
+        Should just be a case of removing the b/fs from payment_types on the model and changing the tests to exclude
+        this field.
 
         Test voiding a transaction with nominal entries and with matching and with both.  Do this for all trans types.
 

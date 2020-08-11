@@ -131,13 +131,17 @@ input {
     padding-left: 5px;
 }
 
-.black-single-border-bottom {
-    border-bottom: 1px solid black;
+.top-and-bottom-dotted-border {
+    border-top: 1px dotted #D9D9D9;
+    border-bottom: 1px dotted #D9D9D9;
 }
 
-.black-double-border-bottom {
-    border-bottom-style: double;
-    border-bottom-color: black;
+.top-solid-border {
+    border-top: 1px solid black;
+}
+
+.bottom-double-border {
+    border-bottom: 3px double black;
 }
 
 .f-s-100 {

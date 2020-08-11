@@ -56,35 +56,37 @@
                                                 </div>
                                             </div>
                                             {% endif %}
+                                            {% block totals %}
                                             <div class="d-flex justify-content-end totals pr-3">
                                                 <div>
-                                                    <div class="row small black-single-border-bottom text-right">
-                                                        <div class="col">
-                                                            Subtotal
-                                                        </div>
-                                                        <div class="col sub-total-lines">
-                                                            0.00
-                                                        </div>
-                                                        <div class="mt-2 w-100"></div>
-                                                        <div class="my-2 col">
-                                                            Vat
-                                                        </div>
-                                                        <div class="my-2 col vat-total-lines">
-                                                            0.00
-                                                        </div>
-                                                    </div>
-                                                    <div class="py-2 row font-weight-bold h4 black-double-border-bottom text-right">
-                                                        <div class="col text-uppercase">
-                                                            total
-                                                        </div>
-                                                        <div class="col total-lines">
-                                                            0.00
-                                                        </div>
-                                                    </div>
+                                                   <table class="ml-auto text-right w-75">
+                                                    <thead class=""></thead>
+                                                    <tbody class="">
+                                                        <tr>
+                                                            <td>Goods</td>
+                                                            <td class="goods-total-lines">0.00</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Vat</td>
+                                                            <td class="vat-total-lines">0.00</td>
+                                                        </tr>
+                                                        <tr class="top-and-bottom-dotted-border font-weight-bold">
+                                                            <td class="text-uppercase">total</td>
+                                                            <td class="total-lines">0.00</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="text-primary">Matched</td>
+                                                            <td class="matched-total">0.00</td>
+                                                        </tr>
+                                                        <tr class="top-solid-border bottom-double-border font-weight-bold">
+                                                            <td>Due</td>
+                                                            <td class="due-total">0.00</td>
+                                                        </tr>
+                                                    </tbody>
+                                                   </table>
                                                 </div>
-                                                {% block test %}
-                                                {% endblock test %}
                                             </div>
+                                            {% endblock totals %}
                                         </div>
                                     </div>
                                     {% endif %}
