@@ -1,8 +1,8 @@
 Objectives -
 
-    Complete the nominal transaction view
+    Disable changing trans type
 
-    Disable changing trans type.
+    Work through the sections below before creating two more ledgers.
 
     Create Cash Book
     Create the Sales ledger
@@ -11,11 +11,6 @@ Objectives -
 
     DJANGO ENHANCEMENT LOG - I was surprised that we could not use proxy models based on a parent class instance.
 
-PRIORITY 1
-
-        We need to make a decision about where to show the outstanding amount.  I think
-        I favour below the subtotal, vat and total amounts.  Also need to consider updating
-        this on the fly whilst the user edits, and, creates the transaction in the first place.
 
     VAT
 
@@ -26,6 +21,10 @@ PRIORITY 1
         Create a bad debt write off journal transaction type for the sales ledger
 
     UI
+
+        We need to make a decision about where to show the outstanding amount.  I think
+        I favour below the subtotal, vat and total amounts.  Also need to consider updating
+        this on the fly whilst the user edits, and, creates the transaction in the first place.
 
         When the supplier errors the error div is too wide.  Like the grid we need to
         set a width constraint of these header fields so the design is respected.

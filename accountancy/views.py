@@ -236,7 +236,6 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             else:
                 queryset = self.get_queryset()
         else:
-            # context_data["form"] = AdvancedTransactionSearchForm()
             context_data["form"] = self.advanced_search_form_class()
             queryset = self.get_queryset()
         start = self.request.GET.get("start", 0)
@@ -255,12 +254,18 @@ class BaseTransactionsList(jQueryDataTable, ListView):
         context_data["paginator_obj"] = p
         context_data["page_obj"] = page_obj
         rows = []
-        for col in page_obj.object_list:
-            col["DT_RowData"] = {
-                "pk": col["id"],
-                "href": self.get_transaction_url(pk=col["id"])
+
+        if identifier := hasattr(self, 'row_identifier'):
+            identifier = self.row_identifier
+        else:
+            identifier = 'id'
+
+        for row in page_obj.object_list:
+            row["DT_RowData"] = {
+                "pk": row.get(identifier),
+                "href": self.get_transaction_url(row=row)
             }
-            rows.append(col)
+            rows.append(row)
         format_dates(rows, self.datetime_fields, self.datetime_format)
         context_data["data"] = rows
         return context_data

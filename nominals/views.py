@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.db.models import Sum
 from django.urls import reverse_lazy
 
 from accountancy.forms import AdvancedTransactionSearchForm
@@ -9,7 +11,7 @@ from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
-from .models import NominalHeader, NominalLine, NominalTransaction, Nominal
+from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
 
 class CreateTransaction(BaseCreateTransaction):
@@ -87,24 +89,30 @@ create_on_the_fly_view = create_on_the_fly(
 
 class TransactionEnquiry(BaseTransactionsList):
     model = NominalTransaction
+    # ORDER OF FIELDS HERE IS IMPORTANT FOR GROUPING THE SQL QUERY
+    # ATM -
+    # GROUP BY MODULE, HEADER, NOMINAL__NAME, PERIOD
     fields = [
         ("module", "Module"),
         ("header", "Unique Ref"),
-        ("line", "Line"),
         ("nominal__name", "Nominal"),
         ("period", "Period"),
-        ("created", "Date"),
-        ("value", "Value"),
+        ("total", "Total"),
     ]
     searchable_fields = ["nominal__name", "ref", "value"]
     datetime_fields = ["created",]
     datetime_format = '%d %b %Y'
     advanced_search_form_class = AdvancedTransactionSearchForm
     template_name = "nominals/transactions.html"
+    row_identifier = "header"
 
     def get_transaction_url(self, **kwargs):
-        pk = kwargs.pop("pk")
-        return reverse_lazy("purchases:view", kwargs={"pk": pk})
+        row = kwargs.pop("row")
+        module = row.get("module")
+        header = row.get("header")
+        modules = settings.ACCOUNTANCY_MODULES
+        module_name = modules[module]
+        return reverse_lazy(module_name + ":view", kwargs={"pk": header})
 
     def get_queryset(self):
         return (
@@ -112,8 +120,8 @@ class TransactionEnquiry(BaseTransactionsList):
             .select_related('nominal__name')
             .all()
             .values(
-                'id',
-                *[ field[0] for field in self.fields ]
+                *[ field[0] for field in self.fields[:-1] ]
             )
+            .annotate(total=Sum("value"))
             .order_by(*self.order_by())
         )

@@ -330,7 +330,8 @@ class TransactionEnquiry(BaseTransactionsList):
     template_name = "purchases/transactions.html"
 
     def get_transaction_url(self, **kwargs):
-        pk = kwargs.pop("pk")
+        row = kwargs.pop("row")
+        pk = row["id"]
         return reverse_lazy("purchases:view", kwargs={"pk": pk})
 
     def get_queryset(self):

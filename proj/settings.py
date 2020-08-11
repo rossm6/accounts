@@ -170,3 +170,8 @@ STATICFILES_DIRS = [ os.path.join(BASE_DIR, 'static'), ]
 
 DEFAULT_VAT_NOMINAL = "Vat"
 DEFAULT_SYSTEM_SUSPENSE = "System Suspense Account"
+
+ACCOUNTANCY_MODULES = {
+    "PL": "purchases",
+    "NL": "nominals"
+}
