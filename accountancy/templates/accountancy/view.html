@@ -20,6 +20,16 @@
 {% endblock action %}
 
 {% block extra_js %}
-    {% include 'accountancy/grid_js.html' with header_form=header_form %}
-    {% include 'accountancy/matching_js.html' %}
+{% load static %}
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
+<script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
+<script>
+    $(document).ready(function(){
+
+        {% include 'accountancy/existing_matched_transactions.js' %}
+        
+    });
+</script>
 {% endblock extra_js %}

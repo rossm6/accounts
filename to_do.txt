@@ -18,16 +18,24 @@ Objectives -
 
     UI
 
-        We need to make a decision about where to show the outstanding amount.  I think
-        I favour below the subtotal, vat and total amounts.  Also need to consider updating
-        this on the fly whilst the user edits, and, creates the transaction in the first place.
+        If there are no matched transactions it looks a bit odd in View Tran.
+        
+
+    	Show the nominal entries for a transaction in view and edit.
 
         When the supplier errors the error div is too wide.  Like the grid we need to
         set a width constraint of these header fields so the design is respected.
 
         Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
 
-            I WILL DO THIS WHEN I HAVE PUT THE APP UP ON HEROKU 
+            I WILL DO THIS WHEN I HAVE PUT THE APP UP ON HEROKU
+
+
+        Should we show a client side error if the matching is wrong?  Even prevent form submission?
+
+        	LEAVE THIS FOR NOW AS CLIENT SIDE VALIDATION HAS BEEN IGNORED SO FAR.  NEEDS TO BE CONSIDERED
+        	AS PART OF THAT MORE GENERAL TOPIC.
+
 
     Create on the fly
 

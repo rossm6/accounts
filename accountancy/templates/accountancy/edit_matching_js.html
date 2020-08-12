@@ -28,21 +28,7 @@
            // with the input value inside.  The datatables plugin must look for these elements out of the box.
 
 
-        var existing_matched_transactions_table = $("table.existing_matched_transactions").DataTable({
-            dom: "t",
-            bPaginate: false,
-            columnDefs: [
-                { orderDataType: 'dom-text', targets: [ 7 ] }, // this requires a plugin - see above and https://datatables.net/plug-ins/sorting/custom-data-source/dom-text
-                { className: 'd-none', targets: [ 5, 6, 8 ] },
-                { className: "dt-center", "targets": "_all" }
-            ],
-            scrollY: "200px",
-            scrollCollapse: true,
-            paging: false,
-            language: {
-                emptyTable: "This transaction isn't matched to anything yet"
-            }
-        });
+        {% include 'accountancy/existing_matched_transactions.js' %}
 
 
         var new_matched_transacions_table = $("table.new_matched_transactions").DataTable({

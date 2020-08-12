@@ -12,7 +12,7 @@ from accountancy.forms import (AjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm, BaseTransactionMixin,
                                BaseTransactionModelFormSet, DataTableTdField,
                                Div, Field, LabelAndFieldOnly, PlainFieldErrors,
-                               TableHelper)
+                               ReadOnlyBaseTransactionHeaderForm, TableHelper)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.layouts import create_transaction_header_helper
 from accountancy.widgets import InputDropDown
@@ -94,9 +94,13 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         return cleaned_data
 
 
-class ReadOnlyPurchaseHeaderForm(PurchaseHeaderForm):
+class ReadOnlyPurchaseHeaderForm(ReadOnlyBaseTransactionHeaderForm, PurchaseHeaderForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # FIX ME - consider moving the logic changing the fields
+        # to the ReadOnly parent class
+
         for field in self.fields:
             self.fields[field].disabled = True
         self.fields["type"].widget = forms.TextInput(

@@ -368,6 +368,16 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
         return instance
 
 
+class ReadOnlyBaseTransactionHeaderForm(BaseTransactionHeaderForm):
+    """
+    Remove the datepicker widget since it is not needed in read only view.
+    """
+    date = forms.DateField()
+    due_date = forms.DateField()
+
+
+
+
 class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
     def get_ordering_widget(self):
