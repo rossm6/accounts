@@ -20,7 +20,7 @@ from accountancy.views import (BaseTransactionsList, BaseViewTransaction,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory,
-                               jQueryDataTable)
+                               jQueryDataTable, ViewTransactionOnLedgerOtherThanNominal)
 from items.models import Item
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
@@ -106,7 +106,7 @@ class EditTransaction(EditPurchaseOrSalesTransaction):
     control_nominal_name = "Purchase Ledger Control"
 
 
-class ViewTransaction(BaseViewTransaction):
+class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
     header = {
         "model": PurchaseHeader,
         "form": ReadOnlyPurchaseHeaderForm,
@@ -129,6 +129,7 @@ class ViewTransaction(BaseViewTransaction):
     }
     void_form = VoidTransaction
     template_name = "purchases/view.html"
+    nominal_transaction_model = NominalTransaction
 
 
 def void(request):

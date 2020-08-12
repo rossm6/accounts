@@ -16,12 +16,18 @@ Objectives -
 
         Create a bad debt write off journal transaction type for the sales ledger
 
+
+    Nominals
+
+        Create the View and Void views.  View should inherit from the ReadOnly base class in accountancy.forms
+        like in PL module.
+
     UI
 
-        If there are no matched transactions it looks a bit odd in View Tran.
-        
+        View trans for payments is showing the due_date field and not showing the goods, vat, total, due etc
+        Obviously for payments we should only show : total, less matched, and due
 
-    	Show the nominal entries for a transaction in view and edit.
+        Totals for goods, vat, total, matched and due not calculating for View Tran
 
         When the supplier errors the error div is too wide.  Like the grid we need to
         set a width constraint of these header fields so the design is respected.

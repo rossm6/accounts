@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.postgres.search import (SearchQuery, SearchRank,
                                             SearchVector, TrigramSimilarity)
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import (Http404, HttpResponse, HttpResponseRedirect,
                          JsonResponse)
 from django.shortcuts import get_object_or_404, render, reverse
@@ -848,7 +848,23 @@ class BaseEditTransaction(BaseTransaction):
         return kwargs
 
 
-class EditPurchaseOrSalesTransaction(BaseEditTransaction):
+class NominalTransactionsMixin(object):
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        nom_trans = (
+            self.get_nominal_transaction_model()
+                .objects
+                .select_related("nominal__name")
+                .filter(header=self.header_to_edit.pk)
+                .values("nominal__name")
+                .annotate(total=Sum("value"))
+        )
+        context["nominal_transactions"] = nom_trans
+        return context
+
+
+class EditPurchaseOrSalesTransaction(NominalTransactionsMixin, BaseEditTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -862,6 +878,7 @@ class EditPurchaseOrSalesTransaction(BaseEditTransaction):
             self.module, 
             **kwargs
         )
+
 
 class BaseViewTransaction(BaseEditTransaction):
 
@@ -878,6 +895,14 @@ class BaseViewTransaction(BaseEditTransaction):
         # what about on the fly payments though ?
         # like Xero does
         raise Http404("Read only view.  Use Edit transaction to make changes.")
+
+
+class ViewTransactionOnLedgerOtherThanNominal(NominalTransactionsMixin, BaseViewTransaction):
+    """
+    On all ledgers other than the nominal ledger the user should like to see the nominal transactions
+    for the transaction.  It is pointless on the NL because the lines show this already.
+    """
+    pass
 
 
 def create_on_the_fly(**forms):

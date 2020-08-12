@@ -369,3 +369,14 @@ div.has_errors::after {
 td.dataTables_empty {
     vertical-align: middle;
 }
+
+
+/* added to fix width of nominal transactions table */
+div.dataTables_scrollHeadInner {
+    width: 100% !important;
+}
+
+table.nominal_transactions {
+    width: 100% !important;
+    text-align: center;
+}

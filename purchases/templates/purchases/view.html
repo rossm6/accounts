@@ -7,6 +7,16 @@
     <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
 {% endblock extra_head %}
 
+{% block module_actions %}
+    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#nominalTransactions">
+        Show Nominal Transactions
+    </button>
+{% endblock module_actions %}
+
+{% block nominal_transactions %}
+    {% include 'accountancy/nominal_transactions.html' with nominal_transactions=nominal_transactions %}
+{% endblock nominal_transactions %}
+
 {% block matching %}
 <div class="my-4">
     <div class="mb-2">
@@ -51,6 +61,7 @@
 {{ void_form }}
 
 {% block module_js %}
+<script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
 <script>
 
     function show_error(errors){

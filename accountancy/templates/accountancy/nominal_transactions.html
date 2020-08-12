@@ -1,0 +1,33 @@
+<!-- Modal -->
+<div class="modal fade p-5" id="nominalTransactions" tabindex="-1" aria-labelledby="nominalTransactionsLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="h6 font-weight-bold modal-title" id="nominalTransactionsLabel">Nominal Transactions</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+            <div>
+                <table class="nominal_transactions">
+                    <thead>
+                        <tr>
+                            <th>Nominal</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-bordered">
+                        {% for transaction in nominal_transactions %}
+                            <tr>
+                                <td>{{ transaction.nominal__name }}</td>
+                                <td>{{ transaction.total }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>

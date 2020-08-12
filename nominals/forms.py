@@ -10,7 +10,7 @@ from accountancy.fields import (AjaxModelChoiceField,
 from accountancy.forms import (AjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm, Div, Field,
                                LabelAndFieldAndErrors, PlainFieldErrors,
-                               TableHelper)
+                               TableHelper, ReadOnlyBaseTransactionHeaderForm)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.layouts import (create_journal_header_helper,
                                  create_transaction_header_helper)

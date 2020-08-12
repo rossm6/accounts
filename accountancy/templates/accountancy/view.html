@@ -5,14 +5,18 @@
 {% block action %}
 <div class="d-flex justify-content-between align-items-center bg-white py-1 mb-4">
     <h2 class="h6 m-0 font-weight-bold">Awaiting Payment</h2>
-    <div>
-        <div class="dropdown">
-            <button class="btn btn-sm bg-primary text-white dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Options
-            </button>
-            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                <a class="dropdown-item small" href="{% url 'purchases:edit' pk=view %}">Edit</a>
-                {% crispy void_form %}
+    <div class="d-flex">
+        {% block module_actions %}
+        {% endblock module_actions %}
+        <div class="ml-3">
+            <div class="dropdown">
+                <button class="btn btn-sm bg-primary text-white dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Options
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item small" href="{% url 'purchases:edit' pk=view %}">Edit</a>
+                    {% crispy void_form %}
+                </div>
             </div>
         </div>
     </div>
