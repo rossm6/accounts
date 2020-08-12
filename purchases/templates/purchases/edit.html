@@ -94,6 +94,7 @@
 {% endblock modal_forms %}
 
 {% block extra_js %}
+    <script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
     {% include 'accountancy/grid_js.html' with header_form=header_form %}
     {% include 'accountancy/edit_matching_js.html' %}
     <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
