@@ -158,6 +158,7 @@ def create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal)
         ["goods_nominal_transaction", "vat_nominal_transaction",
             "total_nominal_transaction"]
     )
+    return header
 
 
 def create_payment_with_nom_entries(header, control_nominal, bank_nominal):

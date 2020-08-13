@@ -730,7 +730,7 @@ read_only_match = forms.modelformset_factory(
 read_only_match.include_empty_form = False
 
 
-class VoidTransaction(forms.Form):
+class VoidTransactionForm(forms.Form):
 
     id = forms.IntegerField()
 

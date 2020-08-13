@@ -15,12 +15,14 @@ from querystring_parser import parser
 
 from accountancy.forms import AdvancedTransactionSearchForm
 from accountancy.views import (BaseTransactionsList, BaseViewTransaction,
+                               BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                EditPurchaseOrSalesTransaction,
+                               ViewTransactionOnLedgerOtherThanNominal,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory,
-                               jQueryDataTable, ViewTransactionOnLedgerOtherThanNominal)
+                               jQueryDataTable)
 from items.models import Item
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
@@ -28,8 +30,8 @@ from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (PurchaseHeaderForm, PurchaseLineForm, QuickSupplierForm,
-                    ReadOnlyPurchaseHeaderForm, VoidTransaction, enter_lines,
-                    match, read_only_lines, read_only_match)
+                    ReadOnlyPurchaseHeaderForm, VoidTransactionForm,
+                    enter_lines, match, read_only_lines, read_only_match)
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
@@ -127,72 +129,19 @@ class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
         "formset": read_only_match,
         "prefix": "match"
     }
-    void_form = VoidTransaction
+    void_form = VoidTransactionForm
     template_name = "purchases/view.html"
     nominal_transaction_model = NominalTransaction
 
 
-def void(request):
-    if request.method == "POST":
-        success = False
-        form = VoidTransaction(data=request.POST, prefix="void", )
-        if form.is_valid():
-            success = True
-            transaction_to_void = form.instance
-            transaction_to_void.status = "v"
-            matches = (
-                PurchaseMatching.objects
-                .filter(Q(matched_to=transaction_to_void) | Q(matched_by=transaction_to_void))
-                .select_related("matched_to")
-                .select_related("matched_by")
-            )
-            headers_to_update = []
-            headers_to_update.append(transaction_to_void)
-            for match in matches:
-                if match.matched_by == transaction_to_void:
-                    # value is the amount of the matched_to transaction that was matched
-                    # e.g. transaction_to_void is 120.00 payment and matched to 120.00 invoice
-                    # value = 120.00
-                    transaction_to_void.paid += match.value
-                    transaction_to_void.due -= match.value
-                    match.matched_to.paid -= match.value
-                    match.matched_to.due += match.value
-                    headers_to_update.append(match.matched_to)
-                else:
-                    # value is the amount of the transaction_to_void which was matched
-                    # matched_by is an invoice for 120.00 and matched_to is a payment for 120.00
-                    # value is -120.00
-                    transaction_to_void.paid -= match.value
-                    transaction_to_void.due += match.value
-                    match.matched_by.paid += match.value
-                    match.matched_by.due -= match.value
-                    headers_to_update.append(match.matched_by)
-            PurchaseHeader.objects.bulk_update(
-                headers_to_update,
-                ["paid", "due", "status"]
-            )
-            PurchaseMatching.objects.filter(
-                pk__in=[match.pk for match in matches]).delete()
-            return JsonResponse(
-                data={
-                    "success": success,
-                    "href": reverse("purchases:transaction_enquiry")
-                }
-            )
-        else:
-            non_field_errors = form.non_field_errors()
-            field_errors = form.errors
-            errors = {
-                "non_field_errors": non_field_errors,
-                "field_errors": field_errors
-            }
-            return JsonResponse(
-                data={
-                    "success": success,
-                    "errors": errors
-                }
-            )
-    raise Http404("Only post requests are allowed")
+class VoidTransaction(BaseVoidTransaction):
+    header_model = PurchaseHeader
+    matching_model = PurchaseMatching
+    nominal_transaction_model = NominalTransaction
+    form_prefix = "void"
+    form = VoidTransactionForm
+    success_url = reverse_lazy("purchases:transaction_enquiry")
+    module = 'PL'
 
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):

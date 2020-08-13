@@ -20,7 +20,6 @@ from nominals.models import Nominal
 
 from .widgets import InputDropDown
 
-
 def format_dates(objects, date_keys, format):
     """
     Convert date or datetime objects to the format specified.
@@ -972,3 +971,118 @@ def create_on_the_fly(**forms):
             raise Http404()
 
     return view
+
+
+
+class BaseVoidTransaction(View):
+    http_method_names = ['post']
+
+    def get_success_url(self):
+        return self.success_url
+
+    def get_transaction_module(self):
+        return self.module
+
+    def get_nominal_transaction_model(self):
+        return self.nominal_transaction_model
+
+    def form_is_valid(self):
+        self.success = True
+        transaction_to_void = self.form.instance
+        transaction_to_void.status = "v"
+        if matching_model := self.get_matching_model():
+            matches = (
+                matching_model
+                .objects
+                .filter(
+                    Q(matched_to=transaction_to_void)
+                    |
+                    Q(matched_by=transaction_to_void)
+                )
+                .select_related("matched_to")
+                .select_related("matched_by")
+            )
+            headers_to_update = []
+            headers_to_update.append(transaction_to_void)
+            for match in matches:
+                if match.matched_by == transaction_to_void:
+                    # value is the amount of the matched_to transaction that was matched
+                    # e.g. transaction_to_void is 120.00 payment and matched to 120.00 invoice
+                    # value = 120.00
+                    transaction_to_void.paid += match.value
+                    transaction_to_void.due -= match.value
+                    match.matched_to.paid -= match.value
+                    match.matched_to.due += match.value
+                    headers_to_update.append(match.matched_to)
+                else:
+                    # value is the amount of the transaction_to_void which was matched
+                    # matched_by is an invoice for 120.00 and matched_to is a payment for 120.00
+                    # value is -120.00
+                    transaction_to_void.paid -= match.value
+                    transaction_to_void.due += match.value
+                    match.matched_by.paid += match.value
+                    match.matched_by.due -= match.value
+                    headers_to_update.append(match.matched_by)
+            self.get_header_model().objects.bulk_update(
+                headers_to_update,
+                ["paid", "due", "status"]
+            )
+            matching_model.objects.filter(
+                pk__in=[match.pk for match in matches]
+            ).delete()
+        
+        if transaction_to_void.will_have_nominal_transactions():
+            nom_trans = (
+                self.get_nominal_transaction_model()
+                .objects
+                .filter(module=self.get_transaction_module())
+                .filter(header=transaction_to_void.pk)
+            ).delete()
+
+            
+    def form_is_invalid(self):
+        self.success = False
+        non_field_errors = self.form.non_field_errors()
+        field_errors = self.form.errors
+        self.errors = {
+            "non_field_errors": non_field_errors,
+            "field_errors": field_errors
+        }
+
+    def get_header_model(self):
+        return self.header_model
+
+    def get_matching_model(self):
+        if hasattr(self, "matching_model"):
+            return self.matching_model
+
+    def get_form_prefix(self):
+        return self.form_prefix
+
+    def get_void_form_kwargs(self):
+        return {
+            "data": self.request.POST,
+            "prefix": self.get_form_prefix()
+        }
+
+    def get_void_form(self):
+        return self.form(**self.get_void_form_kwargs())
+
+    def post(self, request, *args, **kwargs):
+        self.form = form = self.get_void_form()
+        if form.is_valid():
+            self.form_is_valid()
+            return JsonResponse(
+                data={
+                    "success": self.success,
+                    "href": self.get_success_url()
+                }
+            )
+        else:
+            self.form_is_invalid()
+            return JsonResponse(
+                data={
+                    "success": self.success,
+                    "errors": self.errors
+                }
+            )
