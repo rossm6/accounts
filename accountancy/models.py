@@ -105,6 +105,9 @@ class TransactionHeader(DecimalBaseModel):
     class Meta:
         abstract = True
 
+    def is_payment_type(self):
+        return self.type in self.payment_type
+
     def is_credit_type(self):
         if self.type in self.credits:
             return True
@@ -128,6 +131,10 @@ class TransactionHeader(DecimalBaseModel):
     @classmethod
     def get_type_names_requiring_lines(cls):
         return [type[1] for type in cls.lines_required]
+
+    @classmethod
+    def get_debit_types(cls):
+        return cls.debits
 
 
 # class Invoice(TransactionHeader):

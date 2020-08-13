@@ -58,11 +58,11 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         # the type
 
         if self.data:
-            type = self.data.get(self.prefix + "-" + "type")
+            _type = self.data.get(self.prefix + "-" + "type")
         else:
-            type = self.initial.get('type')
+            _type = self.initial.get('type')
 
-        if type in self._meta.model.payment_type:
+        if _type in self._meta.model.payment_type:
             payment_form = True
             self.fields["cash_book"].required = True
         else:
@@ -108,8 +108,12 @@ class ReadOnlyPurchaseHeaderForm(ReadOnlyBaseTransactionHeaderForm, PurchaseHead
         self.fields["supplier"].widget = forms.TextInput()
         supplier = self.fields["supplier"].queryset[0]
         self.initial["supplier"] = str(supplier)
-        if type in self._meta.model.payment_type:
+        _type = self.initial["type"]
+        if _type in self._meta.model.payment_type:
             payment_type = True
+            self.fields["cash_book"].widget = forms.TextInput()
+            cash_book = self.fields["cash_book"].queryset[0]
+            self.initial["cash_book"] = str(cash_book)
         else:
             payment_type = False
         self.helper = create_transaction_header_helper(

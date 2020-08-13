@@ -369,10 +369,16 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
         if 'non_field_errors' not in kwargs:
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
+
+        # DO WE NEED THIS NOW?  SINCE EDITING TRANS TYPE IS DISALLOWED NOW
+        # I WOULD HAVE THOUGHT NOT
         if 'requires_lines' not in kwargs:
             # as self.header_form not set for GET requests
             kwargs['requires_lines'] = self.requires_lines(
                 kwargs["header_form"])
+
+        if 'transaction_type' not in kwargs:
+            kwargs['transaction_type'] = "debit" if self.type_is_debit() else "credit"
 
         if hasattr(self, 'create_on_the_fly'):
             for form in self.create_on_the_fly:
@@ -584,9 +590,19 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 return formset_class(**self.get_match_formset_kwargs(header))
 
     # MIGHT BE OBSOLETE NOW
-
     def header_is_payment_type(self):
         return self.header_obj.type in ("pbp", "pp", "pbr", "pr")
+
+    def type_is_debit(self):
+        if t := self.header_form.instance.type:
+            pass
+        elif t := self.header_form.initial.get("type"):
+            pass
+        # if type is '' then user abusing UI so stuff them
+        if t in self.get_header_model().get_debit_types():
+            return True
+        else:
+            return False
 
     def get(self, request, *args, **kwargs):
         """ Handle GET requests: instantiate a blank version of the form. """
@@ -748,6 +764,7 @@ class BaseEditTransaction(BaseTransaction):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["header_to_edit"] = self.header_to_edit
         context["edit"] = self.header_to_edit.pk
         return context
 

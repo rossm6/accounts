@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
 {% endblock extra_head %}
 
+{% block totals %}
+    {% if header_to_edit.is_payment_type %}
+        {% include 'accountancy/totals_exc_goods_with_matching.html' %}
+    {% else %}
+        {% include 'accountancy/totals_inc_goods_with_matching.html' %}        
+    {% endif %}
+{% endblock totals %}
+
 {% block matching %}
 <div class="my-4">
     <div class="mb-2">

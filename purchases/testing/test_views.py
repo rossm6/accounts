@@ -164,7 +164,6 @@ class CreateBroughtForwardInvoice(TestCase):
     def test_get_request_with_query_parameter(self):
         response = self.client.get(self.url + "?t=pbi")
         self.assertEqual(response.status_code, 200)
-        print(response.content)
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,

@@ -1,5 +1,8 @@
 $(document).ready(function () {
 
+    var transaction_type = "{{ transaction_type }}";
+
+    console.log(transaction_type);
 
     function calculate_vat(goods, vat_rate) {
         if (goods && vat_rate) {
@@ -28,19 +31,30 @@ $(document).ready(function () {
     function calculate_totals() {
         // first calculate the totals for goods, vat and total
         var lines = $("table.line").find("tbody").find("tr").not("tr.empty-form");
-        var goods = 0;
-        var vat = 0;
-        lines.each(function (index, line) {
-            var elements = get_elements($(line));
-            var g = (+elements.goods.val() || 0) * 100;
-            var v = (+elements.vat.val() || 0) * 100;
-            goods = goods + g;
-            vat = vat + v;
-        });
-        var total = goods + vat;
-        goods = goods / 100;
-        vat = vat / 100;
-        total = total / 100;
+        var goods;
+        var vat;
+        var total;
+        if(lines.length){
+            goods = 0;
+            vat = 0;
+            lines.each(function (index, line) {
+                var elements = get_elements($(line));
+                var g = (+elements.goods.val() || 0) * 100;
+                var v = (+elements.vat.val() || 0) * 100;
+                goods = goods + g;
+                vat = vat + v;
+            });
+            total = goods + vat;
+            goods = goods / 100;
+            vat = vat / 100;
+            total = total / 100;
+        }
+        else{
+            goods = 0;
+            vat = 0;
+            total = $("input[name='header-total']").val();
+            total = +total;
+        }
         // second calculate the totals for matched and due
         var existing_matches = $("table.existing_matched_transactions").find("tbody").find("tr").not("tr.empty-form");
         var new_matches = $("table.new_matched_transactions").find("tbody").find("tr").not("tr.empty-form");
@@ -58,11 +72,12 @@ $(document).ready(function () {
             matched_total = matched_total + ((+elem.val() || 0) * 100);
         });
         matched_total = matched_total / 100;
-        var due = total + matched_total;
-        var invalid_matching_error_class = undefined;
-        if((total >= 0 && due > total) || (total <= 0 && due < total)){
-            // invalid matching
-            invalid_matching_error_class = "bg-danger"
+        var due;
+        if(transaction_type == "debit"){
+            due = total + matched_total;
+        }
+        else{
+            due = total - matched_total;
         }
         goods = goods.toFixed(2);
         vat = vat.toFixed(2);
@@ -76,14 +91,6 @@ $(document).ready(function () {
         var due_total_elem = $("td.due-total");
         matched_total_elem.text(matched_total);
         due_total_elem.text(due);
-        // if(invalid_matching_error_class){
-        //     matched_total_elem.addClass(invalid_matching_error_class);
-        //     due_total_elem.addClass(invalid_matching_error_class);
-        // }
-        // else{
-        //     matched_total_elem.removeClass(invalid_matching_error_class);
-        //     due_total_elem.removeClass(invalid_matching_error_class);  
-        // }
     }
 
     $("table.line").on("change", ":input", function (event) {

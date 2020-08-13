@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
 {% endblock extra_head %}
 
+{% block totals %}
+    {% if header_to_edit.is_payment_type %}
+        {% include 'accountancy/totals_exc_goods_with_matching.html' %}
+    {% else %}
+        {% include 'accountancy/totals_inc_goods_with_matching.html' %}        
+    {% endif %}
+{% endblock totals %}
+
 {% block buttons_footer %}
 <div class="d-flex justify-content-between align-items-center p-2 border bg-white">
     <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#nominalTransactions">

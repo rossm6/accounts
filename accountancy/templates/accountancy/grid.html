@@ -40,7 +40,7 @@
                                         <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="{{ line_form_prefix }}">
                                                 {% crispy line_formset %}
                                         </table>
-                                        <div class="mt-3 mb-5">
+                                        <div class="mt-3 mb-3">
                                             {% if create or edit %}
                                             <div>
                                                 <div class="dropdown-split-button">
@@ -56,40 +56,11 @@
                                                 </div>
                                             </div>
                                             {% endif %}
-                                            {% block totals %}
-                                            <div class="d-flex justify-content-end totals pr-3">
-                                                <div>
-                                                   <table class="ml-auto text-right w-75">
-                                                    <thead class=""></thead>
-                                                    <tbody class="">
-                                                        <tr>
-                                                            <td>Goods</td>
-                                                            <td class="goods-total-lines">0.00</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>Vat</td>
-                                                            <td class="vat-total-lines">0.00</td>
-                                                        </tr>
-                                                        <tr class="top-and-bottom-dotted-border font-weight-bold">
-                                                            <td class="text-uppercase">total</td>
-                                                            <td class="total-lines">0.00</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td class="text-primary">Matched</td>
-                                                            <td class="matched-total">0.00</td>
-                                                        </tr>
-                                                        <tr class="top-solid-border bottom-double-border font-weight-bold">
-                                                            <td>Due</td>
-                                                            <td class="due-total">0.00</td>
-                                                        </tr>
-                                                    </tbody>
-                                                   </table>
-                                                </div>
-                                            </div>
-                                            {% endblock totals %}
                                         </div>
                                     </div>
                                     {% endif %}
+                                    {% block totals %}
+                                    {% endblock totals %}
                                     {% block buttons_footer %}
                                     {% endblock buttons_footer %}
                                     {% block nominal_transactions %}

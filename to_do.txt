@@ -16,6 +16,10 @@ Objectives -
 
         Create a bad debt write off journal transaction type for the sales ledger
 
+    Void
+
+        Write a general class for VoidView.  Check it works for invoice, payment and brought forward invoice.
+        Shouldn't need to check every type.
 
     Nominals
 
@@ -23,11 +27,6 @@ Objectives -
         like in PL module.
 
     UI
-
-        View trans for payments is showing the due_date field and not showing the goods, vat, total, due etc
-        Obviously for payments we should only show : total, less matched, and due
-
-        Totals for goods, vat, total, matched and due not calculating for View Tran
 
         When the supplier errors the error div is too wide.  Like the grid we need to
         set a width constraint of these header fields so the design is respected.
