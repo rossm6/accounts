@@ -20,6 +20,7 @@ from nominals.models import Nominal
 
 from .widgets import InputDropDown
 
+
 def format_dates(objects, date_keys, format):
     """
     Convert date or datetime objects to the format specified.
@@ -671,8 +672,8 @@ class BaseCreateTransaction(BaseTransaction):
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         self.header_obj.create_nominal_transactions(
-            self.get_nominal_model(), 
-            self.get_nominal_transaction_model(), 
+            self.get_nominal_model(),
+            self.get_nominal_transaction_model(),
             self.module,
             **kwargs
         )
@@ -735,11 +736,12 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         self.header_obj.create_nominal_transactions(
-            self.get_nominal_model(), 
-            self.get_nominal_transaction_model(), 
+            self.get_nominal_model(),
+            self.get_nominal_transaction_model(),
             self.module,
             **kwargs
         )
+
 
 class BaseEditTransaction(BaseTransaction):
 
@@ -749,9 +751,9 @@ class BaseEditTransaction(BaseTransaction):
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         self.header_obj.edit_nominal_transactions(
-            self.get_nominal_model(), 
-            self.get_nominal_transaction_model(), 
-            self.module, 
+            self.get_nominal_model(),
+            self.get_nominal_transaction_model(),
+            self.module,
             **kwargs
         )
 
@@ -774,7 +776,7 @@ class BaseEditTransaction(BaseTransaction):
         self.lines_to_delete = self.line_formset.deleted_objects
         line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
         ) else self.line_formset
-        lines_to_be_created_or_updated_only = [] # excluding those to delete
+        lines_to_be_created_or_updated_only = []  # excluding those to delete
         for form in line_forms:
             if form.empty_permitted and form.has_changed():
                 lines_to_be_created_or_updated_only.append(form)
@@ -803,7 +805,8 @@ class BaseEditTransaction(BaseTransaction):
         ).delete()
 
         if self.requires_analysis(self.header_form):
-            existing_nom_trans = self.get_nominal_transaction_model().objects.filter(header=self.header_obj.pk)
+            existing_nom_trans = self.get_nominal_transaction_model(
+            ).objects.filter(header=self.header_obj.pk)
             self.create_or_update_nominal_transactions(
                 new_lines=new_lines,
                 updated_lines=lines_to_update,
@@ -889,21 +892,28 @@ class EditPurchaseOrSalesTransaction(NominalTransactionsMixin, BaseEditTransacti
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         self.header_obj.edit_nominal_transactions(
-            self.get_nominal_model(), 
-            self.get_nominal_transaction_model(), 
-            self.module, 
+            self.get_nominal_model(),
+            self.get_nominal_transaction_model(),
+            self.module,
             **kwargs
         )
 
 
 class BaseViewTransaction(BaseEditTransaction):
 
+    def get_void_form_action(self):
+        return self.void_form_action
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["edit"] = False
         context["view"] = self.header_to_edit.pk
         context["void_form"] = self.void_form(
-            prefix="void", initial={"id": self.header_to_edit.pk})
+            self.get_header_model(), 
+            self.get_void_form_action(),
+            prefix="void", 
+            initial={"id": self.header_to_edit.pk}
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -973,7 +983,6 @@ def create_on_the_fly(**forms):
     return view
 
 
-
 class BaseVoidTransaction(View):
     http_method_names = ['post']
 
@@ -1030,7 +1039,7 @@ class BaseVoidTransaction(View):
             matching_model.objects.filter(
                 pk__in=[match.pk for match in matches]
             ).delete()
-        
+
         if transaction_to_void.will_have_nominal_transactions():
             nom_trans = (
                 self.get_nominal_transaction_model()
@@ -1039,7 +1048,6 @@ class BaseVoidTransaction(View):
                 .filter(header=transaction_to_void.pk)
             ).delete()
 
-            
     def form_is_invalid(self):
         self.success = False
         non_field_errors = self.form.non_field_errors()
@@ -1066,7 +1074,8 @@ class BaseVoidTransaction(View):
         }
 
     def get_void_form(self):
-        return self.form(**self.get_void_form_kwargs())
+        form_action = None  # does not matter for the form with this view
+        return self.form(self.get_header_model(), form_action, **self.get_void_form_kwargs())
 
     def post(self, request, *args, **kwargs):
         self.form = form = self.get_void_form()

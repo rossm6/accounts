@@ -396,3 +396,32 @@ class BaseLineFormset(BaseTransactionModelFormSet):
             self.brought_forward = brought_forward
             kwargs.pop("brought_forward")
         super().__init__(*args, **kwargs)
+
+
+class BaseVoidTransactionForm(forms.Form):
+
+    id = forms.IntegerField()
+
+    def __init__(self, header_model, form_action, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.header_model = header_model
+        self.helper = FormHelper()
+        self.helper.form_class = "void-form dropdown-item pointer"
+        self.helper.form_action = form_action
+        self.helper.form_method = "POST"
+        self.helper.layout = Layout(
+            Field('id', type="hidden"),
+            HTML("<a class='small'>Void</a>") 
+        )
+
+    def clean(self):
+        try:
+            self.instance = self.header_model.objects.get(
+                pk=self.cleaned_data.get("id"))
+        except:
+            raise forms.ValidationError(
+                _(
+                    "Transaction does not exist",
+                    code="invalid-transaction-to-void"
+                )
+            )

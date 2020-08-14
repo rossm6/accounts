@@ -1,7 +1,7 @@
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout
 from django import forms
-from django.shortcuts import reverse
+from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
 
@@ -196,7 +196,7 @@ class PurchaseLineFormset(BaseLineFormset):
         # Now invoice is lowered to 1000.  So total = 1000, paid = 1200 and due = -200
         # But if the invoice is paid the matching transactions will always be checked in full
         # It is therefore in match_formset.clean that due is corrected
-        
+
         # FOR TRANS WITHOUT LINES THIS IS SET IN THE CLEAN METHOD OF THE HEADER FORM
         self.header.due = self.header.total - self.header.paid
 
@@ -728,31 +728,3 @@ read_only_match = forms.modelformset_factory(
 )
 
 read_only_match.include_empty_form = False
-
-
-class VoidTransactionForm(forms.Form):
-
-    id = forms.IntegerField()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_class = "void-form dropdown-item pointer"
-        self.helper.form_action = reverse("purchases:void")
-        self.helper.form_method = "POST"
-        self.helper.layout = Layout(
-            Field('id', type="hidden"),
-            HTML("<a class='small'>Void</a>")
-        )
-
-    def clean(self):
-        try:
-            self.instance = PurchaseHeader.objects.get(
-                pk=self.cleaned_data.get("id"))
-        except:
-            raise forms.ValidationError(
-                _(
-                    "Transaction does not exist",
-                    code="invalid-transaction-to-void"
-                )
-            )

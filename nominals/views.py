@@ -2,15 +2,17 @@ from django.conf import settings
 from django.db.models import Sum
 from django.urls import reverse_lazy
 
-from accountancy.forms import AdvancedTransactionSearchForm
+from accountancy.forms import AdvancedTransactionSearchForm, BaseVoidTransactionForm
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
-                               BaseTransactionsList, create_on_the_fly,
+                               BaseTransactionsList, BaseVoidTransaction,
+                               create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
-from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
+from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
+                    enter_lines)
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
 
@@ -125,3 +127,12 @@ class TransactionEnquiry(BaseTransactionsList):
             .annotate(total=Sum("value"))
             .order_by(*self.order_by())
         )
+
+
+class VoidTransaction(BaseVoidTransaction):
+    header_model = NominalHeader
+    nominal_transaction_model = NominalTransaction
+    form_prefix = "void"
+    form = BaseVoidTransactionForm
+    success_url = reverse_lazy("nominals:transaction_enquiry")
+    module = 'NL'

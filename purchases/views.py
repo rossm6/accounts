@@ -13,7 +13,8 @@ from django.utils import timezone
 from django.views.generic import ListView
 from querystring_parser import parser
 
-from accountancy.forms import AdvancedTransactionSearchForm
+from accountancy.forms import (AdvancedTransactionSearchForm,
+                               BaseVoidTransactionForm)
 from accountancy.views import (BaseTransactionsList, BaseViewTransaction,
                                BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
@@ -30,8 +31,8 @@ from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (PurchaseHeaderForm, PurchaseLineForm, QuickSupplierForm,
-                    ReadOnlyPurchaseHeaderForm, VoidTransactionForm,
-                    enter_lines, match, read_only_lines, read_only_match)
+                    ReadOnlyPurchaseHeaderForm, enter_lines, match,
+                    read_only_lines, read_only_match)
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
@@ -129,7 +130,8 @@ class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
         "formset": read_only_match,
         "prefix": "match"
     }
-    void_form = VoidTransactionForm
+    void_form_action = reverse_lazy("purchases:void")
+    void_form = BaseVoidTransactionForm
     template_name = "purchases/view.html"
     nominal_transaction_model = NominalTransaction
 
@@ -139,10 +141,9 @@ class VoidTransaction(BaseVoidTransaction):
     matching_model = PurchaseMatching
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
-    form = VoidTransactionForm
+    form = BaseVoidTransactionForm
     success_url = reverse_lazy("purchases:transaction_enquiry")
     module = 'PL'
-
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):
 

@@ -1,6 +1,7 @@
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout
 from django import forms
+from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 
 from accountancy.fields import (AjaxModelChoiceField,
@@ -10,7 +11,7 @@ from accountancy.fields import (AjaxModelChoiceField,
 from accountancy.forms import (AjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm, Div, Field,
                                LabelAndFieldAndErrors, PlainFieldErrors,
-                               TableHelper, ReadOnlyBaseTransactionHeaderForm)
+                               ReadOnlyBaseTransactionHeaderForm, TableHelper)
 from accountancy.helpers import delay_reverse_lazy
 from accountancy.layouts import (create_journal_header_helper,
                                  create_transaction_header_helper)
@@ -21,7 +22,7 @@ from .models import Nominal, NominalHeader, NominalLine
 
 
 class NominalForm(forms.ModelForm):
-    
+
     parent = RootAndChildrenModelChoiceField(
         label="Account Type",
         queryset=Nominal.objects.all().prefetch_related("children"),
@@ -51,17 +52,20 @@ class NominalForm(forms.ModelForm):
                     css_class="mt-2"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('name', css_class="w-100 input can-highlight"),
+                    LabelAndFieldAndErrors(
+                        'name', css_class="w-100 input can-highlight"),
                     css_class="mt-2"
                 ),
                 css_class="modal-body"
             ),
             Div(
-                HTML('<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
+                HTML(
+                    '<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
                 HTML('<button type="submit" class="btn btn-sm btn-success">Save</button>'),
                 css_class="modal-footer"
             )
         )
+
 
 class NominalHeaderForm(BaseTransactionHeaderForm):
 
@@ -85,6 +89,7 @@ line_css_classes = {
     }
 }
 
+
 class NominalLineForm(AjaxForm):
 
     nominal = AjaxRootAndLeavesModelChoiceField(
@@ -99,7 +104,7 @@ class NominalLineForm(AjaxForm):
         get_queryset=Nominal.objects.none(),
         load_queryset=Nominal.objects.all().prefetch_related("children"),
         post_queryset=Nominal.objects.filter(children__isnull=True),
-        inst_queryset= lambda inst : Nominal.objects.filter(pk=inst.nominal_id),
+        inst_queryset=lambda inst: Nominal.objects.filter(pk=inst.nominal_id),
         searchable_fields=('name',)
     )
 
@@ -116,7 +121,7 @@ class NominalLineForm(AjaxForm):
         get_queryset=Vat.objects.none(),
         load_queryset=Vat.objects.all(),
         post_queryset=Vat.objects.all(),
-        inst_queryset= lambda inst : Vat.objects.filter(pk=inst.vat_code_id),
+        inst_queryset=lambda inst: Vat.objects.filter(pk=inst.vat_code_id),
         searchable_fields=('code', 'rate',),
         iterator=ModelChoiceIteratorWithFields
     )
@@ -124,7 +129,8 @@ class NominalLineForm(AjaxForm):
     class Meta:
         model = NominalLine
         fields = ('id', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
-        ajax_fields = ('nominal', 'vat_code', ) # used in Transaction form set_querysets method
+        # used in Transaction form set_querysets method
+        ajax_fields = ('nominal', 'vat_code', )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -191,16 +197,17 @@ class NominalLineFormset(BaseLineFormset):
                     f"and total credits entered i.e. negative values entered, is {credits}.  This gives a non-zero total of { debits + credits }"
                 ),
                 code="invalid-total"
-            )  
+            )
         self.header.goods = goods
         self.header.vat = vat
         self.header.total = debits
 
+
 enter_lines = forms.modelformset_factory(
     NominalLine,
-    form=NominalLineForm, 
-    formset=NominalLineFormset, 
-    extra=5, 
+    form=NominalLineForm,
+    formset=NominalLineFormset,
+    extra=5,
     can_order=False,
     can_delete=True
 )
