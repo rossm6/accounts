@@ -199,6 +199,7 @@ def create_payment_with_nom_entries(header, control_nominal, bank_nominal):
             )
         )
         nom_trans = NominalTransaction.objects.bulk_create(nom_trans)
+        return header
 
 
 def create_refund_with_nom_entries(header, control_nominal, bank_nominal):

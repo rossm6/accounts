@@ -2,9 +2,8 @@ from django.urls import path
 
 from .views import (CreateTransaction, EditTransaction,
                     LoadMatchingTransactions, LoadSuppliers,
-                    TransactionEnquiry, ViewTransaction,
-                    create_on_the_fly_view, load_options, validate_choice,
-                    void, VoidTransaction)
+                    TransactionEnquiry, ViewTransaction, VoidTransaction,
+                    create_on_the_fly_view, load_options, validate_choice)
 
 app_name = "purchases"
 urlpatterns = [
