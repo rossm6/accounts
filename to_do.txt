@@ -34,17 +34,17 @@ Objectives -
 
             I WILL DO THIS WHEN I HAVE PUT THE APP UP ON HEROKU
 
-
         Should we show a client side error if the matching is wrong?  Even prevent form submission?
 
         	LEAVE THIS FOR NOW AS CLIENT SIDE VALIDATION HAS BEEN IGNORED SO FAR.  NEEDS TO BE CONSIDERED
         	AS PART OF THAT MORE GENERAL TOPIC.
 
-
     Create on the fly
 
         The supplier form prefix, 'supplier', is hard coded into the javascript.  This should be programmatically
         controlled instead.
+
+            POSTPONE FIXING THIS UNTIL WE BEGIN CREATING THE SALES LEDGER
 
     Tests
 
