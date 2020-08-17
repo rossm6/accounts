@@ -48,9 +48,7 @@ Objectives -
 
     Tests
 
-        A problem - my brought forward payments require the cash book field but this field shouldn't even be visible.
-        Should just be a case of removing the b/fs from payment_types on the model and changing the tests to exclude
-        this field.
+        Remove cash book field from B/F payment tests
 
         Test voiding a transaction with nominal entries and with matching and with both.  Do this for all trans types.
 

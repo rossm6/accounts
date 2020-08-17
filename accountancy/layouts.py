@@ -4,7 +4,7 @@ from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 from accountancy.forms import PlainField, LabelAndFieldAndErrors
 
 
-def create_transaction_header_helper(generic_to_fields_map, payment_form=False, read_only=False):
+def create_transaction_header_helper(generic_to_fields_map, payment_form=False, payment_brought_forward_form=False, read_only=False):
     """
 
     This will returns the standard header help for transaction forms
@@ -68,7 +68,7 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                                     LabelAndFieldAndErrors(generic_to_fields_map.get(
                                         "due_date", "due_date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
                                     css_class="col-2 position-relative" + \
-                                    (" d-none" if payment_form else "")
+                                    (" d-none" if (payment_form or payment_brought_forward_form) else "")
                                 ),
                                 css_class="row"
                             ),

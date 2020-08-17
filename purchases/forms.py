@@ -63,16 +63,23 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
             _type = self.initial.get('type')
 
         if _type in self._meta.model.payment_type:
-            payment_form = True
-            self.fields["cash_book"].required = True
+            if _type in self._meta.model.analysis_required:
+                payment_form = True
+                payment_brought_forward_form = False
+                self.fields["cash_book"].required = True
+            else:
+                payment_form = False
+                payment_brought_forward_form = True
         else:
+            payment_brought_forward_form = False
             payment_form = False
 
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
             },
-            payment_form
+            payment_form=payment_form,
+            payment_brought_forward_form=payment_brought_forward_form
         )
         # FIX ME - The supplier field should use the generic AjaxModelChoice Field class I created
         # this then takes care out of this already
