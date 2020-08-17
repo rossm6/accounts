@@ -16,17 +16,9 @@ Objectives -
 
         Create a bad debt write off journal transaction type for the sales ledger
 
-    Void
-
-        Write a general class for VoidView.  Check it works for invoice, payment and brought forward invoice.
-        Shouldn't need to check every type.
-
-    Nominals
-
-        Create the View and Void views.  View should inherit from the ReadOnly base class in accountancy.forms
-        like in PL module.
-
     UI
+
+        Total for payments in edit view does not work.  Is ok in read view !!! ???
 
         When the supplier errors the error div is too wide.  Like the grid we need to
         set a width constraint of these header fields so the design is respected.

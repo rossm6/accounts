@@ -284,66 +284,6 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
-    def create_nominal_transaction(self, header, line, vat_nominal):
-        # LATER ON FIELDS OTHER THAN GOODS AND VAT MAY BE CREATED
-        # LIKE DISCOUNT AND RETENTION
-        trans = []
-        if line.goods != 0:
-            trans.append(
-                self.get_nominal_transaction_model()(
-                    module=self.module,
-                    header=header.pk,
-                    line=line.pk,
-                    nominal=line.nominal,
-                    value=line.goods,
-                    ref=header.ref,
-                    period=header.period,
-                    date=header.date,
-                    type=header.type,
-                    field="g"
-                )
-            )
-        if line.vat != 0:
-            trans.append(
-                self.get_nominal_transaction_model()(
-                    module=self.module,
-                    header=header.pk,
-                    line=line.pk,
-                    nominal=vat_nominal,
-                    value=line.vat,
-                    ref=header.ref,
-                    period=header.period,
-                    date=header.date,
-                    type=header.type,
-                    field="v"
-                )
-            )
-        return trans
-
-    def create_total_nominal_transaction(self, header, details):
-        """
-        Whereas create_nominal_transactions will create the goods and vat
-        nominal entries per each line of analysis, this will create the
-        nominal entry which is the total of the goods and the vat for the
-        lines so that each nominal batch is zero
-        """
-
-        if details["value"] != 0:
-            return ([
-                    self.get_nominal_transaction_model()(
-                        module=self.module,
-                        header=header.pk,
-                        line=details["line"],
-                        nominal=details["nominal"],
-                        value=details["value"],
-                        ref=header.ref,
-                        period=header.period,
-                        date=header.date,
-                        type=header.type,
-                        field="t"
-                    )
-                    ])
-
     def get_success_url(self):
         if creation_type := self.request.POST.get('approve'):
             if creation_type == "add_another":
