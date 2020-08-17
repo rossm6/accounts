@@ -16,12 +16,19 @@ Objectives -
 
         Create a bad debt write off journal transaction type for the sales ledger
 
+    Nominal
+
+        If many lines are analysed to the same to the same nominal it makes sense to group.
+        But if the transactions total zero it is misleading.  I realised this when i thought
+        a nominal journal with vat analysed was not updating the vat control account correctly
+        but in fact i had analysed the same amount on the debit and credit side so it totalled
+        zero. If this is possible in sql it isn't going to be through the ORM.
+
+        This shouldn't be an issue though in practice because you wouldn't do something like this.
+        
+            LEAVE IT AS IT IS.
+
     UI
-
-        Total for payments in edit view does not work.  Is ok in read view !!! ???
-
-        When the supplier errors the error div is too wide.  Like the grid we need to
-        set a width constraint of these header fields so the design is respected.
 
         Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
 
