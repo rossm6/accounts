@@ -79,6 +79,21 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
         self.helper = create_journal_header_helper()
 
 
+
+class ReadOnlyNominalHeaderForm(NominalHeaderForm):
+    date = forms.DateField() # so datepicker is not used
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].disabled = True
+        self.fields["type"].widget = forms.TextInput(
+            attrs={"class": "w-100 input"}
+        )
+        self.helper = create_journal_header_helper(read_only=True)
+        self.initial["type"] = self.instance.get_type_display()
+
+
 line_css_classes = {
     "Td": {
         "description": "can_highlight h-100 w-100 border-0",
@@ -148,6 +163,35 @@ class NominalLineForm(AjaxForm):
         ).render()
 
 
+
+class ReadOnlyNominalLineForm(NominalLineForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].disabled = True
+        self.helpers = TableHelper(
+            NominalLineForm.Meta.fields,
+            order=False,
+            delete=False,
+            css_classes={
+                "Td": {
+                    "description": "input-disabled text-left",
+                    "nominal": "input-disabled text-left",
+                    "goods": "input-disabled text-left",
+                    "vat_code": "input-disabled text-left",
+                    "vat": "input-disabled text-left"
+                }
+            },
+            field_layout_overrides={
+                'Td': {
+                    'description': PlainFieldErrors,
+                    'nominal': PlainFieldErrors,
+                }
+            }
+        ).render()      
+
+
+
 class NominalLineFormset(BaseLineFormset):
 
     def clean(self):
@@ -213,3 +257,14 @@ enter_lines = forms.modelformset_factory(
 )
 
 enter_lines.include_empty_form = True
+
+read_only_lines = forms.modelformset_factory(
+    NominalLine,
+    form=ReadOnlyNominalLineForm,
+    formset=NominalLineFormset,
+    extra=0,
+    can_order=False,
+    can_delete=False
+)
+
+read_only_lines.include_empty_form = True

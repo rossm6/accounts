@@ -1,3 +1,5 @@
+from json import loads
+
 from datetime import datetime, timedelta
 from itertools import chain
 
@@ -3216,7 +3218,7 @@ class VoidJournal(TestCase):
 
     # CORRECT USAGE
     # JUST HALF THE GOODS AND VAT
-    def test_edit_journal(self):
+    def test_void_journal(self):
 
         header, line, nominal_transactions = create_nominal_journal({
             "header": {
@@ -3479,46 +3481,23 @@ class VoidJournal(TestCase):
         )
 
         data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-            "type": header.type,
-            "ref": header.ref,
-            "date": header.date,
-            "total": 60,
-            "period": header.period
-            }
-        )
-        data.update(header_data)
-        line_forms = []
-        line_forms.append(
-            {
-                "description": lines[0].description,
-                "goods": 50,
-                "nominal": lines[0].nominal_id,
-                "vat_code": lines[0].vat_code_id,
-                "vat": 10
-            }
-        )
-        line_forms[0]["id"] = lines[0].pk
-        line_forms.append(
-            {
-                "description": lines[1].description,
-                "goods": -50,
-                "nominal": lines[1].nominal_id,
-                "vat_code": lines[1].vat_code_id,
-                "vat": -10
-            }
-        )
-        line_forms[1]["id"] = lines[1].pk
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        line_data["line-INITIAL_FORMS"] = 2
-        data.update(line_data)
-        url = reverse("nominals:edit", kwargs={"pk": header.pk})
+        data["void-id"] = header.id
+        url = reverse("nominals:void")
         response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf")
+        json_content = loads(content)
+        self.assertEqual(
+            json_content["success"],
+            True
+        )
+        self.assertEqual(
+            json_content["href"],
+            reverse("nominals:transaction_enquiry")
+        )
 
-        # POST EDIT ...
+
+        # POST VOID
 
         header = NominalHeader.objects.all()
         self.assertEqual(
@@ -3540,13 +3519,12 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             header.total,
-            60
+            120
         )
 
         # NOM LINES
 
         lines = NominalLine.objects.all()
-        nominal_transactions = NominalTransaction.objects.all()
         self.assertEqual(
             len(lines),
             2
@@ -3557,7 +3535,7 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             lines[0].goods,
-            50
+            100
         )
         self.assertEqual(
             lines[0].nominal,
@@ -3569,15 +3547,15 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             lines[0].vat,
-            10
+            20
         ) 
         self.assertEqual(
             lines[0].goods_nominal_transaction,
-            nominal_transactions[0]
+            None
         )
         self.assertEqual(
             lines[0].vat_nominal_transaction,
-            nominal_transactions[1]
+            None
         )  
 
         self.assertEqual(
@@ -3586,7 +3564,7 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             lines[1].goods,
-            -50
+            -100
         )
         self.assertEqual(
             lines[1].nominal,
@@ -3598,154 +3576,18 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             lines[1].vat,
-            -10
+            -20
         )
         self.assertEqual(
             lines[1].goods_nominal_transaction,
-            nominal_transactions[2]
+            None
         )
         self.assertEqual(
             lines[1].vat_nominal_transaction,
-            nominal_transactions[3]
+            None
         ) 
 
-
-        # DEBIT NOM TRANS
-
         self.assertEqual(
-            len(nominal_transactions),
-            4
-        )
-        self.assertEqual(
-            nominal_transactions[0].module,
-            "NL",
-        )
-        self.assertEqual(
-            nominal_transactions[0].header,
-            header.pk
-        )
-        self.assertEqual(
-            nominal_transactions[0].line,
-            lines[0].pk,
-        )
-        self.assertEqual(
-            nominal_transactions[0].nominal,
-            lines[0].nominal
-        )
-        self.assertEqual(
-            nominal_transactions[0].value,
-            lines[0].goods
-        )
-        self.assertEqual(
-            nominal_transactions[0].ref,
-            header.ref
-        )
-        self.assertEqual(
-            nominal_transactions[0].period,
-            header.period
-        )
-        self.assertEqual(
-            nominal_transactions[0].type,
-            header.type
-        )
-
-        self.assertEqual(
-            nominal_transactions[1].module,
-            "NL"
-        )
-        self.assertEqual(
-            nominal_transactions[1].header,
-            header.pk
-        )
-        self.assertEqual(
-            nominal_transactions[1].line,
-            lines[0].pk,
-        )
-        self.assertEqual(
-            nominal_transactions[1].nominal,
-            self.vat_nominal
-        )
-        self.assertEqual(
-            nominal_transactions[1].value,
-            lines[0].vat
-        )
-        self.assertEqual(
-            nominal_transactions[1].ref,
-            header.ref
-        )
-        self.assertEqual(
-            nominal_transactions[1].period,
-            header.period
-        )
-        self.assertEqual(
-            nominal_transactions[1].type,
-            header.type
-        )
-
-        # CREDIT NOM TRANS
-
-        self.assertEqual(
-            nominal_transactions[2].module,
-            "NL",
-        )
-        self.assertEqual(
-            nominal_transactions[2].header,
-            header.pk
-        )
-        self.assertEqual(
-            nominal_transactions[2].line,
-            lines[1].pk,
-        )
-        self.assertEqual(
-            nominal_transactions[2].nominal,
-            lines[1].nominal
-        )
-        self.assertEqual(
-            nominal_transactions[2].value,
-            lines[1].goods
-        )
-        self.assertEqual(
-            nominal_transactions[2].ref,
-            header.ref
-        )
-        self.assertEqual(
-            nominal_transactions[2].period,
-            header.period
-        )
-        self.assertEqual(
-            nominal_transactions[2].type,
-            header.type
-        )
-
-        self.assertEqual(
-            nominal_transactions[3].module,
-            "NL"
-        )
-        self.assertEqual(
-            nominal_transactions[3].header,
-            header.pk
-        )
-        self.assertEqual(
-            nominal_transactions[3].line,
-            lines[1].pk,
-        )
-        self.assertEqual(
-            nominal_transactions[3].nominal,
-            self.vat_nominal
-        )
-        self.assertEqual(
-            nominal_transactions[3].value,
-            lines[1].vat
-        )
-        self.assertEqual(
-            nominal_transactions[3].ref,
-            header.ref
-        )
-        self.assertEqual(
-            nominal_transactions[3].period,
-            header.period
-        )
-        self.assertEqual(
-            nominal_transactions[3].type,
-            header.type
+            len(NominalTransaction.objects.all()),
+            0
         )

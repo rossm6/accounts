@@ -2,17 +2,19 @@ from django.conf import settings
 from django.db.models import Sum
 from django.urls import reverse_lazy
 
-from accountancy.forms import AdvancedTransactionSearchForm, BaseVoidTransactionForm
+from accountancy.forms import (AdvancedTransactionSearchForm,
+                               BaseVoidTransactionForm)
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
-                               BaseTransactionsList, BaseVoidTransaction,
-                               create_on_the_fly,
+                               BaseTransactionsList, BaseViewTransaction,
+                               BaseVoidTransaction, create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
-                    enter_lines)
+                    ReadOnlyNominalHeaderForm, ReadOnlyNominalLineForm,
+                    enter_lines, read_only_lines)
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
 
@@ -72,6 +74,31 @@ class EditTransaction(BaseEditTransaction):
     nominal_transaction_model = NominalTransaction
     module = "NL"
 
+
+class ViewTransaction(BaseViewTransaction):
+    header = {
+        "model": NominalHeader,
+        "form": ReadOnlyNominalHeaderForm,
+        "prefix": "header",
+    }
+    line = {
+        "model": NominalLine,
+        "formset": read_only_lines,
+        "prefix": "line",
+        # VAT would not work at the moment
+        "override_choices": ["nominal"]
+        # because VAT requires (value, label, [ model field attrs ])
+        # but VAT codes will never be that numerous
+    }
+    void_form_action = reverse_lazy("nominals:void")
+    void_form = BaseVoidTransactionForm
+    template_name = "nominals/view.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["edit_view_name"] = "nominals:edit" 
+        return context
+    
 
 load_options = input_dropdown_widget_load_options_factory(NominalLineForm(), 25)
 

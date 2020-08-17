@@ -103,13 +103,6 @@ Objectives -
         clean method of the match formset presupposes a match_by attribute.  I need to create a test which covers
         this possibility and of course fix the problem.
 
-        I created a payment for 120.00 and on editing tried to match 150.00 of the same invoice it was already matched to.
-        The error was about the lines not equalling the total.  This didn't make sense because it was a payment.
-        This is probably easiest to address through a combination of checking the error message is in the HTML and
-        manual UI testing.
-
-            CANNOT REPLICATE THIS
-
         If field errors occur in the grid they are marked by a red tip in the bottom right of the cell.  This isn't
         exactly obvious so we really need a banner at the top which tells the user of the field errors.  Even better
         would be a simple widget which when clicked focuses on the error.  Imagine a grid with hundreds of rows.
@@ -154,10 +147,26 @@ Objectives -
 
         FIX ME - change 'matching_formset" to "match_formset" in the template
 
-    MISC -
 
-        Many times i am checking whether the transaction type is a payment or not.  Need a global helper to do this
-        instead of repeating the code all over the place.
+    ACCOUNTANCY PACKAGE
+
+        jQueryDataTables class should be renamed to contain "Mixin" because this is what is is.
+
+        AJAX FORM
+
+            We use a lambda function for getting the queryset for the instance.  This is silly.
+            We know the model and the instance so the AjaxForm ought to get do -
+
+                self.get_model().objects.get(pk=self.instance.pk)
+
+                Or can we not just set the queryset to instance.
+
+            Also there is no need to set the querysets in the AjaxModelChoiceField.  Just define
+            them yourself so the consumer of this field doesn't have to bother specifying them.
+
+            Even better set the queryset within the Field class if possible.  Not sure this is
+            though because self.instance for example is outside the class.
+
 
     ENHANCEMENTS -  
 

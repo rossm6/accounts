@@ -2,8 +2,6 @@ $(document).ready(function () {
 
     var transaction_type = "{{ transaction_type }}";
 
-    console.log(transaction_type);
-
     function calculate_vat(goods, vat_rate) {
         if (goods && vat_rate) {
             return ((+goods * 100 * +vat_rate) / (100 * 100)).toFixed(2);

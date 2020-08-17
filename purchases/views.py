@@ -135,6 +135,12 @@ class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
     template_name = "purchases/view.html"
     nominal_transaction_model = NominalTransaction
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["edit_view_name"] = "purchases:edit" 
+        return context
+
+
 
 class VoidTransaction(BaseVoidTransaction):
     header_model = PurchaseHeader
