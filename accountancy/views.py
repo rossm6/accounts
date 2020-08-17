@@ -296,26 +296,23 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
         if 'header_form' not in kwargs:
             kwargs["header_form"] = self.get_header_form()
-        if 'line_formset' not in kwargs:
-            kwargs["line_formset"] = self.get_line_formset()
+
         if 'matching_formset' not in kwargs:
             kwargs["matching_formset"] = self.get_match_formset()
         if 'header_prefix' not in kwargs:
             kwargs['header_form_prefix'] = self.get_header_prefix()
-        if 'line_form_prefix' not in kwargs:
-            kwargs["line_form_prefix"] = self.get_line_prefix()
+
+        if self.requires_lines(kwargs["header_form"]):
+            if 'line_form_prefix' not in kwargs:
+                kwargs["line_form_prefix"] = self.get_line_prefix()
+            if 'line_formset' not in kwargs:
+                kwargs["line_formset"] = self.get_line_formset()
+            
         if 'matching_form_prefix' not in kwargs:
             kwargs["matching_form_prefix"] = self.get_match_prefix()
         if 'non_field_errors' not in kwargs:
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
-
-        # DO WE NEED THIS NOW?  SINCE EDITING TRANS TYPE IS DISALLOWED NOW
-        # I WOULD HAVE THOUGHT NOT
-        if 'requires_lines' not in kwargs:
-            # as self.header_form not set for GET requests
-            kwargs['requires_lines'] = self.requires_lines(
-                kwargs["header_form"])
 
         if 'transaction_type' not in kwargs:
             kwargs['transaction_type'] = "debit" if self.type_is_debit() else "credit"

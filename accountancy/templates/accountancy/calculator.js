@@ -51,7 +51,6 @@ $(document).ready(function () {
             goods = 0;
             vat = 0;
             total = $("input[name='header-total']").val();
-            alert(total);
             total = +total;
         }
         // second calculate the totals for matched and due
