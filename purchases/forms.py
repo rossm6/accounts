@@ -510,7 +510,9 @@ class PurchaseMatchingForm(forms.ModelForm):
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
         header = matched_to
-        if self.match_by.pk:
+        # match_by will not be set if header=None
+        # header=None if the header_form is invalid
+        if hasattr(self, 'match_by') and self.match_by.pk:
             if self.match_by.pk == matched_to.pk:
                 # matched_to could be the header we are editing
                 # and if so there is no way of knowing the due amount at this point

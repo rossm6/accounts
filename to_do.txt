@@ -58,8 +58,6 @@ Objectives -
 
     Tests
 
-        Remove cash book field from B/F payment tests
-
         If we set an ordering on the transaction header models we will need to add a order_by to our ORM queries
         in the tests.  And probably for all of them ... what joy !
 
