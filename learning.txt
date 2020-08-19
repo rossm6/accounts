@@ -26,11 +26,18 @@ Django Formsets
     via _construct_form and expect them to come through to empty form.  Absolute swine this was.
 
 
+Django Form Errors
+
+    It seems cleaning is done on a form just by rendering forms in a formset.  My matching forms for example
+    were cleaning if though i wasn't calling validation in the code.  Looking through the stack trace it
+    seems field rendering was the cause.  I guess there some sense to this in so far as you wouldn't want
+    a non valid field value to show in a rendered form e.g. a non numeric string in a numeric input field.
+
+
 Django Model Stackoverflow
 
-    I wrongly assumed that Django does not update the DB again if twice is called a second time despite no
+    I wrongly assumed that Django does not update the DB again if save is called a second time despite no
     further changes.
-
 
 Testing
 

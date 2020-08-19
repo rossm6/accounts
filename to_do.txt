@@ -23,7 +23,6 @@ Objectives -
                 self.header_obj = header
                 # all DJANGO ORM is just done via this attribute
 
-
         Create a bad debt write off journal transaction type for the sales ledger
 
     Nominal

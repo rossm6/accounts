@@ -16096,6 +16096,153 @@ class CreateCreditNoteNominalEntries(TestCase):
             0
         )
 
+    # CORRECT USAGE
+    # Zero value credit note
+    # No lines allowed
+    # A zero value transaction is only permissable if we are matching -- a good check in the system
+    def test_zero_invoice_with_no_lines(self):
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against_orig = headers_to_match_against
+        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 3)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            0
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+        # assuming the lines are created in the same order
+        # as the nominal entries....
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            header
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[0].value,
+            100
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            header
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].value,
+            -100
+        )
+
+    # INCORRECT USAGE
+    # Line cannot be zero value
+    def test_zero_invoice_with_zero_value_line(self):
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against_orig = headers_to_match_against
+        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        line_forms = ([{
+                'item': self.item.pk,
+                'description': self.description,
+                'goods': 0,
+                'nominal': self.nominal.pk,
+                'vat_code': self.vat_code.pk,
+                'vat': 0
+            }])      
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Goods and Vat cannot both be zero.</li>',
+            html=True
+        )        
+
 
 
 class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
@@ -16446,6 +16593,150 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
                 line.total_nominal_transaction,
                 None
             )
+
+    # CORRECT USAGE
+    # Zero value credit note
+    # No lines allowed
+    # A zero value transaction is only permissable if we are matching -- a good check in the system
+    def test_zero_invoice_with_no_lines(self):
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against_orig = headers_to_match_against
+        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 3)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            0
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+        # assuming the lines are created in the same order
+        # as the nominal entries....
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            header
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[0].value,
+            100
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            header
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].value,
+            -100
+        )
+
+    # INCORRECT USAGE
+    # Line cannot be zero value
+    def test_zero_invoice_with_zero_value_line(self):
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against_orig = headers_to_match_against
+        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        line_forms = ([{
+                'description': self.description,
+                'goods': 0,
+                'vat': 0
+            }])      
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(matching_data)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Goods and Vat cannot both be zero.</li>',
+            html=True
+        )  
 
 
 class CreatePaymentNominalEntries(TestCase):
