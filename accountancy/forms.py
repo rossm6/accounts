@@ -376,12 +376,25 @@ class ReadOnlyBaseTransactionHeaderForm(BaseTransactionHeaderForm):
     due_date = forms.DateField()
 
 
-
-
 class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
     def get_ordering_widget(self):
         return forms.HiddenInput(attrs={'class': 'ordering'})
+
+
+class BaseTransactionLineForm(forms.ModelForm):
+
+    def clean(self):
+        cleaned_data = super().clean()
+        goods = cleaned_data.get("goods")
+        vat = cleaned_data.get("vat")
+        if goods == 0 and vat == 0:
+            raise forms.ValidationError(
+                _(
+                    "Goods and Vat cannot both be zero."
+                ),
+                code="zero-value-line"
+            )
 
 
 class BaseLineFormset(BaseTransactionModelFormSet):

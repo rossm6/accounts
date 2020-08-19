@@ -9,7 +9,8 @@ from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField,
                                 ModelChoiceIteratorWithFields)
 from accountancy.forms import (AjaxForm, BaseLineFormset,
-                               BaseTransactionHeaderForm, BaseTransactionMixin,
+                               BaseTransactionHeaderForm,
+                               BaseTransactionLineForm, BaseTransactionMixin,
                                BaseTransactionModelFormSet, DataTableTdField,
                                Div, Field, LabelAndFieldOnly, PlainFieldErrors,
                                ReadOnlyBaseTransactionHeaderForm, TableHelper)
@@ -220,7 +221,7 @@ line_css_classes = {
 }
 
 
-class PurchaseLineForm(AjaxForm):
+class PurchaseLineForm(BaseTransactionLineForm, AjaxForm):
 
     item = AjaxModelChoiceField(
         get_queryset=Item.objects.none(),

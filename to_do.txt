@@ -61,18 +61,22 @@ Objectives -
         If we set an ordering on the transaction header models we will need to add a order_by to our ORM queries
         in the tests.  And probably for all of them ... what joy !
 
-        We call match_formset.is_valid() even though the header may have failed.  This will cause errors because the
-        clean method of the match formset presupposes a match_by attribute.  I need to create a test which covers
-        this possibility and of course fix the problem.
+        Check nominal entries for editing from zero to non zero and vice versa.
 
-        Create a negative input for a credit note.  We need to some basic tests for credit note and refund in general actually.
-        I don't envisage discovering a problem but we need some checks even if not quite as thorough as the others.  In fact
-        i over tested on invoice and payment so without these unnecessary tests i may be able to test just as well.  Really
-        just a copy and paste exercise and then swapping signs.
+            I HAVE ADDED NEW TESTS TO -
 
-        Test entering a zero value invoice / credit note.  Check nominal entries for editing from zero to non zero and vice versa.
-        
-            PRETTY SURE THIS HAS BEEN DONE
+                CreateInvoiceNominalTransactions
+                CreateBroughtForwardInvoiceNominalTransactions
+
+            NEED TO ADD THE SAME TESTS TO THE REST OF THE CREATE NOMINAL TRANSACTION TESTS
+
+            NEXT I NEED TO CREATE TESTS FOR ALL TYPES FOR EDIT NOMINAL TRANSACTION TESTS.
+            GOING FROM ZERO TO NON ZERO AND NON ZERO TO ZERO.  I THINK PART OF THIS HAS BEEN
+            COVERED ALREADY.
+
+        Create further Create and Edit Nom Tran tests where we check matching and negative signs in particular. 
+        I covered this already for invoice and payment to begin with.  I can't see the point creating further
+        tests based on these.  Might as well extend the nominal transaction tests.
 
         Tests should be moved to the accountancy app.  This will mean creating special models just for tests - will
         need to read into the best way of doing this.  And when we come to say, include discount, we shouldn't

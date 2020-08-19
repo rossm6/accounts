@@ -2576,7 +2576,7 @@ class EditJournal(TestCase):
                 "ref": "test journal",
                 "period": PERIOD,
                 "date": timezone.now(),
-                "total": 120
+                "total": 240
             },
             "lines": [
                 {
@@ -2636,7 +2636,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.total,
-            120
+            240
         )
 
         # NOM LINES
@@ -2719,7 +2719,7 @@ class EditJournal(TestCase):
             "type": header.type,
             "ref": header.ref,
             "date": header.date,
-            "total": 120,
+            "total": 240,
             "period": header.period
             }
         )
@@ -2770,112 +2770,12 @@ class EditJournal(TestCase):
         data.update(line_data)
         url = reverse("nominals:edit", kwargs={"pk": header.pk})
         response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 302)
-
-        # POST EDIT ...
-
-        header = NominalHeader.objects.all()
-        self.assertEqual(
-            len(header),
-            1
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Goods and Vat cannot both be zero.</li>',
+            html=True
         )
-        header = header[0]
-        self.assertEqual(
-            header.type,
-            "nj"
-        )
-        self.assertEqual(
-            header.ref,
-            "test journal"
-        )
-        self.assertEqual(
-            header.period,
-            PERIOD
-        )
-        self.assertEqual(
-            header.total,
-            120
-        )
-
-        # NOM LINES
-        lines = NominalLine.objects.all().order_by("pk")
-        nominal_transactions = NominalTransaction.objects.all().order_by("pk")
-        self.assertEqual(
-            len(lines),
-            2
-        )
-
-        self.assertEqual(
-            len(nominal_transactions),
-            4
-        )
-
-        debit_nom_trans = nominal_transactions[:2]
-        debit_line = lines[0]
-        self.assertEqual(
-            debit_line.line_no,
-            1
-        )
-        self.assertEqual(
-            debit_line.goods,
-            100
-        )
-        self.assertEqual(
-            debit_line.nominal,
-            self.bank_nominal
-        )
-        self.assertEqual(
-            debit_line.vat_code,
-            self.vat_code
-        )
-        self.assertEqual(
-            debit_line.vat,
-            20
-        ) 
-        self.assertEqual(
-            debit_line.goods_nominal_transaction,
-            debit_nom_trans[0]
-        )
-        self.assertEqual(
-            debit_line.vat_nominal_transaction,
-            debit_nom_trans[1]
-        )
-
-        credit_nom_trans = nominal_transactions[2:]
-        credit_line = lines[1]
-        self.assertEqual(
-            credit_line.line_no,
-            2
-        )
-        self.assertEqual(
-            credit_line.goods,
-            -100
-        )
-        self.assertEqual(
-            credit_line.nominal,
-            self.debtors_nominal
-        )
-        self.assertEqual(
-            credit_line.vat_code,
-            self.vat_code
-        )
-        self.assertEqual(
-            credit_line.vat,
-            -20
-        ) 
-        self.assertEqual(
-            credit_line.goods_nominal_transaction,
-            credit_nom_trans[0]
-        )
-        self.assertEqual(
-            credit_line.vat_nominal_transaction,
-            credit_nom_trans[1]
-        )
-
-        total = 0
-        for tran in nominal_transactions:
-            total = total + tran.value
-        self.assertEqual(total, 0)
 
 
     # CORRECT USAGE

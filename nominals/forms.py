@@ -9,7 +9,8 @@ from accountancy.fields import (AjaxModelChoiceField,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceField)
 from accountancy.forms import (AjaxForm, BaseLineFormset,
-                               BaseTransactionHeaderForm, Div, Field,
+                               BaseTransactionHeaderForm,
+                               BaseTransactionLineForm, Div, Field,
                                LabelAndFieldAndErrors, PlainFieldErrors,
                                ReadOnlyBaseTransactionHeaderForm, TableHelper)
 from accountancy.helpers import delay_reverse_lazy
@@ -105,7 +106,7 @@ line_css_classes = {
 }
 
 
-class NominalLineForm(AjaxForm):
+class NominalLineForm(BaseTransactionLineForm, AjaxForm):
 
     nominal = AjaxRootAndLeavesModelChoiceField(
         widget=InputDropDown(
