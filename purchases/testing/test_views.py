@@ -16204,7 +16204,6 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -16270,7 +16269,6 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -16686,7 +16684,6 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbr",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -16753,7 +16750,6 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbr",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -24194,8 +24190,6 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
 
-        cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")
@@ -24206,7 +24200,6 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
     def test_non_zero_payment(self):
 
         PurchaseHeader.objects.create(**{
-            "cash_book": self.cash_book,
             "type": "pbp",
             "supplier": self.supplier,
             "ref": self.ref,
@@ -24267,7 +24260,6 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -24331,7 +24323,6 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
     def test_non_zero_payment_is_changed_to_zero(self):
 
         PurchaseHeader.objects.create(**{
-            "cash_book": self.cash_book,
             "type": "pbp",
             "supplier": self.supplier,
             "ref": self.ref,
@@ -24394,7 +24385,6 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -24465,7 +24455,6 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
     def test_zero_payment_is_changed_to_non_zero(self):
 
         PurchaseHeader.objects.create(**{
-            "cash_book": self.cash_book,
             "type": "pbp",
             "supplier": self.supplier,
             "ref": self.ref,
@@ -24528,7 +24517,6 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbp",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -25373,8 +25361,6 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
 
-        cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")
@@ -25385,7 +25371,6 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
     def test_non_zero_payment(self):
 
         PurchaseHeader.objects.create(**{
-            "cash_book": self.cash_book,
             "type": "pbr",
             "supplier": self.supplier,
             "ref": self.ref,
@@ -25446,7 +25431,6 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbr",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -25510,7 +25494,6 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
     def test_non_zero_payment_is_changed_to_zero(self):
 
         PurchaseHeader.objects.create(**{
-            "cash_book": self.cash_book,
             "type": "pbr",
             "supplier": self.supplier,
             "ref": self.ref,
@@ -25571,7 +25554,6 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbr",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
@@ -25642,7 +25624,6 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
     def test_zero_payment_is_changed_to_non_zero(self):
 
         PurchaseHeader.objects.create(**{
-            "cash_book": self.cash_book,
             "type": "pbr",
             "supplier": self.supplier,
             "ref": self.ref,
@@ -25703,7 +25684,6 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-                "cash_book": self.cash_book.pk,
                 "type": "pbr",
                 "supplier": self.supplier.pk,
                 "ref": self.ref,
