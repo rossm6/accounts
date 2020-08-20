@@ -60,19 +60,6 @@ Objectives -
         If we set an ordering on the transaction header models we will need to add a order_by to our ORM queries
         in the tests.  And probably for all of them ... what joy !
 
-        Check nominal entries for editing from zero to non zero and vice versa.
-
-            I HAVE ADDED NEW TESTS TO -
-
-                CreateInvoiceNominalTransactions
-                CreateBroughtForwardInvoiceNominalTransactions
-
-            NEED TO ADD THE SAME TESTS TO THE REST OF THE CREATE NOMINAL TRANSACTION TESTS
-
-            NEXT I NEED TO CREATE TESTS FOR ALL TYPES FOR EDIT NOMINAL TRANSACTION TESTS.
-            GOING FROM ZERO TO NON ZERO AND NON ZERO TO ZERO.  I THINK PART OF THIS HAS BEEN
-            COVERED ALREADY.
-
         Create further Create and Edit Nom Tran tests where we check matching and negative signs in particular. 
         I covered this already for invoice and payment to begin with.  I can't see the point creating further
         tests based on these.  Might as well extend the nominal transaction tests.

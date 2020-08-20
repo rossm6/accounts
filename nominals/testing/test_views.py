@@ -556,7 +556,6 @@ class CreateJournal(TestCase):
         )
 
 
-
     # CORRECT USAGE
     # Each line contains goods only
     def test_create_journal_with_vat_only_and_no_goods(self):
@@ -761,7 +760,6 @@ class CreateJournal(TestCase):
             nominal_transactions[1].field,
             "v"
         )
-
 
 
     # INCORRECT USAGE
@@ -1792,7 +1790,6 @@ class EditJournal(TestCase):
 
 
     # CORRECT USAGE
-    # JUST HALF THE GOODS AND VAT
     def test_edit_journal_by_adding_two_new_lines(self):
 
         header, line, nominal_transactions = create_nominal_journal({
@@ -2566,7 +2563,7 @@ class EditJournal(TestCase):
         )
 
 
-    # CORRECT USAGE
+    # INCORRECT USAGE
     # START OFF WITH FOUR LINES AND THEN ZERO OUT BOTTOM TWO
     def test_edit_journal_by_zeroing_out_bottom_two_lines(self):
 
