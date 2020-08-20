@@ -39,6 +39,14 @@ Objectives -
 
     UI
 
+        The widgets which were selectized select menus are not showing right as text fields
+        in the read only view.
+
+        The select2 widget in transaction enquiry probably should be replaced with selectize which is what we are using in create / edit views.
+
+            LOW PRIORITY.  WILL PROBABLY RESIGN THE SEARCH FORM NOW THAT OUR APP HAS DEVIATED FROM
+            THE XERO WAY OF ACCOUNTING FOR TRANSACTIONS
+
         Input Dropdown Widget Dropdown button does not show in Firefox .... Arghghghgh
 
             I WILL DO THIS WHEN I HAVE PUT THE APP UP ON HEROKU
@@ -73,21 +81,16 @@ Objectives -
 
     Transaction Enquiry -
 
-        The search function ignores "A", "the" etc so my supplier called "A" is ignored.  I think the solution
-        is to use Trigram search but the question is how do i do this over multiple fields?  I think this is possible
-        but cannot find an example.  The Q object is rumoured to be the answer but i couldn't get it to work.  A question
-        therefore for SO probably.
+        Use Trigram search for transaction enquiry
 
-            This is a start -
+        Example below of using Trigram search.  Without such a search a supplier with name "A" would be ignored.
+        Here the query will use this search across two fields.  Filtering as normal can be applied for other
+        fields in the form like totals and dates.
 
-            >>> from django.contrib.postgres.search import TrigramSimilarity
-            >>> from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
-            >>> trig_vector = (TrigramSimilarity('supplier__name', text) + TrigramSimilarity('ref', text))
-            >>> vector = SearchVector('total')
-            >>> query = SearchQuery('120.00')
-            >>> PurchaseHeader.objects.annotate(rank=SearchRank(vector, query), similarity=trig_vector).filter(Q(rank__gte=0) | Q(similarity__gt=0.3))
+        s = "A"
+        trig_vector = (TrigramSimilarity('supplier__name', s) + TrigramSimilarity('ref', s))
+        r = PurchaseHeader.objects.annotate(similarity=trig_vector).filter(similarity__gt=0.5).filter(total=190)
 
-        The select2 widget probably should be replaced with selectize which is what we are using in create / edit views.
 
     ERRORS -
 
@@ -134,6 +137,10 @@ Objectives -
 
 
     ACCOUNTANCY PACKAGE
+
+        Base Views.  I need to refactor so that we will have one view for headers with lines
+        and another for without lines.  At the moment BaseTransaction does everything but
+        this compromises the code quality.  It all feels a bit clumsy left as it is.
 
         jQueryDataTables class should be renamed to contain "Mixin" because this is what is is.
 
