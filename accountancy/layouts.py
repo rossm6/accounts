@@ -16,6 +16,8 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
 
     """
 
+    print(read_only)
+
     class StandardHeaderHelper(FormHelper):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)

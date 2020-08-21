@@ -117,19 +117,28 @@ class ReadOnlyPurchaseHeaderForm(ReadOnlyBaseTransactionHeaderForm, PurchaseHead
         supplier = self.fields["supplier"].queryset[0]
         self.initial["supplier"] = str(supplier)
         _type = self.initial["type"]
+
         if _type in self._meta.model.payment_type:
-            payment_type = True
-            self.fields["cash_book"].widget = forms.TextInput()
-            cash_book = self.fields["cash_book"].queryset[0]
-            self.initial["cash_book"] = str(cash_book)
+            if _type in self._meta.model.analysis_required:
+                payment_form = True
+                self.fields["cash_book"].widget = forms.TextInput()
+                cash_book = self.fields["cash_book"].queryset[0]
+                self.initial["cash_book"] = str(cash_book)
+            else:
+                payment_form = False
+                payment_brought_forward_form = True
         else:
-            payment_type = False
+            payment_brought_forward_form = False
+            payment_form = False
+
+
         self.helper = create_transaction_header_helper(
             {
                 'contact': 'supplier',
             },
-            payment_type,
-            True
+            payment_form=payment_form,
+            payment_brought_forward_form=payment_brought_forward_form,
+            read_only=True
         )
         # must do this afterwards
         self.initial["type"] = self.instance.get_type_display()
