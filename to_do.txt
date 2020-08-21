@@ -73,11 +73,11 @@ Objectives -
         tests based on these.  Might as well extend the nominal transaction tests.
 
             CREATE- Negative inputs for all transaction types without matching and with matching
-            EDIT - from negative to positive and vice versa
 
-            CREATE - MATCHING WHERE THE TRANSACTION IS NOT THE MATCHED_BY
+                    Just payments and refunds to do now.
+
+            EDIT - from negative to positive and vice versa.  MATCHING WHERE THE TRANSACTION IS NOT THE MATCHED_BY
             
-
         Tests should be moved to the accountancy app.  This will mean creating special models just for tests - will
         need to read into the best way of doing this.  And when we come to say, include discount, we shouldn't
         change all our tests.  Instead we just create a new mock model for a new set of tests to test discount.

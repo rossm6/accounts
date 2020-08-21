@@ -16479,8 +16479,6 @@ class CreateInvoiceNominalEntries(TestCase):
     # CORRECT USAGE
     def test_fully_matching_a_negative_invoice_NEGATIVE(self):
 
-        
-
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -24303,6 +24301,1485 @@ class CreatePaymentNominalEntries(TestCase):
         )
 
 
+    # CORRECT USAGE
+    def test_negative_payment(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -120
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            120
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+            # 1 is the bank nominal
+            # 1 is the control account
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            header.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            header.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            header.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )    
+
+    """
+
+    Test matching for positive payments
+
+    """
+
+    # CORRECT USAGE
+    def test_fully_matched_positive_payment(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 120})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            -120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            -120
+        )
+        self.assertEqual(
+            payment.due,
+            0
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )  
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            120
+        )
+
+    # CORRECT USAGE
+    def test_zero_value_match_positive_payment(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            -120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.due,
+            -120
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )  
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+    # INCORRECT USAGE
+    def test_match_value_too_high(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 120.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120</li>',
+            html=True
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            240
+        )
+        self.assertEqual(
+            invoice.goods,
+            200
+        )
+        self.assertEqual(
+            invoice.vat,
+            40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+
+    # INCORRECT USAGE
+    def test_match_value_too_low(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -0.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120</li>',
+            html=True
+        )
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            -240
+        )
+        self.assertEqual(
+            invoice.goods,
+            -200
+        )
+        self.assertEqual(
+            invoice.vat,
+            -40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            -240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+
+    # CORRECT USAGE
+    def test_match_ok_and_not_full_match(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 60})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            -120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            -60
+        )
+        self.assertEqual(
+            payment.due,
+            -60
+        )
+
+        self.assertEqual(
+            invoice.total,
+            120
+        )
+        self.assertEqual(
+            invoice.goods,
+            100
+        )
+        self.assertEqual(
+            invoice.vat,
+            20
+        )
+        self.assertEqual(
+            invoice.paid,
+            60
+        )
+        self.assertEqual(
+            invoice.due,
+            60
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )  
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            60
+        )
+
+
+    """
+    Test matching for negative payments
+    """
+
+    # CORRECT USAGE
+    def test_fully_matched_negative_payment_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -120})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            120
+        )
+        self.assertEqual(
+            payment.due,
+            0
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )  
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            -120
+        )
+
+    # CORRECT USAGE
+    def test_zero_value_match_negative_payment_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.due,
+            120
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )  
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+    # INCORRECT USAGE
+    def test_match_value_too_high_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -120.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120</li>',
+            html=True
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            -240
+        )
+        self.assertEqual(
+            invoice.goods,
+            -200
+        )
+        self.assertEqual(
+            invoice.vat,
+            -40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            -240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+    # INCORRECT USAGE
+    def test_match_value_too_low_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120</li>',
+            html=True
+        )
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            240
+        )
+        self.assertEqual(
+            invoice.goods,
+            200
+        )
+        self.assertEqual(
+            invoice.vat,
+            40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+    # CORRECT USAGE
+    def test_match_ok_and_not_full_match_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": self.cash_book.pk,
+                "type": "pp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -60})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            60
+        )
+        self.assertEqual(
+            payment.due,
+            60
+        )
+
+        self.assertEqual(
+            invoice.total,
+            -120
+        )
+        self.assertEqual(
+            invoice.goods,
+            -100
+        )
+        self.assertEqual(
+            invoice.vat,
+            -20
+        )
+        self.assertEqual(
+            invoice.paid,
+            -60
+        )
+        self.assertEqual(
+            invoice.due,
+            -60
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        tran = nom_trans[0]
+        self.assertEqual(
+            len(nom_trans),
+            2
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        self.assertEqual(
+            tran.line,
+            1
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.nominal # bank nominal
+        )
+        self.assertEqual(
+            tran.value,
+            120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        self.assertEqual(
+            tran.module,
+            PL_MODULE
+        )
+        self.assertEqual(
+            tran.header,
+            payment.pk
+        )
+        tran = nom_trans[1]
+        self.assertEqual(
+            tran.line,
+            2
+        )
+        self.assertEqual(
+            tran.nominal,
+            self.purchase_control
+        )
+        self.assertEqual(
+            tran.value,
+            -120
+        )
+        self.assertEqual(
+            tran.ref,
+            payment.ref
+        )
+        self.assertEqual(
+            tran.period,
+            PERIOD
+        )     
+        self.assertEqual(
+            tran.date,
+            payment.date
+        )
+        self.assertEqual(
+            tran.field,
+            't'
+        )
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )  
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            -60
+        )
+
 
 class CreateBroughtForwardPaymentNominalEntries(TestCase):
 
@@ -24500,6 +25977,964 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         self.assertEqual(
             len(nom_trans),
             0
+        )
+
+    # CORRECT USAGE
+    def test_negative_payment(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -120
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+        header = headers[0]
+        self.assertEqual(
+            header.total,
+            120
+        )
+        self.assertEqual(
+            header.goods,
+            0
+        )
+        self.assertEqual(
+            header.vat,
+            0
+        )
+        self.assertEqual(
+            header.ref,
+            self.ref
+        )
+        self.assertEqual(
+            header.paid,
+            0
+        )
+        self.assertEqual(
+            header.due,
+            header.total
+        )
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+
+    """
+
+    Test matching for positive payments
+
+    """
+
+    # CORRECT USAGE
+    def test_fully_matched_positive_payment(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 120})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            -120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            -120
+        )
+        self.assertEqual(
+            payment.due,
+            0
+        )
+
+        self.assertEqual(
+            invoice.total,
+            120
+        )
+        self.assertEqual(
+            invoice.goods,
+            100
+        )
+        self.assertEqual(
+            invoice.vat,
+            20
+        )
+        self.assertEqual(
+            invoice.paid,
+            120
+        )
+        self.assertEqual(
+            invoice.due,
+            0
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            120
+        )
+
+
+    # CORRECT USAGE
+    def test_zero_value_match_positive_payment(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+
+        self.assertEqual(
+            payment.total,
+            -120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.due,
+            -120
+        )
+
+        self.assertEqual(
+            invoice.total,
+            120
+        )
+        self.assertEqual(
+            invoice.goods,
+            100
+        )
+        self.assertEqual(
+            invoice.vat,
+            20
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            120
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+    # INCORRECT USAGE
+    def test_match_value_too_high(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 120.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120</li>',
+            html=True
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            240
+        )
+        self.assertEqual(
+            invoice.goods,
+            200
+        )
+        self.assertEqual(
+            invoice.vat,
+            40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+    # INCORRECT USAGE
+    def test_match_value_too_low(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -0.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120</li>',
+            html=True
+        )
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            -240
+        )
+        self.assertEqual(
+            invoice.goods,
+            -200
+        )
+        self.assertEqual(
+            invoice.vat,
+            -40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            -240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+
+    # CORRECT USAGE
+    def test_match_ok_and_not_full_match(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 60})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            -120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            -60
+        )
+        self.assertEqual(
+            payment.due,
+            -60
+        )
+
+        self.assertEqual(
+            invoice.total,
+            120
+        )
+        self.assertEqual(
+            invoice.goods,
+            100
+        )
+        self.assertEqual(
+            invoice.vat,
+            20
+        )
+        self.assertEqual(
+            invoice.paid,
+            60
+        )
+        self.assertEqual(
+            invoice.due,
+            60
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+ 
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            60
+        )
+
+
+    """
+    Test matching for negative payments
+    """
+
+    # CORRECT USAGE
+    def test_fully_matched_negative_payment_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -120})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+
+        self.assertEqual(
+            payment.total,
+            120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            120
+        )
+        self.assertEqual(
+            payment.due,
+            0
+        )
+
+        self.assertEqual(
+            invoice.total,
+            -120
+        )
+        self.assertEqual(
+            invoice.goods,
+            -100
+        )
+        self.assertEqual(
+            invoice.vat,
+            -20
+        )
+        self.assertEqual(
+            invoice.paid,
+            -120
+        )
+        self.assertEqual(
+            invoice.due,
+            0
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            -120
+        )
+
+
+    # CORRECT USAGE
+    def test_zero_value_match_negative_payment_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.due,
+            120
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+
+    # INCORRECT USAGE
+    def test_match_value_too_high_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -120.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120</li>',
+            html=True
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            -240
+        )
+        self.assertEqual(
+            invoice.goods,
+            -200
+        )
+        self.assertEqual(
+            invoice.vat,
+            -40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            -240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+
+    # INCORRECT USAGE
+    def test_match_value_too_low_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0.01})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120</li>',
+            html=True
+        )
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 1)
+        invoice = headers[0]
+
+        self.assertEqual(
+            invoice.total,
+            240
+        )
+        self.assertEqual(
+            invoice.goods,
+            200
+        )
+        self.assertEqual(
+            invoice.vat,
+            40
+        )
+        self.assertEqual(
+            invoice.paid,
+            0
+        )
+        self.assertEqual(
+            invoice.due,
+            240
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0        
+        )
+
+
+    # CORRECT USAGE
+    def test_match_ok_and_not_full_match_NEGATIVE(self):
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -120
+            }
+        )
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        headers_as_dicts = [ to_dict(invoice_to_match) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -60})
+
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+
+        data.update(header_data)
+        data.update(line_data)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 302)
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(len(headers), 2)
+        payment = headers[1]
+        invoice = headers[0]
+        self.assertEqual(
+            payment.total,
+            120
+        )
+        self.assertEqual(
+            payment.goods,
+            0
+        )
+        self.assertEqual(
+            payment.vat,
+            0
+        )
+        self.assertEqual(
+            payment.ref,
+            self.ref
+        )
+        self.assertEqual(
+            payment.paid,
+            60
+        )
+        self.assertEqual(
+            payment.due,
+            60
+        )
+
+        self.assertEqual(
+            invoice.total,
+            -120
+        )
+        self.assertEqual(
+            invoice.goods,
+            -100
+        )
+        self.assertEqual(
+            invoice.vat,
+            -20
+        )
+        self.assertEqual(
+            invoice.paid,
+            -60
+        )
+        self.assertEqual(
+            invoice.due,
+            -60
+        )
+
+        lines = PurchaseLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            0
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            0
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            1
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].value,
+            -60
         )
 
 
