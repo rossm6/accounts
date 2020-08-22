@@ -281,7 +281,7 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
         ("due_date", "Due Date"),
         ("total", "Total"),
         ("paid", "Paid"),
-        ("due", "Due")
+        ("due", "Due"),
     ]
     form_field_to_searchable_model_field = {
         "contact": "supplier__name",

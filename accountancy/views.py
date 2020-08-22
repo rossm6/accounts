@@ -16,6 +16,7 @@ from django.template.loader import render_to_string
 from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
+from django.http import HttpResponseForbidden
 
 from nominals.models import Nominal
 
@@ -302,12 +303,16 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             # And on top of this jQuery datatable does also
             # solution on client - do not use jQuery.serialize
             if form.is_valid():
+                print("DUH")
+                print(form.cleaned_data)
                 queryset = self.apply_advanced_search(form.cleaned_data)
+                if not form.cleaned_data["include_voided"]:
+                    queryset = queryset.exclude(status="v")
             else:
-                queryset = self.get_queryset()
+                queryset = self.get_queryset().exclude(status="v")
         else:
             context_data["form"] = self.get_search_form()
-            queryset = self.get_queryset()
+            queryset = self.get_queryset().exclude(status="v")
         start = self.request.GET.get("start", 0)
         paginate_by = self.request.GET.get("length", 25)
         p = Paginator(queryset, paginate_by)
@@ -761,7 +766,48 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
         )
 
 
-class BaseEditTransaction(BaseTransaction):
+class IndividualTransactionMixin:
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        pk = kwargs.get('pk')
+        header = get_object_or_404(self.get_header_model(), pk=pk)
+        self.header_to_edit = header
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["header_to_edit"] = self.header_to_edit
+        context["edit"] = self.header_to_edit.pk
+        return context
+
+    def get_line_formset_queryset(self):
+        return self.get_line_model().objects.filter(header=self.header_to_edit)
+
+    def get_match_formset_queryset(self):
+        return (
+            self.get_match_model()
+            .objects
+            .filter(Q(matched_by=self.header_to_edit) | Q(matched_to=self.header_to_edit))
+            .select_related('matched_by')
+            .select_related('matched_to')
+        )
+
+    def get_match_formset(self, header=None):
+        header = self.header_to_edit
+        return super().get_match_formset(header)
+
+    def get_header_form_kwargs(self):
+        kwargs = super().get_header_form_kwargs()
+        if not hasattr(self, 'header_to_edit'):
+            raise AttributeError(
+                f"{self.__class__.__name__} has no 'header_to_edit' attribute.  Did you override "
+                "setup() and forget to class super()?"
+            )
+        kwargs["instance"] = self.header_to_edit
+        return kwargs
+
+
+class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -775,17 +821,10 @@ class BaseEditTransaction(BaseTransaction):
             **kwargs
         )
 
-    def setup(self, request, *args, **kwargs):
-        super().setup(request, *args, **kwargs)
-        pk = kwargs.get('pk')
-        header = get_object_or_404(self.get_header_model(), pk=pk)
-        self.header_to_edit = header
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["header_to_edit"] = self.header_to_edit
-        context["edit"] = self.header_to_edit.pk
-        return context
+    def dispatch(self, request, *args, **kwargs):
+        if self.header_to_edit.is_void():
+            return HttpResponseForbidden("Void transactions cannot be edited")
+        return super().dispatch(request, *args, **kwargs)
 
     def lines_are_valid(self):
         self.header_obj.save()
@@ -858,33 +897,6 @@ class BaseEditTransaction(BaseTransaction):
             ['due', 'paid']
         )
 
-    def get_line_formset_queryset(self):
-        return self.get_line_model().objects.filter(header=self.header_to_edit)
-
-    def get_match_formset_queryset(self):
-        return (
-            self.get_match_model()
-            .objects
-            .filter(Q(matched_by=self.header_to_edit) | Q(matched_to=self.header_to_edit))
-            .select_related('matched_by')
-            .select_related('matched_to')
-        )
-
-    def get_match_formset(self, header=None):
-        header = self.header_to_edit
-        return super().get_match_formset(header)
-
-    def get_header_form_kwargs(self):
-        kwargs = super().get_header_form_kwargs()
-        if not hasattr(self, 'header_to_edit'):
-            raise AttributeError(
-                f"{self.__class__.__name__} has no 'header_to_edit' attribute.  Did you override "
-                "setup() and forget to class super()?"
-            )
-        kwargs["instance"] = self.header_to_edit
-        return kwargs
-
-
 class NominalTransactionsMixin(object):
 
     def get_context_data(self, **kwargs):
@@ -917,13 +929,14 @@ class EditPurchaseOrSalesTransaction(NominalTransactionsMixin, BaseEditTransacti
         )
 
 
-class BaseViewTransaction(BaseEditTransaction):
+class BaseViewTransaction(IndividualTransactionMixin, BaseTransaction):
 
     def get_void_form_action(self):
         return self.void_form_action
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["is_void"] = self.header_to_edit.is_void()
         context["edit"] = False
         context["view"] = self.header_to_edit.pk
         context["void_form"] = self.void_form(

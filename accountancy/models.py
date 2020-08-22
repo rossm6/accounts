@@ -105,6 +105,9 @@ class TransactionHeader(DecimalBaseModel):
     class Meta:
         abstract = True
 
+    def is_void(self):
+        return self.status == "v"
+
     def is_payment_type(self):
         return self.type in self.payment_type
 

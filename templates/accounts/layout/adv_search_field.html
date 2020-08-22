@@ -3,7 +3,7 @@
 {% if field.is_hidden %}
     {{ field }}
 {% else %}
-    <div class="form-group position-relative">
+    <div class="form-group position-relative {% if field|is_checkbox %} d-flex align-items-center {% endif %}">
         {% if form_show_errors %}
             {% for error in field.errors %}
                 <p id="error_{{ forloop.counter }}_{{ field.auto_id }}" class="errorField">
@@ -14,12 +14,15 @@
 
         {% if field.label %}
             {% if field|is_checkbox %}
+                <label for="{{ field.id_for_label }}" class="m-0 mr-2">
+                    {{ field.label|safe }}
+                </label>
                 {% crispy_field field %}
+            {% else %}
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label|safe }}
+                </label>
             {% endif %}
-
-            <label for="{{ field.id_for_label }}">
-                {{ field.label|safe }}
-            </label>
         {% endif %}
 
         {% if not field|is_checkbox %}

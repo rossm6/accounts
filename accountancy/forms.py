@@ -284,6 +284,7 @@ class SalesAndPurchaseTransactionSearchForm(forms.Form):
         ),
         required=False
     )
+    include_voided = forms.BooleanField(label="Include Voided Transactions")
     use_adv_search = forms.BooleanField() # used in BaseTransactionList view
     # w/o this adv search is not applied
 
@@ -357,6 +358,7 @@ class SalesAndPurchaseTransactionSearchForm(forms.Form):
                     css_class="row"
                 ),
                 Field('use_adv_search', type="hidden"),
+                AdvSearchField('include_voided'),
             ),
             HTML(
                 '<div class="d-flex align-items-center justify-content-end my-4">'
@@ -407,6 +409,7 @@ class NominalTransactionSearchForm(forms.Form):
         ),
         required=False
     )
+    include_voided = forms.BooleanField(label="Include Voided Transactions")
     use_adv_search = forms.BooleanField() # used in BaseTransactionList view
     # w/o this adv search is not applied
 
@@ -460,6 +463,7 @@ class NominalTransactionSearchForm(forms.Form):
                     ),
                     css_class="row"
                 ),
+                AdvSearchField('include_voided'),
                 Field('use_adv_search', type="hidden"),
             ),
             HTML(

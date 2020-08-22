@@ -1,5 +1,7 @@
 {% load crispy_forms_tags %}
-<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-    <a class="dropdown-item small" href="{% url edit_view_name pk=transaction %}">Edit</a>
-    {% crispy void_form %}
-</div>
+{% if not is_void %}
+    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item small" href="{% url edit_view_name pk=transaction %}">Edit</a>
+        {% crispy void_form %}
+    </div>
+{% endif %}
