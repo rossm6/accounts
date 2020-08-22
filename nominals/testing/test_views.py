@@ -13,7 +13,7 @@ from utils.helpers import sort_multiple
 from vat.models import Vat
 
 from ..models import NominalHeader, NominalLine, NominalTransaction
-from .helpers import create_nominal_journal
+from .helpers import create_nominal_journal, create_nominal_journal_without_nom_trans
 
 """
 These tests just check that the nominal module uses the accountancy general classes correctly.
@@ -3111,6 +3111,239 @@ class VoidJournal(TestCase):
         cls.vat_nominal = Nominal.objects.create(parent=current_assets, name="Vat")
 
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+
+    # INCORRECT USAGE
+    def test_void_journal_already_voided(self):
+
+        header, line = create_nominal_journal_without_nom_trans({
+            "header": {
+                "type": "nj",
+                "ref": "test journal",
+                "period": PERIOD,
+                "date": timezone.now(),
+                "total": 120,
+                "status": "v"
+            },
+            "lines": [
+                {
+                    "line_no": 1,
+                    "description": "line 1",
+                    "goods": 100,
+                    "nominal": self.bank_nominal,
+                    "vat_code": self.vat_code,
+                    "vat": 20
+                },
+                {
+                    "line_no": 2,
+                    "description": "line 2",
+                    "goods": -100,
+                    "nominal": self.debtors_nominal,
+                    "vat_code": self.vat_code,
+                    "vat": -20
+                }
+            ],
+        },
+        )
+
+        header = NominalHeader.objects.all()
+        self.assertEqual(
+            len(header),
+            1
+        )
+        header = header[0]
+        self.assertEqual(
+            header.type,
+            "nj"
+        )
+        self.assertEqual(
+            header.ref,
+            "test journal"
+        )
+        self.assertEqual(
+            header.period,
+            PERIOD
+        )
+        self.assertEqual(
+            header.total,
+            120
+        )
+
+        # NOM LINES
+
+        lines = NominalLine.objects.all()
+        nominal_transactions = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nominal_transactions),
+            0
+        )
+        self.assertEqual(
+            len(lines),
+            2
+        )
+        self.assertEqual(
+            lines[0].description,
+            "line 1"
+        )
+        self.assertEqual(
+            lines[0].goods,
+            100
+        )
+        self.assertEqual(
+            lines[0].nominal,
+            self.bank_nominal
+        )
+        self.assertEqual(
+            lines[0].vat_code,
+            self.vat_code
+        )
+        self.assertEqual(
+            lines[0].vat,
+            20
+        ) 
+        self.assertEqual(
+            lines[0].goods_nominal_transaction,
+            None
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            None
+        )  
+
+        self.assertEqual(
+            lines[1].description,
+            "line 2"
+        )
+        self.assertEqual(
+            lines[1].goods,
+            -100
+        )
+        self.assertEqual(
+            lines[1].nominal,
+            self.debtors_nominal
+        )
+        self.assertEqual(
+            lines[1].vat_code,
+            self.vat_code
+        )
+        self.assertEqual(
+            lines[1].vat,
+            -20
+        )
+        self.assertEqual(
+            lines[1].goods_nominal_transaction,
+            None
+        )
+        self.assertEqual(
+            lines[1].vat_nominal_transaction,
+            None
+        ) 
+
+        data = {}
+        data["void-id"] = header.id
+        url = reverse("nominals:void")
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf")
+        json_content = loads(content)
+        self.assertEqual(
+            json_content["success"],
+            False
+        )
+
+        header = NominalHeader.objects.all()
+        self.assertEqual(
+            len(header),
+            1
+        )
+        header = header[0]
+        self.assertEqual(
+            header.type,
+            "nj"
+        )
+        self.assertEqual(
+            header.ref,
+            "test journal"
+        )
+        self.assertEqual(
+            header.period,
+            PERIOD
+        )
+        self.assertEqual(
+            header.total,
+            120
+        )
+
+        # NOM LINES
+
+        lines = NominalLine.objects.all()
+        nominal_transactions = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nominal_transactions),
+            0
+        )
+        self.assertEqual(
+            len(lines),
+            2
+        )
+        self.assertEqual(
+            lines[0].description,
+            "line 1"
+        )
+        self.assertEqual(
+            lines[0].goods,
+            100
+        )
+        self.assertEqual(
+            lines[0].nominal,
+            self.bank_nominal
+        )
+        self.assertEqual(
+            lines[0].vat_code,
+            self.vat_code
+        )
+        self.assertEqual(
+            lines[0].vat,
+            20
+        ) 
+        self.assertEqual(
+            lines[0].goods_nominal_transaction,
+            None
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            None
+        )  
+
+        self.assertEqual(
+            lines[1].description,
+            "line 2"
+        )
+        self.assertEqual(
+            lines[1].goods,
+            -100
+        )
+        self.assertEqual(
+            lines[1].nominal,
+            self.debtors_nominal
+        )
+        self.assertEqual(
+            lines[1].vat_code,
+            self.vat_code
+        )
+        self.assertEqual(
+            lines[1].vat,
+            -20
+        )
+        self.assertEqual(
+            lines[1].goods_nominal_transaction,
+            None
+        )
+        self.assertEqual(
+            lines[1].vat_nominal_transaction,
+            None
+        ) 
+
 
 
     # CORRECT USAGE

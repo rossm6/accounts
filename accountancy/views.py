@@ -12,6 +12,7 @@ from django.http import (Http404, HttpResponse, HttpResponseRedirect,
                          JsonResponse)
 from django.shortcuts import get_object_or_404, render, reverse
 from django.template.context_processors import csrf
+from django.template.loader import render_to_string
 from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
@@ -1068,11 +1069,7 @@ class BaseVoidTransaction(View):
     def form_is_invalid(self):
         self.success = False
         non_field_errors = self.form.non_field_errors()
-        field_errors = self.form.errors
-        self.errors = {
-            "non_field_errors": non_field_errors,
-            "field_errors": field_errors
-        }
+        self.error_message = render_to_string("messages.html", {"messages": [ non_field_errors[0] ]})
 
     def get_header_model(self):
         return self.header_model
@@ -1109,6 +1106,6 @@ class BaseVoidTransaction(View):
             return JsonResponse(
                 data={
                     "success": self.success,
-                    "errors": self.errors
+                    "error_message": self.error_message
                 }
             )

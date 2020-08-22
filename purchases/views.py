@@ -150,6 +150,7 @@ class VoidTransaction(BaseVoidTransaction):
     form = BaseVoidTransactionForm
     success_url = reverse_lazy("purchases:transaction_enquiry")
     module = 'PL'
+    
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):
 

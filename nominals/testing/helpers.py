@@ -2,7 +2,7 @@ from django.utils import timezone
 
 from ..models import NominalHeader, NominalLine, NominalTransaction
 
-def create_nominal_journal(journal, vat_nominal):
+def create_nominal_journal_without_nom_trans(journal):
     header = NominalHeader(**journal["header"])
     header.save()
     lines = []
@@ -11,6 +11,10 @@ def create_nominal_journal(journal, vat_nominal):
         line = NominalLine(**line)
         lines.append(line)
     lines = NominalLine.objects.bulk_create(lines)
+    return header, lines
+
+def create_nominal_journal(journal, vat_nominal):
+    header, lines = create_nominal_journal_without_nom_trans(journal)
     nominal_transactions = []
     for line in lines:
         tran = {

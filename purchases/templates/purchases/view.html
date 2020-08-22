@@ -45,11 +45,11 @@
 
 {% block modal_forms %}
     <!-- Modal -->
-    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="void-modal modal fade" id="voidModal" tabindex="-1" role="dialog" aria-labelledby="voidModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title font-weight-bold" id="exampleModalLabel">Confirm</h5>
+                <h5 class="modal-title font-weight-bold" id="voidModalLabel">Confirm</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
@@ -73,20 +73,25 @@
 <script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
 <script>
 
-    function show_error(errors){
-        if(errors){
-
+    function show_error(message){
+        if(message){
+            var message_html = $(message);
+            message_html.addClass("void-message-error").addClass("mt-5");
+            var content = message_html.find(".fixed-centre");
+            content.removeClass("alert-success")
+            content.addClass("alert-danger");
+            $("body").find(".void-message-error").remove();
+            $("body").append(message_html)
+            $(".void-modal").modal("hide");
         }
         else{
-            // show generic error like ... something went wrong please try again
-            alert("Something went wrong.  Please try again later.");
+            alert("Something went wrong, please try again later.");
         }
     }
 
-
     $(document).ready(function() {
         $("form.void-form").on("click", function(event) {
-            $(".modal").modal("show");
+            $(".void-modal").modal("show");
         });
         $("button.void").on("click", function() {
             var form = $("form.void-form");
@@ -101,12 +106,12 @@
                         return window.location.href = data.href;
                     }
                     else{
-                        show_error();
+                        show_error(data.error_message);
                     }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
-                    show_eror();
+                    show_error();
                 }
             });
         });

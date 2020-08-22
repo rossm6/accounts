@@ -583,12 +583,13 @@ class BaseVoidTransactionForm(forms.Form):
 
     def clean(self):
         try:
-            self.instance = self.header_model.objects.get(
+            self.instance = self.header_model.objects.exclude(status="v").get(
                 pk=self.cleaned_data.get("id"))
         except:
             raise forms.ValidationError(
                 _(
-                    "Transaction does not exist",
-                    code="invalid-transaction-to-void"
-                )
+                    "Could not find transaction to void.  "
+                    "If it has not been voided already, please try again later",
+                ),
+                code="invalid-transaction-to-void"
             )
