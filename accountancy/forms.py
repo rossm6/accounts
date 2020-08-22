@@ -284,8 +284,8 @@ class SalesAndPurchaseTransactionSearchForm(forms.Form):
         ),
         required=False
     )
-    include_voided = forms.BooleanField(label="Include Voided Transactions")
-    use_adv_search = forms.BooleanField() # used in BaseTransactionList view
+    include_voided = forms.BooleanField(label="Include Voided Transactions", initial=False)
+    use_adv_search = forms.BooleanField(initial=False) # used in BaseTransactionList view
     # w/o this adv search is not applied
 
 
