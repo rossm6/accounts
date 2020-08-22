@@ -13,9 +13,9 @@ from django.utils import timezone
 from django.views.generic import ListView
 from querystring_parser import parser
 
-from accountancy.forms import (AdvancedTransactionSearchForm,
+from accountancy.forms import (SalesAndPurchaseTransactionSearchForm,
                                BaseVoidTransactionForm)
-from accountancy.views import (BaseTransactionsList, BaseViewTransaction,
+from accountancy.views import (SalesAndPurchasesTransList, BaseViewTransaction,
                                BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                EditPurchaseOrSalesTransaction,
@@ -270,20 +270,26 @@ load_options = input_dropdown_widget_load_options_factory(
     PurchaseLineForm(), 25)
 
 
-class TransactionEnquiry(BaseTransactionsList):
+class TransactionEnquiry(SalesAndPurchasesTransList):
     model = PurchaseHeader
     fields = [
         ("supplier__name", "Supplier"),
         ("ref", "Reference"),
+        ("period", "Period"),
         ("date", "Date"),
         ("due_date", "Due Date"),
+        ("total", "Total"),
         ("paid", "Paid"),
         ("due", "Due")
     ]
-    searchable_fields = ["supplier__name", "ref", "total"]
+    form_field_to_searchable_model_field = {
+        "contact": "supplier__name",
+        "reference": "ref"
+    }
     datetime_fields = ["date", "due_date"]
     datetime_format = '%d %b %Y'
-    advanced_search_form_class = AdvancedTransactionSearchForm
+    advanced_search_form_class = SalesAndPurchaseTransactionSearchForm
+    contact_name = "supplier"
     template_name = "purchases/transactions.html"
 
     def get_transaction_url(self, **kwargs):

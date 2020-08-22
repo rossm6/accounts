@@ -325,47 +325,6 @@ div.has_errors::after {
     height: 25px!important;
 }
 
-
-/* select2 widget styling */
-
-.select2-container--default .select2-selection--single {
-    border-radius: 0px !important;
-    border-color: #b5b8bb #e2e4e7 #e8eaec #bdbfc3 !important;
-    border-style: solid !important;
-    height: 25px !important;
-}
-
-.select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 24px !important;
-}
-
-.select2-container--default .select2-selection--single:focus {
-    outline: 0 !important;
-}
-
-.select2-container--default .dropdown-wrapper {
-    font-size: 80% !important;
-}
-
-.select2-results__option--selectable {
-    font-size: 80% !important;
-}
-
-/* the selected option has these classes */
-.select2-container--default .select2-results__option--selected {
-    background-color: white !important;
-}
-
-.select2-results__option {
-    padding-left: 10px !important;
-}
-
-/* the option which is highlighted has these classes */
-.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-    background-color: #e6f5fa !important;
-}
-
-
 td.dataTables_empty {
     vertical-align: middle;
 }

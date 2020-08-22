@@ -2,6 +2,8 @@ Objectives -
 
     Good resource - https://hakibenita.com/django-group-by-sql#how-to-group-by-multiple-fields
 
+    NEED TO RE-PRIORITSE MY WORK LOAD BELOW IN ORDER OF PRIORITY.
+
     Work through the sections below before creating the cash book and sales ledger.  Even then i need to look through
     all the code and do a rewrite before creating the new ledgers.  And when i do create the cash book i need
     to create new tests.  I had thought this was just the NL logic again but it is not.  We need to analyse only
@@ -65,6 +67,9 @@ Objectives -
 
     Tests
 
+        Check that a transaction cannot be matched to itself.  At form level as well as UI.  UI shouldn't be a problem now
+        as i have fixed the bug in the outstanding transactions query.
+
         If we set an ordering on the transaction header models we will need to add a order_by to our ORM queries
         in the tests.  And probably for all of them ... what joy !
 
@@ -97,6 +102,9 @@ Objectives -
         trig_vector = (TrigramSimilarity('supplier__name', s) + TrigramSimilarity('ref', s))
         r = PurchaseHeader.objects.annotate(similarity=trig_vector).filter(similarity__gt=0.5).filter(total=190)
 
+        For NL ledger it should be "Reference, Nominal, or Amount".  This will mean adding the reference column
+        to the transaction view.
+
     ERRORS -
 
         If field errors occur in the grid they are marked by a red tip in the bottom right of the cell.  This isn't
@@ -107,8 +115,6 @@ Objectives -
     View -
 
         Show errors if void fails.
-
-        We need to show how much is outstanding.
 
     Edit -
 
@@ -128,9 +134,6 @@ Objectives -
 
         The redirection to transaction enquiry at the moment does not show the "Transaction successfully posted" message.
         Only when the user goes back to the create view does it show...
-
-        Check that a transaction cannot be matched to itself.  At form level as well as UI.  UI shouldn't be a problem now
-        as i have fixed the bug in the outstanding transactions query.
 
         The fields for the match form should have the disabled attribute set really.  Except for those we are setting.
         Need to look into this.  At the moment i just set readonly as an attribute on the widget which i don't think

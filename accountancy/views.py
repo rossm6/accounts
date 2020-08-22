@@ -51,6 +51,14 @@ def get_trig_vectors(searchable_fields, search_text):
     return functools.reduce(lambda a, b: a + b, trig_vectors)
 
 
+def get_trig_vectors_for_different_inputs(fields_and_inputs):
+    trig_vectors = [
+        TrigramSimilarity(field, _input)
+        for field, _input in fields_and_inputs
+    ]
+    return functools.reduce(lambda a, b: a + b, trig_vectors)   
+
+
 def input_dropdown_widget_validate_choice_factory(form):
     """
 
@@ -187,23 +195,32 @@ class jQueryDataTable(object):
         return ordering
 
 
-class BaseTransactionsList(jQueryDataTable, ListView):
 
-    # at the moment we assume these fields exist
-    # but may want to make this configurable at later stage
+class SalesAndPurchaseSearchMixin:
     def apply_advanced_search(self, cleaned_data):
-        search = cleaned_data.get("search")
+        contact = cleaned_data.get("contact")
+        reference = cleaned_data.get("reference")
+        total = cleaned_data.get("total")
+        period = cleaned_data.get("period")
         search_within = cleaned_data.get("search_within")
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
         queryset = self.get_queryset()
-        if search:
+
+        if contact or reference:
             queryset = (
                 queryset.annotate(
-                    search=get_search_vectors(self.searchable_fields)
-                )
-                .filter(search=search)
+                    similarity=(
+                        get_trig_vectors_for_different_inputs(
+                            self.get_list_of_search_values_for_model_attributes(cleaned_data)
+                        )
+                    )
+                ).filter(similarity__gt=0.5)
             )
+        if total:
+            queryset = queryset.filter(total=total)
+        if period:
+            queryset = queryset.filter(period=period)
         if start_date:
             q_object_start_date = Q()
             if search_within == "any" or search_within == "tran":
@@ -220,12 +237,64 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             queryset = queryset.filter(q_object_end_date)
         return queryset
 
+
+
+class NominalSearchMixin:
+    def apply_advanced_search(self, cleaned_data):
+        nominal = cleaned_data.get("nominal")
+        reference = cleaned_data.get("reference")
+        total = cleaned_data.get("total")
+        period = cleaned_data.get("period")
+        date = cleaned_data.get("date")
+        queryset = self.get_queryset()
+
+        if nominal or reference:
+            queryset = (
+                queryset.annotate(
+                    similarity=(
+                        get_trig_vectors_for_different_inputs(
+                            self.get_list_of_search_values_for_model_attributes(cleaned_data)
+                        )
+                    )
+                ).filter(similarity__gt=0.5)
+            )
+        if total:
+            queryset = queryset.filter(total=total)
+        if period:
+            queryset = queryset.filter(period=period)
+        if date:
+            queryset = queryset.filter(date=date)
+        return queryset
+
+
+class BaseTransactionsList(jQueryDataTable, ListView):
+
+    def get_list_of_search_values_for_model_attributes(self, form_cleaned_data):
+        return [
+            ( model_field, form_cleaned_data.get(form_field, "") )
+            for form_field, model_field in self.form_field_to_searchable_model_field.items()
+        ]
+
+    def apply_advanced_search(self, cleaned_data):
+        raise NotImplementedError
+
+    def get_form_kwargs(self):
+        kwargs = {
+            "data": self.request.GET,
+        }
+        return kwargs
+
+    def get_search_form(self):
+        return self.advanced_search_form_class(
+            **self.get_form_kwargs()
+        )
+
     def get_context_data(self, **kwargs):
         context_data = {}
         context_data["columns"] = [field[0] for field in self.fields]
         context_data["column_labels"] = [field[1] for field in self.fields]
         if self.request.is_ajax() and self.request.method == "GET" and self.request.GET.get('use_adv_search'):
-            form = self.advanced_search_form_class(data=self.request.GET)
+            form = self.get_search_form()
             # form = AdvancedTransactionSearchForm(data=self.request.GET)
             # This form was not validating despite a valid datetime being entered on the client
             # The problem was jquery.serialize encodes
@@ -236,7 +305,7 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             else:
                 queryset = self.get_queryset()
         else:
-            context_data["form"] = self.advanced_search_form_class()
+            context_data["form"] = self.get_search_form()
             queryset = self.get_queryset()
         start = self.request.GET.get("start", 0)
         paginate_by = self.request.GET.get("length", 25)
@@ -281,6 +350,17 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             return JsonResponse(data)
         return super().render_to_response(context, **response_kwargs)
 
+
+class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsList):
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["contact_name"] = self.contact_name
+        return kwargs
+
+
+class NominalTransList(NominalSearchMixin, BaseTransactionsList):
+    pass
 
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 

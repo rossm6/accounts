@@ -228,59 +228,29 @@ class BaseTransactionMixin(object):
                         self.initial[field] = -1 * tmp
 
 
-class AdvancedTransactionSearchForm(forms.Form):
 
-    """
-    Generally the transaction enquiry will have a form
-    with these form fields.
+class SalesAndPurchaseTransactionSearchForm(forms.Form):
 
-    Fix me -
-
-        We should use a form prefix
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_method = "GET"
-        self.helper.form_tag = False
-        self.helper.form_show_errors = False
-        self.helper.include_media = False  # I decide where the js goes
-        self.helper.layout = Layout(
-            Div(
-                AdvSearchField(
-                    'search',
-                    css_class="w-100 input",
-                ),
-                AdvSearchField(
-                    'search_within',
-                    css_class="form-control w-100 select2-select"
-                ),
-                AdvSearchField(
-                    'start_date',
-                    css_class="w-100 input"
-                ),
-                AdvSearchField(
-                    'end_date',
-                    css_class="w-100 input"
-                ),
-                Field('use_adv_search', type="hidden"),
-                css_class="small d-flex justify-content-between"
-            ),
-            HTML(
-                '<div class="d-flex align-items-center justify-content-end my-4">'
-                '<button class="btn button-secondary search-btn">Search</button>'
-                '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
-                '</div>'
-            ),
-        )
-
-    search = forms.CharField(
-        label='Enter Reference, Contact or Amount',
+    contact = forms.CharField(
+        label='',
         max_length=100,
         required=False
-    )  # arbitary
+    )
+    reference = forms.CharField(
+        label='Reference',
+        max_length=100,
+        required=False
+    )
+    total = forms.DecimalField(
+        label='Total',
+        required=False
+    )
+
+    period = forms.CharField(
+        label='Period',
+        max_length=100,
+        required=False
+    )
     search_within = forms.ChoiceField(
         choices=(
             ('any', 'Any'),
@@ -314,11 +284,195 @@ class AdvancedTransactionSearchForm(forms.Form):
         ),
         required=False
     )
-    use_adv_search = forms.BooleanField()
+    use_adv_search = forms.BooleanField() # used in BaseTransactionList view
+    # w/o this adv search is not applied
+
+
+    def __init__(self, *args, **kwargs):
+        contact_name = kwargs.pop("contact_name", "contact")
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "GET"
+        self.helper.form_tag = False
+        self.helper.form_show_errors = False
+        self.helper.include_media = False
+
+        self.fields["contact"].label = contact_name.capitalize()
+
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    Div(
+                        AdvSearchField(
+                            'contact',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'reference',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-5"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'total',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    css_class="row"
+                ),
+                Div(
+                    Div(
+                        AdvSearchField(
+                            'period',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'search_within',
+                            css_class="w-100",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'start_date',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'end_date',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    css_class="row"
+                ),
+                Field('use_adv_search', type="hidden"),
+            ),
+            HTML(
+                '<div class="d-flex align-items-center justify-content-end my-4">'
+                    '<button class="btn button-secondary search-btn">Search</button>'
+                    '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
+                '</div>'
+            ),
+        )
+
 
     def clean_start_date(self):
         start_date = self.cleaned_data["start_date"]
-        return start_date
+        return start_date    
+
+
+class NominalTransactionSearchForm(forms.Form):
+
+    nominal = forms.CharField(
+        label='Nominal',
+        max_length=100,
+        required=False
+    )
+    reference = forms.CharField(
+        label='Reference',
+        max_length=100,
+        required=False
+    )
+    total = forms.DecimalField(
+        label='Total',
+        required=False
+    )
+
+    period = forms.CharField(
+        label='Period',
+        max_length=100,
+        required=False
+    )
+    date = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        ),
+        required=False
+    )
+    use_adv_search = forms.BooleanField() # used in BaseTransactionList view
+    # w/o this adv search is not applied
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "GET"
+        self.helper.form_tag = False
+        self.helper.form_show_errors = False
+        self.helper.include_media = False  # I decide where the js goes
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    Div(
+                        AdvSearchField(
+                            'nominal',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'reference',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-5"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'total',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    css_class="row"
+                ),
+                Div(
+                    Div(
+                        AdvSearchField(
+                            'period',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'date',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    css_class="row"
+                ),
+                Field('use_adv_search', type="hidden"),
+            ),
+            HTML(
+                '<div class="d-flex align-items-center justify-content-end my-4">'
+                '<button class="btn button-secondary search-btn">Search</button>'
+                '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
+                '</div>'
+            ),
+        )
+
+    def clean_date(self):
+        date = self.cleaned_data["date"]
+        return date
 
 
 class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):

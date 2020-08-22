@@ -1,9 +1,10 @@
+{% load static %}
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/plug-ins/1.10.21/pagination/select.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.26.0/moment.min.js" integrity="sha256-5oApc/wMda1ntIEK4qoWJ4YItnV4fBHMwywunj8gPqc=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+<script src="{% static 'js/selectize.min.js' %}"></script>
 <script>
 $(document).ready(function () {
 
@@ -352,10 +353,6 @@ $(document).ready(function () {
 </script>
 <script>
     $(document).ready(function(){
-        $(".select2-select").select2({
-            minimumResultsForSearch: Infinity,
-            width: "200px" // label for input needs to be set to display:block in css
-        });
-        $(".select2-select").siblings("label").eq(0).css("display", "block");
+        $("select[name='search_within']").selectize();
     });
 </script>

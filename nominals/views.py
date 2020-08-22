@@ -2,10 +2,10 @@ from django.conf import settings
 from django.db.models import Sum
 from django.urls import reverse_lazy
 
-from accountancy.forms import (AdvancedTransactionSearchForm,
+from accountancy.forms import (NominalTransactionSearchForm,
                                BaseVoidTransactionForm)
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
-                               BaseTransactionsList, BaseViewTransaction,
+                               NominalTransList, BaseViewTransaction,
                                BaseVoidTransaction, create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
@@ -116,22 +116,27 @@ create_on_the_fly_view = create_on_the_fly(
     }
 )
 
-class TransactionEnquiry(BaseTransactionsList):
+class TransactionEnquiry(NominalTransList):
     model = NominalTransaction
     # ORDER OF FIELDS HERE IS IMPORTANT FOR GROUPING THE SQL QUERY
     # ATM -
     # GROUP BY MODULE, HEADER, NOMINAL__NAME, PERIOD
     fields = [
         ("module", "Module"),
-        ("header", "Unique Ref"),
+        ("header", "Internal Ref"),
+        ("ref", "Ref"),
         ("nominal__name", "Nominal"),
         ("period", "Period"),
+        ("date", "Date"),
         ("total", "Total"),
     ]
-    searchable_fields = ["nominal__name", "ref", "value"]
+    form_field_to_searchable_model_field = {
+        "nominal": "nominal__name",
+        "reference": "ref"
+    }
     datetime_fields = ["created",]
     datetime_format = '%d %b %Y'
-    advanced_search_form_class = AdvancedTransactionSearchForm
+    advanced_search_form_class = NominalTransactionSearchForm
     template_name = "nominals/transactions.html"
     row_identifier = "header"
 

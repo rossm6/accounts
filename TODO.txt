@@ -1,0 +1,2 @@
+5. Create a widget for cycling through the errors in the DOM
+6. Create a generic widget for showing ajax errors at the top of the page
