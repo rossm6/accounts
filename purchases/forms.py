@@ -69,7 +69,7 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
                 payment_brought_forward_form = False
                 self.fields["cash_book"].required = True
             else:
-                payment_form = False
+                payment_form = True
                 payment_brought_forward_form = True
         else:
             payment_brought_forward_form = False

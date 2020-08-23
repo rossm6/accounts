@@ -10,6 +10,7 @@ def create_nominals():
     liabilities = Nominal.objects.create(name="Liabilities")
     current_liabilities = Nominal.objects.create(name="Current Liabilities", parent=liabilities)
     Nominal.objects.create(name="Purchase Ledger Control", parent=current_liabilities)
+    Nominal.objects.create(name="Vat Control", parent=current_liabilities)
     non_current_liabilities = Nominal.objects.create(name="Non Current Liabilities", parent=liabilities)
     Nominal.objects.create(name="Loans", parent=non_current_liabilities)
     system_controls = Nominal.objects.create(name="System Controls")
