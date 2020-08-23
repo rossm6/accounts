@@ -149,8 +149,7 @@ class TableHelper(object):
         if self.delete:
             delete_args = [delete_layout_object]
             if _type == "Td":
-                delete_args += [PlainField('DELETE',
-                                           type="hidden", css_class="delete-line")]
+                delete_args += [PlainField('DELETE', css_class="delete-line d-none")]
             field_columns += [
                 column_layout_object(
                     *delete_args,

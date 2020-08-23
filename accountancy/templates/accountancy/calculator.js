@@ -22,7 +22,8 @@ $(document).ready(function () {
         return {
             goods: goods,
             vat_code: vat_code,
-            vat: vat
+            vat: vat,
+            delete: tr.hasClass("deleted-row")
         };
     }
 
@@ -37,10 +38,12 @@ $(document).ready(function () {
             vat = 0;
             lines.each(function (index, line) {
                 var elements = get_elements($(line));
-                var g = (+elements.goods.val() || 0) * 100;
-                var v = (+elements.vat.val() || 0) * 100;
-                goods = goods + g;
-                vat = vat + v;
+                if(!elements.delete){
+                    var g = (+elements.goods.val() || 0) * 100;
+                    var v = (+elements.vat.val() || 0) * 100;
+                    goods = goods + g;
+                    vat = vat + v;
+                }
             });
             total = goods + vat;
             goods = goods / 100;
@@ -130,6 +133,10 @@ $(document).ready(function () {
 
     $("table.new_matched_transactions").on("change", "input", function (event) {
         event.stopPropagation();
+        calculate_totals();
+    });
+
+    $("td.col-close-icon").on("click", function(){
         calculate_totals();
     });
 

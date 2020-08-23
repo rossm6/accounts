@@ -1,2 +1,21 @@
+   Edit -
 
-6. Create a generic widget for showing ajax errors at the top of the page
+        We also need to add a test which checks that new lines marked as deleted do not show.  I think
+        the better thing to do actually would be to delete new lines on the client and only set the
+        DELETE flag on those which have primary keys.
+
+    Create -
+
+        The redirection to transaction enquiry at the moment does not show the "Transaction successfully posted" message.
+        Only when the user goes back to the create view does it show...
+
+        The fields for the match form should have the disabled attribute set really.  Except for those we are setting.
+        Need to look into this.  At the moment i just set readonly as an attribute on the widget which i don't think
+        is the same.
+
+    Templates -
+
+        FIX ME - change 'matching_formset" to "match_formset" in the template
+
+
+        jQueryDataTables class should be renamed to contain "Mixin" because this is what is is.

@@ -53,13 +53,13 @@ $(document).ready(function () {
 
         $("td.col-close-icon").on("click", function (event) {
             var $tr = $(this).parents("tr");
-            var val = $tr.find("input.delete-line").val();
+            var val = $tr.find("input.delete-line").get(0).checked;
             if(val){
-                $(this).parents("tr").find("input.delete-line").val("");
+                $(this).parents("tr").find("input.delete-line").prop("checked", false);
                 $tr.removeClass("deleted-row");
             }
             else{
-                $(this).parents("tr").find("input.delete-line").val("on"); // any value would do as it is a boolean field on the server
+                $(this).parents("tr").find("input.delete-line").prop("checked", true);
                 $tr.addClass("deleted-row");
             }
         });
@@ -68,7 +68,7 @@ $(document).ready(function () {
         // and change color
         $("td.col-close-icon").each(function(){
             var $tr = $(this).parents("tr");
-            var val = $tr.find("input.delete-line").val();
+            var val = $tr.find("input.delete-line").prop("checked");
             if(val){
                 $tr.addClass("deleted-row");
             }

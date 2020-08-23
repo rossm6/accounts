@@ -85,15 +85,6 @@ Objectives -
             THIS WOULD MEAN ALSO COPYING ALL THE VIEWS AND URLS.  EASIER TO JUST KEEP THE PURCHASES APP BUT RENAME
             TO "DUMMY_PURCHASES" OR SOMETHING
 
-    ERRORS -
-
-        If field errors occur in the grid they are marked by a red tip in the bottom right of the cell.  This isn't
-        exactly obvious so we really need a banner at the top which tells the user of the field errors.  Even better
-        would be a simple widget which when clicked focuses on the error.  Imagine a grid with hundreds of rows.
-        Without this widget it would be very boring looking for the error.
-
-            GOOD POINT BUT A LOW PRIORITY.
-
     Edit -
 
         The calculator does not exclude the lines which have been marked as deleted
@@ -107,15 +98,15 @@ Objectives -
         The redirection to transaction enquiry at the moment does not show the "Transaction successfully posted" message.
         Only when the user goes back to the create view does it show...
 
+        The fields for the match form should have the disabled attribute set really.  Except for those we are setting.
+        Need to look into this.  At the moment i just set readonly as an attribute on the widget which i don't think
+        is the same.
+
         The part where we assign nominal transactions to line in the lines_are_valid is crazily inefficient.
         I need to sort the lines and nominal transactions and put them into a dictionary to improve performance.
 
         BaseTransaction has the matching_is_valid method for BaseCreateTransaction.  Should move to this latter
         class.  Need to check other methods to see whether should be moved also.
-
-        The fields for the match form should have the disabled attribute set really.  Except for those we are setting.
-        Need to look into this.  At the moment i just set readonly as an attribute on the widget which i don't think
-        is the same.
 
     Templates -
 
