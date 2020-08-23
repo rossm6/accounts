@@ -95,10 +95,8 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
         cleaned_data = super().clean()
         type = cleaned_data.get("type")
         total = cleaned_data.get("total")
-        if type not in self._meta.model.get_types_requiring_lines():
-            if type in self._meta.model.credits:
-                cleaned_data["total"] = -1 * total
-        # else it requires lines so this changing of the sign is done in line_formset.clean
+        if type in self._meta.model.credits:
+            cleaned_data["total"] = -1 * total
         return cleaned_data
 
 
@@ -170,16 +168,18 @@ class PurchaseLineFormset(BaseLineFormset):
             return
         goods = 0
         vat = 0
-        total = 0
+        header_type_is_credit = self.header.is_credit_type()
+        multiplier =  -1 if header_type_is_credit else 1 
         for form in self.forms:
             # empty_permitted = False is set on forms for existing data
             # empty_permitted = True is set new forms i.e. for non existent data
             if not form.empty_permitted or (form.empty_permitted and form.has_changed()):
                 if not form.cleaned_data.get("DELETE"):
+                    form.instance.goods *= multiplier
+                    form.instance.vat *= multiplier
                     goods += form.instance.goods
                     vat += form.instance.vat
-                    total += (form.instance.goods + form.instance.vat)
-
+        total = goods + vat
         if self.header.total != 0 and self.header.total != total:
             raise forms.ValidationError(
                 _(
@@ -187,35 +187,9 @@ class PurchaseLineFormset(BaseLineFormset):
                 ),
                 code="invalid-total"
             )
-
-        header_type_is_credit = self.header.is_credit_type()
-
-        if header_type_is_credit:
-            for form in self.forms:
-                if not form.empty_permitted or (form.empty_permitted and form.has_changed()):
-                    if not form.cleaned_data.get("DELETE"):
-                        form.instance.goods = -1 * form.instance.goods
-                        form.instance.vat = -1 * form.instance.vat
-
-        if header_type_is_credit:
-            self.header.goods = -1 * goods
-            self.header.vat = -1 * vat
-            self.header.total = -1 * total
-        else:
-            self.header.goods = goods
-            self.header.vat = vat
-            self.header.total = total
-
-        # THIS SEEMS VERY ODD ON FIRST READING
-        # YOU WILL PROBABLY ASK YOURSELF HOW CAN WE SET DUE AT THIS POINT
-        # BECAUSE AN INVOICE FULLY PAID COULD HAVE BEEN LOWERED IN VALUE SO THE DUE WOULD BE NEGATIVE NOW
-        # E.G. A 1200 invoice is fully paid.  I.e. total = 1200, paid = 1200 and due = 0
-        # Now invoice is lowered to 1000.  So total = 1000, paid = 1200 and due = -200
-        # But if the invoice is paid the matching transactions will always be checked in full
-        # It is therefore in match_formset.clean that due is corrected
-
-        # FOR TRANS WITHOUT LINES THIS IS SET IN THE CLEAN METHOD OF THE HEADER FORM
-        self.header.due = self.header.total - self.header.paid
+        self.header.goods = goods
+        self.header.vat = vat
+        self.header.total = total
 
 
 line_css_classes = {
@@ -403,6 +377,7 @@ will have been created by this point.
 class PurchaseMatchingForm(forms.ModelForm):
 
     """
+    
     When creating new transactions there is the option to match
     the new transaction to existing transactions.  This form will
     therefore have to be built on the client dynamically for creating
@@ -445,10 +420,10 @@ class PurchaseMatchingForm(forms.ModelForm):
         # this logic is in case we ever need the form without the formset
         # but with a formset the keyword argument will not be passed
 
-        if 'match_by' in kwargs:
-            if match_by := kwargs.get('match_by'):  # match_by could be None
-                self.match_by = match_by
-            kwargs.pop("match_by")
+        if 'tran_being_created_or_edited' in kwargs:
+            if tran_being_created_or_edited := kwargs.get('tran_being_created_or_edited'):  # match_by could be None
+                self.tran_being_created_or_edited = tran_being_created_or_edited
+            kwargs.pop("tran_being_created_or_edited")
 
         super().__init__(*args, **kwargs)
 
@@ -463,7 +438,7 @@ class PurchaseMatchingForm(forms.ModelForm):
             self.fields["matched_to"].queryset = PurchaseHeader.objects.none()
         # GET and POST requests for CREATE AND EDIT
         if self.instance.pk:
-            if self.match_by.pk == self.instance.matched_to_id:
+            if self.tran_being_created_or_edited.pk == self.instance.matched_to_id:
                 matched_header = self.instance.matched_by
                 f = -1
             else:
@@ -477,16 +452,18 @@ class PurchaseMatchingForm(forms.ModelForm):
             self.initial["value"] *= f
             # matched_to is a field rendered on the client because it is for the user to pick (in some situations)
             # but matched_by, although a field, can always be determined server side so we override the POST data to do so
-            if self.match_by.pk:
+            if self.tran_being_created_or_edited.pk:
                 self.data = self.data.copy()
                 # we are editing a transaction in the system
                 self.data[self.prefix + "-" +
-                          "matched_by"] = self.initial.get('matched_by', self.match_by.pk)
+                          "matched_by"] = self.initial.get('matched_by', self.tran_being_created_or_edited.pk)
+                          # FIX ME - set matched_by to read only so we don't need to do this
         if not self.instance.pk and self.data:
             # creating a new transaction
             # matched_by is not required at form level therefore
             # view will attach matched_by to instance after successful validation
             self.fields["matched_by"].required = False
+
 
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) +
@@ -514,21 +491,30 @@ class PurchaseMatchingForm(forms.ModelForm):
         ).render()
 
     def clean(self):
+        # The purpose of this clean is to check that each match is valid
+        # But we can only do the check if the matched_to transaction in the relationship IS NOT the
+        # transaction being created or edited.  Well, the transaction must be being edited if
+        # it is a matched to.
+        # This is because we don't know how much is being matched to other transactions at this point
         cleaned_data = super().clean()
         initial_value = self.initial.get("value", 0)
         matched_by = cleaned_data.get("matched_by")
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
         header = matched_to
-        # match_by will not be set if header=None
-        # header=None if the header_form is invalid
-        if hasattr(self, 'match_by') and self.match_by.pk:
-            if self.match_by.pk == matched_to.pk:
-                # matched_to could be the header we are editing
-                # and if so there is no way of knowing the due amount at this point
-                # as it will depend on the other matches
-                # therefore postpone validation until clean method at formset level
-                header = matched_by
+        # check transaction exists as attribute first because it will not if the header_form fails
+        if hasattr(self, 'tran_being_created_or_edited'):
+            if self.tran_being_created_or_edited.pk:
+                # so tran is being edited not created
+                if self.tran_being_created_or_edited.pk == matched_to.pk:
+                    header = matched_by
+                    # We still need to check the value is acceptable
+        else:
+            return # header_form must have failed so do not bother checking anything further
+        # The header then at this point is NOT the transaction being created or edited.  Since only one matching record
+        # can map any two transactions we can with certainly determine whether the value to match is valid or not.
+        # To be clear - header here is NOT the transaction created / edited by the header form.
+        # header.due is therefore fixed.
         if header and value:
             if header.total > 0:
                 if value < 0:
@@ -575,7 +561,8 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.matched_by = self.match_by
+        if instance.matched_to_id != self.tran_being_created_or_edited.pk:
+            instance.matched_by = self.tran_being_created_or_edited
         if commit:
             instance.save()
         return instance
@@ -640,59 +627,47 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
     def __init__(self, *args, **kwargs):
         if 'match_by' in kwargs:
             if match_by := kwargs.get('match_by'):  # match_by could be None
-                self.match_by = match_by
+                self.tran_being_created_or_edited = match_by
             kwargs.pop("match_by")
         super().__init__(*args, **kwargs)
 
     def _construct_form(self, i, **kwargs):
-        if hasattr(self, 'match_by'):
-            kwargs["match_by"] = self.match_by
+        if hasattr(self, 'tran_being_created_or_edited'):
+            kwargs["tran_being_created_or_edited"] = self.tran_being_created_or_edited
         form = super()._construct_form(i, **kwargs)
         return form
 
     def clean(self):
         super().clean()
-        if(any(self.errors) or not hasattr(self, 'match_by')):
+        if(any(self.errors) or not hasattr(self, 'tran_being_created_or_edited')):
             return
-        # when a header is being created for the first time only match records where the matched_by equals the new header are possible
-        # for edits it is possible to have many matched records where the matched_by equals the header being edited AND many matched records
-        # where the matched_to equals the header being edited and the matched_by is another header.  However it is not possible to
-        # have many matched records of this second kind where there are many with the same matched_by header.
-        overall_change_in_value = 0
+        # undo the effects of matching to date
+        self.tran_being_created_or_edited.due = self.tran_being_created_or_edited.total
+        self.tran_being_created_or_edited.paid = 0
+        total_matching_value = 0
         self.headers = []
+        header_to_update = None
         for form in self.forms:
-            if not form.instance.matched_by_id or self.match_by.pk == form.instance.matched_by_id:
-                # value
-                if 'value' in form.changed_data:
-                    initial_value = form.initial.get("value", 0)
-                    value = form.instance.value - initial_value  # change in value therefore
-                    form.instance.matched_to.due -= value
-                    form.instance.matched_to.paid += value
-                    # matched_to cannot be self.match_by here
-                    self.headers.append(form.instance.matched_to)
-                    overall_change_in_value += value
+            initial_value = form.initial.get("value", 0)
+            value = form.instance.value
+            diff = value - initial_value
+            total_matching_value += value
+            if not form.instance.matched_by_id or self.tran_being_created_or_edited.pk == form.instance.matched_by_id:
+                # either new transaction is being created
+                # or we are editing a transaction.  
+                # here we just consider those matches where matched_by is the transaction being edited.
+                header_to_update = form.instance.matched_to
             else:
-                # value in matched relationship is the value of the matched_to MATCHED to matched_by
-                # because the matched_by here is not the header being edited we want to know the value of the
-                # matched_by MATCHED to the matched_to
-                # this is -1 * value
-                # so here matched_to is self.match_by
-                # and matched_by is another header unique among the headers in all the forms
-                # this is the opposite of the above
-                # self.headers will need the matched_by headers
-                if 'value' in form.changed_data:
-                    initial_value = form.initial.get("value", 0)
-                    value = form.instance.value - initial_value
-                    form.instance.value = -1 * form.instance.value
-                    form.instance.matched_by.due -= value
-                    form.instance.matched_by.paid += value
-                    self.headers.append(form.instance.matched_by)
-                    overall_change_in_value += value
-        if self.match_by.total == 0 and self.match_by.due == 0:
-            if overall_change_in_value != 0:
+                form.instance.value = -1 * value # FIX LATER ON.  ONE TEST AT LEAST WILL FAIL WITH THIS
+                header_to_update = form.instance.matched_by
+            header_to_update.due -= diff
+            header_to_update.paid += diff
+            self.headers.append(header_to_update)
+        if self.tran_being_created_or_edited.total == 0:
+            if total_matching_value != 0:
                 raise forms.ValidationError(
                     _(
-                        f"You are trying to match a total value of { self.match_by.paid + overall_change_in_value }.  "
+                        f"You are trying to match a total value of { total_matching_value }.  "
                         "Because you are entering a zero value transaction the total amount to match must be zero also."
                     ),
                     code="invalid-match"
@@ -705,29 +680,30 @@ class PurchaseMatchingFormset(BaseTransactionModelFormSet):
                     ),
                     code="zero-value-transaction-not-matched"
                 )
-        elif self.match_by.total > 0:
+        elif self.tran_being_created_or_edited.total > 0:
             if self.forms:
-                if (self.match_by.due + overall_change_in_value) >= 0 and (self.match_by.due + overall_change_in_value) <= self.match_by.total:
-                    self.match_by.due += overall_change_in_value
-                    self.match_by.paid -= overall_change_in_value
+                self.tran_being_created_or_edited.due += total_matching_value
+                if self.tran_being_created_or_edited.due >= 0 and self.tran_being_created_or_edited.due <= self.tran_being_created_or_edited.total:
+                    self.tran_being_created_or_edited.paid += (-1 * total_matching_value)
                 else:
                     raise forms.ValidationError(
                         _(
-                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.match_by.total }"
+                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.tran_being_created_or_edited.total }"
                         ),
                         code="invalid-match"
                     )
-        elif self.match_by.total < 0:
+        elif self.tran_being_created_or_edited.total < 0:
             if self.forms:
-                if (self.match_by.due + overall_change_in_value) <= 0 and (self.match_by.due + overall_change_in_value) >= self.match_by.total:
-                    self.match_by.due += overall_change_in_value
-                    self.match_by.paid -= overall_change_in_value
+                self.tran_being_created_or_edited.due += total_matching_value
+                if self.tran_being_created_or_edited.due <= 0 and self.tran_being_created_or_edited.due >= self.tran_being_created_or_edited.total:
+                    self.tran_being_created_or_edited.paid += (-1 * total_matching_value)
                 else:
                     raise forms.ValidationError(
                         _(
-                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.match_by.total }"
+                            f"Please ensure the total of the transactions you are matching is between 0 and { -1 * self.tran_being_created_or_edited.total }"
                         )
                     )
+
 
 
 match = forms.modelformset_factory(

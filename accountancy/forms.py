@@ -512,14 +512,12 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
         if self.instance.pk:
             # VERY IMPORTANT USERS CANNOT CHANGE THE TYPE ONCE A TRANSACTION
             # HAS BEEN CREATED
-            self.fields["type"].disabled = True    
+            self.fields["type"].disabled = True  
 
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if instance.type not in instance.get_types_requiring_lines():
-            instance.due = instance.total - instance.paid
-        # else the header total depends on the lines so set in line_formset.clean
+        instance.due = instance.total - instance.paid
         if commit:
             instance.save()
         return instance
