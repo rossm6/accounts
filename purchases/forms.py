@@ -559,6 +559,48 @@ class PurchaseMatchingForm(forms.ModelForm):
                         )
                     )
 
+
+            would_be_due = header.due + ( initial_value - value )
+            if header.total > 0:
+                if would_be_due < 0:
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"This isn't possible because of the matching transaction"
+                            )
+                        )
+                    )
+                elif would_be_due > header.total:
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"This isn't possible because of the matching transaction"
+                            )
+                        )
+                    )  
+            elif header.total < 0:
+                if would_be_due > 0:
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"This isn't possible because of the matching transaction"
+                            )
+                        )
+                    )          
+                if would_be_due < header.total:
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                f"This isn't possible because of the matching transaction"
+                            )
+                        )
+                    )
+                    
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         if instance.matched_to_id != self.tran_being_created_or_edited.pk:
