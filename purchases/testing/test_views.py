@@ -32458,22 +32458,6 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
 
-    """
-
-    The following four tests -
-
-        test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_<n>
-
-        Check that we cannot change the value of a match record where it is ok for the header being edited
-        but no ok for the transaction matched to it.  The examples are like this -
-
-            # Create an invoice for 120.01 through view first
-            # Second create a credit note for 120.00
-            # Third create an invoice for -0.01 and match the other two to it
-
-    """
-
-
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
 
@@ -32937,483 +32921,6 @@ class EditInvoiceNominalEntries(TestCase):
             "matched_by": headers[2].pk,
             "matched_to": headers[0].pk,
             "value": '-120.02',
-            "id": matches[0].pk
-        })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
-        matching_data["match-INITIAL_FORMS"] = 1
-        data.update(matching_data)
-
-        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
-        self.assertEqual(
-            response.status_code,
-            200
-        )
-
-
-
-    # INCORRECT USAGE
-    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_3(self):
-
-        # Create a credit for 120.01 through view first
-        # Second create a invoice note for 120.00
-        # Third create an invoice for 0.01 and match the other two to it
-        # Invalid edit follows
-
-        # Invoice for 120.01
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pc",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 120.01
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 100.01,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 20
-                }
-        ]
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
-        data.update(matching_data)
-
-        response = self.client.post(reverse("purchases:create"), data)
-        self.assertEqual(
-            response.status_code,
-            302
-        )
-
-        # Credit Note for 120.00
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pi",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 120.00
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 100.00,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 20
-                }
-        ]
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
-        data.update(matching_data)
-
-        response = self.client.post(reverse("purchases:create"), data)
-        self.assertEqual(
-            response.status_code,
-            302
-        )
-
-        headers = PurchaseHeader.objects.all().order_by("pk")
-        self.assertEqual(
-            len(headers),
-            2
-        )
-
-        # Invoice for -0.01
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pi",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 0.01
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 0.01,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 0
-                }
-        ]
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        data.update(line_data)
-
-        matching_forms = []
-        matching_forms.append({
-            "type": headers[0].type,
-            "ref": headers[0].ref,
-            "total": headers[0].total,
-            "paid": headers[0].paid,
-            "due": headers[0].due,
-            "matched_by": '',
-            "matched_to": headers[0].pk,
-            "value": headers[0].total,
-        })
-        matching_forms.append({
-            "type": headers[1].type,
-            "ref": headers[1].ref,
-            "total": headers[1].total,
-            "paid": headers[1].paid,
-            "due": headers[1].due,
-            "matched_by": '',
-            "matched_to": headers[1].pk,
-            "value": headers[1].total,
-        })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
-        data.update(matching_data)
-        response = self.client.post(reverse("purchases:create"), data)
-        self.assertEqual(
-            response.status_code,
-            302
-        )
-
-        headers = PurchaseHeader.objects.all().order_by("pk")
-        self.assertEqual(
-            len(headers),
-            3
-        )
-
-        matches = PurchaseMatching.objects.all()
-        self.assertEqual(
-            len(matches),
-            2
-        )
-        self.assertEqual(
-            matches[0].matched_by,
-            headers[2]
-        )
-        self.assertEqual(
-            matches[0].matched_to,
-            headers[0]
-        )
-        self.assertEqual(
-            matches[0].value,
-            two_dp(-120.01)
-        )
-        self.assertEqual(
-            matches[1].matched_by,
-            headers[2]
-        )
-        self.assertEqual(
-            matches[1].matched_to,
-            headers[1]
-        )
-        self.assertEqual(
-            matches[1].value,
-            120
-        )
-
-        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
-        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
-        # matched for 0 and full value.  The edit will mean the matched will be outside this.
-
-        lines = PurchaseLine.objects.filter(header=headers[0]).all()
-        self.assertEqual(
-            len(lines),
-            1
-        )
-
-        # Credit for 120.01
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pc",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 120.01
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 100.01,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 20
-                }
-        ]
-        line_forms[0]["id"] = lines[0].pk
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        line_data["line-INITIAL_FORMS"] = 1 
-        data.update(line_data)
-
-        matching_forms = []
-        matching_forms.append({
-            "type": headers[2].type,
-            "ref": headers[2].ref,
-            "total": headers[2].total,
-            "paid": headers[2].paid,
-            "due": headers[2].due,
-            "matched_by": headers[2].pk,
-            "matched_to": headers[0].pk,
-            "value": '110.01',
-            "id": matches[0].pk
-        })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
-        matching_data["match-INITIAL_FORMS"] = 1
-        data.update(matching_data)
-
-        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
-        self.assertEqual(
-            response.status_code,
-            200
-        )
-
-
-    # INCORRECT USAGE
-    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_4(self):
-
-        # Create a credit for 120.01 through view first
-        # Second create a invoice note for 120.00
-        # Third create an invoice for 0.01 and match the other two to it
-        # Invalid edit follows
-
-        # Invoice for 120.01
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pc",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 120.01
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 100.01,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 20
-                }
-        ]
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
-        data.update(matching_data)
-
-        response = self.client.post(reverse("purchases:create"), data)
-        self.assertEqual(
-            response.status_code,
-            302
-        )
-
-        # Credit Note for 120.00
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pi",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 120.00
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 100.00,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 20
-                }
-        ]
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
-        data.update(matching_data)
-
-        response = self.client.post(reverse("purchases:create"), data)
-        self.assertEqual(
-            response.status_code,
-            302
-        )
-
-        headers = PurchaseHeader.objects.all().order_by("pk")
-        self.assertEqual(
-            len(headers),
-            2
-        )
-
-        # Invoice for -0.01
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pi",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 0.01
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 0.01,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 0
-                }
-        ]
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        data.update(line_data)
-
-        matching_forms = []
-        matching_forms.append({
-            "type": headers[0].type,
-            "ref": headers[0].ref,
-            "total": headers[0].total,
-            "paid": headers[0].paid,
-            "due": headers[0].due,
-            "matched_by": '',
-            "matched_to": headers[0].pk,
-            "value": headers[0].total,
-        })
-        matching_forms.append({
-            "type": headers[1].type,
-            "ref": headers[1].ref,
-            "total": headers[1].total,
-            "paid": headers[1].paid,
-            "due": headers[1].due,
-            "matched_by": '',
-            "matched_to": headers[1].pk,
-            "value": headers[1].total,
-        })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
-        data.update(matching_data)
-        response = self.client.post(reverse("purchases:create"), data)
-        self.assertEqual(
-            response.status_code,
-            302
-        )
-
-        headers = PurchaseHeader.objects.all().order_by("pk")
-        self.assertEqual(
-            len(headers),
-            3
-        )
-
-        matches = PurchaseMatching.objects.all()
-        self.assertEqual(
-            len(matches),
-            2
-        )
-        self.assertEqual(
-            matches[0].matched_by,
-            headers[2]
-        )
-        self.assertEqual(
-            matches[0].matched_to,
-            headers[0]
-        )
-        self.assertEqual(
-            matches[0].value,
-            two_dp(-120.01)
-        )
-        self.assertEqual(
-            matches[1].matched_by,
-            headers[2]
-        )
-        self.assertEqual(
-            matches[1].matched_to,
-            headers[1]
-        )
-        self.assertEqual(
-            matches[1].value,
-            120
-        )
-
-        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
-        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
-        # matched for 0 and full value.  The edit will mean the matched will be outside this.
-
-        lines = PurchaseLine.objects.filter(header=headers[0]).all()
-        self.assertEqual(
-            len(lines),
-            1
-        )
-
-        # Credit for 120.01
-        data = {}
-        header_data = create_header(
-            HEADER_FORM_PREFIX,
-            {
-                "type": "pc",
-                "supplier": self.supplier.pk,
-                "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
-                "total": 120.01
-            }
-        )
-        data.update(header_data)
-        line_forms = [
-                {
-                    'item': self.item.pk,
-                    'description': self.description,
-                    'goods': 100.01,
-                    'nominal': self.nominal.pk,
-                    'vat_code': self.vat_code.pk,
-                    'vat': 20
-                }
-        ]
-        line_forms[0]["id"] = lines[0].pk
-        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        line_data["line-INITIAL_FORMS"] = 1 
-        data.update(line_data)
-
-        matching_forms = []
-        matching_forms.append({
-            "type": headers[2].type,
-            "ref": headers[2].ref,
-            "total": headers[2].total,
-            "paid": headers[2].paid,
-            "due": headers[2].due,
-            "matched_by": headers[2].pk,
-            "matched_to": headers[0].pk,
-            "value": '120.02',
             "id": matches[0].pk
         })
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
@@ -34960,6 +34467,458 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         self.assertEqual(
             matches[1].value,
             -100
+        )
+
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+
+        # Create a b/f invoice for 120.01 through view first
+        # Second create a b/f credit note for 120.00
+        # Third create a b/f invoice for -0.01 and match the other two to it
+        # Invalid edit follows
+
+        # B/F Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        # Credit Note for 120.00
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.00,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        # B/F invoice for -0.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': -0.01,
+                    'vat': 0
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            -120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        lines = PurchaseLine.objects.filter(header=headers[0]).all()
+        self.assertEqual(
+            len(lines),
+            1
+        )
+
+        # Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_forms[0]["id"] = lines[0].pk
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 1 
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '-110.01',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+
+        # Create an invoice for 120.01 through view first
+        # Second create a credit note for 120.00
+        # Third create an invoice for -0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        # Credit Note for 120.00
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.00,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        # Invoice for -0.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': -0.01,
+                    'vat': 0
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            -120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        lines = PurchaseLine.objects.filter(header=headers[0]).all()
+        self.assertEqual(
+            len(lines),
+            1
+        )
+
+        # Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_forms[0]["id"] = lines[0].pk
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 1 
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '-120.02',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
         )
 
 
@@ -37470,6 +37429,482 @@ class EditCreditNoteNominalEntries(TestCase):
         )
 
 
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+
+        # Create a credit for 120.01 through view first
+        # Second create a invoice note for 120.00
+        # Third create an invoice for 0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100.01,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        # Credit Note for 120.00
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100.00,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        # Invoice for -0.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 0.01,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 0
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        lines = PurchaseLine.objects.filter(header=headers[0]).all()
+        self.assertEqual(
+            len(lines),
+            1
+        )
+
+        # Credit for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100.01,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 20
+                }
+        ]
+        line_forms[0]["id"] = lines[0].pk
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 1 
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '110.01',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+
+        # Create a credit for 120.01 through view first
+        # Second create a invoice note for 120.00
+        # Third create an invoice for 0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100.01,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        # Credit Note for 120.00
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100.00,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        # Invoice for -0.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 0.01,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 0
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        lines = PurchaseLine.objects.filter(header=headers[0]).all()
+        self.assertEqual(
+            len(lines),
+            1
+        )
+
+        # Credit for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'item': self.item.pk,
+                    'description': self.description,
+                    'goods': 100.01,
+                    'nominal': self.nominal.pk,
+                    'vat_code': self.vat_code.pk,
+                    'vat': 20
+                }
+        ]
+        line_forms[0]["id"] = lines[0].pk
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 1 
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '120.02',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+
 class EditBroughtForwardCreditNoteNominalEntries(TestCase):
 
     """
@@ -39025,6 +39460,458 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
 
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+
+        # Create a credit for 120.01 through view first
+        # Second create a invoice note for 120.00
+        # Third create an invoice for 0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        # Credit Note for 120.00
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.00,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        # Invoice for -0.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 0.01,
+                    'vat': 0
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        lines = PurchaseLine.objects.filter(header=headers[0]).all()
+        self.assertEqual(
+            len(lines),
+            1
+        )
+
+        # Credit for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_forms[0]["id"] = lines[0].pk
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 1 
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '110.01',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+
+        # Create a credit for 120.01 through view first
+        # Second create a invoice note for 120.00
+        # Third create an invoice for 0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Invoice for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        # Credit Note for 120.00
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.00,
+                    'vat': 20
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        # Invoice for -0.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbi",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 0.01,
+                    'vat': 0
+                }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        lines = PurchaseLine.objects.filter(header=headers[0]).all()
+        self.assertEqual(
+            len(lines),
+            1
+        )
+
+        # Credit for 120.01
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbc",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+                {
+                    'description': self.description,
+                    'goods': 100.01,
+                    'vat': 20
+                }
+        ]
+        line_forms[0]["id"] = lines[0].pk
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 1 
+        data.update(line_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '120.02',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+
 class EditPaymentNominalEntries(TestCase):
 
     @classmethod
@@ -39777,6 +40664,375 @@ class EditPaymentNominalEntries(TestCase):
         )
 
 
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+
+        # Create an invoice for 120.01 through view first
+        # Second create a credit note for 120.00
+        # Third create an invoice for -0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the first payment with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pr",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '110.01',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+
+        # Create an invoice for 120.01 through view first
+        # Second create a credit note for 120.00
+        # Third create an invoice for -0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the first payment with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pr",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '120.02',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+
 class EditBroughtForwardPaymentNominalEntries(TestCase):
 
     """
@@ -40191,6 +41447,368 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
             len(nom_trans),
             0
         )
+
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+
+        # Create an invoice for 120.01 through view first
+        # Second create a credit note for 120.00
+        # Third create an invoice for -0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the first payment with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbr",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '110.01',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+
+        # Create an invoice for 120.01 through view first
+        # Second create a credit note for 120.00
+        # Third create an invoice for -0.01 and match the other two to it
+        # Invalid edit follows
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the first payment with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbr",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[0].pk,
+            "value": '120.02',
+            "id": matches[0].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
 
 class EditRefundNominalEntries(TestCase):
 
@@ -40948,6 +42566,366 @@ class EditRefundNominalEntries(TestCase):
         )
 
 
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the refund with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pr",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pr",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[1].pk,
+            "value": '-110.01',
+            "id": matches[1].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[1].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the first payment with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pr",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pp",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pr",
+                "cash_book": self.cash_book.pk,
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[1].pk,
+            "value": '-120.02',
+            "id": matches[1].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[1].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+
 class EditBroughtForwardRefundNominalEntries(TestCase):
 
     """
@@ -41358,6 +43336,358 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             len(nom_trans),
             0
         )
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the refund with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbr",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbr",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[1].pk,
+            "value": '-110.01',
+            "id": matches[1].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[1].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+    # INCORRECT USAGE
+    def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+
+        # Create a payment for 120.01
+        # Create a refund for 120.00
+        # Create a payment for -0.01
+
+        # edit the first payment with a match value which isn't allowed because not enough outstanding
+        # on the payment for -0.01
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbr",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.00
+            }
+        )
+        data.update(header_data)
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            2
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbp",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -0.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[0].type,
+            "ref": headers[0].ref,
+            "total": headers[0].total,
+            "paid": headers[0].paid,
+            "due": headers[0].due,
+            "matched_by": '',
+            "matched_to": headers[0].pk,
+            "value": headers[0].total,
+        })
+        matching_forms.append({
+            "type": headers[1].type,
+            "ref": headers[1].ref,
+            "total": headers[1].total,
+            "paid": headers[1].paid,
+            "due": headers[1].due,
+            "matched_by": '',
+            "matched_to": headers[1].pk,
+            "value": headers[1].total,
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(reverse("purchases:create"), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        self.assertEqual(
+            len(headers),
+            3
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            2
+        )
+        self.assertEqual(
+            matches[0].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            headers[0]
+        )
+        self.assertEqual(
+            matches[0].value,
+            two_dp(-120.01)
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            headers[2]
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            headers[1]
+        )
+        self.assertEqual(
+            matches[1].value,
+            120
+        )
+
+        # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
+        # We want to change the value to 110.01.  This isn't ok because the -0.01 invoice can only be
+        # matched for 0 and full value.  The edit will mean the matched will be outside this.
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pbr",
+                "supplier": self.supplier.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120.01
+            }
+        )
+        data.update(header_data)
+
+        matching_forms = []
+        matching_forms.append({
+            "type": headers[2].type,
+            "ref": headers[2].ref,
+            "total": headers[2].total,
+            "paid": headers[2].paid,
+            "due": headers[2].due,
+            "matched_by": headers[2].pk,
+            "matched_to": headers[1].pk,
+            "value": '-120.02',
+            "id": matches[1].pk
+        })
+        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[1].pk}), data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
 
 class VoidTransactionsTest(TestCase):
 

@@ -64,7 +64,7 @@ class PurchaseHeaderForm(BaseTransactionHeaderForm):
             _type = self.initial.get('type')
 
         if _type in self._meta.model.payment_type:
-            if _type in self._meta.model.analysis_required:
+            if _type in self._meta.model.get_types_requiring_analysis():
                 payment_form = True
                 payment_brought_forward_form = False
                 self.fields["cash_book"].required = True

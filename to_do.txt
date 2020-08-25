@@ -85,9 +85,14 @@ Objectives -
             THIS WOULD MEAN ALSO COPYING ALL THE VIEWS AND URLS.  EASIER TO JUST KEEP THE PURCHASES APP BUT RENAME
             TO "DUMMY_PURCHASES" OR SOMETHING
 
+
+    View -
+
+        Read only line formset not changing the line signs.  View the credit note for an example.
+
     Edit -
 
-        The calculator does not exclude the lines which have been marked as deleted
+        The calculator does not exclude the lines which have been marked as deleted.
 
         We also need to add a test which checks that new lines marked as deleted do not show.  I think
         the better thing to do actually would be to delete new lines on the client and only set the
