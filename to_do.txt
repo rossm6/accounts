@@ -62,6 +62,9 @@ Objectives -
 
     Tests
 
+        Create a test which checks a cash book not being POSTED for a payment and a b/f payment.  This isn't tested
+        at the moment.  This should just be a form test.
+
         Check that a transaction cannot be matched to itself.  At form level as well as UI.  UI shouldn't be a problem now
         as i have fixed the bug in the outstanding transactions query.
 
@@ -85,20 +88,13 @@ Objectives -
             THIS WOULD MEAN ALSO COPYING ALL THE VIEWS AND URLS.  EASIER TO JUST KEEP THE PURCHASES APP BUT RENAME
             TO "DUMMY_PURCHASES" OR SOMETHING
 
-
-    View -
-
-        Read only line formset not changing the line signs.  View the credit note for an example.
-
-    Edit -
-
-        The calculator does not exclude the lines which have been marked as deleted.
-
-        We also need to add a test which checks that new lines marked as deleted do not show.  I think
-        the better thing to do actually would be to delete new lines on the client and only set the
-        DELETE flag on those which have primary keys.
-
     Create -
+
+        If you delete a line, add a line, or reorder, the order input field is assigned a value.  On the server side
+        it then understands this form as having changed and so will validate the form.  Potentially lots of blank
+        forms then error because, well, they are not blank in fact.  The solution is to loop through the fields
+        before submission and make sure all rows which look blank after the last which does not look blank have
+        order set to "" rather than a number.  Same will be true for edit.
 
         The redirection to transaction enquiry at the moment does not show the "Transaction successfully posted" message.
         Only when the user goes back to the create view does it show...

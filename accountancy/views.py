@@ -303,8 +303,6 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             # And on top of this jQuery datatable does also
             # solution on client - do not use jQuery.serialize
             if form.is_valid():
-                print("DUH")
-                print(form.cleaned_data)
                 queryset = self.apply_advanced_search(form.cleaned_data)
                 if not form.cleaned_data["include_voided"]:
                     queryset = queryset.exclude(status="v")
@@ -376,6 +374,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 # the relative path including the GET parameters e.g. /purchases/create?t=i
                 return self.request.get_full_path()
         return self.success_url
+
 
     def get_context_data(self, **kwargs):
         # FIX ME - change 'matching_formset" to "match_formset" in the template
@@ -779,6 +778,12 @@ class IndividualTransactionMixin:
         context["header_to_edit"] = self.header_to_edit
         context["edit"] = self.header_to_edit.pk
         return context
+
+    def get_line_formset_kwargs(self, header=None):
+        kwargs = super().get_line_formset_kwargs(header)
+        if not header:
+            kwargs["header"] = self.header_to_edit
+        return kwargs
 
     def get_line_formset_queryset(self):
         return self.get_line_model().objects.filter(header=self.header_to_edit)

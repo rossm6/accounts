@@ -117,7 +117,7 @@ class ReadOnlyPurchaseHeaderForm(ReadOnlyBaseTransactionHeaderForm, PurchaseHead
         _type = self.initial["type"]
 
         if _type in self._meta.model.payment_type:
-            if _type in self._meta.model.analysis_required:
+            if _type in self._meta.model.get_types_requiring_analysis():
                 payment_form = True
                 self.fields["cash_book"].widget = forms.TextInput()
                 cash_book = self.fields["cash_book"].queryset[0]
@@ -147,6 +147,8 @@ class PurchaseLineFormset(BaseLineFormset):
     def _construct_form(self, i, **kwargs):
         if hasattr(self, 'brought_forward'):
             kwargs["brought_forward"] = self.brought_forward
+        if hasattr(self, 'header'):
+            kwargs["header"] = self.header
         form = super()._construct_form(i, **kwargs)
         return form
 
@@ -157,7 +159,7 @@ class PurchaseLineFormset(BaseLineFormset):
             # see method of same name
             kwargs = super().get_form_kwargs(index)
             kwargs.update({
-                "brought_forward": self.brought_forward
+                "brought_forward": self.brought_forward,
             })
             return kwargs
         return super().get_form_kwargs(index)
@@ -169,7 +171,7 @@ class PurchaseLineFormset(BaseLineFormset):
         goods = 0
         vat = 0
         header_type_is_credit = self.header.is_credit_type()
-        multiplier =  -1 if header_type_is_credit else 1 
+        multiplier =  -1 if header_type_is_credit else 1
         for form in self.forms:
             # empty_permitted = False is set on forms for existing data
             # empty_permitted = True is set new forms i.e. for non existent data
@@ -181,6 +183,7 @@ class PurchaseLineFormset(BaseLineFormset):
                     vat += form.instance.vat
         total = goods + vat
         if self.header.total != 0 and self.header.total != total:
+            print("DUH")
             raise forms.ValidationError(
                 _(
                     "The total of the lines does not equal the total you entered."
@@ -281,7 +284,21 @@ class PurchaseLineForm(BaseTransactionLineForm, AjaxForm):
                 column_layout_object_css_classes["Td"]["vat_code"] = "d-none"
             kwargs.pop("brought_forward")
 
+        if 'header' in kwargs:
+            header = kwargs.get('header')
+            self.header = header
+            kwargs.pop("header")
+
         super().__init__(*args, **kwargs)
+
+        # values entered as posiives for credit trans should show as positives
+        if self.instance.pk:
+            for field in self.fields:
+                if isinstance(self.fields[field], forms.DecimalField):
+                    if self.header.is_credit_type():
+                        tmp = self.initial[field]
+                        self.initial[field] = -1 * tmp
+
 
         if hasattr(self, 'brought_forward') and self.brought_forward:
             self.fields["item"].required = False

@@ -26,8 +26,6 @@ class DecimalBaseModel(models.Model):
     itself it not called during save()
     """
 
-    pass
-
     class Meta:
         abstract = True
 

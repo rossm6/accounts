@@ -196,7 +196,12 @@ class TableHelper(object):
         }
 
 
-class BaseTransactionMixin(object):
+
+
+
+
+class BaseTransactionMixin:
+
     """
 
     At least this is needed ...
