@@ -90,9 +90,6 @@ Objectives -
 
     Create -
 
-        The redirection to transaction enquiry at the moment does not show the "Transaction successfully posted" message.
-        Only when the user goes back to the create view does it show...
-
         The fields for the match form should have the disabled attribute set really.  Except for those we are setting.
         Need to look into this.  At the moment i just set readonly as an attribute on the widget which i don't think
         is the same.

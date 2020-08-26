@@ -655,7 +655,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                     self.matching_is_valid()
                     messages.success(
                         request,
-                        'Transaction successfully created'  # may want to change this
+                        self.get_success_message()
                     )
                 else:
                     return self.invalid_forms()
@@ -667,7 +667,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                         self.matching_is_valid()
                         messages.success(
                             request,
-                            'Transaction successfully created'
+                            self.get_success_message()
                         )
                     else:
                         return self.invalid_forms()
@@ -676,7 +676,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                         self.lines_are_valid()
                         messages.success(
                             request,
-                            'Transaction successfully created'
+                            self.get_success_message()
                         )
                     else:
                         return self.invalid_forms()
@@ -687,6 +687,9 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
 
 class BaseCreateTransaction(BaseTransaction):
+
+    def get_success_message(self):
+        return "Transaction was created successfully."
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -813,6 +816,9 @@ class IndividualTransactionMixin:
 
 
 class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
+
+    def get_success_message(self):
+        return "Transaction was edited successfully."
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
