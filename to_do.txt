@@ -90,12 +90,6 @@ Objectives -
 
     Create -
 
-        If you delete a line, add a line, or reorder, the order input field is assigned a value.  On the server side
-        it then understands this form as having changed and so will validate the form.  Potentially lots of blank
-        forms then error because, well, they are not blank in fact.  The solution is to loop through the fields
-        before submission and make sure all rows which look blank after the last which does not look blank have
-        order set to "" rather than a number.  Same will be true for edit.
-
         The redirection to transaction enquiry at the moment does not show the "Transaction successfully posted" message.
         Only when the user goes back to the create view does it show...
 

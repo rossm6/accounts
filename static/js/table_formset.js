@@ -96,7 +96,7 @@
 
 
     function find_unique_field(prefix, field) {
-        var reg = new RegExp(prefix + '-\\d-' + field);
+        var reg = new RegExp(prefix + '-\\d+-' + field);
         return function (elem) {
             return elem.name.match(reg);
         }

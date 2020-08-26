@@ -4,6 +4,7 @@
 
 })(window, function () {
 
+
     Grid.prototype.delete_line = function (delete_button) {
         // assume delete button is in the line to delete
         // pretty dumb otherwise
@@ -32,19 +33,29 @@
             .each(function (index, element) {
                 var element = $(element);
                 var blank = true;
-                element.find(":input").each(function(index, field){
-                    if($(field).val()){
-                        blank = false;
-                        return false;
+                element.find(":input:visible").each(function (index, field) {
+                    var field = $(field);
+                    if(field.attr("type") == "checkbox"){
+                        if(field.prop("checked")){
+                            blank = false;
+                            return false;
+                        }
                     }
+                    else{
+                        if(field.val()){
+                            blank = false;
+                            return false;
+                        }
+                    }
+
                 });
-                if(blank == false){
+                if (blank == false) {
                     // we only want to set ORDER on if all the fields are not blank
                     // otherwise server side validation will consider the form to have changed
                     // blank forms will then fail en masse
                     $(element)
-                    .find("input" + instance.order_identifier)
-                    .val(index);
+                        .find("input" + instance.order_identifier)
+                        .val(index);
                 }
             });
     };
@@ -104,7 +115,7 @@
     };
 
 
-    function enable_jquery_sorting (grid) {
+    function enable_jquery_sorting(grid) {
         grid.get_table().find("tbody").sortable({
             placeholder: "ui-state-highlight",
             handle: ".col-draggable-icon",
