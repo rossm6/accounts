@@ -183,7 +183,6 @@ class PurchaseLineFormset(BaseLineFormset):
                     vat += form.instance.vat
         total = goods + vat
         if self.header.total != 0 and self.header.total != total:
-            print("DUH")
             raise forms.ValidationError(
                 _(
                     "The total of the lines does not equal the total you entered."
@@ -400,20 +399,20 @@ class PurchaseMatchingForm(forms.ModelForm):
     therefore have to be built on the client dynamically for creating
     new transactions.
 
-
     CAUTION -
 
     The type field needs the label overriding to the display
     name of the value.  This is easy when we have an instance;
     if the submitted form though is for a new instance we
     have to get the label based on the cleaned user input.  This
-    is done in clean
+    is done in clean.
 
     """
 
     type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
     # readonly not permitted for select element so disable used and on client we enable the element before the form is submitted
+    # search 'CLIENT JS ITEM 1'.  Currently in edit_matching_js.html
     ref = forms.CharField(
         max_length=20, widget=forms.TextInput(attrs={"readonly": True}))
     total = forms.DecimalField(
@@ -425,7 +424,6 @@ class PurchaseMatchingForm(forms.ModelForm):
 
     class Meta:
         model = PurchaseMatching
-        # matched_to is only needed for create
         fields = ('matched_by', 'matched_to', 'value', 'id')
         widgets = {
             'matched_by': forms.TextInput(attrs={"readonly": True}),

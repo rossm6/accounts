@@ -90,10 +90,6 @@ Objectives -
 
     Create -
 
-        The fields for the match form should have the disabled attribute set really.  Except for those we are setting.
-        Need to look into this.  At the moment i just set readonly as an attribute on the widget which i don't think
-        is the same.
-
         The part where we assign nominal transactions to line in the lines_are_valid is crazily inefficient.
         I need to sort the lines and nominal transactions and put them into a dictionary to improve performance.
 
