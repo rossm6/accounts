@@ -7,14 +7,16 @@ from tempus_dominus.widgets import DatePicker
 
 from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField,
-                                ModelChoiceIteratorWithFields)
-from accountancy.forms import (AjaxForm, BaseLineFormset,
+                                ModelChoiceIteratorWithFields,
+                                RootAndLeavesModelChoiceIterator)
+from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm,
                                BaseTransactionLineForm, BaseTransactionMixin,
                                BaseTransactionModelFormSet, DataTableTdField,
                                Div, Field, LabelAndFieldOnly, PlainFieldErrors,
                                ReadOnlyBaseTransactionHeaderForm, TableHelper)
-from accountancy.helpers import delay_reverse_lazy
+from accountancy.helpers import (delay_reverse_lazy,
+                                 input_dropdown_widget_attrs_config)
 from accountancy.layouts import create_transaction_header_helper
 from accountancy.widgets import InputDropDown
 from items.models import Item
@@ -205,66 +207,40 @@ line_css_classes = {
     }
 }
 
+attrs_config = input_dropdown_widget_attrs_config("purchases", ["item", "nominal", "vat_code"])
+item_attrs, nominal_attrs, vat_code_attrs = [ attrs_config[attrs] for attrs in attrs_config ]
 
-class PurchaseLineForm(BaseTransactionLineForm, AjaxForm):
-
-    item = AjaxModelChoiceField(
-        get_queryset=Item.objects.none(),
-        load_queryset=Item.objects.all(),
-        post_queryset=Item.objects.all(),
-        inst_queryset=lambda inst: Item.objects.filter(pk=inst.item_id),
-        widget=InputDropDown(
-            attrs={
-                "data-new": "#new_item",
-                "data-load-url": delay_reverse_lazy("purchases:load_options", "field=item"),
-                "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=item")
-            }
-        ),
-        empty_label="(None)",
-        searchable_fields=('code', 'description')
-    )
-
-    nominal = AjaxRootAndLeavesModelChoiceField(
-        widget=InputDropDown(
-            attrs={
-                "data-new": "#new-nominal",
-                "data-load-url": delay_reverse_lazy("purchases:load_options", "field=nominal"),
-                "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=nominal")
-            }
-        ),
-        empty_label=None,
-        get_queryset=Nominal.objects.none(),
-        load_queryset=Nominal.objects.all().prefetch_related("children"),
-        post_queryset=Nominal.objects.filter(children__isnull=True),
-        inst_queryset=lambda inst: Nominal.objects.filter(pk=inst.nominal_id),
-        searchable_fields=('name',)
-    )
-
-    vat_code = AjaxModelChoiceField(
-        widget=InputDropDown(
-            attrs={
-                "data-new": "#new-vat-code",
-                "data-load-url": delay_reverse_lazy("purchases:load_options", "field=vat_code"),
-                "data-validation-url": delay_reverse_lazy("purchases:validate_choice", "field=vat_code")
-            },
-            model_attrs=['rate']
-        ),
-        empty_label=None,
-        get_queryset=Vat.objects.none(),
-        load_queryset=Vat.objects.all(),
-        post_queryset=Vat.objects.all(),
-        inst_queryset=lambda inst: Vat.objects.filter(pk=inst.vat_code_id),
-        searchable_fields=('code', 'rate',),
-        iterator=ModelChoiceIteratorWithFields
-    )
+class PurchaseLineForm(BaseTransactionLineForm, BaseAjaxForm):
 
     class Meta:
         model = PurchaseLine
         # WHY DO WE INCLUDE THE ID?
         fields = ('id', 'item', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
+        widgets = {
+            "item": InputDropDown(attrs=item_attrs),
+            "nominal": InputDropDown(attrs=nominal_attrs),
+            "vat_code": InputDropDown(attrs=vat_code_attrs, model_attrs=['rate'])
+        }
         # used in Transaction form set_querysets method
-        ajax_fields = ('item', 'nominal', 'vat_code', )
+        ajax_fields = {
+            "item": {
+                "empty_label": "(None)",
+                "searchable_fields": ('code', 'description')
+            },
+            "nominal": {
+                "searchable_fields": ('name',),
+                "querysets": {
+                    "load": Nominal.objects.all().prefetch_related("children"),
+                    "post": Nominal.objects.filter(children__isnull=True)
+                },
+                "iterator": RootAndLeavesModelChoiceIterator       
+            },
+            "vat_code": {
+                "searchable_fields": ('code', 'rate',),
+                "iterator": ModelChoiceIteratorWithFields
+            }
+        }
 
     def __init__(self, *args, **kwargs):
 

@@ -59,46 +59,51 @@ class AdvSearchField(Field):
     template = "accounts/layout/adv_search_field.html"
 
 
-class AjaxForm(forms.ModelForm):
+class BaseAjaxForm(forms.ModelForm):
+
     """
 
-    Forms which use fields which have widgets which are populated
-    clientside via AJAX need to have different querysets depending
-    on whether data is being posted, or the form is being rendered
-    clientside, or the the form is being used to edit data.
+    AJAX is obviously recommended if the total choices is very high for any field
+    in a form.
 
-    This class assumes the subclass defines the ajax_fields on
-    the Meta propety.
+    This class just sets the different querysets needed depending on whether
+    the form is new, for an instance, or data is being posted.  In addition
+    it always also sets the queryset to be used by remote AJAX calls.
 
-    With models the Meta class seems to lose any customised
-    attributes but with forms this DOES seem to work.
-
-    THIS FORM ONLY MAKES SENSE TO USE WITH THE AJAXMODELCHOICE
-    FIELD I CREATED, OR ANOTHER FIELD WHICH CAN TAKE THE
-    SAME ATTRIBUTES.
-
+    It only supports foreign key model choices at the moment ...
+    
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.data:
-            # querysets if data is being posted
-            self.set_querysets("post_queryset")
-        elif self.instance.pk:
-            # querysets if form is for an instance
-            self.set_querysets("inst_queryset")
-        else:
-            # querysets for brand new form
-            self.set_querysets("get_queryset")
-
-    def set_querysets(self, queryset_attr):
-        for field in self.Meta.ajax_fields:
-            queryset = getattr(self.fields[field], queryset_attr)
-            if queryset_attr == "inst_queryset":
-                queryset = queryset(self.instance)
+        form_model = self.Meta.model
+        fields = self.Meta.ajax_fields
+        for field in fields:
+            field_model = form_model._meta.get_field(field).related_model
+            pk_field_name = field + "_id" # THIS WILL DO FOR NOW BUT THIS ISN'T ALWAYS THE CASE
+            # 'to_field' could have different name other than "id"
+            querysets = {
+                "get": field_model.objects.none(),
+                "load": field_model.objects.all(),
+                "post": field_model.objects.all(),
+                "instance": lambda pk : field_model.objects.filter(pk=pk),
+            }
+            querysets.update(fields[field].get("querysets", {}))
+            if self.data:
+                queryset = querysets["post"]
+            elif self.instance.pk:
+                queryset = querysets["instance"](getattr(self.instance, pk_field_name))
+            else:
+                queryset = querysets["get"]
             self.fields[field].queryset = queryset
+            self.fields[field].load_queryset = querysets["load"]
+            if iterator := fields[field].get('iterator'):
+                self.fields[field].iterator = iterator
+            if searchable_fields := fields[field].get('searchable_fields'):
+                self.fields[field].searchable_fields = searchable_fields
+            self.fields[field].empty_label = fields[field].get("empty_label", None)
 
-
+            
 class TableHelper(object):
 
     def __init__(self, fields, order=False, delete=False, **kwargs):
@@ -194,10 +199,6 @@ class TableHelper(object):
             "tbody": self.create_tbody(),
             "empty_form": self.create_tbody("d-none empty-form")
         }
-
-
-
-
 
 
 class BaseTransactionMixin:

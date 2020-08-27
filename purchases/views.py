@@ -152,6 +152,7 @@ class VoidTransaction(BaseVoidTransaction):
     module = 'PL'
     
 
+
 class LoadMatchingTransactions(jQueryDataTable, ListView):
 
     """
