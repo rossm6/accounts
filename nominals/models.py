@@ -1,3 +1,5 @@
+from itertools import groupby
+
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
 
@@ -17,71 +19,69 @@ class Nominal(MPTTModel):
         return self.name
 
 
-class NominalHeader(TransactionHeader):
-    analysis_required = [
-        ('nj', 'Journal')
-    ]
-    lines_required = [
-        ('nj', 'Journal')
-    ]
-    credits = []
-    debits = []
-    type = models.CharField(
-        max_length=2,
-        choices=analysis_required
-    )
+class NominalTransaction:
+    def __init__(self, *args, **kwargs):
+        self.header_obj = kwargs.get("header")
+        self.module = "NL"
 
-    def _create_nominal_transactions_for_line(self, nom_tran_cls, module, line, vat_nominal):
+    def create_nominal_transactions(self, *args, **kwargs):
+        return
+
+    def edit_nominal_transactions(self, *args, **kwargs):
+        return
+
+
+class Journal(NominalTransaction):
+    def _create_nominal_transactions_for_line(self, nom_tran_cls, line, vat_nominal):
         trans = []
         if line.goods != 0:
             trans.append(
                 nom_tran_cls(
-                    module=module,
-                    header=self.pk,
+                    module=self.module,
+                    header=self.header_obj.pk,
                     line=line.pk,
                     nominal=line.nominal,
                     value=line.goods,
-                    ref=self.ref,
-                    period=self.period,
-                    date=self.date,
-                    type=self.type,
+                    ref=self.header_obj.ref,
+                    period=self.header_obj.period,
+                    date=self.header_obj.date,
+                    type=self.header_obj.type,
                     field="g"
                 )
             )
         if line.vat != 0:
             trans.append(
                 nom_tran_cls(
-                    module=module,
-                    header=self.pk,
+                    module=self.module,
+                    header=self.header_obj.pk,
                     line=line.pk,
                     nominal=vat_nominal,
                     value=line.vat,
-                    ref=self.ref,
-                    period=self.period,
-                    date=self.date,
-                    type=self.type,
+                    ref=self.header_obj.ref,
+                    period=self.header_obj.period,
+                    date=self.header_obj.date,
+                    type=self.header_obj.type,
                     field="v"
                 )
             )
         return trans
 
     def _edit_nominal_transactions_for_line(self, nom_trans, line, vat_nominal):
+
+        for tran_field, tran in nom_trans.items():
+            tran.ref = self.header_obj.ref
+            tran.period = self.header_obj.period
+            tran.date = self.header_obj.date
+            tran.type = self.header_obj.type
+
         if 'g' in nom_trans:
             tran = nom_trans["g"]
             tran.nominal = line.nominal
             tran.value = line.goods
-            tran.ref = self.ref
-            tran.period = self.period
-            tran.date = self.date
-            tran.type = self.type
         if 'v' in nom_trans:
             tran = nom_trans["v"]
             tran.nominal = vat_nominal
             tran.value = line.vat
-            tran.ref = self.ref
-            tran.period = self.period
-            tran.date = self.date
-            tran.type = self.type
 
         _nom_trans_to_update = []
         _nom_trans_to_delete = []
@@ -101,7 +101,7 @@ class NominalHeader(TransactionHeader):
 
         return _nom_trans_to_update, _nom_trans_to_delete
 
-    def create_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
+    def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         if (vat_nominal := kwargs.get("vat_nominal")) is None:
             try:
                 vat_nominal_name = kwargs.get("vat_nominal_name")
@@ -111,27 +111,26 @@ class NominalHeader(TransactionHeader):
                 vat_nominal = nom_cls.objects.get(
                     name=settings.DEFAULT_SYSTEM_SUSPENSE)
         nominal_transactions = []
-        lines = kwargs.get("lines", [])
+        if lines := kwargs.get("lines", []):
+            lines = sorted(lines, key=lambda l: l.pk)
         for line in lines:
             nominal_transactions += self._create_nominal_transactions_for_line(
-                nom_tran_cls, module, line, vat_nominal
+                nom_tran_cls, line, vat_nominal
             )
         if nominal_transactions:
             nominal_transactions = nom_tran_cls.objects.bulk_create(
                 nominal_transactions)
-            # THIS IS CRAZILY INEFFICIENT !!!!
-            for line in lines:
-                line_nominal_trans = {
-                    nominal_transaction.field: nominal_transaction
-                    for nominal_transaction in nominal_transactions
-                    if nominal_transaction.line == line.pk
-                }
-                line.add_nominal_transactions(line_nominal_trans)
+            nominal_transactions = sorted(
+                nominal_transactions, key=lambda n: n.line)
+            for line, (key, line_nominal_trans) in zip(lines, groupby(nominal_transactions, lambda n: n.line)):
+                nom_tran_map = {
+                    tran.field: tran for tran in list(line_nominal_trans)}
+                line.add_nominal_transactions(nom_tran_map)
             line_cls = kwargs.get('line_cls')
             line_cls.objects.bulk_update(
                 lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
-    def edit_nominal_transactions(self, nom_cls, nom_tran_cls, module, **kwargs):
+    def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         nom_trans_to_update = []
         nom_trans_to_delete = []
 
@@ -144,42 +143,67 @@ class NominalHeader(TransactionHeader):
                 name=settings.DEFAULT_SYSTEM_SUSPENSE)
 
         existing_nom_trans = kwargs.get('existing_nom_trans')
+        existing_nom_trans = sorted(existing_nom_trans, key=lambda n: n.line)
 
-        new_lines = kwargs.get("new_lines")
-        updated_lines = kwargs.get("updated_lines")
-        deleted_lines = kwargs.get("deleted_lines")
+        if new_lines := kwargs.get("new_lines"):
+            sorted(new_lines, key=lambda l: l.pk)
+        if updated_lines := kwargs.get("updated_lines"):
+            sorted(updated_lines, key=lambda l: l.pk)
+        if deleted_lines := kwargs.get("deleted_lines"):
+            sorted(deleted_lines, key=lambda l: l.pk)
 
         if updated_lines:
-            for line in updated_lines:
-                nominal_trans = {
-                    tran.field: tran
-                    for tran in existing_nom_trans
-                    if tran.line == line.pk
-                }
+            lines_to_update = [line.pk for line in updated_lines]
+            nom_trans_to_update = [
+                tran for tran in existing_nom_trans if tran.line in lines_to_update]
+            nom_trans_to_update = sorted(nom_trans_to_update, key=lambda n: n.line)
+            for line, (key, line_nominal_trans) in zip(updated_lines, groupby(nom_trans_to_update, key=lambda n: n.line)):
+                nom_tran_map = {
+                    tran.field: tran for tran in list(line_nominal_trans)}
                 to_update, to_delete = self._edit_nominal_transactions_for_line(
-                    nominal_trans, line, vat_nominal)
+                    nom_tran_map, line, vat_nominal)
                 nom_trans_to_update += to_update
                 nom_trans_to_delete += to_delete
 
         if deleted_lines:
-            for line in deleted_lines:
-                nominal_trans = [
-                    tran
-                    for tran in existing_nom_trans
-                    if tran.line == line.pk
-                ]
-                nom_trans_to_delete += nominal_trans
+            lines_to_delete = [line.pk for line in deleted_lines]
+            nom_trans_to_delete = [
+                tran for tran in existing_nom_trans if tran.line in lines_to_delete]
+            nom_trans_to_delete = sorted(
+                nom_trans_to_delete, key=lambda n: n.line)
+            for line, (key, nom_trans) in zip(deleted_lines, groupby(nom_trans_to_delete, key=lambda n: n.line)):
+                nom_trans_to_delete += list(nom_trans)
 
         line_cls = kwargs.get('line_cls')
         self.create_nominal_transactions(
-            nom_cls, nom_tran_cls, module,
+            nom_cls, nom_tran_cls,
             lines=new_lines,
             line_cls=line_cls,
             vat_nominal=vat_nominal
         )
+
         nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
         nom_tran_cls.objects.filter(
             pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
+
+
+class NominalHeader(TransactionHeader):
+    analysis_required = [
+        ('nj', 'Journal')
+    ]
+    lines_required = [
+        ('nj', 'Journal')
+    ]
+    credits = []
+    debits = []
+    type = models.CharField(
+        max_length=2,
+        choices=analysis_required
+    )
+
+    def get_type_transaction(self):
+        if self.type == "nj":
+            return Journal(header=self)
 
 
 class NominalLineQuerySet(models.QuerySet):
