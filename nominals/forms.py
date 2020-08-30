@@ -11,12 +11,13 @@ from accountancy.fields import (AjaxModelChoiceField,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm,
-                               BaseTransactionLineForm, Div, Field,
-                               LabelAndFieldAndErrors, PlainFieldErrors,
-                               ReadOnlyBaseTransactionHeaderForm, TableHelper)
+                               BaseTransactionLineForm,
+                               ReadOnlyBaseTransactionHeaderForm)
 from accountancy.helpers import (delay_reverse_lazy,
                                  input_dropdown_widget_attrs_config)
-from accountancy.layouts import (create_journal_header_helper,
+from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
+                                 PlainFieldErrors, TableHelper,
+                                 create_journal_header_helper,
                                  create_transaction_header_helper)
 from accountancy.widgets import InputDropDown
 from vat.models import Vat
@@ -82,9 +83,8 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
         self.helper = create_journal_header_helper()
 
 
-
 class ReadOnlyNominalHeaderForm(NominalHeaderForm):
-    date = forms.DateField() # so datepicker is not used
+    date = forms.DateField()  # so datepicker is not used
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,8 +107,10 @@ line_css_classes = {
     }
 }
 
-attrs_config = input_dropdown_widget_attrs_config("nominals", ["nominal", "vat_code"])
-nominal_attrs, vat_code_attrs = [ attrs_config[attrs] for attrs in attrs_config ]
+attrs_config = input_dropdown_widget_attrs_config(
+    "nominals", ["nominal", "vat_code"])
+nominal_attrs, vat_code_attrs = [attrs_config[attrs] for attrs in attrs_config]
+
 
 class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
 
@@ -151,7 +153,6 @@ class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
         ).render()
 
 
-
 class ReadOnlyNominalLineForm(NominalLineForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -176,8 +177,7 @@ class ReadOnlyNominalLineForm(NominalLineForm):
                     'nominal': PlainFieldErrors,
                 }
             }
-        ).render()      
-
+        ).render()
 
 
 class NominalLineFormset(BaseLineFormset):

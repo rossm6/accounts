@@ -36,7 +36,13 @@ from .forms import (PurchaseHeaderForm, PurchaseLineForm, QuickSupplierForm,
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
-class CreateTransaction(CreatePurchaseOrSalesTransaction):
+class SupplierMixin:
+    def get_header_form_kwargs(self):
+        kwargs = super().get_header_form_kwargs()
+        kwargs["contact_model_name"] = "supplier"
+        return kwargs
+
+class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
@@ -76,7 +82,7 @@ class CreateTransaction(CreatePurchaseOrSalesTransaction):
         return t
 
 
-class EditTransaction(EditPurchaseOrSalesTransaction):
+class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
@@ -109,7 +115,7 @@ class EditTransaction(EditPurchaseOrSalesTransaction):
     control_nominal_name = "Purchase Ledger Control"
 
 
-class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
+class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
     header = {
         "model": PurchaseHeader,
         "form": ReadOnlyPurchaseHeaderForm,
@@ -140,8 +146,6 @@ class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
         context["edit_view_name"] = "purchases:edit" 
         return context
 
-
-
 class VoidTransaction(BaseVoidTransaction):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
@@ -151,7 +155,6 @@ class VoidTransaction(BaseVoidTransaction):
     success_url = reverse_lazy("purchases:transaction_enquiry")
     module = 'PL'
     
-
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):
 

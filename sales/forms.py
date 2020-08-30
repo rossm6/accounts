@@ -1,88 +1,60 @@
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Layout
-from django import forms
-from django.urls import reverse_lazy
-from django.utils.translation import ugettext_lazy as _
-from tempus_dominus.widgets import DatePicker
+from django.forms import ModelForm
 
-from accountancy.fields import (AjaxModelChoiceField,
-                                AjaxRootAndLeavesModelChoiceField,
-                                ModelChoiceIteratorWithFields,
+from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
-                               BaseTransactionHeaderForm,
-                               BaseTransactionLineForm, BaseTransactionMixin,
-                               BaseTransactionModelFormSet,
+from accountancy.forms import (BaseTransactionHeaderForm,
                                ReadOnlyBaseTransactionHeaderForm,
                                ReadOnlySaleAndPurchaseHeaderFormMixin,
                                ReadOnlySaleAndPurchaseLineFormMixin,
                                ReadOnlySaleAndPurchaseMatchingFormMixin,
-                               SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineForm,
-                               SaleAndPurchaseLineFormset,
                                SaleAndPurchaseMatchingForm,
                                SaleAndPurchaseMatchingFormset)
-from accountancy.helpers import (delay_reverse_lazy,
-                                 input_dropdown_widget_attrs_config)
-from accountancy.layouts import (DataTableTdField, PlainFieldErrors,
-                                 TableHelper, create_transaction_header_helper)
 from accountancy.widgets import InputDropDown
-from items.models import Item
 from nominals.models import Nominal
-from vat.models import Vat
 
-from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
-
-
-"""
-
-A note on formsets -
-
-    For all the formsets, match, read_only_match, enter_lines, read_only_lines, i have added a "include_empty_form" attribute.
-    I use this in my django crispy forms template to decide whether to include the empty form.
-
-"""
+from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
 
-class QuickSupplierForm(forms.ModelForm):
-    """
-    Used to create a supplier on the fly in the transaction views
-    """
+class QuickCustomerForm(forms.ModelForm):
+
     class Meta:
-        model = Supplier
+        model = Customer
         fields = ('code', )
 
 
-class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
+class SaleHeaderForm(BaseTransactionHeaderForm):
 
     class Meta:
-        model = PurchaseHeader
-        fields = ('cash_book', 'supplier', 'ref', 'date',
+        model = SaleHeader
+        fields = ('cash_book', 'customer', 'ref', 'date',
                   'due_date', 'total', 'type', 'period')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # FIX ME - Same as PL ledger.  Need to improve this.
+        # With general solution.
         if not self.data and not self.instance.pk:
-            self.fields["supplier"].queryset = Supplier.objects.none()
+            self.fields["customer"].queryset = Customer.objects.none()
         if self.instance.pk:
-            self.fields["supplier"].queryset = Supplier.objects.filter(
-                pk=self.instance.supplier_id)
+            self.fields["customer"].queryset = Customer.objects.filter(
+                pk=self.instance.customer_id)
 
 
-class ReadOnlyPurchaseHeaderForm(ReadOnlySaleAndPurchaseHeaderFormMixin, ReadOnlyBaseTransactionHeaderForm, PurchaseHeaderForm):
+class ReadOnlySaleHeaderForm(ReadOnlySaleAndPurchaseHeaderFormMixin, ReadOnlyBaseTransactionHeaderForm, SaleHeaderForm):
     pass
 
 
 attrs_config = input_dropdown_widget_attrs_config(
-    "purchases", ["item", "nominal", "vat_code"])
+    "sales", ["item", "nominal", "vat_code"])
 item_attrs, nominal_attrs, vat_code_attrs = [
     attrs_config[attrs] for attrs in attrs_config]
 
 
-class PurchaseLineForm(SaleAndPurchaseLineForm):
+class SaleLineForm(SaleAndPurchaseLineForm):
     class Meta:
-        model = PurchaseLine
+        model = SaleLine
         # WHY DO WE INCLUDE THE ID?
         fields = ('id', 'item', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
@@ -112,13 +84,13 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
         }
 
 
-class ReadOnlyPurchaseLineForm(ReadOnlySaleAndPurchaseLineFormMixin, PurchaseLineForm):
+class ReadOnlySaleLineForm(ReadOnlySaleAndPurchaseLineFormMixin, SaleLineForm):
     pass
 
 
 enter_lines = forms.modelformset_factory(
-    PurchaseLine,
-    form=PurchaseLineForm,
+    SaleLine,
+    form=SaleLineForm,
     formset=SaleAndPurchaseLineFormset,
     extra=5,
     can_order=True,
@@ -128,8 +100,8 @@ enter_lines = forms.modelformset_factory(
 enter_lines.include_empty_form = True
 
 read_only_lines = forms.modelformset_factory(
-    PurchaseLine,
-    form=ReadOnlyPurchaseLineForm,
+    SaleLine,
+    form=ReadOnlySaleLineForm,
     formset=SaleAndPurchaseLineFormset,
     extra=0,
     can_order=True,
@@ -142,22 +114,22 @@ read_only_lines.include_empty_form = True
 # SHOULD NOT INHERIT FROM BASETRANSACTIONMIXIN BECAUSE WE WANT TO SEE CREDITS WITH A MINUS SIGN
 
 
-class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
-    type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(
+class SaleMatchingForm(SaleAndPurchaseMatchingForm):
+    type = forms.ChoiceField(choices=SaleHeader.type_choices, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
     # readonly not permitted for select element so disable used and on client we enable the element before the form is submitted
 
     class Meta(SaleAndPurchaseMatchingForm.Meta):
-        model = PurchaseMatching
+        model = SaleMatching
 
 
-class ReadOnlyPurchaseMatchingForm(ReadOnlySaleAndPurchaseMatchingFormMixin, PurchaseMatchingForm):
+class ReadOnlySaleMatchingForm(ReadOnlySaleAndPurchaseMatchingFormMixin, SaleMatchingForm):
     pass
 
 
 match = forms.modelformset_factory(
-    PurchaseMatching,
-    form=PurchaseMatchingForm,
+    SaleMatching,
+    form=SaleMatchingForm,
     extra=0,
     formset=SaleAndPurchaseMatchingFormset
 )
@@ -165,8 +137,8 @@ match = forms.modelformset_factory(
 match.include_empty_form = False
 
 read_only_match = forms.modelformset_factory(
-    PurchaseMatching,
-    form=ReadOnlyPurchaseMatchingForm,
+    SaleMatching,
+    form=ReadOnlySaleMatchingForm,
     extra=0,
     formset=SaleAndPurchaseMatchingFormset
 )

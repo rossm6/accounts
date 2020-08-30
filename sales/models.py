@@ -1,137 +1,145 @@
 from django.conf import settings
 from django.db import models
 
-from accountancy.models import (PaymentTransactionMixin, Contact, MatchedHeaders, TransactionHeader,
-                                TransactionLine, Transaction, InvoiceTransactionMixin)
+from accountancy.models import (Contact, InvoiceTransactionMixin,
+                                MatchedHeaders, PaymentTransactionMixin,
+                                Transaction, TransactionHeader,
+                                TransactionLine)
 from items.models import Item
 from vat.models import Vat
 
 
-class Supplier(Contact):
+class Customer(Contact):
     pass
 
 
-class PurchaseTransaction(Transaction):
-
+class SalesTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.module = "PL"
+        self.module = "SL"
 
-class BroughtForwardInvoice(PurchaseTransaction):
+
+class BroughtForwardInvoice(SalesTransaction):
     pass
 
-class Invoice(InvoiceTransactionMixin, PurchaseTransaction):
+
+class Invoice(InvoiceTransactionMixin, SalesTransaction):
     pass
 
-class BroughtForwardCreditNote(PurchaseTransaction):
+
+class BroughtForwardCreditNote(SalesTransaction):
     pass
+
 
 class CreditNote(Invoice):
     pass
 
-class Payment(PaymentTransactionMixin, PurchaseTransaction):
-    pass
 
-class BroughtForwardPayment(PurchaseTransaction):
-    pass
-
-class Refund(Payment):
+class Receipt(PaymentTransactionMixin, SalesTransaction):
     pass
 
 
-class BroughtForwardRefund(PurchaseTransaction):
+class BroughtForwardReceipt(SalesTransaction):
     pass
 
-class PurchaseHeader(TransactionHeader):
+
+class Refund(Receipt):
+    pass
+
+
+class BroughtForwardRefund(SalesTransaction):
+    pass
+
+
+class SaleHeader(TransactionHeader):
     # FIX ME - rename to "no_nominal_required"
     no_analysis_required = [
-        ('pbi', 'Brought Forward Invoice'),
-        ('pbc', 'Brought Forward Credit Note'),
-        ('pbp', 'Brought Forward Payment'),
-        ('pbr', 'Brought Forward Refund'),
+        ('sbi', 'Brought Forward Invoice'),
+        ('sbc', 'Brought Forward Credit Note'),
+        ('sbp', 'Brought Forward Receipt'), # sbp = Sales B/F payment
+        ('sbr', 'Brought Forward Refund'),
     ]
     # FIX ME - rename to "nominals_required"
     analysis_required = [
-        ("pp", "Payment"),
-        ("pr", "Refund"),
-        ('pi', 'Invoice'),
-        ('pc', 'Credit Note'),
+        ("sp", "Receipt"),
+        ("sr", "Refund"),
+        ('si', 'Invoice'),
+        ('sc', 'Credit Note'),
     ]
     no_lines_required = [
-        ('pbp', 'Brought Forward Payment'),
-        ('pbr', 'Brought Forward Refund'),
-        ('pp', 'Payment'),
-        ('pr', 'Refund'),
+        ('sbp', 'Brought Forward Receipt'),
+        ('sbr', 'Brought Forward Refund'),
+        ('sp', 'Receipt'),
+        ('sr', 'Refund'),
     ]
     lines_required = [
-        ('pbi', 'Brought Forward Invoice'),
-        ('pbc', 'Brought Forward Credit Note'),
-        ('pi', 'Invoice'),
-        ('pc', 'Credit Note'),
+        ('sbi', 'Brought Forward Invoice'),
+        ('sbc', 'Brought Forward Credit Note'),
+        ('si', 'Invoice'),
+        ('sc', 'Credit Note'),
     ]
     negatives = [
-        'pbc',
-        'pbp',
-        'pp',
-        'pc'
+        'sbc',
+        'sbp',
+        'sp',
+        'sc'
     ]
     positives = [
-        'pbi',
-        'pbr',
-        'pr',
-        'pi'
+        'sbi',
+        'sbr',
+        'sr',
+        'si'
     ]
     credits = [
-        'pbc',
-        'pbp',
-        'pp',
-        'pc'
+        'sbi',
+        'sbr',
+        'sr',
+        'si'
     ]
     debits = [
-        'pbi',
-        'pbr',
-        'pr',
-        'pi'
+        'sbc',
+        'sbp',
+        'sp',
+        'sc'
     ]
     payment_type = [
-        'pbp',
-        'pbr',
-        'pp',
-        'pr'
+        'sbp',
+        'sbr',
+        'sp',
+        'sr'
     ]
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
     type_choices = no_analysis_required + analysis_required
     cash_book = models.ForeignKey(
         'cashbook.CashBook', on_delete=models.CASCADE, null=True, blank=True)
-    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
         choices=type_choices
     )
     matched_to = models.ManyToManyField(
-        'self', through='PurchaseMatching', symmetrical=False)
+        'self', through='SaleMatching', symmetrical=False)
 
     def get_type_transaction(self):
-        if self.type == "pbi":
+        if self.type == "sbi":
             return BroughtForwardInvoice(header=self)
-        if self.type == "pbc":
+        if self.type == "sbc":
             return BroughtForwardCreditNote(header=self)
-        if self.type == "pbp":
-            return BroughtForwardPayment(header=self)
-        if self.type == "pbr":
+        if self.type == "sbp":
+            return BroughtForwardReceipt(header=self)
+        if self.type == "sbr":
             return BroughtForwardRefund(header=self)
-        if self.type == "pi":
+        if self.type == "si":
             return Invoice(header=self)
-        if self.type == "pc":
+        if self.type == "sc":
             return CreditNote(header=self)
-        if self.type == "pp":
-            return Payment(header=self)
-        if self.type == "pr":
+        if self.type == "sp":
+            return Receipt(header=self)
+        if self.type == "sr":
             return Refund(header=self)
 
-
-class PurchaseLineQuerySet(models.QuerySet):
+class SaleLineQuerySet(models.QuerySet):
 
     def line_bulk_update(self, instances):
         return self.bulk_update(
@@ -141,15 +149,14 @@ class PurchaseLineQuerySet(models.QuerySet):
                 "description",
                 "goods",
                 "vat",
-                "item",
                 "nominal",
                 "vat_code"
             ]
         )
 
 
-class PurchaseLine(TransactionLine):
-    header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
+class SaleLine(TransactionLine):
+    header = models.ForeignKey(SaleHeader, on_delete=models.CASCADE)
     item = models.ForeignKey(
         Item, on_delete=models.CASCADE, null=True, blank=True)
     nominal = models.ForeignKey(
@@ -157,33 +164,33 @@ class PurchaseLine(TransactionLine):
     vat_code = models.ForeignKey(
         Vat, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Vat Code")
     goods_nominal_transaction = models.ForeignKey(
-        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="purchase_good_line")
+        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="sale_good_line")
     vat_nominal_transaction = models.ForeignKey(
-        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="purchase_vat_line")
+        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="sale_vat_line")
     total_nominal_transaction = models.ForeignKey(
-        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="purchase_total_line")
+        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="sale_total_line")
 
     # It does not make sense that a line would exist without a nominal transaction but the purchase line is created
     # before the nominal transaction so it must do the create without the id for the nominal transaction
 
-    objects = PurchaseLineQuerySet.as_manager()
+    objects = SaleLineQuerySet.as_manager()
 
     class Meta:
         ordering = ['line_no']
 
 
-class PurchaseMatching(MatchedHeaders):
+class SaleMatching(MatchedHeaders):
     # matched_by is the header record through which
     # all the other transactions were matched
     matched_by = models.ForeignKey(
-        PurchaseHeader,
+        SaleHeader,
         on_delete=models.CASCADE,
         related_name="matched_by_these",
     )
     # matched_to is a header record belonging to
     # the set 'all the other transactions' described above
     matched_to = models.ForeignKey(
-        PurchaseHeader,
+        SaleHeader,
         on_delete=models.CASCADE,
         related_name="matched_to_these"
     )

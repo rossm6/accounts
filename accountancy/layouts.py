@@ -1,7 +1,58 @@
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 
-from accountancy.forms import PlainField, LabelAndFieldAndErrors
+# do we need to import Hidden ??
+
+class Delete(Div):
+    template = "accounts/layout/delete.html"
+
+
+class Draggable(Div):
+    template = "accounts/layout/draggable.html"
+
+
+class Label(Field):
+    template = "accounts/layout/label_only.html"
+
+
+class PlainField(Field):
+    # no label or errors; field only
+    template = "accounts/layout/plain_field.html"
+
+
+class PlainFieldErrors(Field):
+    # no label; field and errors only
+    template = "accounts/layout/plain_field_errors.html"
+
+
+class DataTableTdField(Field):
+    # native sorting in jquery datatables is possible by including the field value in a <span> element
+    # this is necessary for those td elements which contain <input elements>
+    template = "accounts/layout/data_table_td_field.html"
+
+
+class Td(Div):
+    template = "accounts/layout/td.html"
+
+
+class Th(Div):
+    template = "accounts/layout/th.html"
+
+
+class Tr(Div):
+    template = "accounts/layout/tr.html"
+
+
+class LabelAndFieldOnly(Field):
+    template = "accounts/layout/label_and_field.html"
+
+
+class LabelAndFieldAndErrors(Field):
+    template = "accounts/layout/label_and_field_and_error.html"
+
+
+class AdvSearchField(Field):
+    template = "accounts/layout/adv_search_field.html"
 
 
 def create_transaction_header_helper(generic_to_fields_map, payment_form=False, payment_brought_forward_form=False, read_only=False):
@@ -147,3 +198,101 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
             )
 
     return StandardHeaderHelper()
+
+
+class TableHelper(object):
+
+    def __init__(self, fields, order=False, delete=False, **kwargs):
+        self.fields = fields
+        self.order = order
+        self.delete = delete
+        self.css_classes = kwargs.get("css_classes", {})
+        self.field_layout_overrides = kwargs.get("field_layout_overrides", {})
+        self.column_layout_object_css_classes = kwargs.get(
+            "column_layout_object_css_classes", {})
+        # example {"Td": {"type": LabelAndField}}
+        # must use Td namespace
+
+    def create_field_columns(self, fields, column_layout_object, field_layout_object, _type):
+        css_classes = self.css_classes.get(_type, {})
+        field_overrides = self.field_layout_overrides.get(_type, {})
+        column_layout_object_css_classes = self.column_layout_object_css_classes.get(
+            _type, {})
+        return [
+            column_layout_object(
+                field_overrides.get(field, field_layout_object)(
+                    field,
+                    css_class=css_classes.get(field, '')
+                ),
+                css_class="col-" + field +
+                (" d-none" if field == "id" else "") + " " +
+                column_layout_object_css_classes.get(field, '')
+            )
+            for field in fields
+        ]
+
+    def create_thead_or_tbody(self, column_layout_object, field_layout_object,
+                              drag_layout_object, delete_layout_object, _type):
+        field_columns = []
+        if self.order:
+            order_args = [drag_layout_object]
+            if _type == "Td":
+                order_args += [PlainField('ORDER',
+                                          type="hidden", css_class="ordering")]
+            field_columns += [
+                column_layout_object(
+                    *order_args,
+                    css_class="pointer col-draggable-icon"
+                )
+            ]
+        field_columns += self.create_field_columns(
+            self.fields, column_layout_object, field_layout_object, _type)
+        if self.delete:
+            delete_args = [delete_layout_object]
+            if _type == "Td":
+                delete_args += [PlainField('DELETE',
+                                           css_class="delete-line d-none")]
+            field_columns += [
+                column_layout_object(
+                    *delete_args,
+                    # FIX ME - change this from col-draggable-icon to col-deletable-icon
+                    css_class="pointer col-close-icon"
+                )
+            ]
+        return field_columns
+
+    def create_transaction_table_formset_helper(self, field_columns, tr_class=""):
+        class TransactionHelper(FormHelper):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.form_tag = False
+                self.disable_csrf = True
+                self.layout = Layout(
+                    Tr(
+                        *field_columns,
+                        css_class=tr_class
+                    )
+                )
+        return TransactionHelper()
+
+    def create_thead(self, tr_class=""):
+        field_columns = self.create_thead_or_tbody(
+            Th, Label, HTML(''), HTML(''), "Th")
+        return self.create_transaction_table_formset_helper(field_columns, tr_class)
+
+    def create_tbody(self, tr_class=""):
+        field_columns = self.create_thead_or_tbody(
+            Td,
+            PlainField,
+            Draggable(),
+            Delete(),
+            "Td"
+        )
+        return self.create_transaction_table_formset_helper(field_columns, tr_class)
+
+    def render(self):
+        return {
+            "thead": self.create_thead(),
+            "tbody": self.create_tbody(),
+            "empty_form": self.create_tbody("d-none empty-form")
+        }

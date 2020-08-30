@@ -2,7 +2,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, HTML
 from django import forms
 
-from accountancy.forms import Div, LabelAndFieldAndErrors, Field
+from accountancy.layouts import Div, LabelAndFieldAndErrors, Field
 
 from .models import Vat
 
