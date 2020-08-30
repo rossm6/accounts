@@ -1,0 +1,120 @@
+{% extends 'accountancy/view.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
+{% endblock extra_head %}
+
+{% block module_actions %}
+    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#nominalTransactions">
+        Show Nominal Transactions
+    </button>
+{% endblock module_actions %}
+
+{% block nominal_transactions %}
+    {% include 'accountancy/nominal_transactions.html' with nominal_transactions=nominal_transactions %}
+{% endblock nominal_transactions %}
+
+{% block totals %}
+    {% if header_to_edit.is_payment_type %}
+        {% include 'accountancy/totals_exc_goods_with_matching.html' %}
+    {% else %}
+        {% include 'accountancy/totals_inc_goods_with_matching.html' %}        
+    {% endif %}
+{% endblock totals %}
+
+{% block matching %}
+<div class="my-4">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">Matching</h2>
+    </div>
+    <div>
+        <div class="d-none matching_transactions_formset">
+            {{ matching_formset.management_form|crispy }}
+        </div>
+        <div class="matched_transactions_wrapper">
+            <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="existing_matched_transactions">
+                {% crispy matching_formset %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock matching %}
+
+{% block modal_forms %}
+    <!-- Modal -->
+    <div class="void-modal modal fade" id="voidModal" tabindex="-1" role="dialog" aria-labelledby="voidModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold" id="voidModalLabel">Confirm</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body small">
+                Are you sure you want to void this transaction?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-danger void">Void</button>
+            </div>
+            </div>
+        </div>
+    </div>
+{% endblock modal_forms %}
+
+{% block module_js %}
+<script>
+    {% include 'accountancy/calculator.js' %}
+</script>
+<script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
+<script>
+
+    function show_error(message){
+        if(message){
+            var message_html = $(message);
+            message_html.addClass("void-message-error").addClass("mt-5");
+            var content = message_html.find(".fixed-centre");
+            content.removeClass("alert-success")
+            content.addClass("alert-danger");
+            $("body").find(".void-message-error").remove();
+            $("body").append(message_html)
+            $(".void-modal").modal("hide");
+        }
+        else{
+            alert("Something went wrong, please try again later.");
+        }
+    }
+
+    $(document).ready(function() {
+        $("form.void-form").on("click", function(event) {
+            $(".void-modal").modal("show");
+        });
+        $("button.void").on("click", function() {
+            var form = $("form.void-form");
+            $.ajax({
+                url: form.attr("action"),
+                method: "POST",
+                data: form.serialize(),
+                success: function (data) {
+                    if(data.success) {
+                        // set cookie or something to say void was successful
+                        // server then adds a message which is shown at data.href URL
+                        return window.location.href = data.href;
+                    }
+                    else{
+                        show_error(data.error_message);
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
+                    show_error();
+                }
+            });
+        });
+    });
+</script>
+{% endblock module_js %}

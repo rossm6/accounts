@@ -13,17 +13,17 @@ from django.utils import timezone
 from django.views.generic import ListView
 from querystring_parser import parser
 
-from accountancy.forms import (SalesAndPurchaseTransactionSearchForm,
-                               BaseVoidTransactionForm)
-from accountancy.views import (SalesAndPurchasesTransList, BaseViewTransaction,
-                               BaseVoidTransaction,
+from accountancy.forms import (BaseVoidTransactionForm,
+                               SalesAndPurchaseTransactionSearchForm)
+from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
-                               EditPurchaseOrSalesTransaction,
+                               EditPurchaseOrSalesTransaction, LoadContacts,
+                               LoadMatchingTransactions,
+                               SalesAndPurchasesTransList,
                                ViewTransactionOnLedgerOtherThanNominal,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory,
-                               jQueryDataTable)
+                               input_dropdown_widget_validate_choice_factory)
 from items.models import Item
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
@@ -156,119 +156,14 @@ class VoidTransaction(BaseVoidTransaction):
     module = 'PL'
     
 
-class LoadMatchingTransactions(jQueryDataTable, ListView):
-
-    """
-    Standard django pagination will not work here
-    """
-
-    def get_context_data(self, **kwargs):
-        context = {}
-        start = self.request.GET.get("start", 0)
-        length = self.request.GET.get("length", 25)
-        count = queryset = self.get_queryset().count()
-        queryset = self.get_queryset()[int(start): int(start) + int(length)]
-        data = []
-        for obj in queryset:
-            data.append(
-                {
-                    "type": {
-                        "label": obj.get_type_display(),
-                        "value": obj.type
-                    },
-                    "ref": obj.ref,
-                    "total": obj.total,
-                    "paid": obj.paid,
-                    "due": obj.due,
-                    "DT_RowData": {
-                        "pk": obj.pk,
-                        "fields": {
-                            "type": {
-                                'value': obj.type,
-                                'order': obj.type
-                            },
-                            "ref": {
-                                'value': obj.ref,
-                                'order': obj.ref
-                            },
-                            "total": {
-                                'value': obj.total,
-                                'order': obj.total
-                            },
-                            "paid": {
-                                'value': obj.paid,
-                                'order': obj.paid
-                            },
-                            "due": {
-                                'value': obj.due,
-                                'order': obj.due
-                            },
-                            "matched_to": {
-                                'value': obj.pk,
-                                'order': obj.pk
-                            }
-                        }
-                    }
-                }
-            )
-        context["recordsTotal"] = count
-        context["recordsFiltered"] = count
-        # this would be wrong if we searched !!!
-        context["data"] = data
-        return context
-
-    def get_queryset(self):
-        if supplier := self.request.GET.get("s"):
-            q = PurchaseHeader.objects.filter(supplier=supplier).exclude(
-                due__exact=0).order_by(*self.order_by())
-            if edit := self.request.GET.get("edit"):
-                matches = PurchaseMatching.objects.filter(
-                    Q(matched_to=edit) | Q(matched_by=edit))
-                matches = [(match.matched_by_id, match.matched_to_id)
-                           for match in matches]
-                matched_headers = list(chain(*matches))
-                pk_to_exclude = [header for header in matched_headers]
-                # at least exclude the record being edited itself !!!
-                pk_to_exclude.append(edit)
-                return q.exclude(pk__in=pk_to_exclude).order_by(*self.order_by())
-            else:
-                return q
-        else:
-            return PurchaseHeader.objects.none()
-
-    def render_to_response(self, context, **response_kwargs):
-        data = {
-            "draw": int(self.request.GET.get('draw'), 0),
-            "recordsTotal": context["recordsTotal"],
-            "recordsFiltered": context["recordsFiltered"],
-            "data": context["data"]
-        }
-        return JsonResponse(data)
+class LoadPurchaseMatchingTransactions(LoadMatchingTransactions):
+    header_model = PurchaseHeader
+    matching_model = PurchaseMatching
+    contact_name = "supplier"
 
 
-class LoadSuppliers(ListView):
+class LoadSuppliers(LoadContacts):
     model = Supplier
-    paginate_by = 50
-
-    def get_queryset(self):
-        if q := self.request.GET.get('q'):
-            return (
-                Supplier.objects.annotate(
-                    similarity=TrigramSimilarity('code', q),
-                ).filter(similarity__gt=0.3).order_by('-similarity')
-            )
-        return Supplier.objects.none()
-
-    def render_to_response(self, context, **response_kwargs):
-        suppliers = []
-        for supplier in context["page_obj"].object_list:
-            s = {
-                'code': supplier.code,
-                "id": supplier.id
-            }
-            suppliers.append(s)
-        data = {"data": suppliers}
-        return JsonResponse(data)
 
 
 load_options = input_dropdown_widget_load_options_factory(

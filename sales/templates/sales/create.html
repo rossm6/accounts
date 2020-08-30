@@ -1,0 +1,50 @@
+{% extends 'accountancy/create.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
+{% endblock extra_head %}
+
+{% block totals %}
+    {% if header_to_edit.is_payment_type %}
+        {% include 'accountancy/totals_exc_goods_with_matching.html' %}
+    {% else %}
+        {% include 'accountancy/totals_inc_goods_with_matching.html' %}        
+    {% endif %}
+{% endblock totals %}
+
+{% block matching %}
+<div class="my-4">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">Matching</h2>
+        <small class="form-text text-muted">The transactions you have already selected to match to this new transaction to</small>
+    </div>
+    <div>
+        <div class="d-none matching_transactions_formset">
+            {{ matching_formset.management_form|crispy }}
+        </div>
+        <div class="new_matched_transactions_wrapper">
+            <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="new_matched_transactions">
+                {% crispy matching_formset %}
+                {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock matching %}
+
+{% block under_form %}
+    {% include 'accountancy/outstanding.html' %}
+{% endblock under_form %}
+
+{% block modal_forms %}
+    {% include 'accountancy/on_the_fly.html' %}
+{% endblock modal_forms %}
+
+{% block extra_js %}
+    {% include 'accountancy/grid_js.html' with header_form=header_form %}
+    {% include 'accountancy/matching_js.html' %}
+    <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
+{% endblock extra_js %}

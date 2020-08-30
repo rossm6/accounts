@@ -1,3 +1,237 @@
-from django.shortcuts import render
+from django.urls import reverse_lazy
+from django.utils import timezone
 
-# Create your views here.
+from accountancy.forms import (BaseVoidTransactionForm,
+                               SalesAndPurchaseTransactionSearchForm)
+from accountancy.views import (BaseVoidTransaction,
+                               CreatePurchaseOrSalesTransaction,
+                               EditPurchaseOrSalesTransaction, LoadContacts,
+                               LoadMatchingTransactions,
+                               SalesAndPurchasesTransList,
+                               ViewTransactionOnLedgerOtherThanNominal,
+                               create_on_the_fly,
+                               input_dropdown_widget_load_options_factory,
+                               input_dropdown_widget_validate_choice_factory)
+from nominals.forms import NominalForm
+from nominals.models import Nominal, NominalTransaction
+from vat.forms import QuickVatForm
+from vat.serializers import vat_object_for_input_dropdown_widget
+
+from .forms import (QuickCustomerForm, ReadOnlySaleHeaderForm, SaleHeaderForm,
+                    SaleLineForm, enter_lines, match, read_only_lines,
+                    read_only_match)
+from .models import Customer, SaleHeader, SaleLine, SaleMatching
+
+SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
+
+class CustomerMixin:
+    def get_header_form_kwargs(self):
+        kwargs = super().get_header_form_kwargs()
+        kwargs["contact_model_name"] = "customer"
+        return kwargs
+
+class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
+    header = {
+        "model": SaleHeader,
+        "form": SaleHeaderForm,
+        "prefix": "header",
+        "override_choices": ["customer"],
+        "initial": {"total": 0},
+
+    }
+    line = {
+        "model": SaleLine,
+        "formset": enter_lines,
+        "prefix": "line",
+        # VAT would not work at the moment
+        "override_choices": ["item", "nominal"]
+        # because VAT requires (value, label, [ model field attrs ])
+        # but VAT codes will never be that numerous
+    }
+    match = {
+        "model": SaleMatching,
+        "formset": match,
+        "prefix": "match"
+    }
+    create_on_the_fly = {
+        "nominal_form": NominalForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="nominal"),
+        "vat_form": QuickVatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
+    }
+    template_name = "sales/create.html"
+    success_url = reverse_lazy("sales:transaction_enquiry")
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
+    module = "SL"
+    control_nominal_name = SALES_CONTROL_ACCOUNT
+
+    # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
+    def get_header_form_type(self):
+        t = self.request.GET.get("t", "si")
+        return t
+
+
+class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
+    header = {
+        "model": SaleHeader,
+        "form": SaleHeaderForm,
+        "prefix": "header",
+        "override_choices": ["customer"],
+    }
+    line = {
+        "model": SaleLine,
+        "formset": enter_lines,
+        "prefix": "line",
+        # VAT would not work at the moment
+        "override_choices": ["item", "nominal"]
+        # because VAT requires (value, label, [ model field attrs ])
+        # but VAT codes will never be that numerous
+    }
+    match = {
+        "model": SaleMatching,
+        "formset": match,
+        "prefix": "match"
+    }
+    create_on_the_fly = {
+        "nominal_form": NominalForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="nominal"),
+        "vat_form": QuickVatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
+    }
+    template_name = "sales/edit.html"
+    success_url = reverse_lazy("sales:transaction_enquiry")
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
+    module = "SL"
+    control_nominal_name = SALES_CONTROL_ACCOUNT
+
+
+class ViewTransaction(CustomerMixin, ViewTransactionOnLedgerOtherThanNominal):
+    header = {
+        "model": SaleHeader,
+        "form": ReadOnlySaleHeaderForm,
+        "prefix": "header",
+        "override_choices": ["customer"],
+    }
+    line = {
+        "model": SaleLine,
+        "formset": read_only_lines,
+        "prefix": "line",
+        # VAT would not work at the moment
+        "override_choices": ["item", "nominal"]
+        # because VAT requires (value, label, [ model field attrs ])
+        # but VAT codes will never be that numerous
+    }
+    match = {
+        "model": SaleMatching,
+        "formset": read_only_match,
+        "prefix": "match"
+    }
+    void_form_action = reverse_lazy("sales:void")
+    void_form = BaseVoidTransactionForm
+    template_name = "sales/view.html"
+    nominal_transaction_model = NominalTransaction
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["edit_view_name"] = "sales:edit" 
+        return context
+
+
+class VoidTransaction(BaseVoidTransaction):
+    header_model = SaleHeader
+    matching_model = SaleMatching
+    nominal_transaction_model = NominalTransaction
+    form_prefix = "void"
+    form = BaseVoidTransactionForm
+    success_url = reverse_lazy("sales:transaction_enquiry")
+    module = 'SL'
+
+
+class LoadSaleMatchingTransactions(LoadMatchingTransactions):
+    header_model = SaleHeader
+    matching_model = SaleMatching
+    contact_name = "customer"
+
+
+class LoadCustomers(LoadContacts):
+    model = Customer
+
+
+load_options = input_dropdown_widget_load_options_factory(
+    SaleLineForm(), 25)
+
+
+class TransactionEnquiry(SalesAndPurchasesTransList):
+    model = SaleHeader
+    fields = [
+        ("customer__name", "Customer"),
+        ("ref", "Reference"),
+        ("period", "Period"),
+        ("date", "Date"),
+        ("due_date", "Due Date"),
+        ("total", "Total"),
+        ("paid", "Paid"),
+        ("due", "Due"),
+    ]
+    form_field_to_searchable_model_field = {
+        "contact": "customer__name",
+        "reference": "ref"
+    }
+    datetime_fields = ["date", "due_date"]
+    datetime_format = '%d %b %Y'
+    advanced_search_form_class = SalesAndPurchaseTransactionSearchForm
+    contact_name = "customer"
+    template_name = "sales/transactions.html"
+
+    def get_transaction_url(self, **kwargs):
+        row = kwargs.pop("row")
+        pk = row["id"]
+        return reverse_lazy("sales:view", kwargs={"pk": pk})
+
+    def get_queryset(self):
+        return (
+            self.get_querysets()
+            .select_related('customer__name')
+            .all()
+            .values(
+                'id',
+                *[field[0] for field in self.fields]
+            )
+            .order_by(*self.order_by())
+        )
+
+    def get_querysets(self):
+        group = self.request.GET.get("group", 'a')
+        # add querysets to the instance
+        # in context_data get the summed value for each
+        self.all_queryset = SaleHeader.objects.all()
+        self.awaiting_payment_queryset = SaleHeader.objects.exclude(due=0)
+        self.overdue_queryset = SaleHeader.objects.exclude(
+            due=0).filter(due_date__lt=timezone.now())
+        self.paid_queryset = SaleHeader.objects.filter(due=0)
+        if group == "a":
+            return self.all_queryset
+        elif group == "ap":
+            return self.awaiting_payment_queryset
+        elif group == "o":
+            return self.overdue_queryset
+        elif group == "p":
+            return self.paid_queryset
+
+
+validate_choice = input_dropdown_widget_validate_choice_factory(
+    SaleLineForm())
+
+create_on_the_fly_view = create_on_the_fly(
+    nominal={
+        "form": NominalForm,
+        "prefix": "nominal"
+    },
+    supplier={
+        "form": QuickCustomerForm,
+        "prefix": "customer"
+    },
+    vat={
+        "form": QuickVatForm,
+        "serializer": vat_object_for_input_dropdown_widget,
+        "prefix": "vat"
+    }
+)

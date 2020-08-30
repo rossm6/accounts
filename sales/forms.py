@@ -1,4 +1,4 @@
-from django.forms import ModelForm
+from django import forms
 
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
@@ -7,9 +7,12 @@ from accountancy.forms import (BaseTransactionHeaderForm,
                                ReadOnlySaleAndPurchaseHeaderFormMixin,
                                ReadOnlySaleAndPurchaseLineFormMixin,
                                ReadOnlySaleAndPurchaseMatchingFormMixin,
+                               SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineForm,
+                               SaleAndPurchaseLineFormset,
                                SaleAndPurchaseMatchingForm,
                                SaleAndPurchaseMatchingFormset)
+from accountancy.helpers import input_dropdown_widget_attrs_config
 from accountancy.widgets import InputDropDown
 from nominals.models import Nominal
 
@@ -23,7 +26,7 @@ class QuickCustomerForm(forms.ModelForm):
         fields = ('code', )
 
 
-class SaleHeaderForm(BaseTransactionHeaderForm):
+class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
 
     class Meta:
         model = SaleHeader

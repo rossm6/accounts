@@ -1133,3 +1133,138 @@ class BaseVoidTransaction(View):
                     "error_message": self.error_message
                 }
             )
+
+
+class LoadMatchingTransactions(jQueryDataTable, ListView):
+
+    """
+    Standard django pagination will not work here
+    """
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        start = self.request.GET.get("start", 0)
+        length = self.request.GET.get("length", 25)
+        count = queryset = self.get_queryset().count()
+        queryset = self.get_queryset()[int(start): int(start) + int(length)]
+        data = []
+        for obj in queryset:
+            data.append(
+                {
+                    "type": {
+                        "label": obj.get_type_display(),
+                        "value": obj.type
+                    },
+                    "ref": obj.ref,
+                    "total": obj.total,
+                    "paid": obj.paid,
+                    "due": obj.due,
+                    "DT_RowData": {
+                        "pk": obj.pk,
+                        "fields": {
+                            "type": {
+                                'value': obj.type,
+                                'order': obj.type
+                            },
+                            "ref": {
+                                'value': obj.ref,
+                                'order': obj.ref
+                            },
+                            "total": {
+                                'value': obj.total,
+                                'order': obj.total
+                            },
+                            "paid": {
+                                'value': obj.paid,
+                                'order': obj.paid
+                            },
+                            "due": {
+                                'value': obj.due,
+                                'order': obj.due
+                            },
+                            "matched_to": {
+                                'value': obj.pk,
+                                'order': obj.pk
+                            }
+                        }
+                    }
+                }
+            )
+        context["recordsTotal"] = count
+        context["recordsFiltered"] = count
+        # this would be wrong if we searched !!!
+        context["data"] = data
+        return context
+
+    def get_header_model(self):
+        return self.header_model
+
+    def get_matching_model(self):
+        return self.matching_model
+
+    def get_contact_name(self):
+        return self.contact_name
+
+    def get_queryset(self):
+        if contact := self.request.GET.get("s"):
+            contact_name = self.get_contact_name()
+            q = (
+                self.get_header_model().objects
+                .filter(
+                    contact_name=contact)
+                .exclude(
+                    due__exact=0)
+                .order_by(*self.order_by())
+                )
+            if edit := self.request.GET.get("edit"):
+                matches = (self.get_matching_model().objects
+                .filter(
+                    Q(matched_to=edit) | Q(matched_by=edit)
+                ))
+                matches = [(match.matched_by_id, match.matched_to_id)
+                           for match in matches]
+                matched_headers = list(chain(*matches))
+                pk_to_exclude = [header for header in matched_headers]
+                # at least exclude the record being edited itself !!!
+                pk_to_exclude.append(edit)
+                return q.exclude(pk__in=pk_to_exclude).order_by(*self.order_by())
+            else:
+                return q
+        else:
+            return self.get_header_model().objects.none()
+
+    def render_to_response(self, context, **response_kwargs):
+        data = {
+            "draw": int(self.request.GET.get('draw'), 0),
+            "recordsTotal": context["recordsTotal"],
+            "recordsFiltered": context["recordsFiltered"],
+            "data": context["data"]
+        }
+        return JsonResponse(data)
+
+
+class LoadContacts(ListView):
+    paginate_by = 50
+
+    def get_contact_model(self):
+        return self.model
+
+    def get_queryset(self):
+        if q := self.request.GET.get('q'):
+            return (
+                self.get_contact_model().objects.annotate(
+                    similarity=TrigramSimilarity('code', q),
+                ).filter(similarity__gt=0.3).order_by('-similarity')
+            )
+        return self.get_contact_model().objects.none()
+
+    def render_to_response(self, context, **response_kwargs):
+        contacts = []
+        for contact in context["page_obj"].object_list:
+            s = {
+                'code': contact.code,
+                "id": contact.id
+            }
+            contacts.append(s)
+        data = {"data": contacts}
+        return JsonResponse(data)

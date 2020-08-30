@@ -48,6 +48,7 @@ class BaseAjaxForm(forms.ModelForm):
                 queryset = querysets["get"]
             self.fields[field].queryset = queryset
             self.fields[field].load_queryset = querysets["load"]
+            self.fields[field].post_queryset = querysets["post"] # We need this to validate inputs for the input dropdown widget
             if iterator := fields[field].get('iterator'):
                 self.fields[field].iterator = iterator
             if searchable_fields := fields[field].get('searchable_fields'):

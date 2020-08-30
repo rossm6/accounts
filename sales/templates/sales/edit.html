@@ -1,0 +1,109 @@
+{% extends 'accountancy/edit.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
+{% endblock extra_head %}
+
+{% block totals %}
+    {% if header_to_edit.is_payment_type %}
+        {% include 'accountancy/totals_exc_goods_with_matching.html' %}
+    {% else %}
+        {% include 'accountancy/totals_inc_goods_with_matching.html' %}        
+    {% endif %}
+{% endblock totals %}
+
+{% block buttons_footer %}
+<div class="d-flex justify-content-between align-items-center p-2 border bg-white">
+    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#nominalTransactions">
+        Show Nominal Transactions
+    </button>
+    <div>
+        <button type="submit" class="btn btn-success xero-btn approve" name="approve" value="do_not_add_another">Save</button>
+    </div>
+</div>
+{% endblock buttons_footer %}
+
+{% block nominal_transactions %}
+    {% include 'accountancy/nominal_transactions.html' with nominal_transactions=nominal_transactions %}
+{% endblock nominal_transactions %}
+
+{% block matching %}
+<div class="my-4">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">Existing Matching</h2>
+        <small class="form-text text-muted">These transactions are already matched</small>
+    </div>
+    <div>
+        <div class="d-none matching_transactions_formset">
+            {{ matching_formset.management_form|crispy }}
+        </div>
+        <div class="matched_transactions_wrapper">
+            <table class="existing_matched_transactions">
+                {% crispy matching_formset %}
+            </table>
+        </div>
+    </div>
+</div>
+<div class="my-4">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">New Matching Transactions</h2>
+        <small class="form-text text-muted">These transactions you've matched have not yet been saved</small>
+    </div>
+    <div>
+        <table class="new_matched_transactions">
+            <thead>
+                <tr>
+                    <th>
+                        Type
+                    </th>
+                    <th>
+                        Ref
+                    </th>
+                    <th>
+                        Total
+                    </th>
+                    <th>
+                        Paid
+                    </th>
+                    <th>
+                        Due
+                    </th>
+                    <th>
+                        Matched by
+                    </th>
+                    <th>
+                        Matched to
+                    </th>
+                    <th>
+                        Value
+                    </th>
+                    <th>
+                        Id
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="table-bordered">
+                {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
+            </tbody>
+        </table>     
+    </div>
+</div>
+{% endblock matching %}
+
+{% block under_form %}
+    {% include 'accountancy/outstanding.html' %}
+{% endblock under_form %}
+
+{% block modal_forms %}
+    {% include 'accountancy/on_the_fly.html' %}
+{% endblock modal_forms %}
+
+{% block extra_js %}
+    <script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
+    {% include 'accountancy/grid_js.html' with header_form=header_form %}
+    {% include 'accountancy/edit_matching_js.html' %}
+    <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
+{% endblock extra_js %}

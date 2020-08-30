@@ -36,8 +36,8 @@
                 Sales
               </a>
               <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                <a class="dropdown-item" href="#">View Transactions</a>
-                <a class="dropdown-item" href="#">Post Transaction</a>
+                <a class="dropdown-item" href="{% url 'sales:transaction_enquiry' %}">View Transactions</a>
+                <a class="dropdown-item" href="{% url 'sales:create' %}">Post Transaction</a>
                 <a class="dropdown-item" href="#">Reports</a>
               </div>
             </li>
