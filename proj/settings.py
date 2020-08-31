@@ -174,5 +174,6 @@ DEFAULT_SYSTEM_SUSPENSE = "System Suspense Account"
 
 ACCOUNTANCY_MODULES = {
     "PL": "purchases",
-    "NL": "nominals"
+    "NL": "nominals",
+    "SL": "sales"
 }

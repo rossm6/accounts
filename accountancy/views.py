@@ -1,5 +1,6 @@
 import functools
 from copy import deepcopy
+from itertools import chain
 
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
@@ -980,8 +981,11 @@ def create_on_the_fly(**forms):
     """
 
     def view(request):
+        print(request.POST)
         if request.is_ajax() and request.method == "POST":
             form_name = request.POST.get("form")
+            print(form_name)
+            print(forms)
             if form_name in forms:
                 prefix = forms[form_name].get("prefix")
                 form = forms[form_name]["form"](
@@ -1210,8 +1214,7 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
             contact_name = self.get_contact_name()
             q = (
                 self.get_header_model().objects
-                .filter(
-                    contact_name=contact)
+                .filter(**{contact_name: contact})
                 .exclude(
                     due__exact=0)
                 .order_by(*self.order_by())

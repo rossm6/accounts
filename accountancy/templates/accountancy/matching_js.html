@@ -8,9 +8,10 @@
 
     $(document).ready(function(){
 
+        var contact_field = $("select[data-contact-field]").eq(0); // should only be one anyway
+        // in the future other fields may determine the matching queryset also
 
-        var supplier_field = 'select[name=header-supplier]'; // will do for now but there may be other fields
-        // which matching depends on also in the future
+        console.log(contact_field);
 
         // Ordering was a bit tricky.
         // There are two problems -
@@ -85,18 +86,19 @@
             })
             .DataTable({
                 ajax: {
-                    url: "{% url 'purchases:load_matching_transactions' %}",
+                    url: "{{ loading_matching_transactions_url }}",
                     data: function (d) {
                         // the user can change the supplier
                         // each time they do we need to load new matching transactions
                         // there may be other changes which require a reload
-                        var supplier = $(supplier_field).val();
-                        if (supplier){
-                            d["s"] = supplier;
+                        var contact = contact_field.val();
+                        if (contact){
+                            d["s"] = contact;
                             if(edit){
                                 d["edit"] = edit;
                             }
                         }
+                        console.log(d);
                     }
                 },
                 columns: [
@@ -127,7 +129,6 @@
                     {
                         'data': 'due',
                         'render': function (data, type, full, meta) {
-                            console.log("due", data);
                             return '<span data-order="' + data + '">' + data + '</span>';
                         }
                     },
@@ -161,7 +162,7 @@
             });
 
 
-            $(supplier_field).on("change", function() {
+            contact_field.on("change", function() {
                 outstanding_table.ajax.reload();
             });
 

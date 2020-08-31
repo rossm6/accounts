@@ -49,17 +49,24 @@
     {% endcomment %}
 
     {% if create or edit %}
-        $(".supplier-select").selectize({
+
+        var native_select_widget = $(".contact-select");
+        var creation_url = native_select_widget.attr("data-creation-url");
+        var form = native_select_widget.attr("data-form");
+        var form_field = native_select_widget.attr("data-form-field");
+        var load_url = native_select_widget.attr("data-load-url");
+
+        $(".contact-select").selectize({
             valueField: 'id',
             labelField: 'code',
             searchField: 'code',
             insert: true,
             create: function(input, callback) {
                 $.ajax({
-                    url: "{% url 'purchases:create_on_the_fly'  %}",
+                    url: creation_url,
                     method: "POST",
                     // here we hard code the form prefix 'supplier'
-                    data: "form=supplier&supplier-code=" + input + "&csrfmiddlewaretoken=" + Cookies.get('csrftoken'),
+                    data: "form=" + form + "&" + form_field + "=" + input + "&csrfmiddlewaretoken=" + Cookies.get('csrftoken'),
                     success: function (data) {
                         if(data.success) {
                             callback({
@@ -83,7 +90,7 @@
             },
             load: function(query, callback) {
                 $.ajax({
-                    url: '{% url "purchases:load_suppliers" %}',
+                    url: load_url,
                     type: 'GET',
                     dataType: 'json',
                     data: {

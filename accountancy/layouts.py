@@ -97,7 +97,7 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                             Div(
                                 Div(
                                     LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class=(
-                                        "input input-disabled text-left border" if read_only else "supplier-select w-100")),  # FIX ME - change to contact-select
+                                        "input input-disabled text-left border" if read_only else "contact-select w-100")),
                                     css_class="col-2"
                                 ),
                                 Div(

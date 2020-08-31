@@ -25,6 +25,12 @@ from .models import Customer, SaleHeader, SaleLine, SaleMatching
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
 
 class CustomerMixin:
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["loading_matching_transactions_url"] = reverse_lazy("sales:load_matching_transactions")
+        return context
+    
     def get_header_form_kwargs(self):
         kwargs = super().get_header_form_kwargs()
         kwargs["contact_model_name"] = "customer"
@@ -225,7 +231,7 @@ create_on_the_fly_view = create_on_the_fly(
         "form": NominalForm,
         "prefix": "nominal"
     },
-    supplier={
+    customer={
         "form": QuickCustomerForm,
         "prefix": "customer"
     },

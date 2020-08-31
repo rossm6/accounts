@@ -15,7 +15,7 @@ urlpatterns = [
     path("load_matching_transactions", LoadSaleMatchingTransactions.as_view(),
          name="load_matching_transactions"),
     path("load_options", load_options, name="load_options"),
-    path("load_suppliers", LoadCustomers.as_view(), name="load_suppliers"),
+    path("load_customers", LoadCustomers.as_view(), name="load_customers"),
     path("transactions", TransactionEnquiry.as_view(), name="transaction_enquiry"),
     path("validate_choice", validate_choice, name="validate_choice")
 ]

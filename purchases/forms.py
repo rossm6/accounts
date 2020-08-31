@@ -59,6 +59,17 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
         model = PurchaseHeader
         fields = ('cash_book', 'supplier', 'ref', 'date',
                   'due_date', 'total', 'type', 'period')
+        widgets = {
+            "supplier": forms.Select(
+                attrs={
+                    "data-form": "supplier",
+                    "data-form-field": "supplier-code",
+                    "data-creation-url": reverse_lazy("purchases:create_on_the_fly"),
+                    "data-load-url": reverse_lazy("purchases:load_suppliers"),
+                    "data-contact-field": True
+                }
+            )
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

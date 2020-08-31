@@ -37,6 +37,12 @@ from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
 class SupplierMixin:
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["loading_matching_transactions_url"] = reverse_lazy("purchases:load_matching_transactions")
+        return context
+    
     def get_header_form_kwargs(self):
         kwargs = super().get_header_form_kwargs()
         kwargs["contact_model_name"] = "supplier"

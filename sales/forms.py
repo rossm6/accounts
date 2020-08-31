@@ -15,6 +15,7 @@ from accountancy.forms import (BaseTransactionHeaderForm,
 from accountancy.helpers import input_dropdown_widget_attrs_config
 from accountancy.widgets import InputDropDown
 from nominals.models import Nominal
+from django.urls import reverse_lazy
 
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
@@ -32,6 +33,18 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
         model = SaleHeader
         fields = ('cash_book', 'customer', 'ref', 'date',
                   'due_date', 'total', 'type', 'period')
+        widgets = {
+            "customer": forms.Select(
+                attrs={
+                    "data-form": "customer",
+                    "data-form-field": "customer-code",
+                    "data-creation-url": reverse_lazy("sales:create_on_the_fly"),
+                    "data-load-url": reverse_lazy("sales:load_customers"),
+                    "data-contact-field": True
+                }
+            )
+        }
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

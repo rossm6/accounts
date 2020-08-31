@@ -1,7 +1,7 @@
+from decimal import Decimal
 from itertools import groupby
 
-from decimal import Decimal
-
+from django.conf import settings
 from django.db import models
 
 
@@ -258,6 +258,18 @@ class InvoiceTransactionMixin:
 class PaymentTransactionMixin:
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         if self.header_obj.total != 0:
+
+            if self.header_obj.is_positive_type():
+                if self.header_obj.is_debit_type():
+                    f = 1
+                else:
+                    f = -1
+            else:
+                if self.header_obj.is_debit_type():
+                    f = -1
+                else:
+                    f = 1
+
             if (control_nominal := kwargs.get("control_nominal")) is None:
                 try:
                     control_nominal_name = kwargs.get('control_nominal_name')
@@ -274,7 +286,7 @@ class PaymentTransactionMixin:
                     header=self.header_obj.pk,  # header field is PositiveInt field, not Foreign key
                     line="1",
                     nominal=self.header_obj.cash_book.nominal,
-                    value=self.header_obj.total,
+                    value=f * self.header_obj.total,
                     ref=self.header_obj.ref,
                     period=self.header_obj.period,
                     date=self.header_obj.date,
@@ -289,7 +301,7 @@ class PaymentTransactionMixin:
                     header=self.header_obj.pk,  # header field is PositiveInt field, not Foreign key
                     line="2",
                     nominal=control_nominal,
-                    value=-1 * self.header_obj.total,
+                    value=-1 * f * self.header_obj.total,
                     ref=self.header_obj.ref,
                     period=self.header_obj.period,
                     date=self.header_obj.date,
@@ -310,10 +322,20 @@ class PaymentTransactionMixin:
             control_nominal = nom_cls.objects.get(
                 name=settings.DEFAULT_SYSTEM_SUSPENSE)
         if nom_trans and self.header_obj.total != 0:
+            if self.header_obj.is_positive_type():
+                if self.header_obj.is_debit_type():
+                    f = 1
+                else:
+                    f = -1
+            else:
+                if self.header_obj.is_debit_type():
+                    f = -1
+                else:
+                    f = 1
             bank_nom_tran, control_nom_tran = nom_trans
-            bank_nom_tran.value = self.header_obj.total
+            bank_nom_tran.value = f * self.header_obj.total
             bank_nom_tran.nominal = self.header_obj.cash_book.nominal
-            control_nom_tran.value = -1 * self.header_obj.total
+            control_nom_tran.value = -1 * f * self.header_obj.total
             control_nom_tran.nominal = control_nominal
             nom_tran_cls.objects.bulk_update(nom_trans, ["value", "nominal"])
         elif nom_trans and self.header_obj.total == 0:

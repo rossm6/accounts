@@ -455,6 +455,7 @@ class ReadOnlySaleAndPurchaseHeaderFormMixin:
         if _type in self._meta.model.payment_type:
             if _type in self._meta.model.get_types_requiring_analysis():
                 payment_form = True
+                payment_brought_forward_form = False
                 self.fields["cash_book"].widget = forms.TextInput()
                 cash_book = self.fields["cash_book"].queryset[0]
                 self.initial["cash_book"] = str(cash_book)
