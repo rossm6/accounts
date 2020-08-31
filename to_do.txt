@@ -53,14 +53,9 @@ Objectives -
         	LEAVE THIS FOR NOW AS CLIENT SIDE VALIDATION HAS BEEN IGNORED SO FAR.  NEEDS TO BE CONSIDERED
         	AS PART OF THAT MORE GENERAL TOPIC.
 
-    Create on the fly
-
-        The supplier form prefix, 'supplier', is hard coded into the javascript.  This should be programmatically
-        controlled instead.
-
-            POSTPONE FIXING THIS UNTIL WE BEGIN CREATING THE SALES LEDGER
-
     Tests
+
+        Basic sales tests.  A create, edit and void for Invoice and payment at least.
 
         Create a test which checks a cash book not being POSTED for a payment and a b/f payment.  This isn't tested
         at the moment.  This should just be a form test.
@@ -90,9 +85,6 @@ Objectives -
 
     Create -
 
-        The part where we assign nominal transactions to line in the lines_are_valid is crazily inefficient.
-        I need to sort the lines and nominal transactions and put them into a dictionary to improve performance.
-
         BaseTransaction has the matching_is_valid method for BaseCreateTransaction.  Should move to this latter
         class.  Need to check other methods to see whether should be moved also.
 
@@ -102,27 +94,7 @@ Objectives -
 
     ACCOUNTANCY PACKAGE
 
-        Base Views.  I need to refactor so that we will have one view for headers with lines
-        and another for without lines.  At the moment BaseTransaction does everything but
-        this compromises the code quality.  It all feels a bit clumsy left as it is.
-
         jQueryDataTables class should be renamed to contain "Mixin" because this is what is is.
-
-        AJAX FORM
-
-            We use a lambda function for getting the queryset for the instance.  This is silly.
-            We know the model and the instance so the AjaxForm ought to get do -
-
-                self.get_model().objects.get(pk=self.instance.pk)
-
-                Or can we not just set the queryset to instance.
-
-            Also there is no need to set the querysets in the AjaxModelChoiceField.  Just define
-            them yourself so the consumer of this field doesn't have to bother specifying them.
-
-            Even better set the queryset within the Field class if possible.  Not sure this is
-            though because self.instance for example is outside the class.
-
 
     ENHANCEMENTS -  
 

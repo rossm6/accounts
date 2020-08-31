@@ -4,10 +4,12 @@ from accountancy.models import TransactionHeader, TransactionLine
 from nominals.models import Nominal
 from vat.models import Vat
 
-
 class CashBook(models.Model):
     name = models.CharField(max_length=10)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
 
 class CashBookHeader(TransactionHeader):
     no_analysis_required = [
@@ -20,21 +22,28 @@ class CashBookHeader(TransactionHeader):
         ('cp', 'Payment'),
         ('cr', 'Receipt'),
     ]
-    no_lines_required = [
+    no_lines_required = []
+    lines_required = [
         ('cbp', 'Brought Forward Payment'),
         ('cbr', 'Brought Forward Receipt'),
-    ]
-    lines_required = [
         ('cp', 'Payment'),
         ('cr', 'Receipt'),
+    ]
+    positives = [
+        'cbr',
+        'cr'
+    ]
+    negatives = [
+        'cbp',
+        'cp'
     ]
     credits = [
         'cbr',
         'cr'
     ]
     debits = [
-        'cbr',
-        'cr'
+        'cbp',
+        'cp'
     ]
     payment_type = [
         'cbp',
@@ -75,6 +84,7 @@ class CashBookLine(TransactionLine):
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Vat Code")
     goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="cash_book_good_line")
     vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="cash_book_vat_line")
+    total_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="cash_book_total_line")
 
     objects = CashBookLineQuerySet.as_manager()
 

@@ -278,6 +278,9 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             for form_field, model_field in self.form_field_to_searchable_model_field.items()
         ]
 
+    def exclude_from_queryset(self, queryset):
+        return queryset
+
     def apply_advanced_search(self, cleaned_data):
         raise NotImplementedError
 
@@ -306,12 +309,14 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             if form.is_valid():
                 queryset = self.apply_advanced_search(form.cleaned_data)
                 if not form.cleaned_data["include_voided"]:
-                    queryset = queryset.exclude(status="v")
+                    self.exclude_from_queryset(queryset)
             else:
-                queryset = self.get_queryset().exclude(status="v")
+                queryset = self.get_queryset()
+                self.exclude_from_queryset(queryset)
         else:
             context_data["form"] = self.get_search_form()
-            queryset = self.get_queryset().exclude(status="v")
+            queryset = self.get_queryset()
+            self.exclude_from_queryset(queryset)
         start = self.request.GET.get("start", 0)
         paginate_by = self.request.GET.get("length", 25)
         p = Paginator(queryset, paginate_by)
@@ -357,6 +362,9 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 
 
 class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsList):
+
+    def exclude_from_queryset(self, queryset):
+        return queryset.exclude(status="v")
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
