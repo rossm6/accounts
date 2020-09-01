@@ -7,6 +7,16 @@
     <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
 {% endblock extra_head %}
 
+{% block module_actions %}
+    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#nominalTransactions">
+        Show Nominal Transactions
+    </button>
+{% endblock module_actions %}
+
+{% block nominal_transactions %}
+    {% include 'accountancy/nominal_transactions.html' with nominal_transactions=nominal_transactions %}
+{% endblock nominal_transactions %}
+
 {% block modal_forms %}
     <!-- Modal -->
     <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -34,6 +44,7 @@
 <script>
     {% include 'accountancy/calculator.js' %}
 </script>
+<script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
 <script>
 
     function show_error(errors){

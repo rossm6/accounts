@@ -1,13 +1,15 @@
 from itertools import groupby
 
+from django.conf import settings
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
 
-from accountancy.models import TransactionHeader, TransactionLine, DecimalBaseModel
+from accountancy.models import (DecimalBaseModel, TransactionHeader,
+                                TransactionLine, MultiLedgerTransactions)
+from cashbook.models import CashBookHeader
 from purchases.models import PurchaseHeader
+from sales.models import SaleHeader
 from vat.models import Vat
-
-from django.conf import settings
 
 
 class Nominal(MPTTModel):
@@ -237,11 +239,10 @@ class NominalLine(TransactionLine):
     objects = NominalLineQuerySet.as_manager()
 
 
-all_module_types = PurchaseHeader.type_choices + NominalHeader.analysis_required
-
-
 class NominalTransactionQuerySet(models.QuerySet):
 
+    # DO WE NEED THIS?
+    # I THINK IT SLIPPED IN BY ACCIDENT
     def line_bulk_update(self, instances):
         return self.bulk_update(
             instances,
@@ -256,46 +257,20 @@ class NominalTransactionQuerySet(models.QuerySet):
         )
 
 
-class NominalTransaction(DecimalBaseModel):
-    module = models.CharField(max_length=3)  # e.g. 'PL' for purchase ledger
-    # we don't bother with ForeignKeys to the header and line models
-    # because this would require generic foreign keys which means extra overhead
-    # in the SQL queries
-    # and we only need the header and line number anyway to group within
-    # the nominal transactions table
-    header = models.PositiveIntegerField()
-    # if a line transaction is created e.g. Purchase or Nominal Line, this will just be the primary key of the line record
-    line = models.PositiveIntegerField()
-    # but sometimes there won't be any lines e.g. a payment.  So the line will have to be set manually
-    nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
-    value = models.DecimalField(
-        decimal_places=2,
-        max_digits=10,
-        blank=True,
-        null=True
-    )
-    ref = models.CharField(max_length=100)  # CHECK LENGTH
-    period = models.CharField(max_length=6)
-    date = models.DateField()
-    created = models.DateTimeField(auto_now=True)
-    # User should never see this
-    field_choices = [
-        ('g', 'Goods'),
-        ('v', 'Vat'),
-        ('t', 'Total')
-    ]
-    field = models.CharField(max_length=2, choices=field_choices)
-    # We had uniqueness set on the fields "module", "header" and "line"
-    # but of course an analysis line can map to many different nominal transactions
-    # at a minimum there is the goods and the vat on the analysis line
-    # field is therefore a way of distinguishing the transactions and
-    # guranteeing uniqueness
-    type = models.CharField(max_length=10, choices=all_module_types)
+all_module_types = (
+    PurchaseHeader.analysis_required +
+    NominalHeader.analysis_required +
+    SaleHeader.analysis_required +
+    CashBookHeader.analysis_required
+)
 
+class NominalTransaction(MultiLedgerTransactions):
+    nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
+    type = models.CharField(max_length=10, choices=all_module_types)
     objects = NominalTransactionQuerySet.as_manager()
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['module', 'header', 'line', 'field'], name="unique_batch")
+                fields=['module', 'header', 'line', 'field'], name="nominal_unique_batch")
         ]

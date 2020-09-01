@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.db import models
 
-from accountancy.models import (Contact, InvoiceTransactionMixin,
-                                MatchedHeaders, PaymentTransactionMixin,
+from accountancy.models import (Contact, ControlAccountInvoiceTransactionMixin,
+                                MatchedHeaders, ControlAccountPaymentTransactionMixin,
                                 Transaction, TransactionHeader,
                                 TransactionLine)
 from items.models import Item
@@ -23,7 +23,7 @@ class BroughtForwardInvoice(SalesTransaction):
     pass
 
 
-class Invoice(InvoiceTransactionMixin, SalesTransaction):
+class Invoice(ControlAccountInvoiceTransactionMixin, SalesTransaction):
     pass
 
 
@@ -35,7 +35,7 @@ class CreditNote(Invoice):
     pass
 
 
-class Receipt(PaymentTransactionMixin, SalesTransaction):
+class Receipt(ControlAccountPaymentTransactionMixin, SalesTransaction):
     pass
 
 

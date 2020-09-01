@@ -93,6 +93,7 @@ class ViewTransaction(BaseViewTransaction):
     void_form_action = reverse_lazy("nominals:void")
     void_form = BaseVoidTransactionForm
     template_name = "nominals/view.html"
+    module = 'NL'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

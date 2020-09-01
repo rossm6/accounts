@@ -339,6 +339,110 @@ class NominalTransactionSearchForm(forms.Form):
         return date
 
 
+class CashBookTransactionSearchForm(forms.Form):
+
+    cash_book = forms.CharField(
+        label='Cash Book',
+        max_length=100,
+        required=False
+    )
+    reference = forms.CharField(
+        label='Reference',
+        max_length=100,
+        required=False
+    )
+    total = forms.DecimalField(
+        label='Total',
+        required=False
+    )
+
+    period = forms.CharField(
+        label='Period',
+        max_length=100,
+        required=False
+    )
+    date = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        ),
+        required=False
+    )
+    include_voided = forms.BooleanField(label="Include Voided Transactions")
+    use_adv_search = forms.BooleanField()  # used in BaseTransactionList view
+    # w/o this adv search is not applied
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "GET"
+        self.helper.form_tag = False
+        self.helper.form_show_errors = False
+        self.helper.include_media = False  # I decide where the js goes
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    Div(
+                        AdvSearchField(
+                            'cash_book',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'reference',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-5"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'total',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    css_class="row"
+                ),
+                Div(
+                    Div(
+                        AdvSearchField(
+                            'period',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    Div(
+                        AdvSearchField(
+                            'date',
+                            css_class="w-100 input",
+                        ),
+                        css_class="col-2"
+                    ),
+                    css_class="row"
+                ),
+                AdvSearchField('include_voided'),
+                Field('use_adv_search', type="hidden"),
+            ),
+            HTML(
+                '<div class="d-flex align-items-center justify-content-end my-4">'
+                '<button class="btn button-secondary search-btn">Search</button>'
+                '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
+                '</div>'
+            ),
+        )
+
+    def clean_date(self):
+        date = self.cleaned_data["date"]
+        return date
+
 class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     date = forms.DateField(
@@ -374,6 +478,14 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
             # HAS BEEN CREATED
             self.fields["type"].disabled = True
 
+    def clean(self):
+        cleaned_data = super().clean()
+        type = cleaned_data.get("type")
+        total = cleaned_data.get("total")
+        if type in self._meta.model.negatives:
+            cleaned_data["total"] = -1 * total
+        return cleaned_data
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.due = instance.total - instance.paid
@@ -386,10 +498,6 @@ class SaleAndPurchaseHeaderFormMixin:
     def __init__(self, *args, **kwargs):
         contact_model_name = kwargs.pop("contact_model_name")
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            # VERY IMPORTANT USERS CANNOT CHANGE THE TYPE ONCE A TRANSACTION
-            # HAS BEEN CREATED
-            self.fields["type"].disabled = True
         # it might be tempting to change the url the form is posted to on the client
         # to include the GET parameter but this means adding a further script to
         # the edit view on the clientside because we do not reload the edit view on changing
@@ -410,7 +518,6 @@ class SaleAndPurchaseHeaderFormMixin:
         else:
             payment_brought_forward_form = False
             payment_form = False
-
         self.helper = create_transaction_header_helper(
             {
                 'contact': contact_model_name,
@@ -418,14 +525,6 @@ class SaleAndPurchaseHeaderFormMixin:
             payment_form=payment_form,
             payment_brought_forward_form=payment_brought_forward_form
         )
-
-    def clean(self):
-        cleaned_data = super().clean()
-        type = cleaned_data.get("type")
-        total = cleaned_data.get("total")
-        if type in self._meta.model.negatives:
-            cleaned_data["total"] = -1 * total
-        return cleaned_data
 
 
 class ReadOnlyBaseTransactionHeaderForm(BaseTransactionHeaderForm):
@@ -576,11 +675,11 @@ line_css_classes = {
 }
 
 
-class SaleAndPurchaseLineForm(BaseTransactionLineForm, BaseAjaxForm):
+class BroughtForwardLineForm(BaseTransactionLineForm, BaseAjaxForm):
 
     def __init__(self, *args, **kwargs):
 
-        column_layout_object_css_classes = {
+        self.column_layout_object_css_classes = {
             "Th": {},
             "Td": {}
         }
@@ -589,10 +688,10 @@ class SaleAndPurchaseLineForm(BaseTransactionLineForm, BaseAjaxForm):
             brought_forward = kwargs.get('brought_forward')
             self.brought_forward = brought_forward
             if self.brought_forward:
-                column_layout_object_css_classes["Th"]["nominal"] = "d-none"
-                column_layout_object_css_classes["Th"]["vat_code"] = "d-none"
-                column_layout_object_css_classes["Td"]["nominal"] = "d-none"
-                column_layout_object_css_classes["Td"]["vat_code"] = "d-none"
+                self.column_layout_object_css_classes["Th"]["nominal"] = "d-none"
+                self.column_layout_object_css_classes["Th"]["vat_code"] = "d-none"
+                self.column_layout_object_css_classes["Td"]["nominal"] = "d-none"
+                self.column_layout_object_css_classes["Td"]["vat_code"] = "d-none"
             kwargs.pop("brought_forward")
 
         if 'header' in kwargs:
@@ -610,7 +709,6 @@ class SaleAndPurchaseLineForm(BaseTransactionLineForm, BaseAjaxForm):
                         self.initial[field] = -1 * tmp
 
         if hasattr(self, 'brought_forward') and self.brought_forward:
-            self.fields["item"].required = False
             self.fields["nominal"].required = False
             self.fields["vat_code"].required = False
 
@@ -619,12 +717,41 @@ class SaleAndPurchaseLineForm(BaseTransactionLineForm, BaseAjaxForm):
         # if the type is a brought forward type the line_formset will show
         # but the columns containing the irrelevant fields will be hidden
 
+
+# WHEN WE DELETE THE ITEM FIELD WE'LL HAVE THE SAME LINE FORM
+# FOR SALES, PURCHASES, CASH BOOK
+
+class BaseCashBookLineForm(BroughtForwardLineForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.helpers = TableHelper(
             self._meta.fields,
             order=True,
             delete=True,
             css_classes=line_css_classes,
-            column_layout_object_css_classes=column_layout_object_css_classes,
+            column_layout_object_css_classes=self.column_layout_object_css_classes,
+            field_layout_overrides={
+                'Td': {
+                    'description': PlainFieldErrors,
+                    'nominal': PlainFieldErrors,
+                }
+            }
+        ).render()    
+
+
+class SaleAndPurchaseLineForm(BroughtForwardLineForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if hasattr(self, 'brought_forward') and self.brought_forward:
+            self.fields["item"].required = False
+
+        self.helpers = TableHelper(
+            self._meta.fields,
+            order=True,
+            delete=True,
+            css_classes=line_css_classes,
+            column_layout_object_css_classes=self.column_layout_object_css_classes,
             field_layout_overrides={
                 'Td': {
                     'item': PlainFieldErrors,
@@ -633,6 +760,7 @@ class SaleAndPurchaseLineForm(BaseTransactionLineForm, BaseAjaxForm):
                 }
             }
         ).render()
+
 
 
 class ReadOnlySaleAndPurchaseLineFormMixin:

@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import CashBookHeader, CashBookLine, CashBook, CashBookTransaction
+
+admin.site.register(CashBookHeader)
+admin.site.register(CashBookLine)
+admin.site.register(CashBook)
+admin.site.register(CashBookTransaction)

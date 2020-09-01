@@ -27,7 +27,7 @@ class Transaction:
         return
 
 
-class InvoiceTransactionMixin:
+class ControlAccountInvoiceTransactionMixin:
     def _create_nominal_transactions_for_line(self, line, nom_tran_cls, vat_nominal, control_nominal):
 
         if self.header_obj.is_positive_type():
@@ -199,14 +199,15 @@ class InvoiceTransactionMixin:
             vat_nominal = nom_cls.objects.get(
                 name=settings.DEFAULT_SYSTEM_SUSPENSE)
 
-        try:
-            control_nominal_name = kwargs.get('control_nominal_name')
-            control_nominal = nom_cls.objects.get(
-                name=control_nominal_name)
-        except nom_cls.DoesNotExist:
-            # bult into system so cannot not exist
-            control_nominal = nom_cls.objects.get(
-                name=settings.DEFAULT_SYSTEM_SUSPENSE)
+        if (control_nominal := kwargs.get("control_nominal")) is None:
+            try:
+                control_nominal_name = kwargs.get('control_nominal_name')
+                control_nominal = nom_cls.objects.get(
+                    name=control_nominal_name)
+            except nom_cls.DoesNotExist:
+                # bult into system so cannot not exist
+                control_nominal = nom_cls.objects.get(
+                    name=settings.DEFAULT_SYSTEM_SUSPENSE)
 
         existing_nom_trans = kwargs.get('existing_nom_trans')
         existing_nom_trans = sorted(existing_nom_trans, key=lambda n: n.line)
@@ -255,7 +256,16 @@ class InvoiceTransactionMixin:
             pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
 
 
-class PaymentTransactionMixin:
+class CashBookPaymentTransactionMixin(ControlAccountInvoiceTransactionMixin):
+    def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
+        kwargs["control_nominal"] = self.header_obj.cash_book.nominal
+        return super().create_nominal_transactions(nom_cls, nom_tran_cls, **kwargs)
+
+    def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
+        kwargs["control_nominal"] = self.header_obj.cash_book.nominal
+        return super().edit_nominal_transactions(nom_cls, nom_tran_cls, **kwargs)
+
+class ControlAccountPaymentTransactionMixin:
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         if self.header_obj.total != 0:
 
@@ -531,6 +541,7 @@ class TransactionLine(DecimalBaseModel):
         else:
             return False
 
+
 class MatchedHeaders(models.Model):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
@@ -549,3 +560,46 @@ class MatchedHeaders(models.Model):
 
     class Meta:
         abstract = True
+
+
+
+class MultiLedgerTransactions(DecimalBaseModel):
+    module = models.CharField(max_length=3)  # e.g. 'PL' for purchase ledger
+    # we don't bother with ForeignKeys to the header and line models
+    # because this would require generic foreign keys which means extra overhead
+    # in the SQL queries
+    # and we only need the header and line number anyway to group within
+    # the nominal transactions table
+    header = models.PositiveIntegerField()
+    # if a line transaction is created e.g. Purchase or Nominal Line, this will just be the primary key of the line record
+    line = models.PositiveIntegerField()
+    # but sometimes there won't be any lines e.g. a payment.  So the line will have to be set manually
+    value = models.DecimalField(
+        decimal_places=2,
+        max_digits=10,
+        blank=True,
+        null=True
+    )
+    ref = models.CharField(max_length=100)  # CHECK LENGTH
+    period = models.CharField(max_length=6)
+    date = models.DateField()
+    created = models.DateTimeField(auto_now=True)
+    # User should never see this
+    field_choices = [
+        ('g', 'Goods'),
+        ('v', 'Vat'),
+        ('t', 'Total')
+    ]
+    field = models.CharField(max_length=2, choices=field_choices)
+    # We had uniqueness set on the fields "module", "header" and "line"
+    # but of course an analysis line can map to many different nominal transactions
+    # at a minimum there is the goods and the vat on the analysis line
+    # field is therefore a way of distinguishing the transactions and
+    # guranteeing uniqueness
+
+    class Meta:
+        abstract = True
+        constraints = [
+            models.UniqueConstraint(
+                fields=['module', 'header', 'line', 'field'], name="unique_batch")
+        ]

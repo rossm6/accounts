@@ -59,7 +59,7 @@ def get_trig_vectors_for_different_inputs(fields_and_inputs):
         TrigramSimilarity(field, _input)
         for field, _input in fields_and_inputs
     ]
-    return functools.reduce(lambda a, b: a + b, trig_vectors)   
+    return functools.reduce(lambda a, b: a + b, trig_vectors)
 
 
 def input_dropdown_widget_validate_choice_factory(form):
@@ -198,7 +198,6 @@ class jQueryDataTable(object):
         return ordering
 
 
-
 class SalesAndPurchaseSearchMixin:
     def apply_advanced_search(self, cleaned_data):
         contact = cleaned_data.get("contact")
@@ -215,7 +214,8 @@ class SalesAndPurchaseSearchMixin:
                 queryset.annotate(
                     similarity=(
                         get_trig_vectors_for_different_inputs(
-                            self.get_list_of_search_values_for_model_attributes(cleaned_data)
+                            self.get_list_of_search_values_for_model_attributes(
+                                cleaned_data)
                         )
                     )
                 ).filter(similarity__gt=0.5)
@@ -241,7 +241,6 @@ class SalesAndPurchaseSearchMixin:
         return queryset
 
 
-
 class NominalSearchMixin:
     def apply_advanced_search(self, cleaned_data):
         nominal = cleaned_data.get("nominal")
@@ -256,7 +255,8 @@ class NominalSearchMixin:
                 queryset.annotate(
                     similarity=(
                         get_trig_vectors_for_different_inputs(
-                            self.get_list_of_search_values_for_model_attributes(cleaned_data)
+                            self.get_list_of_search_values_for_model_attributes(
+                                cleaned_data)
                         )
                     )
                 ).filter(similarity__gt=0.5)
@@ -274,7 +274,7 @@ class BaseTransactionsList(jQueryDataTable, ListView):
 
     def get_list_of_search_values_for_model_attributes(self, form_cleaned_data):
         return [
-            ( model_field, form_cleaned_data.get(form_field, "") )
+            (model_field, form_cleaned_data.get(form_field, ""))
             for form_field, model_field in self.form_field_to_searchable_model_field.items()
         ]
 
@@ -375,7 +375,11 @@ class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsLi
 class NominalTransList(NominalSearchMixin, BaseTransactionsList):
     pass
 
+
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
+
+    def get_module(self):
+        return self.module
 
     def get_success_url(self):
         if creation_type := self.request.POST.get('approve'):
@@ -383,7 +387,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 # the relative path including the GET parameters e.g. /purchases/create?t=i
                 return self.request.get_full_path()
         return self.success_url
-
 
     def get_context_data(self, **kwargs):
         # FIX ME - change 'matching_formset" to "match_formset" in the template
@@ -401,7 +404,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                 kwargs["line_form_prefix"] = self.get_line_prefix()
             if 'line_formset' not in kwargs:
                 kwargs["line_formset"] = self.get_line_formset()
-            
+
         if 'matching_form_prefix' not in kwargs:
             kwargs["matching_form_prefix"] = self.get_match_prefix()
         if 'non_field_errors' not in kwargs:
@@ -705,7 +708,8 @@ class BaseCreateTransaction(BaseTransaction):
             "line_cls": self.get_line_model(),
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        transaction_type_object = self.header_obj.get_type_transaction() # e.g. Invoice, CreditNote etc
+        # e.g. Invoice, CreditNote etc
+        transaction_type_object = self.header_obj.get_type_transaction()
         transaction_type_object.create_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -761,6 +765,21 @@ class BaseCreateTransaction(BaseTransaction):
             self.get_match_model().objects.bulk_create(matches)
 
 
+class CreateCashBookTransaction(BaseCreateTransaction):
+
+    def create_or_update_nominal_transactions(self, **kwargs):
+        kwargs.update({
+            "line_cls": self.get_line_model(),
+            "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
+        })
+        transaction_type_object = self.header_obj.get_type_transaction()  # e.g. Payment, Refund
+        transaction_type_object.create_nominal_transactions(
+            self.get_nominal_model(),
+            self.get_nominal_transaction_model(),
+            **kwargs
+        )
+
+
 class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
@@ -769,7 +788,8 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
             "control_nominal_name": self.control_nominal_name,
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        transaction_type_object = self.header_obj.get_type_transaction() # e.g. Invoice, CreditNote etc
+        # e.g. Invoice, CreditNote etc
+        transaction_type_object = self.header_obj.get_type_transaction()
         transaction_type_object.create_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -834,7 +854,8 @@ class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
             "line_cls": self.get_line_model(),
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        transaction_type_object = self.header_obj.get_type_transaction() # e.g. Invoice, CreditNote etc
+        # e.g. Invoice, CreditNote etc
+        transaction_type_object = self.header_obj.get_type_transaction()
         transaction_type_object.edit_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -917,7 +938,8 @@ class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
             ['due', 'paid']
         )
 
-class NominalTransactionsMixin(object):
+
+class NominalTransactionsMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -926,11 +948,28 @@ class NominalTransactionsMixin(object):
                 .objects
                 .select_related("nominal__name")
                 .filter(header=self.header_to_edit.pk)
+                .filter(module=self.get_module())
                 .values("nominal__name")
                 .annotate(total=Sum("value"))
         )
         context["nominal_transactions"] = nom_trans
         return context
+
+
+
+class EditCashBookTransaction(NominalTransactionsMixin, BaseEditTransaction):
+    def create_or_update_nominal_transactions(self, **kwargs):
+        kwargs.update({
+            "line_cls": self.get_line_model(),
+            "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
+        })
+        # e.g. Invoice, CreditNote etc
+        transaction_type_object = self.header_obj.get_type_transaction()
+        transaction_type_object.edit_nominal_transactions(
+            self.get_nominal_model(),
+            self.get_nominal_transaction_model(),
+            **kwargs
+        )
 
 
 class EditPurchaseOrSalesTransaction(NominalTransactionsMixin, BaseEditTransaction):
@@ -941,7 +980,8 @@ class EditPurchaseOrSalesTransaction(NominalTransactionsMixin, BaseEditTransacti
             "control_nominal_name": self.control_nominal_name,
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        transaction_type_object = self.header_obj.get_type_transaction() # e.g. Invoice, CreditNote etc
+        # e.g. Invoice, CreditNote etc
+        transaction_type_object = self.header_obj.get_type_transaction()
         transaction_type_object.edit_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -960,9 +1000,9 @@ class BaseViewTransaction(IndividualTransactionMixin, BaseTransaction):
         context["edit"] = False
         context["view"] = self.header_to_edit.pk
         context["void_form"] = self.void_form(
-            self.get_header_model(), 
+            self.get_header_model(),
             self.get_void_form_action(),
-            prefix="void", 
+            prefix="void",
             initial={"id": self.header_to_edit.pk}
         )
         return context
@@ -989,11 +1029,8 @@ def create_on_the_fly(**forms):
     """
 
     def view(request):
-        print(request.POST)
         if request.is_ajax() and request.method == "POST":
             form_name = request.POST.get("form")
-            print(form_name)
-            print(forms)
             if form_name in forms:
                 prefix = forms[form_name].get("prefix")
                 form = forms[form_name]["form"](
@@ -1105,7 +1142,8 @@ class BaseVoidTransaction(View):
     def form_is_invalid(self):
         self.success = False
         non_field_errors = self.form.non_field_errors()
-        self.error_message = render_to_string("messages.html", {"messages": [ non_field_errors[0] ]})
+        self.error_message = render_to_string(
+            "messages.html", {"messages": [non_field_errors[0]]})
 
     def get_header_model(self):
         return self.header_model
@@ -1226,10 +1264,10 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
                 .exclude(
                     due__exact=0)
                 .order_by(*self.order_by())
-                )
+            )
             if edit := self.request.GET.get("edit"):
                 matches = (self.get_matching_model().objects
-                .filter(
+                           .filter(
                     Q(matched_to=edit) | Q(matched_by=edit)
                 ))
                 matches = [(match.matched_by_id, match.matched_to_id)

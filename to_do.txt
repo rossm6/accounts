@@ -1,5 +1,8 @@
 Objectives -
 
+    QUESTION - When we have an instance in our model form does Django JOIN the related tables or not
+    by default?
+
     Good resource - https://hakibenita.com/django-group-by-sql#how-to-group-by-multiple-fields
 
     NEED TO RE-PRIORITSE MY WORK LOAD BELOW IN ORDER OF PRIORITY.

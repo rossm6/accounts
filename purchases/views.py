@@ -146,6 +146,7 @@ class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
     void_form = BaseVoidTransactionForm
     template_name = "purchases/view.html"
     nominal_transaction_model = NominalTransaction
+    module = 'PL'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
