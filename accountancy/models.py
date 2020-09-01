@@ -26,6 +26,11 @@ class Transaction:
     def edit_nominal_transactions(self, *args, **kwargs):
         return
 
+    def create_cash_book_transactions(self, *args, **kwargs):
+        return
+
+    def edit_cash_book_transactions(self, *args, **kwargs):
+        return
 
 class ControlAccountInvoiceTransactionMixin:
     def _create_nominal_transactions_for_line(self, line, nom_tran_cls, vat_nominal, control_nominal):
@@ -255,6 +260,23 @@ class ControlAccountInvoiceTransactionMixin:
         nom_tran_cls.objects.filter(
             pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
 
+class CashBookEntry:
+    def create_cash_book_entry(self, cash_book_tran_cls, **kwargs):
+        return cash_book_tran_cls.objects.create(
+            module=self.module,
+            header=self.header_obj.pk,
+            line=1,
+            value=self.header_obj.total,
+            ref=self.header_obj.ref,
+            period=self.header_obj.period,
+            date=self.header_obj.date,
+            field="t",
+            cash_book=self.header_object.cash_book,
+            type=self.header_obj.type
+        )
+
+    def edit_cash_book_entry(self):
+        pass
 
 class CashBookPaymentTransactionMixin(ControlAccountInvoiceTransactionMixin):
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):

@@ -35,8 +35,6 @@ class CashBookHeader(TransactionHeader):
     no_analysis_required = [
         ('cbp', 'Brought Forward Payment'),
         ('cbr', 'Brought Forward Receipt'),
-        ('cp', 'Payment'),
-        ('cr', 'Receipt'),
     ]
     analysis_required = [
         ('cp', 'Payment'),

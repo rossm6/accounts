@@ -378,6 +378,13 @@ class NominalTransList(NominalSearchMixin, BaseTransactionsList):
 
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
+    def get_transaction_type_object(self):
+        if hasattr(self, "transaction_type_object"):
+            return self.tranaction_type_object
+        else:
+            self.tranaction_type_object = self.header_obj.get_type_transaction()
+            return self.tranaction_type_object
+
     def get_module(self):
         return self.module
 
@@ -709,7 +716,7 @@ class BaseCreateTransaction(BaseTransaction):
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         # e.g. Invoice, CreditNote etc
-        transaction_type_object = self.header_obj.get_type_transaction()
+        transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.create_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -766,7 +773,6 @@ class BaseCreateTransaction(BaseTransaction):
 
 
 class CreateCashBookTransaction(BaseCreateTransaction):
-
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
             "line_cls": self.get_line_model(),
@@ -795,7 +801,6 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
             self.get_nominal_transaction_model(),
             **kwargs
         )
-
 
 class IndividualTransactionMixin:
 

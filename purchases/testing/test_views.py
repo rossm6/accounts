@@ -1,8 +1,7 @@
-from decimal import Decimal
-from json import loads
-
 from datetime import datetime, timedelta
+from decimal import Decimal
 from itertools import chain
+from json import loads
 
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -17,6 +16,7 @@ from vat.models import Vat
 
 from ..helpers import (create_credit_note_with_lines,
                        create_credit_note_with_nom_entries,
+                       create_formset_data, create_header,
                        create_invoice_with_lines,
                        create_invoice_with_nom_entries, create_invoices,
                        create_lines, create_payment_with_nom_entries,
@@ -88,34 +88,6 @@ def to_dict(instance):
     for f in opts.many_to_many:
         data[f.name] = [i.id for i in f.value_from_object(instance)]
     return data
-
-def create_header(prefix, form):
-    data = {}
-    for field in form:
-        data[prefix + "-" + field] = form[field]
-    data[prefix + "-" + "period"] = PERIOD
-    return data
-
-def create_formset_data(prefix, forms):
-    data = {}
-    for i, form in enumerate(forms):
-        for field in form:
-            data[
-                prefix + "-" + str(i) + "-" + field
-            ] = form[field]
-    if forms:
-        i = i + 1 # pk keys start
-    else:
-        i = 0
-    management_form = {
-        prefix + "-TOTAL_FORMS": i,
-        prefix + "-INITIAL_FORMS": 0,
-        prefix + "-MIN_NUM_FORMS": 0,
-        prefix + "-MAX_NUM_FORMS": 1000
-    }
-    data.update(management_form)
-    return data
-
 
 def create_cancelling_headers(n, supplier, ref_prefix, type, value):
     """
@@ -244,7 +216,6 @@ class CreateInvoice(TestCase):
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
 
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
