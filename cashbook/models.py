@@ -110,9 +110,9 @@ class CashBookLine(TransactionLine):
     header = models.ForeignKey(CashBookHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey('nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
     vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Vat Code")
-    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="cash_book_good_line")
-    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="cash_book_vat_line")
-    total_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.CASCADE, related_name="cash_book_total_line")
+    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_good_line")
+    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_vat_line")
+    total_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_total_line")
 
     objects = CashBookLineQuerySet.as_manager()
 

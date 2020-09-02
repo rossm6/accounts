@@ -1120,6 +1120,8 @@ class BaseVoidTransaction(View):
         self.success = True
         transaction_to_void = self.form.instance
         transaction_to_void.status = "v"
+        headers_to_update = []
+        headers_to_update.append(transaction_to_void)
         if matching_model := self.get_matching_model():
             matches = (
                 matching_model
@@ -1132,8 +1134,6 @@ class BaseVoidTransaction(View):
                 .select_related("matched_to")
                 .select_related("matched_by")
             )
-            headers_to_update = []
-            headers_to_update.append(transaction_to_void)
             for match in matches:
                 if match.matched_by == transaction_to_void:
                     # value is the amount of the matched_to transaction that was matched
@@ -1153,14 +1153,15 @@ class BaseVoidTransaction(View):
                     match.matched_by.paid += match.value
                     match.matched_by.due -= match.value
                     headers_to_update.append(match.matched_by)
-            self.get_header_model().objects.bulk_update(
-                headers_to_update,
-                ["paid", "due", "status"]
-            )
             matching_model.objects.filter(
                 pk__in=[match.pk for match in matches]
             ).delete()
 
+        self.get_header_model().objects.bulk_update(
+            headers_to_update,
+            ["paid", "due", "status"]
+        )
+        # DO WE REALLY THIS?  MORE ELEGANT TO JUST DO WITHOUT
         if transaction_to_void.will_have_nominal_transactions():
             nom_trans = (
                 self.get_nominal_transaction_model()
@@ -1213,6 +1214,21 @@ class BaseVoidTransaction(View):
                     "error_message": self.error_message
                 }
             )
+
+
+class DeleteCashBookTransMixin:
+
+    def get_cash_book_transaction_model(self):
+        return self.cash_book_transaction_model
+
+    def form_is_valid(self):
+        super().form_is_valid()
+        transaction_to_void = self.form.instance
+        cash_book_trans = (self.get_cash_book_transaction_model()
+        .objects
+        .filter(module=self.get_transaction_module())
+        .filter(header=transaction_to_void.pk)
+        ).delete()
 
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):

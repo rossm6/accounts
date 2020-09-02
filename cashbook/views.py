@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Sum
 from django.urls import reverse_lazy
 
@@ -8,7 +9,7 @@ from accountancy.views import (BaseVoidTransaction, CreateCashBookTransaction,
                                ViewTransactionOnLedgerOtherThanNominal,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory)
+                               input_dropdown_widget_validate_choice_factory, DeleteCashBookTransMixin)
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import QuickVatForm
@@ -110,14 +111,14 @@ class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
         return context
 
 
-class VoidTransaction(BaseVoidTransaction):
+class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = CashBookHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
     form = BaseVoidTransactionForm
     success_url = reverse_lazy("cashbook:transaction_enquiry")
     module = 'CB'
-
+    cash_book_transaction_model = CashBookTransaction
 
 load_options = input_dropdown_widget_load_options_factory(
     CashBookLineForm(), 25)

@@ -35,6 +35,8 @@ Objectives -
 
     Nominal
 
+        Have i tested voiding nominal transactions and the status is changed to "v" on the header?
+
         If many lines are analysed to the same to the same nominal it makes sense to group.
         But if the transactions total zero it is misleading.  I realised this when i thought
         a nominal journal with vat analysed was not updating the vat control account correctly

@@ -5,6 +5,7 @@ from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
 from accountancy.views import (BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
+                               DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
                                LoadMatchingTransactions,
                                SalesAndPurchasesTransList,
@@ -12,6 +13,7 @@ from accountancy.views import (BaseVoidTransaction,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
+from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import QuickVatForm
@@ -24,17 +26,20 @@ from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
 
+
 class CustomerMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["loading_matching_transactions_url"] = reverse_lazy("sales:load_matching_transactions")
+        context["loading_matching_transactions_url"] = reverse_lazy(
+            "sales:load_matching_transactions")
         return context
-    
+
     def get_header_form_kwargs(self):
         kwargs = super().get_header_form_kwargs()
         kwargs["contact_model_name"] = "customer"
         return kwargs
+
 
 class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
     header = {
@@ -138,11 +143,11 @@ class ViewTransaction(CustomerMixin, ViewTransactionOnLedgerOtherThanNominal):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["edit_view_name"] = "sales:edit" 
+        context["edit_view_name"] = "sales:edit"
         return context
 
 
-class VoidTransaction(BaseVoidTransaction):
+class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = SaleHeader
     matching_model = SaleMatching
     nominal_transaction_model = NominalTransaction
@@ -150,6 +155,7 @@ class VoidTransaction(BaseVoidTransaction):
     form = BaseVoidTransactionForm
     success_url = reverse_lazy("sales:transaction_enquiry")
     module = 'SL'
+    cash_book_transaction_model = CashBookTransaction
 
 
 class LoadSaleMatchingTransactions(LoadMatchingTransactions):
