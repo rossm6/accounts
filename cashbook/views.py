@@ -1,10 +1,10 @@
-from django.urls import reverse_lazy
 from django.db.models import Sum
-from accountancy.forms import BaseVoidTransactionForm, CashBookTransactionSearchForm
-from accountancy.views import (BaseVoidTransaction,
-                               CreateCashBookTransaction,
-                               EditCashBookTransaction,
-                               NominalTransList,
+from django.urls import reverse_lazy
+
+from accountancy.forms import (BaseVoidTransactionForm,
+                               CashBookTransactionSearchForm)
+from accountancy.views import (BaseVoidTransaction, CreateCashBookTransaction,
+                               EditCashBookTransaction, NominalTransList,
                                ViewTransactionOnLedgerOtherThanNominal,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
@@ -44,6 +44,7 @@ class CreateTransaction(CreateCashBookTransaction):
     success_url = reverse_lazy("cashbook:transaction_enquiry")
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
+    cash_book_transaction_model = CashBookTransaction
     module = "CB"
 
     # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
@@ -77,6 +78,7 @@ class EditTransaction(EditCashBookTransaction):
     success_url = reverse_lazy("cashbook:transaction_enquiry")
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
+    cash_book_transaction_model = CashBookTransaction
     module = "CB"
 
 

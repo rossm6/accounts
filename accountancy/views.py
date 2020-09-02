@@ -378,12 +378,15 @@ class NominalTransList(NominalSearchMixin, BaseTransactionsList):
 
 class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
+    def create_or_update_related_transactions(self, **kwargs):
+        self.create_or_update_nominal_transactions(**kwargs)
+
     def get_transaction_type_object(self):
         if hasattr(self, "transaction_type_object"):
             return self.tranaction_type_object
         else:
-            self.tranaction_type_object = self.header_obj.get_type_transaction()
-            return self.tranaction_type_object
+            self.transaction_type_object = self.header_obj.get_type_transaction()
+            return self.transaction_type_object
 
     def get_module(self):
         return self.module
@@ -670,7 +673,7 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
                     self.header_obj.save()
                     self.header_has_been_saved = True
                     # FIX ME - implement get_module and get_account_name methods
-                    self.create_or_update_nominal_transactions()
+                    self.create_or_update_related_transactions()
                     self.matching_is_valid()
                     messages.success(
                         request,
@@ -703,7 +706,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             return self.invalid_forms()
 
         return HttpResponseRedirect(self.get_success_url())
-
 
 class BaseCreateTransaction(BaseTransaction):
 
@@ -752,7 +754,7 @@ class BaseCreateTransaction(BaseTransaction):
                 line_no = line_no + 1
         if lines:
             lines = self.get_line_model().objects.bulk_create(lines)
-            self.create_or_update_nominal_transactions(lines=lines)
+            self.create_or_update_related_transactions(lines=lines)
 
     def matching_is_valid(self):
         # Q - This flag may be obsolete now
@@ -772,19 +774,35 @@ class BaseCreateTransaction(BaseTransaction):
             self.get_match_model().objects.bulk_create(matches)
 
 
-class CreateCashBookTransaction(BaseCreateTransaction):
+class CreateCashBookEntriesMixin:
+
+    def get_cash_book_transaction_model(self):
+        return self.cash_book_transaction_model
+
+    def create_or_update_cash_book_transactions(self, **kwargs):
+        self.transaction_type_object.create_cash_book_entry(
+            self.get_cash_book_transaction_model(),
+            **kwargs
+        )
+
+    def create_or_update_related_transactions(self, **kwargs):
+        super().create_or_update_related_transactions(**kwargs)
+        self.create_or_update_cash_book_transactions(**kwargs)
+
+
+class CreateCashBookTransaction(CreateCashBookEntriesMixin, BaseCreateTransaction):
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
             "line_cls": self.get_line_model(),
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        transaction_type_object = self.header_obj.get_type_transaction()  # e.g. Payment, Refund
+        transaction_type_object = self.get_transaction_type_object()
+        # e.g. Payment, Refund
         transaction_type_object.create_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
             **kwargs
         )
-
 
 class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
 
@@ -795,7 +813,7 @@ class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         # e.g. Invoice, CreditNote etc
-        transaction_type_object = self.header_obj.get_type_transaction()
+        transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.create_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -860,7 +878,7 @@ class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         # e.g. Invoice, CreditNote etc
-        transaction_type_object = self.header_obj.get_type_transaction()
+        transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.edit_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -910,7 +928,7 @@ class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
         if self.requires_analysis(self.header_form):
             existing_nom_trans = self.get_nominal_transaction_model(
             ).objects.filter(header=self.header_obj.pk)
-            self.create_or_update_nominal_transactions(
+            self.create_or_update_related_transactions(
                 new_lines=new_lines,
                 updated_lines=lines_to_update,
                 deleted_lines=self.line_formset.deleted_objects,
@@ -961,15 +979,22 @@ class NominalTransactionsMixin:
         return context
 
 
+class EditCashBookEntriesMixin(CreateCashBookEntriesMixin):
 
-class EditCashBookTransaction(NominalTransactionsMixin, BaseEditTransaction):
+    def create_or_update_cash_book_transactions(self, **kwargs):
+        self.transaction_type_object.edit_cash_book_entry(
+            self.get_cash_book_transaction_model(),
+            **kwargs
+        )
+
+class EditCashBookTransaction(EditCashBookEntriesMixin, NominalTransactionsMixin, BaseEditTransaction):
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
             "line_cls": self.get_line_model(),
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         # e.g. Invoice, CreditNote etc
-        transaction_type_object = self.header_obj.get_type_transaction()
+        transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.edit_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),
@@ -986,7 +1011,7 @@ class EditPurchaseOrSalesTransaction(NominalTransactionsMixin, BaseEditTransacti
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
         # e.g. Invoice, CreditNote etc
-        transaction_type_object = self.header_obj.get_type_transaction()
+        transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.edit_nominal_transactions(
             self.get_nominal_model(),
             self.get_nominal_transaction_model(),

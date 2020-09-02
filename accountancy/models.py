@@ -32,6 +32,7 @@ class Transaction:
     def edit_cash_book_transactions(self, *args, **kwargs):
         return
 
+
 class ControlAccountInvoiceTransactionMixin:
     def _create_nominal_transactions_for_line(self, line, nom_tran_cls, vat_nominal, control_nominal):
 
@@ -54,7 +55,7 @@ class ControlAccountInvoiceTransactionMixin:
                     header=self.header_obj.pk,
                     line=line.pk,
                     nominal=line.nominal,
-                    value= f * line.goods,
+                    value=f * line.goods,
                     ref=self.header_obj.ref,
                     period=self.header_obj.period,
                     date=self.header_obj.date,
@@ -69,7 +70,7 @@ class ControlAccountInvoiceTransactionMixin:
                     header=self.header_obj.pk,
                     line=line.pk,
                     nominal=vat_nominal,
-                    value= f * line.vat,
+                    value=f * line.vat,
                     ref=self.header_obj.ref,
                     period=self.header_obj.period,
                     date=self.header_obj.date,
@@ -84,7 +85,7 @@ class ControlAccountInvoiceTransactionMixin:
                     header=self.header_obj.pk,
                     line=line.pk,
                     nominal=control_nominal,
-                    value=-1 * f * ( line.goods + line.vat),
+                    value=-1 * f * (line.goods + line.vat),
                     ref=self.header_obj.ref,
                     period=self.header_obj.period,
                     date=self.header_obj.date,
@@ -260,7 +261,8 @@ class ControlAccountInvoiceTransactionMixin:
         nom_tran_cls.objects.filter(
             pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
 
-class CashBookEntry:
+
+class CashBookEntryMixin:
     def create_cash_book_entry(self, cash_book_tran_cls, **kwargs):
         return cash_book_tran_cls.objects.create(
             module=self.module,
@@ -271,14 +273,28 @@ class CashBookEntry:
             period=self.header_obj.period,
             date=self.header_obj.date,
             field="t",
-            cash_book=self.header_object.cash_book,
+            cash_book=self.header_obj.cash_book,
             type=self.header_obj.type
         )
 
-    def edit_cash_book_entry(self):
-        pass
+    def edit_cash_book_entry(self, cash_book_tran_cls, **kwargs):
+        try:
+            cash_book_tran = cash_book_tran_cls.objects.get(
+                module=self.module, 
+                header=self.header_obj.pk,
+                line=1
+            )
+            cash_book_tran.value = self.header_obj.total
+            cash_book_tran.ref = self.header_obj.ref
+            cash_book_tran.period = self.header_obj.period
+            cash_book_tran.date = self.header_obj.date
+            cash_book_tran.cash_book = self.header_obj.cash_book
+            cash_book_tran.save()
+        except cash_book_tran_cls.DoesNotExist:
+            pass
+            # log
 
-class CashBookPaymentTransactionMixin(ControlAccountInvoiceTransactionMixin):
+class CashBookPaymentTransactionMixin(CashBookEntryMixin, ControlAccountInvoiceTransactionMixin):
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         kwargs["control_nominal"] = self.header_obj.cash_book.nominal
         return super().create_nominal_transactions(nom_cls, nom_tran_cls, **kwargs)
@@ -286,6 +302,7 @@ class CashBookPaymentTransactionMixin(ControlAccountInvoiceTransactionMixin):
     def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         kwargs["control_nominal"] = self.header_obj.cash_book.nominal
         return super().edit_nominal_transactions(nom_cls, nom_tran_cls, **kwargs)
+
 
 class ControlAccountPaymentTransactionMixin:
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
@@ -407,7 +424,6 @@ class DecimalBaseModel(models.Model):
                     setattr(self, field_name, Decimal(0.00))
 
 
-
 class TransactionHeader(DecimalBaseModel):
     """
 
@@ -492,7 +508,7 @@ class TransactionHeader(DecimalBaseModel):
             return True
 
     def will_have_nominal_transactions(self):
-        return self.type in [ t[0] for t in self.analysis_required]
+        return self.type in [t[0] for t in self.analysis_required]
 
     @classmethod
     def get_types_requiring_analysis(cls):
@@ -556,7 +572,6 @@ class TransactionLine(DecimalBaseModel):
         if "t" in nominal_trans:
             self.total_nominal_transaction = nominal_trans["t"]
 
-
     def is_non_zero(self):
         if self.goods or self.vat:
             return True
@@ -582,7 +597,6 @@ class MatchedHeaders(models.Model):
 
     class Meta:
         abstract = True
-
 
 
 class MultiLedgerTransactions(DecimalBaseModel):

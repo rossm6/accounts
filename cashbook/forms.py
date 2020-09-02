@@ -12,6 +12,7 @@ from accountancy.layouts import (PlainFieldErrors, TableHelper,
                                  create_cashbook_header_helper)
 from accountancy.widgets import InputDropDown
 from nominals.models import Nominal
+from django.utils.translation import ugettext_lazy as _
 
 from .models import CashBookHeader, CashBookLine
 
@@ -113,10 +114,25 @@ class ReadOnlyCashBookLineForm(CashBookLineForm):
         ).render()
 
 
+
+class CashBookLineFormset(SaleAndPurchaseLineFormset):
+    def clean(self):
+        super().clean()
+        if(any(self.errors) or not hasattr(self, 'header')):
+            return
+        if self.header.total == 0:
+            raise forms.ValidationError(
+                _(
+                    "Cash book transactions cannot be for a zero value."
+                ),
+                code="zero-cash-book-transaction"
+            )
+
+
 enter_lines = forms.modelformset_factory(
     CashBookLine,
     form=CashBookLineForm,
-    formset=SaleAndPurchaseLineFormset,
+    formset=CashBookLineFormset,
     extra=5,
     can_order=True,
     can_delete=True
@@ -127,7 +143,7 @@ enter_lines.include_empty_form = True
 read_only_lines = forms.modelformset_factory(
     CashBookLine,
     form=ReadOnlyCashBookLineForm,
-    formset=SaleAndPurchaseLineFormset,
+    formset=CashBookLineFormset,
     extra=0,
     can_order=True,
     can_delete=True  # both these keep the django crispy form template happy
