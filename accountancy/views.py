@@ -804,7 +804,7 @@ class CreateCashBookTransaction(CreateCashBookEntriesMixin, BaseCreateTransactio
             **kwargs
         )
 
-class CreatePurchaseOrSalesTransaction(BaseCreateTransaction):
+class CreatePurchaseOrSalesTransaction(CreateCashBookEntriesMixin, BaseCreateTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -1002,7 +1002,7 @@ class EditCashBookTransaction(EditCashBookEntriesMixin, NominalTransactionsMixin
         )
 
 
-class EditPurchaseOrSalesTransaction(NominalTransactionsMixin, BaseEditTransaction):
+class EditPurchaseOrSalesTransaction(EditCashBookEntriesMixin, NominalTransactionsMixin, BaseEditTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({

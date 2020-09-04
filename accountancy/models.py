@@ -26,10 +26,10 @@ class Transaction:
     def edit_nominal_transactions(self, *args, **kwargs):
         return
 
-    def create_cash_book_transactions(self, *args, **kwargs):
+    def create_cash_book_entry(self, *args, **kwargs):
         return
 
-    def edit_cash_book_transactions(self, *args, **kwargs):
+    def edit_cash_book_entry(self, *args, **kwargs):
         return
 
 
@@ -264,18 +264,19 @@ class ControlAccountInvoiceTransactionMixin:
 
 class CashBookEntryMixin:
     def create_cash_book_entry(self, cash_book_tran_cls, **kwargs):
-        return cash_book_tran_cls.objects.create(
-            module=self.module,
-            header=self.header_obj.pk,
-            line=1,
-            value=self.header_obj.total,
-            ref=self.header_obj.ref,
-            period=self.header_obj.period,
-            date=self.header_obj.date,
-            field="t",
-            cash_book=self.header_obj.cash_book,
-            type=self.header_obj.type
-        )
+        if self.header_obj.total != 0:
+            return cash_book_tran_cls.objects.create(
+                module=self.module,
+                header=self.header_obj.pk,
+                line=1,
+                value=self.header_obj.total,
+                ref=self.header_obj.ref,
+                period=self.header_obj.period,
+                date=self.header_obj.date,
+                field="t",
+                cash_book=self.header_obj.cash_book,
+                type=self.header_obj.type
+            )
 
     def edit_cash_book_entry(self, cash_book_tran_cls, **kwargs):
         try:
@@ -284,15 +285,18 @@ class CashBookEntryMixin:
                 header=self.header_obj.pk,
                 line=1
             )
-            cash_book_tran.value = self.header_obj.total
-            cash_book_tran.ref = self.header_obj.ref
-            cash_book_tran.period = self.header_obj.period
-            cash_book_tran.date = self.header_obj.date
-            cash_book_tran.cash_book = self.header_obj.cash_book
-            cash_book_tran.save()
+            if self.header_obj.total != 0:
+                cash_book_tran.value = self.header_obj.total
+                cash_book_tran.ref = self.header_obj.ref
+                cash_book_tran.period = self.header_obj.period
+                cash_book_tran.date = self.header_obj.date
+                cash_book_tran.cash_book = self.header_obj.cash_book
+                cash_book_tran.save()
+            else:
+                cash_book_tran.delete()
         except cash_book_tran_cls.DoesNotExist:
-            pass
-            # log
+            if self.header_obj.total != 0:
+                self.create_cash_book_entry(cash_book_tran_cls, **kwargs)
 
 class CashBookPaymentTransactionMixin(CashBookEntryMixin, ControlAccountInvoiceTransactionMixin):
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):

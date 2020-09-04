@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from cashbook.models import CashBookTransaction
 from nominals.models import NominalTransaction
 from utils.helpers import sort_multiple
 
@@ -225,6 +226,18 @@ def create_payment_with_nom_entries(header, control_nominal, bank_nominal):
             )
         )
         nom_trans = NominalTransaction.objects.bulk_create(nom_trans)
+        CashBookTransaction.objects.create(
+            module="PL",
+            header=header.pk,
+            line=1,
+            cash_book=header.cash_book,
+            value=header.total,
+            ref=header.ref,
+            period=header.period,
+            date=header.date,
+            field="t",
+            type=header.type
+        )
         return header
 
 

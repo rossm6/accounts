@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from accountancy.models import (ControlAccountPaymentTransactionMixin, Contact, MatchedHeaders, TransactionHeader,
-                                TransactionLine, Transaction, ControlAccountInvoiceTransactionMixin)
+                                TransactionLine, Transaction, ControlAccountInvoiceTransactionMixin, CashBookEntryMixin)
 from items.models import Item
 from vat.models import Vat
 
@@ -29,7 +29,7 @@ class BroughtForwardCreditNote(PurchaseTransaction):
 class CreditNote(Invoice):
     pass
 
-class Payment(ControlAccountPaymentTransactionMixin, PurchaseTransaction):
+class Payment(CashBookEntryMixin, ControlAccountPaymentTransactionMixin, PurchaseTransaction):
     pass
 
 class BroughtForwardPayment(PurchaseTransaction):

@@ -4,7 +4,7 @@ from django.db import models
 from accountancy.models import (Contact, ControlAccountInvoiceTransactionMixin,
                                 MatchedHeaders, ControlAccountPaymentTransactionMixin,
                                 Transaction, TransactionHeader,
-                                TransactionLine)
+                                TransactionLine, CashBookEntryMixin)
 from items.models import Item
 from vat.models import Vat
 
@@ -35,7 +35,7 @@ class CreditNote(Invoice):
     pass
 
 
-class Receipt(ControlAccountPaymentTransactionMixin, SalesTransaction):
+class Receipt(CashBookEntryMixin, ControlAccountPaymentTransactionMixin, SalesTransaction):
     pass
 
 

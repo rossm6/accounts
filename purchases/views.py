@@ -85,6 +85,7 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
     nominal_transaction_model = NominalTransaction
     module = "PL"
     control_nominal_name = "Purchase Ledger Control"
+    cash_book_transaction_model = CashBookTransaction
 
     # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
     def get_header_form_type(self):
@@ -123,7 +124,7 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     nominal_transaction_model = NominalTransaction
     module = "PL"
     control_nominal_name = "Purchase Ledger Control"
-
+    cash_book_transaction_model = CashBookTransaction
 
 class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
     header = {

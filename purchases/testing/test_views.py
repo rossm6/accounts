@@ -8,7 +8,7 @@ from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
 from accountancy.testing.helpers import *
-from cashbook.models import CashBook
+from cashbook.models import CashBook, CashBookTransaction
 from items.models import Item
 from nominals.models import Nominal, NominalTransaction
 from utils.helpers import sort_multiple
@@ -24286,6 +24286,41 @@ class CreatePaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
 
     # CORRECT USAGE
     def test_zero_payment(self):
@@ -24384,6 +24419,11 @@ class CreatePaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_negative_payment(self):
@@ -24533,6 +24573,43 @@ class CreatePaymentNominalEntries(TestCase):
             0
         )    
 
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
+
     """
 
     Test matching for positive payments
@@ -24708,6 +24785,44 @@ class CreatePaymentNominalEntries(TestCase):
             120
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        header = payment
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
+
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
         data = {}
@@ -24865,6 +24980,45 @@ class CreatePaymentNominalEntries(TestCase):
             0        
         )
 
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        header = payment
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
+
     # INCORRECT USAGE
     def test_match_value_too_high(self):
         data = {}
@@ -24937,6 +25091,11 @@ class CreatePaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_low(self):
@@ -25009,6 +25168,11 @@ class CreatePaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
@@ -25200,6 +25364,42 @@ class CreatePaymentNominalEntries(TestCase):
             60
         )
 
+        header = payment
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     """
     Test matching for negative payments
@@ -25374,6 +25574,44 @@ class CreatePaymentNominalEntries(TestCase):
             -120
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        header = payment
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
+
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
         data = {}
@@ -25531,6 +25769,44 @@ class CreatePaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        header = payment
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
+
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
         data = {}
@@ -25603,6 +25879,13 @@ class CreatePaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
+
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
         data = {}
@@ -25672,6 +25955,12 @@ class CreatePaymentNominalEntries(TestCase):
         self.assertEqual(
             len(matches),
             0        
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
     # CORRECT USAGE
@@ -25864,6 +26153,43 @@ class CreatePaymentNominalEntries(TestCase):
             -60
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        header = payment
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
 
 class CreateBroughtForwardPaymentNominalEntries(TestCase):
 
@@ -25967,6 +26293,12 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_zero_payment(self):
 
@@ -26063,6 +26395,12 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_negative_payment(self):
         data = {}
@@ -26126,6 +26464,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     """
 
@@ -26240,6 +26583,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             120
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
@@ -26337,6 +26685,12 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # INCORRECT USAGE
     def test_match_value_too_high(self):
         data = {}
@@ -26405,6 +26759,12 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         self.assertEqual(
             len(matches),
             0        
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
     # INCORRECT USAGE
@@ -26476,6 +26836,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
@@ -26584,6 +26949,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             60
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     """
     Test matching for negative payments
@@ -26697,6 +27067,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             -120
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
@@ -26772,6 +27147,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
@@ -26843,6 +27223,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
@@ -26913,6 +27298,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match_NEGATIVE(self):
@@ -27021,6 +27411,11 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
             -60
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
 class CreateRefundNominalEntries(TestCase):
 
@@ -27204,6 +27599,40 @@ class CreateRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     # CORRECT USAGE
     def test_zero_payment(self):
@@ -27302,6 +27731,11 @@ class CreateRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_negative_payment(self):
@@ -27450,6 +27884,40 @@ class CreateRefundNominalEntries(TestCase):
             0
         )   
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     """
 
@@ -27625,6 +28093,42 @@ class CreateRefundNominalEntries(TestCase):
             -120
         )
 
+        header = payment
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
@@ -27783,6 +28287,44 @@ class CreateRefundNominalEntries(TestCase):
             0        
         )
 
+
+        header = payment
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
     # INCORRECT USAGE
     def test_match_value_too_high(self):
         data = {}
@@ -27854,6 +28396,11 @@ class CreateRefundNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_low(self):
@@ -27925,6 +28472,11 @@ class CreateRefundNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
@@ -28116,6 +28668,43 @@ class CreateRefundNominalEntries(TestCase):
         )
 
 
+        header = payment
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
     """
     Test matching for negative payments
     """
@@ -28288,6 +28877,42 @@ class CreateRefundNominalEntries(TestCase):
             120
         )
 
+        header = payment
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
@@ -28445,6 +29070,42 @@ class CreateRefundNominalEntries(TestCase):
             0        
         )
 
+        header = payment
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
@@ -28517,6 +29178,11 @@ class CreateRefundNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
@@ -28586,6 +29252,12 @@ class CreateRefundNominalEntries(TestCase):
         self.assertEqual(
             len(matches),
             0        
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
     # CORRECT USAGE
@@ -28777,6 +29449,43 @@ class CreateRefundNominalEntries(TestCase):
             60
         )
 
+        header = payment
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
 
 class CreateBroughtForwardRefundNominalEntries(TestCase):
 
@@ -28880,6 +29589,11 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_payment(self):
@@ -28977,6 +29691,12 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_negative_payment(self):
         data = {}
@@ -29037,6 +29757,12 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
             len(nom_trans),
+            0
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
             0
         )
 
@@ -29153,6 +29879,11 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             -120
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
@@ -29250,6 +29981,12 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # INCORRECT USAGE
     def test_match_value_too_high(self):
         data = {}
@@ -29318,6 +30055,12 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         self.assertEqual(
             len(matches),
             0        
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
     # INCORRECT USAGE
@@ -29389,6 +30132,11 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
@@ -29497,6 +30245,11 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             -60
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     """
     Test matching for negative payments
@@ -29610,6 +30363,11 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             120
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
@@ -29685,6 +30443,11 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
@@ -29756,6 +30519,12 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             0        
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
@@ -29824,6 +30593,12 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         self.assertEqual(
             len(matches),
             0        
+        )
+    
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
     # CORRECT USAGE
@@ -29931,6 +30706,12 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         self.assertEqual(
             matches[0].value,
             60
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
 class EditInvoiceNominalEntries(TestCase):
@@ -41017,6 +41798,41 @@ class EditPaymentNominalEntries(TestCase):
             't'
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -41165,6 +41981,41 @@ class EditPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -100
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
 
@@ -41304,6 +42155,41 @@ class EditPaymentNominalEntries(TestCase):
             't'
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -41383,6 +42269,12 @@ class EditPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
 
@@ -41446,6 +42338,12 @@ class EditPaymentNominalEntries(TestCase):
             0
             # 1 is the bank nominal
             # 1 is the control account
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
         data = {}
@@ -41596,6 +42494,40 @@ class EditPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
@@ -41779,6 +42711,12 @@ class EditPaymentNominalEntries(TestCase):
         self.assertEqual(
             response.status_code,
             200
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
     # INCORRECT USAGE
@@ -41965,6 +42903,11 @@ class EditPaymentNominalEntries(TestCase):
             200
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
 class EditBroughtForwardPaymentNominalEntries(TestCase):
 
@@ -42124,6 +43067,12 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
 
@@ -42256,6 +43205,12 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
 
@@ -42381,6 +43336,11 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
@@ -42560,6 +43520,12 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         self.assertEqual(
             response.status_code,
             200
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
     # INCORRECT USAGE
@@ -42742,6 +43708,11 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
             200
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
 
 class EditRefundNominalEntries(TestCase):
 
@@ -42919,6 +43890,41 @@ class EditRefundNominalEntries(TestCase):
             't'
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -43067,6 +44073,41 @@ class EditRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            100
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
 
@@ -43206,6 +44247,41 @@ class EditRefundNominalEntries(TestCase):
             't'
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -43285,6 +44361,12 @@ class EditRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
 
@@ -43348,6 +44430,12 @@ class EditRefundNominalEntries(TestCase):
             0
             # 1 is the bank nominal
             # 1 is the control account
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
         )
 
         data = {}
@@ -43498,6 +44586,40 @@ class EditRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'PL'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
@@ -44017,6 +45139,12 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
 
@@ -44147,6 +45275,12 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
 
@@ -44267,6 +45401,12 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
             len(nom_trans),
+            0
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
             0
         )
 
