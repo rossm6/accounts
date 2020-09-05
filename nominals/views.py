@@ -1,12 +1,17 @@
 from django.conf import settings
 from django.db.models import Sum
+from django.http import HttpResponse, JsonResponse
 from django.urls import reverse_lazy
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
+from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
 
-from accountancy.forms import (NominalTransactionSearchForm,
-                               BaseVoidTransactionForm)
+from accountancy.forms import (BaseVoidTransactionForm,
+                               NominalTransactionSearchForm)
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
-                               NominalTransList, BaseViewTransaction,
-                               BaseVoidTransaction, create_on_the_fly,
+                               BaseViewTransaction, BaseVoidTransaction,
+                               NominalTransList, create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
 from vat.forms import QuickVatForm
@@ -16,6 +21,7 @@ from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
                     ReadOnlyNominalHeaderForm, ReadOnlyNominalLineForm,
                     enter_lines, read_only_lines)
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
+from .serializers import NominalSerializer
 
 
 class CreateTransaction(BaseCreateTransaction):
@@ -169,3 +175,53 @@ class VoidTransaction(BaseVoidTransaction):
     form = BaseVoidTransactionForm
     success_url = reverse_lazy("nominals:transaction_enquiry")
     module = 'NL'
+
+
+
+"""
+REST API VIEWS
+"""
+
+@api_view(['GET', 'POST'])
+def nominal_list(request, format=None):
+    """
+    List all the nominals, or create a nominal
+    """
+
+    if request.method == "GET":
+        nominals = Nominal.objects.all()
+        serializer = NominalSerializer(nominals, many=True)
+        return Response(serializer.data)
+
+    elif request.method == "POST":
+        serializer = NominalSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def nominal_detail(request, pk, format=None):
+    """
+    Retrieve, update or delete a Nominal.
+    """
+    try:
+        nominal = Nominal.objects.get(pk=pk)
+    except Nominal.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = NominalSerializer(nominal)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = NominalSerializer(nominal, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        nominal.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

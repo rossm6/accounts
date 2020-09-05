@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'mptt',
     'tempus_dominus',
+    'rest_framework',
 
     # ours
     'accountancy',
