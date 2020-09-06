@@ -1,3 +1,5 @@
+from json import loads
+
 from django.conf import settings
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
@@ -7,7 +9,8 @@ from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.views import APIView
+from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.views import APIView, exception_handler
 
 from accountancy.forms import (BaseVoidTransactionForm,
                                NominalTransactionSearchForm)
@@ -217,7 +220,6 @@ class NominalTransactionDetail(generics.RetrieveAPIView):
 
 
 # TODO - Create a mixin for the shared class attributes
-
 class CreateNominalJournal(
         RESTBaseCreateTransactionMixin,
         RESTBaseTransactionMixin,
@@ -239,3 +241,29 @@ class CreateNominalJournal(
     module = 'NL'
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
+    forms = [ 'header_form', 'line_form' ]
+
+    def invalid_forms(self):
+        errors = {}
+        for form in self.forms:
+            if hasattr(self, form):
+                form_instance = getattr(self, form)
+                if not form_instance.is_valid():
+                    json_str = form_instance.errors.as_json()
+                    errors.update(
+                        loads(json_str)
+                  )
+        return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
+
+
+"""
+
+    Example json output for form validation errors below.  this differs
+    to what rest does.  https://www.django-rest-framework.org/api-guide/exceptions/ 
+
+    {'ref': [{'message': 'This field is required.', 'code': 'required'}], 
+    'date': [{'message': 'This field is required.', 'code': 'required'}], 
+    'type': [{'message': 'This field is required.', 'code': 'required'}], 
+    'period': [{'message': 'This field is required.', 'code': 'required'}]}
+
+"""

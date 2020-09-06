@@ -17,6 +17,7 @@ querystring-parser = "*"
 django-tempus-dominus = "*"
 django-debug-toolbar = "*"
 djangorestframework = "*"
+coreapi = "*"
 
 [requires]
 python_version = "3.8"

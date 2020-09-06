@@ -417,6 +417,9 @@ class RESTBaseTransactionMixin:
         else:
             return False
 
+    def get_header_model(self):
+        return self.header.get('model')
+
     def requires_lines(self, header_form):
         if hasattr(header_form, "cleaned_data"):
             if t := header_form.cleaned_data.get("type"):
@@ -433,6 +436,9 @@ class RESTBaseTransactionMixin:
                 return True
         else:
             return False
+
+    def get_line_model(self):
+        return self.line.get('model')
 
     def get_line_formset_queryset(self):
         return self.get_line_model().objects.none()
@@ -590,12 +596,6 @@ class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMi
 
         return super().get_context_data(**kwargs)
 
-    def get_header_model(self):
-        return self.header.get('model')
-
-    def get_line_model(self):
-        return self.line.get('model')
-
     def get_match_model(self):
         return self.match.get('model')
 
@@ -739,6 +739,18 @@ class RESTBaseCreateTransactionMixin:
             # changed name from header because this is a cls attribute of course
             self.header_obj = self.header_form.save(commit=False)
             self.line_formset = self.get_line_formset(self.header_obj)
+            # TODO
+            """
+
+            transaction_type_object = self.get_transaction_type_object(self.line_formset)
+            if transaction_type_object.is_valid():
+                transaction_type_object.put()
+                # add success message
+            else:
+                return self.invalid_forms()
+            return self.get_successful_response()
+
+            """
             if self.line_formset.is_valid():
                 self.lines_are_valid()
                 messages.success(
@@ -750,6 +762,7 @@ class RESTBaseCreateTransactionMixin:
         else:
             return self.invalid_forms()
         return self.get_successful_response()
+
 
 class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
 
@@ -816,6 +829,7 @@ class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
                 ['due', 'paid']
             )
             self.get_match_model().objects.bulk_create(matches)
+
 
 class CreateCashBookEntriesMixin:
 
