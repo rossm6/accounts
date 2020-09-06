@@ -376,7 +376,166 @@ class NominalTransList(NominalSearchMixin, BaseTransactionsList):
     pass
 
 
-class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
+class RESTBaseTransactionMixin:
+
+    def get_header_prefix(self):
+        return self.header.get('prefix', 'header')
+
+    def get_header_form_kwargs(self):
+        kwargs = {
+            'prefix': self.get_header_prefix()
+        }
+
+        if self.request.method in ('POST', 'PUT'):
+            kwargs.update({
+                'data': self.request.POST,
+            })
+
+        return kwargs
+
+    def get_header_form(self):
+        if hasattr(self, "header_form"):
+            return self.header_form
+        form_class = self.header.get('form')
+        self.header_form = form_class(**self.get_header_form_kwargs())
+        return self.header_form
+
+    def requires_analysis(self, header_form):
+        if hasattr(header_form, "cleaned_data"):
+            if t := header_form.cleaned_data.get("type"):
+                if t in self.get_header_model().get_types_requiring_analysis():
+                    return True
+                else:
+                    return False
+        if t := self.header_form.initial.get('type'):
+            if t in self.get_header_model().get_types_requiring_analysis():
+                return True
+            # we need this because read only forms used for the detail transaction view
+            # convert the initial choice value to the choice label
+            if t in self.get_header_model().get_type_names_requiring_analysis():
+                return True
+        else:
+            return False
+
+    def requires_lines(self, header_form):
+        if hasattr(header_form, "cleaned_data"):
+            if t := header_form.cleaned_data.get("type"):
+                if t in self.get_header_model().get_types_requiring_lines():
+                    return True
+                else:
+                    return False
+        if t := self.header_form.initial.get('type'):
+            if t in self.get_header_model().get_types_requiring_lines():
+                return True
+            # we need this because read only forms used for the detail transaction view
+            # convert the initial choice value to the choice label
+            if t in self.get_header_model().get_type_names_requiring_lines():
+                return True
+        else:
+            return False
+
+    def get_line_formset_queryset(self):
+        return self.get_line_model().objects.none()
+
+    def get_line_prefix(self):
+        if hasattr(self, 'line'):
+            return self.line.get('prefix', 'line')
+
+    def get_line_formset_kwargs(self, header=None):
+
+        kwargs = {
+            'prefix': self.get_line_prefix(),
+            'queryset': self.get_line_formset_queryset()
+        }
+
+        if self.request.method in ('POST', 'PUT'):
+            # passing in data will mean the form will use the POST queryset
+            # which means potentially huge choices rendered on the client
+            if self.requires_lines(self.header_form):
+                kwargs.update({
+                    'data': self.request.POST
+                })
+            kwargs.update({
+                'header': header
+            })
+
+        if (self.requires_lines(self.header_form) and not self.requires_analysis(self.header_form)):
+            brought_forward = True
+        else:
+            brought_forward = False
+
+        kwargs["brought_forward"] = brought_forward
+        # need to tell the formset the forms contained should have the nominal and vat code field hidden
+
+        return kwargs
+
+    def get_line_formset(self, header=None):
+        if hasattr(self, 'line'):
+            if hasattr(self, 'line_formset'):
+                return self.line_formset
+            else:
+                formset_class = self.line.get('formset')
+                return formset_class(**self.get_line_formset_kwargs(header))
+
+    def matching_is_invalid(self):
+        self.match_formset = self.get_match_formset()
+        if self.match_formset:
+            self.match_formset.is_valid()
+            if self.match_formset.non_form_errors():
+                self.non_field_errors = True
+            for form in self.match_formset:
+                if form.non_field_errors():
+                    self.non_field_errors = True
+
+    def lines_are_invalid(self):
+        self.line_formset = self.get_line_formset()
+
+        if self.line_formset:
+            self.line_formset.is_valid()
+            # validation may have been called already but Django will not run full_clean
+            # again if so
+            # see is_valid method at - https://github.com/django/django/blob/master/django/forms/forms.py
+            if self.line_formset.non_form_errors():
+                self.non_field_errors = True
+            for form in self.line_formset:
+                if form.non_field_errors():
+                    self.non_field_errors = True
+
+        if self.line_formset:
+            if override_choices := self.line.get('override_choices'):
+                for form in self.line_formset:
+                    for choice in override_choices:
+                        field = form.fields[choice]
+                        if chosen := form.cleaned_data.get(choice):
+                            field.widget.choices = [(chosen.pk, str(chosen))]
+                        else:
+                            field.widget.choices = []
+
+    def header_is_invalid(self):
+        if self.header_form.non_field_errors():
+            self.non_field_errors = True
+
+        if override_choices := self.header.get('override_choices'):
+            form = self.header_form
+            for choice in override_choices:
+                field = form.fields[choice]
+                if chosen := form.cleaned_data.get(choice):
+                    field.widget.choices = [(chosen.pk, str(chosen))]
+                else:
+                    field.widget.choices = []
+
+    def invalid_forms(self):
+        self.header_is_invalid()
+        if self.requires_lines(self.get_header_form()):
+            self.lines_are_invalid()
+        self.matching_is_invalid()
+        return self.render_to_response(self.get_context_data())
+
+
+class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMixin, View):
+
+    def get_successful_response(self):
+        return HttpResponseRedirect(self.get_success_url())
 
     def create_or_update_related_transactions(self, **kwargs):
         self.create_or_update_nominal_transactions(**kwargs)
@@ -431,60 +590,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
         return super().get_context_data(**kwargs)
 
-    def invalid_forms(self):
-        self.header_is_invalid()
-        if self.requires_lines(self.get_header_form()):
-            self.lines_are_invalid()
-        self.matching_is_invalid()
-        return self.render_to_response(self.get_context_data())
-
-    def matching_is_invalid(self):
-        self.match_formset = self.get_match_formset()
-        if self.match_formset:
-            self.match_formset.is_valid()
-            if self.match_formset.non_form_errors():
-                self.non_field_errors = True
-            for form in self.match_formset:
-                if form.non_field_errors():
-                    self.non_field_errors = True
-
-    def lines_are_invalid(self):
-        self.line_formset = self.get_line_formset()
-
-        if self.line_formset:
-            self.line_formset.is_valid()
-            # validation may have been called already but Django will not run full_clean
-            # again if so
-            # see is_valid method at - https://github.com/django/django/blob/master/django/forms/forms.py
-            if self.line_formset.non_form_errors():
-                self.non_field_errors = True
-            for form in self.line_formset:
-                if form.non_field_errors():
-                    self.non_field_errors = True
-
-        if self.line_formset:
-            if override_choices := self.line.get('override_choices'):
-                for form in self.line_formset:
-                    for choice in override_choices:
-                        field = form.fields[choice]
-                        if chosen := form.cleaned_data.get(choice):
-                            field.widget.choices = [(chosen.pk, str(chosen))]
-                        else:
-                            field.widget.choices = []
-
-    def header_is_invalid(self):
-        if self.header_form.non_field_errors():
-            self.non_field_errors = True
-
-        if override_choices := self.header.get('override_choices'):
-            form = self.header_form
-            for choice in override_choices:
-                field = form.fields[choice]
-                if chosen := form.cleaned_data.get(choice):
-                    field.widget.choices = [(chosen.pk, str(chosen))]
-                else:
-                    field.widget.choices = []
-
     def get_header_model(self):
         return self.header.get('model')
 
@@ -500,59 +605,9 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
     def get_nominal_transaction_model(self):
         return self.nominal_transaction_model
 
-    def get_header_prefix(self):
-        return self.header.get('prefix', 'header')
-
-    def get_line_prefix(self):
-        if hasattr(self, 'line'):
-            return self.line.get('prefix', 'line')
-
     def get_match_prefix(self):
         if hasattr(self, 'match'):
             return self.match.get('prefix', 'match')
-
-    def get_header_form_kwargs(self):
-        kwargs = {
-            'prefix': self.get_header_prefix()
-        }
-
-        if self.request.method in ('POST', 'PUT'):
-            kwargs.update({
-                'data': self.request.POST,
-            })
-
-        return kwargs
-
-    def get_line_formset_queryset(self):
-        return self.get_line_model().objects.none()
-
-    def get_line_formset_kwargs(self, header=None):
-
-        kwargs = {
-            'prefix': self.get_line_prefix(),
-            'queryset': self.get_line_formset_queryset()
-        }
-
-        if self.request.method in ('POST', 'PUT'):
-            # passing in data will mean the form will use the POST queryset
-            # which means potentially huge choices rendered on the client
-            if self.requires_lines(self.header_form):
-                kwargs.update({
-                    'data': self.request.POST
-                })
-            kwargs.update({
-                'header': header
-            })
-
-        if (self.requires_lines(self.header_form) and not self.requires_analysis(self.header_form)):
-            brought_forward = True
-        else:
-            brought_forward = False
-
-        kwargs["brought_forward"] = brought_forward
-        # need to tell the formset the forms contained should have the nominal and vat code field hidden
-
-        return kwargs
 
     def lines_should_be_ordered(self):
         if hasattr(self, "line"):
@@ -575,55 +630,6 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
             })
 
         return kwargs
-
-    def requires_analysis(self, header_form):
-        if hasattr(header_form, "cleaned_data"):
-            if t := header_form.cleaned_data.get("type"):
-                if t in self.get_header_model().get_types_requiring_analysis():
-                    return True
-                else:
-                    return False
-        if t := self.header_form.initial.get('type'):
-            if t in self.get_header_model().get_types_requiring_analysis():
-                return True
-            # we need this because read only forms used for the detail transaction view
-            # convert the initial choice value to the choice label
-            if t in self.get_header_model().get_type_names_requiring_analysis():
-                return True
-        else:
-            return False
-
-    def requires_lines(self, header_form):
-        if hasattr(header_form, "cleaned_data"):
-            if t := header_form.cleaned_data.get("type"):
-                if t in self.get_header_model().get_types_requiring_lines():
-                    return True
-                else:
-                    return False
-        if t := self.header_form.initial.get('type'):
-            if t in self.get_header_model().get_types_requiring_lines():
-                return True
-            # we need this because read only forms used for the detail transaction view
-            # convert the initial choice value to the choice label
-            if t in self.get_header_model().get_type_names_requiring_lines():
-                return True
-        else:
-            return False
-
-    def get_header_form(self):
-        if hasattr(self, "header_form"):
-            return self.header_form
-        form_class = self.header.get('form')
-        self.header_form = form_class(**self.get_header_form_kwargs())
-        return self.header_form
-
-    def get_line_formset(self, header=None):
-        if hasattr(self, 'line'):
-            if hasattr(self, 'line_formset'):
-                return self.line_formset
-            else:
-                formset_class = self.line.get('formset')
-                return formset_class(**self.get_line_formset_kwargs(header))
 
     def get_match_formset(self, header=None):
         if hasattr(self, 'match'):
@@ -707,7 +713,45 @@ class BaseTransaction(TemplateResponseMixin, ContextMixin, View):
 
         return HttpResponseRedirect(self.get_success_url())
 
-class BaseCreateTransaction(BaseTransaction):
+
+class RESTBaseCreateTransactionMixin:
+    def get_header_form_kwargs(self):
+        kwargs = super().get_header_form_kwargs()
+        if self.request.method in ('GET'):
+            kwargs["initial"] = {
+                "type": self.get_header_form_type()
+            }
+        return kwargs
+
+    def post(self, request, *args, **kwargs):
+        """
+
+        This is for CB and NL at the moment only !!!
+
+        Handle POST requests: instantiate forms with the passed POST variables
+        and then check if it is valid
+
+        WARNING - LINE FORMSET MUST BE VALIDATED BEFORE MATCH FORMSET
+
+        """
+        self.header_form = self.get_header_form()
+        if self.header_form.is_valid():
+            # changed name from header because this is a cls attribute of course
+            self.header_obj = self.header_form.save(commit=False)
+            self.line_formset = self.get_line_formset(self.header_obj)
+            if self.line_formset.is_valid():
+                self.lines_are_valid()
+                messages.success(
+                    request,
+                    self.get_success_message()
+                )
+            else:
+                return self.invalid_forms()
+        else:
+            return self.invalid_forms()
+        return self.get_successful_response()
+
+class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
 
     def get_success_message(self):
         return "Transaction was created successfully."
@@ -773,7 +817,6 @@ class BaseCreateTransaction(BaseTransaction):
             )
             self.get_match_model().objects.bulk_create(matches)
 
-
 class CreateCashBookEntriesMixin:
 
     def get_cash_book_transaction_model(self):
@@ -804,6 +847,7 @@ class CreateCashBookTransaction(CreateCashBookEntriesMixin, BaseCreateTransactio
             **kwargs
         )
 
+
 class CreatePurchaseOrSalesTransaction(CreateCashBookEntriesMixin, BaseCreateTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
@@ -819,6 +863,53 @@ class CreatePurchaseOrSalesTransaction(CreateCashBookEntriesMixin, BaseCreateTra
             self.get_nominal_transaction_model(),
             **kwargs
         )
+
+    def post(self, request, *args, **kwargs):
+        """
+
+        Handle POST requests: instantiate forms with the passed POST variables
+        and then check if it is valid
+
+        WARNING - LINE FORMSET MUST BE VALIDATED BEFORE MATCH FORMSET
+
+        """
+
+        self.header_form = self.get_header_form()
+        if self.header_form.is_valid():
+            # changed name from header because this is a cls attribute of course
+            self.header_obj = self.header_form.save(commit=False)
+            self.line_formset = self.get_line_formset(self.header_obj)
+            self.match_formset = self.get_match_formset(self.header_obj)
+            if not self.requires_lines(self.header_form):
+                if self.match_formset.is_valid():
+                    self.header_obj.save()
+                    self.header_has_been_saved = True
+                    # FIX ME - implement get_module and get_account_name methods
+                    self.create_or_update_related_transactions()
+                    self.matching_is_valid()
+                    messages.success(
+                        request,
+                        self.get_success_message()
+                    )
+                else:
+                    return self.invalid_forms()
+            else:
+                if self.line_formset and self.match_formset:
+                    if self.line_formset.is_valid() and self.match_formset.is_valid():
+                        # has to come before matching_is_valid because this formset could alter header_obj
+                        self.lines_are_valid()
+                        self.matching_is_valid()
+                        messages.success(
+                            request,
+                            self.get_success_message()
+                        )
+                    else:
+                        return self.invalid_forms()
+        else:
+            return self.invalid_forms()
+
+        return HttpResponseRedirect(self.get_success_url())
+
 
 class IndividualTransactionMixin:
 
@@ -986,6 +1077,7 @@ class EditCashBookEntriesMixin(CreateCashBookEntriesMixin):
             self.get_cash_book_transaction_model(),
             **kwargs
         )
+
 
 class EditCashBookTransaction(EditCashBookEntriesMixin, NominalTransactionsMixin, BaseEditTransaction):
     def create_or_update_nominal_transactions(self, **kwargs):
@@ -1225,10 +1317,10 @@ class DeleteCashBookTransMixin:
         super().form_is_valid()
         transaction_to_void = self.form.instance
         cash_book_trans = (self.get_cash_book_transaction_model()
-        .objects
-        .filter(module=self.get_transaction_module())
-        .filter(header=transaction_to_void.pk)
-        ).delete()
+                           .objects
+                           .filter(module=self.get_transaction_module())
+                           .filter(header=transaction_to_void.pk)
+                           ).delete()
 
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):

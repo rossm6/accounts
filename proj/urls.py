@@ -26,3 +26,8 @@ urlpatterns = [
     path('sales/', include("sales.urls")),
     path('', RedirectView.as_view(url=reverse_lazy("purchases:transaction_enquiry")), name="home")
 ]
+
+# We need this at least for logging into the Django REST Framework Browsable API
+urlpatterns += [
+    path('api-auth/', include('rest_framework.urls')),
+]

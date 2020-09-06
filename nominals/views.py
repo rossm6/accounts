@@ -3,15 +3,19 @@ from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework import generics
 from rest_framework.decorators import api_view
-from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
 from accountancy.forms import (BaseVoidTransactionForm,
                                NominalTransactionSearchForm)
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
-                               NominalTransList, create_on_the_fly,
+                               NominalTransList,
+                               RESTBaseCreateTransactionMixin,
+                               RESTBaseTransactionMixin, create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
 from vat.forms import QuickVatForm
@@ -21,7 +25,7 @@ from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
                     ReadOnlyNominalHeaderForm, ReadOnlyNominalLineForm,
                     enter_lines, read_only_lines)
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
-from .serializers import NominalSerializer
+from .serializers import NominalSerializer, NominalTransactionSerializer
 
 
 class CreateTransaction(BaseCreateTransaction):
@@ -35,7 +39,7 @@ class CreateTransaction(BaseCreateTransaction):
         "model": NominalLine,
         "formset": enter_lines,
         "prefix": "line",
-        "override_choices": ["nominal"], # VAT would not work at the moment
+        "override_choices": ["nominal"],  # VAT would not work at the moment
         "can_order": False
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
@@ -48,7 +52,7 @@ class CreateTransaction(BaseCreateTransaction):
     success_url = reverse_lazy("nominals:transaction_enquiry")
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
-    module = "NL"    
+    module = "NL"
 
     def get_header_form_type(self):
         t = self.request.GET.get("t", "nj")
@@ -65,7 +69,7 @@ class EditTransaction(BaseEditTransaction):
         "model": NominalLine,
         "formset": enter_lines,
         "prefix": "line",
-        "override_choices": ["nominal"], # VAT would not work at the moment
+        "override_choices": ["nominal"],  # VAT would not work at the moment
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
         "can_order": False
@@ -103,13 +107,15 @@ class ViewTransaction(BaseViewTransaction):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["edit_view_name"] = "nominals:edit" 
+        context["edit_view_name"] = "nominals:edit"
         return context
-    
 
-load_options = input_dropdown_widget_load_options_factory(NominalLineForm(), 25)
 
-validate_choice = input_dropdown_widget_validate_choice_factory(NominalLineForm())
+load_options = input_dropdown_widget_load_options_factory(
+    NominalLineForm(), 25)
+
+validate_choice = input_dropdown_widget_validate_choice_factory(
+    NominalLineForm())
 
 create_on_the_fly_view = create_on_the_fly(
     nominal={
@@ -122,6 +128,7 @@ create_on_the_fly_view = create_on_the_fly(
         "prefix": "vat"
     }
 )
+
 
 class TransactionEnquiry(NominalTransList):
     model = NominalTransaction
@@ -141,7 +148,7 @@ class TransactionEnquiry(NominalTransList):
         "nominal": "nominal__name",
         "reference": "ref"
     }
-    datetime_fields = ["created",]
+    datetime_fields = ["created", ]
     datetime_format = '%d %b %Y'
     advanced_search_form_class = NominalTransactionSearchForm
     template_name = "nominals/transactions.html"
@@ -161,7 +168,7 @@ class TransactionEnquiry(NominalTransList):
             .select_related('nominal__name')
             .all()
             .values(
-                *[ field[0] for field in self.fields[:-1] ]
+                *[field[0] for field in self.fields[:-1]]
             )
             .annotate(total=Sum("value"))
             .order_by(*self.order_by())
@@ -177,51 +184,58 @@ class VoidTransaction(BaseVoidTransaction):
     module = 'NL'
 
 
-
 """
 REST API VIEWS
 """
 
-@api_view(['GET', 'POST'])
-def nominal_list(request, format=None):
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'nominals': reverse('nominals:nominal-list', request=request, format=format),
+    })
+
+
+class NominalList(generics.ListCreateAPIView):
+    queryset = Nominal.objects.all()
+    serializer_class = NominalSerializer
+
+
+class NominalDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Nominal.objects.all()
+    serializer_class = NominalSerializer
+
+
+class NominalTransactionList(generics.ListAPIView):
+    queryset = NominalTransaction.objects.all()
+    serializer_class = NominalTransactionSerializer
+
+
+class NominalTransactionDetail(generics.RetrieveAPIView):
+    queryset = NominalTransaction.objects.all()
+    serializer_class = NominalTransactionSerializer
+
+
+# TODO - Create a mixin for the shared class attributes
+
+class CreateNominalJournal(
+        RESTBaseCreateTransactionMixin,
+        RESTBaseTransactionMixin,
+        APIView):
     """
-    List all the nominals, or create a nominal
+    Inspired by this SO answer - https://stackoverflow.com/questions/35485085/multiple-models-in-django-rest-framework
     """
-
-    if request.method == "GET":
-        nominals = Nominal.objects.all()
-        serializer = NominalSerializer(nominals, many=True)
-        return Response(serializer.data)
-
-    elif request.method == "POST":
-        serializer = NominalSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET', 'PUT', 'DELETE'])
-def nominal_detail(request, pk, format=None):
-    """
-    Retrieve, update or delete a Nominal.
-    """
-    try:
-        nominal = Nominal.objects.get(pk=pk)
-    except Nominal.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = NominalSerializer(nominal)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        serializer = NominalSerializer(nominal, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        nominal.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    header = {
+        "model": NominalHeader,
+        "form": NominalHeaderForm,
+        "prefix": "header",
+    }
+    line = {
+        "model": NominalLine,
+        "formset": enter_lines,
+        "prefix": "line",
+        "can_order": False
+    }
+    module = 'NL'
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
