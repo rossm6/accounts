@@ -9,15 +9,14 @@ from django.contrib.postgres.search import (SearchQuery, SearchRank,
                                             SearchVector, TrigramSimilarity)
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q, Sum
-from django.http import (Http404, HttpResponse, HttpResponseRedirect,
-                         JsonResponse)
+from django.http import (Http404, HttpResponse, HttpResponseForbidden,
+                         HttpResponseRedirect, JsonResponse)
 from django.shortcuts import get_object_or_404, render, reverse
 from django.template.context_processors import csrf
 from django.template.loader import render_to_string
 from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
-from django.http import HttpResponseForbidden
 
 from nominals.models import Nominal
 
@@ -378,6 +377,29 @@ class NominalTransList(NominalSearchMixin, BaseTransactionsList):
 
 class RESTBaseTransactionMixin:
 
+    def get_nominal_model(self):
+        return self.nominal_model
+
+    def get_nominal_transaction_model(self):
+        return self.nominal_transaction_model
+
+    def create_or_update_related_transactions(self, **kwargs):
+        self.create_or_update_nominal_transactions(**kwargs)
+
+    def get_transaction_type_object(self):
+        if hasattr(self, "transaction_type_object"):
+            return self.tranaction_type_object
+        else:
+            self.transaction_type_object = self.header_obj.get_type_transaction()
+            return self.transaction_type_object
+
+    def get_module(self):
+        return self.module
+
+    def lines_should_be_ordered(self):
+        if hasattr(self, "line"):
+            return self.line.get("can_order", True)
+
     def get_header_prefix(self):
         return self.header.get('prefix', 'header')
 
@@ -541,20 +563,11 @@ class RESTBaseTransactionMixin:
 class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMixin, View):
 
     def get_successful_response(self):
+        messages.success(
+            self.request,
+            self.get_success_message()
+        )
         return HttpResponseRedirect(self.get_success_url())
-
-    def create_or_update_related_transactions(self, **kwargs):
-        self.create_or_update_nominal_transactions(**kwargs)
-
-    def get_transaction_type_object(self):
-        if hasattr(self, "transaction_type_object"):
-            return self.tranaction_type_object
-        else:
-            self.transaction_type_object = self.header_obj.get_type_transaction()
-            return self.transaction_type_object
-
-    def get_module(self):
-        return self.module
 
     def get_success_url(self):
         if creation_type := self.request.POST.get('approve'):
@@ -599,19 +612,9 @@ class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMi
     def get_match_model(self):
         return self.match.get('model')
 
-    def get_nominal_model(self):
-        return self.nominal_model
-
-    def get_nominal_transaction_model(self):
-        return self.nominal_transaction_model
-
     def get_match_prefix(self):
         if hasattr(self, 'match'):
             return self.match.get('prefix', 'match')
-
-    def lines_should_be_ordered(self):
-        if hasattr(self, "line"):
-            return self.line.get("can_order", True)
 
     def get_match_formset_queryset(self):
         return self.get_match_model().objects.none()
@@ -715,6 +718,40 @@ class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMi
 
 
 class RESTBaseCreateTransactionMixin:
+
+    def create_or_update_nominal_transactions(self, **kwargs):
+        kwargs.update({
+            "line_cls": self.get_line_model(),
+            "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
+        })
+        # e.g. Invoice, CreditNote etc
+        transaction_type_object = self.get_transaction_type_object()
+        # add nom trans as attribute so API response can return in JSON response
+        # for python api client
+        self.nom_trans = transaction_type_object.create_nominal_transactions(
+            self.get_nominal_model(),
+            self.get_nominal_transaction_model(),
+            **kwargs
+        )
+
+    def lines_are_valid(self):
+        line_no = 1
+        lines = []
+        self.header_obj.save()
+        self.header_has_been_saved = True
+        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
+        ) else self.line_formset
+        for form in line_forms:
+            if form.empty_permitted and form.has_changed():
+                line = form.save(commit=False)
+                line.header = self.header_obj
+                line.line_no = line_no
+                lines.append(line)
+                line_no = line_no + 1
+        if lines:
+            self.lines = self.get_line_model().objects.bulk_create(lines)
+            self.create_or_update_related_transactions(lines=lines)
+
     def get_header_form_kwargs(self):
         kwargs = super().get_header_form_kwargs()
         if self.request.method in ('GET'):
@@ -739,24 +776,8 @@ class RESTBaseCreateTransactionMixin:
             # changed name from header because this is a cls attribute of course
             self.header_obj = self.header_form.save(commit=False)
             self.line_formset = self.get_line_formset(self.header_obj)
-            # TODO
-            """
-
-            transaction_type_object = self.get_transaction_type_object(self.line_formset)
-            if transaction_type_object.is_valid():
-                transaction_type_object.put()
-                # add success message
-            else:
-                return self.invalid_forms()
-            return self.get_successful_response()
-
-            """
             if self.line_formset.is_valid():
                 self.lines_are_valid()
-                messages.success(
-                    request,
-                    self.get_success_message()
-                )
             else:
                 return self.invalid_forms()
         else:
@@ -769,49 +790,10 @@ class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
     def get_success_message(self):
         return "Transaction was created successfully."
 
-    def create_or_update_nominal_transactions(self, **kwargs):
-        kwargs.update({
-            "line_cls": self.get_line_model(),
-            "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
-        })
-        # e.g. Invoice, CreditNote etc
-        transaction_type_object = self.get_transaction_type_object()
-        transaction_type_object.create_nominal_transactions(
-            self.get_nominal_model(),
-            self.get_nominal_transaction_model(),
-            **kwargs
-        )
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["create"] = True  # some javascript templates depend on this
         return context
-
-    def get_header_form_kwargs(self):
-        kwargs = super().get_header_form_kwargs()
-        if self.request.method in ('GET'):
-            kwargs["initial"] = {
-                "type": self.get_header_form_type()
-            }
-        return kwargs
-
-    def lines_are_valid(self):
-        line_no = 1
-        lines = []
-        self.header_obj.save()
-        self.header_has_been_saved = True
-        line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
-        ) else self.line_formset
-        for form in line_forms:
-            if form.empty_permitted and form.has_changed():
-                line = form.save(commit=False)
-                line.header = self.header_obj
-                line.line_no = line_no
-                lines.append(line)
-                line_no = line_no + 1
-        if lines:
-            lines = self.get_line_model().objects.bulk_create(lines)
-            self.create_or_update_related_transactions(lines=lines)
 
     def matching_is_valid(self):
         # Q - This flag may be obsolete now
@@ -925,19 +907,7 @@ class CreatePurchaseOrSalesTransaction(CreateCashBookEntriesMixin, BaseCreateTra
         return HttpResponseRedirect(self.get_success_url())
 
 
-class IndividualTransactionMixin:
-
-    def setup(self, request, *args, **kwargs):
-        super().setup(request, *args, **kwargs)
-        pk = kwargs.get('pk')
-        header = get_object_or_404(self.get_header_model(), pk=pk)
-        self.header_to_edit = header
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["header_to_edit"] = self.header_to_edit
-        context["edit"] = self.header_to_edit.pk
-        return context
+class RESTIndividualTransactionMixin:
 
     def get_line_formset_kwargs(self, header=None):
         kwargs = super().get_line_formset_kwargs(header)
@@ -971,11 +941,21 @@ class IndividualTransactionMixin:
         kwargs["instance"] = self.header_to_edit
         return kwargs
 
+class IndividualTransactionMixin:
 
-class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        pk = kwargs.get('pk')
+        header = get_object_or_404(self.get_header_model(), pk=pk)
+        self.header_to_edit = header
 
-    def get_success_message(self):
-        return "Transaction was edited successfully."
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["header_to_edit"] = self.header_to_edit
+        context["edit"] = self.header_to_edit.pk
+        return context
+
+class RESTBaseEditTransactionMixin:
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -1039,6 +1019,12 @@ class BaseEditTransaction(IndividualTransactionMixin, BaseTransaction):
                 deleted_lines=self.line_formset.deleted_objects,
                 existing_nom_trans=existing_nom_trans
             )
+
+
+class BaseEditTransaction(RESTBaseEditTransactionMixin, RESTIndividualTransactionMixin, IndividualTransactionMixin, BaseTransaction):
+
+    def get_success_message(self):
+        return "Transaction was edited successfully."
 
     def matching_is_valid(self):
         if not hasattr(self, 'header_has_been_saved'):

@@ -3,6 +3,7 @@ from json import loads
 from django.conf import settings
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
@@ -18,9 +19,13 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
                                NominalTransList,
                                RESTBaseCreateTransactionMixin,
-                               RESTBaseTransactionMixin, create_on_the_fly,
+                               RESTBaseEditTransactionMixin,
+                               RESTBaseTransactionMixin,
+                               RESTIndividualTransactionMixin,
+                               create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
+from nominals.serializers import NominalHeaderSerializer, NominalLineSerializer
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
@@ -188,7 +193,13 @@ class VoidTransaction(BaseVoidTransaction):
 
 
 """
+
 REST API VIEWS
+
+Use the OpenAPI schema and this python client for making requests to the API -
+
+    https://github.com/triaxtec/openapi-python-client 
+
 """
 
 
@@ -209,17 +220,9 @@ class NominalDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NominalSerializer
 
 
-class NominalTransactionList(generics.ListAPIView):
-    queryset = NominalTransaction.objects.all()
-    serializer_class = NominalTransactionSerializer
-
-
-class NominalTransactionDetail(generics.RetrieveAPIView):
-    queryset = NominalTransaction.objects.all()
-    serializer_class = NominalTransactionSerializer
-
-
 # TODO - Create a mixin for the shared class attributes
+# Create an EDIT, READ AND LIST FOR THE NOMINAL JOURNALS
+
 class CreateNominalJournal(
         RESTBaseCreateTransactionMixin,
         RESTBaseTransactionMixin,
@@ -241,7 +244,15 @@ class CreateNominalJournal(
     module = 'NL'
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
-    forms = [ 'header_form', 'line_form' ]
+    forms = ['header_form', 'line_form']
+
+    def get_successful_response(self):
+        data = {}
+        data["header"] = NominalHeaderSerializer(self.header_obj).data
+        data["lines"] = NominalLineSerializer(self.lines, many=True).data
+        data["nom_trans"] = NominalTransactionSerializer(
+            self.nom_trans, many=True).data
+        return JsonResponse(data=data)
 
     def invalid_forms(self):
         errors = {}
@@ -252,7 +263,62 @@ class CreateNominalJournal(
                     json_str = form_instance.errors.as_json()
                     errors.update(
                         loads(json_str)
-                  )
+                    )
+        return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
+
+
+class EditNominalJournal(
+        RESTBaseEditTransactionMixin,
+        RESTIndividualTransactionMixin,
+        RESTBaseTransactionMixin,
+        APIView):
+    """
+    Inspired by this SO answer - https://stackoverflow.com/questions/35485085/multiple-models-in-django-rest-framework
+    """
+    header = {
+        "model": NominalHeader,
+        "form": NominalHeaderForm,
+        "prefix": "header",
+    }
+    line = {
+        "model": NominalLine,
+        "formset": enter_lines,
+        "prefix": "line",
+        "can_order": False
+    }
+    module = 'NL'
+    nominal_model = Nominal
+    nominal_transaction_model = NominalTransaction
+    forms = ['header_form', 'line_form']
+
+    def get_object(self):
+        pk = self.kwargs.get("pk")
+        return get_object_or_404(self.get_header_model(), pk=pk)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.header_to_edit = self.get_object()
+        if self.header_to_edit.is_void():
+            return HttpResponseForbidden("Void transactions cannot be edited")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_successful_response(self):
+        data = {}
+        data["header"] = NominalHeaderSerializer(self.header_obj).data
+        data["lines"] = NominalLineSerializer(self.lines, many=True).data
+        data["nom_trans"] = NominalTransactionSerializer(
+            self.nom_trans, many=True).data
+        return JsonResponse(data=data)
+
+    def invalid_forms(self):
+        errors = {}
+        for form in self.forms:
+            if hasattr(self, form):
+                form_instance = getattr(self, form)
+                if not form_instance.is_valid():
+                    json_str = form_instance.errors.as_json()
+                    errors.update(
+                        loads(json_str)
+                    )
         return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
 
 
@@ -267,3 +333,21 @@ class CreateNominalJournal(
     'period': [{'message': 'This field is required.', 'code': 'required'}]}
 
 """
+
+
+class NominalTransactionList(generics.ListAPIView):
+    queryset = NominalTransaction.objects.all()
+    serializer_class = NominalTransactionSerializer
+
+
+class NominalTransactionDetail(generics.RetrieveAPIView):
+    queryset = NominalTransaction.objects.all()
+    serializer_class = NominalTransactionSerializer
+
+    def setup(self, request, *args, **kwargs):
+        print(request.__dict__)
+        print(kwargs)
+        """Initialize attributes shared by all view methods."""
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs

@@ -1,8 +1,9 @@
 from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from .views import (CreateNominalJournal, CreateTransaction, EditTransaction,
-                    NominalDetail, NominalList, NominalTransactionDetail,
+from .views import (CreateNominalJournal, CreateTransaction,
+                    EditNominalJournal, EditTransaction, NominalDetail,
+                    NominalList, NominalTransactionDetail,
                     NominalTransactionList, TransactionEnquiry,
                     ViewTransaction, VoidTransaction, api_root,
                     create_on_the_fly_view, load_options, validate_choice)
@@ -26,6 +27,9 @@ urlpatterns = [
          name="nominal-transaction-detail"),
     path("nominal-transaction-create", CreateNominalJournal.as_view(),
          name="nominal-transaction-create"),
+    path("nominal-transaction-edit/<int:pk>/", EditNominalJournal.as_view(),
+         name="nominal-transaction-edit"),
+
     path("nominal-list", NominalList.as_view(), name="nominal-list"),
     path('nominals/<int:pk>/', NominalDetail.as_view(), name="nominal-detail"),
 ]

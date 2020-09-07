@@ -132,6 +132,8 @@ class Journal(NominalTransaction):
             line_cls.objects.bulk_update(
                 lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
+            return nominal_transactions
+
     def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         nom_trans_to_update = []
         nom_trans_to_delete = []

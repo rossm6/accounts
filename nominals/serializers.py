@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Nominal, NominalTransaction
+from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
 
 class NominalSerializer(serializers.HyperlinkedModelSerializer):
@@ -13,6 +13,20 @@ class NominalSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Nominal
         fields = ['name', 'parent']
+
+
+class NominalHeaderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NominalHeader
+        fields = ['id', 'ref', 'goods', 'vat', 'total',
+                  'date', 'period', 'status', 'type']
+
+
+class NominalLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NominalLine
+        fields = ['id', 'line_no', 'description', 'goods',
+                  'vat', 'nominal', 'vat_code', 'goods_nominal_transaction', 'vat_nominal_transaction']
 
 
 class NominalTransactionSerializer(serializers.ModelSerializer):
