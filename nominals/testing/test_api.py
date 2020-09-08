@@ -4,7 +4,7 @@ from json import loads
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import (APIRequestFactory, APITestCase,
-                                 force_authenticate)
+                                 force_authenticate, APIClient)
 
 from accountancy.testing.helpers import create_formset_data, create_header
 from nominals.models import Nominal
@@ -16,6 +16,15 @@ from .helpers import create_nominal_journal
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 PERIOD = '202007'
+
+
+"""
+
+The REST framework request factory is used for CREATE but for Edit, for
+some unknown reason, the keywords for the url were not being captured
+so i ended up using the API client provided by REST.
+
+"""
 
 
 class APITests(APITestCase):
@@ -47,9 +56,12 @@ class APITests(APITestCase):
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
 
+        cls.username = "ross"
+        cls.password = "Test123!"
+
         cls.user = get_user_model().objects.create_user(
-            username="ross",
-            password="Test123!"
+            username=cls.username,
+            password=cls.password
         )
 
     def test_create_journal(self):
@@ -271,7 +283,7 @@ class APITests(APITestCase):
         header, lines, nominal_transactions = create_nominal_journal({
             "header": {
                 "type": "nj",
-                "ref": "test journal",
+                "ref": self.ref,
                 "period": PERIOD,
                 "date": self.date,
                 "total": 120
@@ -279,7 +291,7 @@ class APITests(APITestCase):
             "lines": [
                 {
                     "line_no": 1,
-                    "description": "line 1",
+                    "description": self.description,
                     "goods": 100,
                     "nominal": self.bank_nominal,
                     "vat_code": self.vat_code,
@@ -287,7 +299,7 @@ class APITests(APITestCase):
                 },
                 {
                     "line_no": 2,
-                    "description": "line 2",
+                    "description": self.description,
                     "goods": -100,
                     "nominal": self.debtors_nominal,
                     "vat_code": self.vat_code,
@@ -319,11 +331,11 @@ class APITests(APITestCase):
         line_forms.append(
             {
                 "id": lines[1].id,
-                "description": lines[0].description,
-                "goods": lines[0].goods,
-                "nominal": lines[0].nominal.pk,
-                "vat_code": lines[0].vat_code.pk,
-                "vat": lines[0].vat
+                "description": lines[1].description,
+                "goods": lines[1].goods,
+                "nominal": lines[1].nominal.pk,
+                "vat_code": lines[1].vat_code.pk,
+                "vat": lines[1].vat
             }
         )
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
@@ -331,16 +343,18 @@ class APITests(APITestCase):
         data = {}
         data.update(header_data)
         data.update(line_data)
-        request = factory.post(
+
+        client = APIClient()
+        self.client.login(
+            username=self.username,
+            password=self.password
+        )
+        response = self.client.post(
             reverse(
                 "nominals:nominal-transaction-edit", kwargs={"pk": header.pk}
             ),
             data
         )
-        # data is sent in the same way the browser does i.e. multipart
-        force_authenticate(request, user=self.user)
-        print(request.__dict__)
-        response = EditNominalJournal.as_view()(request)
         self.assertEqual(response.status_code, 200)
         data = loads(response.content)
         header = data["header"]
@@ -515,3 +529,105 @@ class APITests(APITestCase):
                 nom_tran["type"],
                 header["type"]
             )
+
+    def test_create_journal_with_non_form_error_for_line_formset(self):
+        """
+        Check that form errors for line formsets are picked up
+        """
+
+        factory = APIRequestFactory()
+        header_data = create_header(HEADER_FORM_PREFIX, {
+            "type": "nj",
+            "ref": self.ref,
+            "date": self.date,
+            "total": 140,
+            "period": PERIOD
+        })
+        line_forms = []
+        line_forms.append(
+            {
+                "description": self.description,
+                "goods": 100,
+                "nominal": self.bank_nominal.pk,
+                "vat_code": self.vat_code.pk,
+                "vat": 20
+            }
+        )
+        line_forms.append(
+            {
+                "description": self.description,
+                "goods": -100,
+                "nominal": self.debtors_nominal.pk,
+                "vat_code": self.vat_code.pk,
+                "vat": -20
+            }
+        )
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data = {}
+        data.update(header_data)
+        data.update(line_data)
+        request = factory.post(
+            reverse("nominals:nominal-transaction-create"), data)
+        # data is sent in the same way the browser does i.e. multipart
+        force_authenticate(request, user=self.user)
+        response = CreateNominalJournal.as_view()(request)
+        self.assertEqual(response.status_code, 400)
+        data = loads(response.content)
+        self.assertEqual(
+            data,
+            {'message': 'The total of the debits does not equal the total you entered.',
+                'code': 'invalid-total'}
+        )
+
+    def test_create_journal_with_line_form_error(self):
+        """
+        Check that form errors for line formsets are picked up
+        """
+
+        factory = APIRequestFactory()
+        header_data = create_header(HEADER_FORM_PREFIX, {
+            "type": "nj",
+            "ref": self.ref,
+            "date": self.date,
+            "total": 120,
+            "period": PERIOD
+        })
+        line_forms = []
+        line_forms.append(
+            {
+                "description": self.description,
+                "goods": 100,
+                "nominal": 999999999999999,  # NON EXISTENT NOMINAL CODE
+                "vat_code": self.vat_code.pk,
+                "vat": 20
+            }
+        )
+        line_forms.append(
+            {
+                "description": self.description,
+                "goods": -100,
+                "nominal": self.debtors_nominal.pk,
+                "vat_code": self.vat_code.pk,
+                "vat": -20
+            }
+        )
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data = {}
+        data.update(header_data)
+        data.update(line_data)
+        request = factory.post(
+            reverse("nominals:nominal-transaction-create"), data)
+        # data is sent in the same way the browser does i.e. multipart
+        force_authenticate(request, user=self.user)
+        response = CreateNominalJournal.as_view()(request)
+        self.assertEqual(response.status_code, 400)
+        data = loads(response.content)
+        self.assertEqual(
+            data,
+            {
+                'nominal': [
+                    {'message': 'Select a valid choice. That choice is not one of the available choices.',
+                        'code': 'invalid_choice'}
+                ]
+            }
+        )

@@ -160,14 +160,17 @@ class Journal(NominalTransaction):
             lines_to_update = [line.pk for line in updated_lines]
             nom_trans_to_update = [
                 tran for tran in existing_nom_trans if tran.line in lines_to_update]
-            nom_trans_to_update = sorted(nom_trans_to_update, key=lambda n: n.line)
+            nom_trans_to_update = sorted(
+                nom_trans_to_update, key=lambda n: n.line)
             for line, (key, line_nominal_trans) in zip(updated_lines, groupby(nom_trans_to_update, key=lambda n: n.line)):
                 nom_tran_map = {
                     tran.field: tran for tran in list(line_nominal_trans)}
                 to_update, to_delete = self._edit_nominal_transactions_for_line(
                     nom_tran_map, line, vat_nominal)
-                nom_trans_to_update += to_update
                 nom_trans_to_delete += to_delete
+
+        nom_trans_to_update = [
+            tran for tran in nom_trans_to_update if tran not in nom_trans_to_delete]
 
         if deleted_lines:
             lines_to_delete = [line.pk for line in deleted_lines]
@@ -179,16 +182,21 @@ class Journal(NominalTransaction):
                 nom_trans_to_delete += list(nom_trans)
 
         line_cls = kwargs.get('line_cls')
-        self.create_nominal_transactions(
+        new_nom_trans = self.create_nominal_transactions(
             nom_cls, nom_tran_cls,
             lines=new_lines,
             line_cls=line_cls,
             vat_nominal=vat_nominal
         )
 
+        nom_trans = (new_nom_trans if new_nom_trans else []) + \
+            nom_trans_to_update
+
         nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
         nom_tran_cls.objects.filter(
             pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
+
+        return nom_trans
 
 
 class NominalHeader(TransactionHeader):
@@ -265,6 +273,7 @@ all_module_types = (
     SaleHeader.analysis_required +
     CashBookHeader.analysis_required
 )
+
 
 class NominalTransaction(MultiLedgerTransactions):
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)

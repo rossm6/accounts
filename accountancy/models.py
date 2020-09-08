@@ -236,8 +236,10 @@ class ControlAccountInvoiceTransactionMixin:
                     tran.field: tran for tran in list(line_nominal_trans)}
                 to_update, to_delete = self._edit_nominal_transactions_for_line(
                     nom_tran_map, line, vat_nominal, control_nominal)
-                nom_trans_to_update += to_update
                 nom_trans_to_delete += to_delete
+
+        nom_trans_to_update = [
+            tran for tran in nom_trans_to_update if tran not in nom_trans_to_delete]
 
         if deleted_lines:
             lines_to_delete = [line.pk for line in deleted_lines]
@@ -281,7 +283,7 @@ class CashBookEntryMixin:
     def edit_cash_book_entry(self, cash_book_tran_cls, **kwargs):
         try:
             cash_book_tran = cash_book_tran_cls.objects.get(
-                module=self.module, 
+                module=self.module,
                 header=self.header_obj.pk,
                 line=1
             )
@@ -297,6 +299,7 @@ class CashBookEntryMixin:
         except cash_book_tran_cls.DoesNotExist:
             if self.header_obj.total != 0:
                 self.create_cash_book_entry(cash_book_tran_cls, **kwargs)
+
 
 class CashBookPaymentTransactionMixin(CashBookEntryMixin, ControlAccountInvoiceTransactionMixin):
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):

@@ -1,3 +1,4 @@
+import collections
 from json import loads
 
 from django.conf import settings
@@ -223,6 +224,10 @@ class NominalDetail(generics.RetrieveUpdateDestroyAPIView):
 # TODO - Create a mixin for the shared class attributes
 # Create an EDIT, READ AND LIST FOR THE NOMINAL JOURNALS
 
+
+
+
+
 class CreateNominalJournal(
         RESTBaseCreateTransactionMixin,
         RESTBaseTransactionMixin,
@@ -244,7 +249,8 @@ class CreateNominalJournal(
     module = 'NL'
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
-    forms = ['header_form', 'line_form']
+    forms = ['header_form']
+    formsets = ['line_formset']
 
     def get_successful_response(self):
         data = {}
@@ -264,6 +270,19 @@ class CreateNominalJournal(
                     errors.update(
                         loads(json_str)
                     )
+        for formset in self.formsets:
+            if hasattr(self, formset):
+                formset_instance = getattr(self, formset)
+                if formset_instance.non_form_errors():
+                    json_str = formset_instance.non_form_errors().as_json()
+                    non_form_errors = loads(json_str)
+                    for error in non_form_errors:
+                        errors.update(error)
+                for form_errors in formset_instance.errors:
+                    json_str = form_errors.as_json()
+                    errors.update(
+                        loads(json_str)
+                    )      
         return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
 
 
@@ -289,22 +308,24 @@ class EditNominalJournal(
     module = 'NL'
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
-    forms = ['header_form', 'line_form']
+    # This isn't that nice
+    forms = ['header_form']
+    formsets = ['line_formset']
 
-    def get_object(self):
-        pk = self.kwargs.get("pk")
-        return get_object_or_404(self.get_header_model(), pk=pk)
+    # use set up from accountancy generic views to set header_to_edit
 
-    def dispatch(self, request, *args, **kwargs):
-        self.header_to_edit = self.get_object()
-        if self.header_to_edit.is_void():
-            return HttpResponseForbidden("Void transactions cannot be edited")
-        return super().dispatch(request, *args, **kwargs)
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        pk = self.kwargs.get('pk')
+        header = get_object_or_404(self.get_header_model(), pk=pk)
+        self.header_to_edit = header
 
     def get_successful_response(self):
         data = {}
         data["header"] = NominalHeaderSerializer(self.header_obj).data
-        data["lines"] = NominalLineSerializer(self.lines, many=True).data
+        lines = self.new_lines + self.lines_to_update
+        lines.sort(key=lambda l: l.pk)
+        data["lines"] = NominalLineSerializer(lines, many=True).data
         data["nom_trans"] = NominalTransactionSerializer(
             self.nom_trans, many=True).data
         return JsonResponse(data=data)
@@ -319,6 +340,19 @@ class EditNominalJournal(
                     errors.update(
                         loads(json_str)
                     )
+        for formset in self.formsets:
+            if hasattr(self, formset):
+                formset_instance = getattr(self, formset)
+                if formset_instance.non_form_errors():
+                    json_str = formset_instance.non_form_errors().as_json()
+                    errors.update(
+                        loads(json_str)
+                    )
+                for form_errors in formset_instance.errors:
+                    json_str = form_errors.as_json()
+                    errors.update(
+                        loads(json_str)
+                    )      
         return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
 
 
@@ -343,11 +377,3 @@ class NominalTransactionList(generics.ListAPIView):
 class NominalTransactionDetail(generics.RetrieveAPIView):
     queryset = NominalTransaction.objects.all()
     serializer_class = NominalTransactionSerializer
-
-    def setup(self, request, *args, **kwargs):
-        print(request.__dict__)
-        print(kwargs)
-        """Initialize attributes shared by all view methods."""
-        self.request = request
-        self.args = args
-        self.kwargs = kwargs
