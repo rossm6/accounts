@@ -29,5 +29,5 @@ Matches can also be edited or removed altogether.
   1. REST API.  I've made a start at creating custom Django REST views for the nominal ledger only.  Before going any further I wanted to see how tricky it would be to
   create the OpenAPI / Swagger documentation for the API.
   2. Make the system more configurable.  For example at the moment there is no discount field available for any transaction.
-  Now that the basics have created I will extend the software so that new fields, the most obvious being "discount", can be added easily.  
+  Now that the basics have been created I will extend the software so that new fields, the most obvious being "discount", can be added easily.  
   As it stands any developer using this software would have to spend quite a bit of time reading through the code to see how the software works.  
