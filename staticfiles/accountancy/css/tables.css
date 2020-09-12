@@ -1,0 +1,54 @@
+table {
+    font-size: 80% !important;
+}
+
+table th {
+    padding: 0.75em;
+}
+
+td {
+    height: 36px;
+}
+
+td > input {
+    height: 100%;
+    padding-left: 0.5em;
+}
+
+.col-draggable-icon,
+.col-close-icon {
+    padding: 0px !important;
+}
+
+
+/* standard widths for these standard columns in a data input table */
+
+.col-close-icon {
+    width: 20px;
+}
+
+.col-draggable-icon {
+    width: 20px;
+}
+
+
+div.has_errors {
+    position: relative;
+    height: 100%;
+}
+
+div.has_errors::before,
+div.has_errors::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    border-color: transparent;
+    border-style: solid;
+    z-index: 10000000000000000000;
+}
+
+div.has_errors::after {
+    border-left-color: red;
+    border-bottom-color: red;
+}

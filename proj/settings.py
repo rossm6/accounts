@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
+import dj_database_url
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '=d#m@3-878v0(s)pq6+ar52amg8+d(j&t_xl4y57eb@racaqqa'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['.herokuapp.com', 'localhost', '127.0.0.1']
 
 INTERNAL_IPS = [
     '127.0.0.1',
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'django.forms',
     'django.contrib.postgres',
@@ -49,8 +50,10 @@ INSTALLED_APPS = [
     # 'debug_toolbar',
     # custom widgets will slow down page loads massively
     'django_extensions',
+    'drf_yasg',
     'mptt',
     'tempus_dominus',
+    'rest_framework',
 
     # ours
     'accountancy',
@@ -64,6 +67,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     # 'debug_toolbar.middleware.DebugToolbarMiddleware',
     # debug toolbar causes custom widgets to load really slowly !!!
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -129,6 +133,10 @@ DATABASES = {
     }
 }
 
+db_from_env = dj_database_url.config(conn_max_age=500)
+# db_from_env is empty without heroku config vars
+# so database default setting does not update
+DATABASES['default'].update(db_from_env)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -167,7 +175,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [ os.path.join(BASE_DIR, 'static'), ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
+
 
 DEFAULT_VAT_NOMINAL = "Vat"
 DEFAULT_SYSTEM_SUSPENSE = "System Suspense Account"
@@ -179,4 +189,28 @@ ACCOUNTANCY_MODULES = {
     "NL": "nominals",
     "SL": "sales",
     'CB': 'cashbook'
+}
+
+
+DEFAULT_RENDERER_CLASSES = (
+    'rest_framework.renderers.JSONRenderer',
+)
+
+# Browsable API is great for development but i don't really want it to be
+# viewable for end users.  The consumers of the API, like a third party software
+# company, are expected to use the API via a Python client.
+
+if DEBUG:
+    # Based on this SO answer - https://stackoverflow.com/a/49395080
+    DEFAULT_RENDERER_CLASSES = DEFAULT_RENDERER_CLASSES + (
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    )
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ),
+    'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES,
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
 }

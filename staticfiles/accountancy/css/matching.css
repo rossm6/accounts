@@ -1,0 +1,33 @@
+/* a horizontal bar underneath the scroller table */
+.dts_label {
+    display: none;
+}
+
+.input-disabled {
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    border: 0;
+    text-align: center;
+}
+
+select.input-disabled {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    text-indent: 1px;
+    text-overflow: '';
+}
+
+table.dataTable {
+    border-collapse: collapse !important;
+}
+
+select.input-disabled {
+    text-align-last: center;
+}
+
+.dataTables_scrollBody {
+    overflow-y: scroll !important;
+    border-bottom: none !important;
+    /* this is so the different matching tables vertically align */
+}

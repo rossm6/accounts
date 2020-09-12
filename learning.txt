@@ -1,3 +1,11 @@
+Django Bulk Create
+
+    Suddenly I remembered that my tests occasionally fail because a primary key
+    is not as we expect; I then had the revelation this is probably because the
+    order of the objects returned from the DB is not guranteed to be the same
+    order as passed to bulk_create.  It's a guess but i think it could be correct.
+    LESSON - ALWAYS SORT AFTER A BULK_CREATE.
+
 Django Crispy Forms
 
     I had thought you could specify a class on a widget directly in your form
