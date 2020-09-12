@@ -265,8 +265,6 @@
         // and 'this' is bound to the object instance
         $widget = this.get_$dom();
         var $event_target = $(event.target);
-        console.log("event target");
-        console.log($event_target);
         if ($event_target.is("li")) {
             var label;
             var value = $event_target.attr("data-value");

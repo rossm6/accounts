@@ -1,6 +1,5 @@
 # Accounts
-General Ledger Accountancy CRUD system
-
+A Django General Ledger Accountancy CRUD system
 
 ### Still in development
 

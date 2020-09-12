@@ -10,6 +10,29 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
+
+
+
+"""
+
+HELP !!!
+
+
+1. With whitenoise installed and DEBUG=False and <!doctype html> instead of <!DOCTYPE html> I had a weird issue where commenting out JS lines
+   in input_dropdown_widget.js was stripping off the trailing characters of the JS file.
+
+2. I uninstalled whitenoises but then got the problem where the css files were rejected because MIME-TYPE = text/html and this is obviously not right.
+   The answer is Debug=True.  Although i think the HTML declaration is wrong so this needs changing anyway.
+
+   Then the JS file problem went away.
+
+"""
+
+
+
+
+
+
 import dj_database_url
 import os
 
@@ -23,7 +46,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '=d#m@3-878v0(s)pq6+ar52amg8+d(j&t_xl4y57eb@racaqqa'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['.herokuapp.com', 'localhost', '127.0.0.1']
 
@@ -40,7 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic',
+    #'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'django.forms',
     'django.contrib.postgres',
@@ -67,7 +90,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    #'whitenoise.middleware.WhiteNoiseMiddleware',
     # 'debug_toolbar.middleware.DebugToolbarMiddleware',
     # debug toolbar causes custom widgets to load really slowly !!!
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -175,7 +198,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
 
 

@@ -122,7 +122,15 @@
         var parent_width = $widget.parents().eq(0).innerWidth();
         var dropdown_icon = $widget.find(".dropdown-btn");
         var shrink_by = dropdown_icon.outerWidth();
-        $widget.find("input").width(parent_width - shrink_by);
+        $widget.find("input").outerWidth(parent_width - shrink_by).removeClass("w-100"); // remove w-100 for firefox
+        var td = $widget.parents("div.h-100").parents().eq(0);
+        if(td.length){
+            // firefox workaround
+            // because height: 100% does not work as expected
+            $widget.parents("div.h-100").height(
+                td.get(0).clientHeight
+            ).removeClass("h-100");
+        }
         $widget.removeClass("position-relative");
         $widget.find(".input-wrapper")
             .removeClass("px")
@@ -137,7 +145,7 @@
         // close means the user has to focus on the widget
         // before they can interact
         var $widget = this.get_$dom();
-        var $widget_input_elem = $widget.find("input");
+        var $widget_input_elem = $widget.find("input").addClass("w-100");
         var default_label = $widget_input_elem.attr("data-default-label");
         var default_value = $widget_input_elem.attr("data-default-value");
         var chosen_label = $widget_input_elem.val();
