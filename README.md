@@ -19,7 +19,7 @@ All transactions can be -
   4. Voided (rather than delete transactions the software will change the status to 'void'.  Such transactions are then automatically
   invisible from the usual views).
   
-Transactions on the purchase and sales ledger can also be "matched".  This is a nice feature, which, surprisingly, Xero, a major accountancy providers, appears to lack.
+Transactions on the purchase and sales ledger can also be "matched".  This is a nice feature, which, surprisingly, Xero, a major accountancy provider, appears to lack.
 This way the user can see which transactions are matched to each other.  For example which invoices a payment is matched to i.e. which invoices the payment pays.
 Matches can also be edited or removed altogether.
 
