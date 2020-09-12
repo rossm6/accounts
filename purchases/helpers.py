@@ -10,6 +10,7 @@ from .models import PurchaseHeader, PurchaseLine, Supplier
 
 PERIOD = '202007'
 
+
 def create_formset_data(prefix, forms):
     data = {}
     for i, form in enumerate(forms):
@@ -18,7 +19,7 @@ def create_formset_data(prefix, forms):
                 prefix + "-" + str(i) + "-" + field
             ] = form[field]
     if forms:
-        i = i + 1 # pk keys start
+        i = i + 1  # pk keys start
     else:
         i = 0
     management_form = {
@@ -30,6 +31,7 @@ def create_formset_data(prefix, forms):
     data.update(management_form)
     return data
 
+
 def create_header(prefix, form):
     data = {}
     for field in form:
@@ -37,10 +39,143 @@ def create_header(prefix, form):
     data[prefix + "-" + "period"] = PERIOD
     return data
 
+
+# because Heroku doesn't have one unlike my local Linux OS
+common_words_dictionary = [
+    "A",
+    "A's",
+    "AMD",
+    "AMD's",
+    "AOL",
+    "AOL's",
+    "Aachen",
+    "Aachen's",
+    "Aaliyah",
+    "Aaliyah's",
+    "Aaron",
+    "Aaron's",
+    "Abbas",
+    "Abbas's",
+    "Abbasid",
+    "Abbasid's",
+    "Abbott",
+    "Abbott's",
+    "Abby",
+    "Abby's",
+    "Abdul",
+    "Abdul's",
+    "Abe",
+    "Abe's",
+    "Abel",
+    "Abel's",
+    "Abelard",
+    "Abelard's",
+    "Abelson",
+    "Abelson's",
+    "Aberdeen",
+    "Aberdeen's",
+    "Abernathy",
+    "Abernathy's",
+    "Abidjan",
+    "Abidjan's",
+    "Abigail",
+    "Abigail's",
+    "Abilene",
+    "Abilene's",
+    "Abner",
+    "Abner's",
+    "Abraham",
+    "Abraham's",
+    "Abram",
+    "Abram's",
+    "Abrams",
+    "Abrams's",
+    "Absalom",
+    "Absalom's",
+    "Abuja",
+    "Abuja's",
+    "Abyssinia",
+    "Abyssinia's",
+    "Abyssinian",
+    "Abyssinian's",
+    "Ac",
+    "Ac's",
+    "Acadia",
+    "Acadia's",
+    "Acapulco",
+    "Acapulco's",
+    "Accenture",
+    "Accenture's",
+    "Accra",
+    "Accra's",
+    "Acevedo",
+    "Acevedo's",
+    "Achaean",
+    "Achaean's",
+    "Achebe",
+    "Achebe's",
+    "Achernar",
+    "Achernar's",
+    "Acheson",
+    "Acheson's",
+    "Achilles",
+    "Achilles's",
+    "Aconcagua",
+    "Aconcagua's",
+    "Acosta",
+    "Acosta's",
+    "Acropolis",
+    "Acrux",
+    "Acrux's",
+    "Actaeon",
+    "Actaeon's",
+    "Acton",
+    "Acton's",
+    "Acts",
+    "Acts's",
+    "Acuff",
+    "Acuff's",
+    "Ada",
+    "Ada's",
+    "Adam",
+    "Adam's",
+    "Adams",
+    "Adams's",
+    "Adan",
+    "Adan's",
+    "Adana",
+    "Adana's",
+    "Adar",
+    "Adar's",
+    "Addams",
+    "Addams's",
+    "Adderley",
+    "Adderley's",
+    "Addie",
+    "Addie's",
+    "Addison",
+    "Addison's",
+    "Adela",
+    "Adela's",
+    "Adelaide",
+    "Adelaide's",
+    "Adele",
+    "Adele's",
+    "Adeline",
+    "Adeline's",
+    "Aden",
+    "Aden's",
+    "Adenauer",
+    "Adenauer's",
+    "Adhara"
+]
+
+
 def create_suppliers(n):
     suppliers = []
     i = 0
-    with open('/etc/dictionaries-common/words', 'r') as dictionary:
+
+    for word in common_words_dictionary:
         for word in dictionary:
             suppliers.append(
                 Supplier(name=word, code=str(i))
@@ -217,7 +352,7 @@ def create_payment_with_nom_entries(header, control_nominal, bank_nominal):
                 header=header.pk,
                 line=2,
                 nominal=control_nominal,
-                value= -1 *header.total,
+                value=-1 * header.total,
                 ref=header.ref,
                 period=header.period,
                 date=header.date,
