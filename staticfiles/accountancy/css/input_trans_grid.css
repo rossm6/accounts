@@ -1,0 +1,40 @@
+table {
+    table-layout: fixed;
+}
+
+thead {
+    background: linear-gradient(#fff,#fafafa);
+    background-color: #fafafa!important;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+}
+
+table th {
+    border-top: 1px solid #dee2e6;
+}
+
+table td {
+    padding: 0px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+}
+
+.ui-sortable-helper {
+    display: table;
+}
+
+div.field_errors_wrapper {
+    position: fixed;
+    bottom: 1%;
+    background: white;
+    z-index: 10000000000000;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+}
+
+/* in edit view lines which are deleted to be deleted are given this class */
+.deleted-row {
+    opacity: 0.2;
+}

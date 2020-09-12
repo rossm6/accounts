@@ -42716,7 +42716,7 @@ class EditPaymentNominalEntries(TestCase):
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
-            0
+            3
         )
 
     # INCORRECT USAGE
@@ -42906,7 +42906,7 @@ class EditPaymentNominalEntries(TestCase):
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
-            0
+            3
         )
 
 class EditBroughtForwardPaymentNominalEntries(TestCase):

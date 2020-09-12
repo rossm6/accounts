@@ -1,0 +1,341 @@
+.bg-primary-blue {
+    background-color: #0078c8;
+}
+
+header.header-nav a.nav-link {
+    color: white !important;
+}
+
+header.header-nav div.dropdown-menu {
+    margin-top: 10px;
+}
+
+.cont {
+    position: relative;
+}
+
+.text-overflow-hidden {
+    text-overflow: hidden;
+}
+
+.label {
+    line-height: 30px;
+    height: 100%;
+    position: absolute;
+    z-index: 10;
+    /* z-index was a 1000 but the date picker widget we use is less than this so not visible */
+    width: 100%;
+    background: white;
+}
+
+input, input[type="password"], textarea, select { 
+    outline: none;
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.data-input-focus-border {
+    border: 1px solid #048fc2 !important;
+}
+
+.input-dropdown-widget-dropdown {
+    display: none;
+    margin-left: -1px;
+    margin-top: 1px;
+    width: 250px;
+    height: 400px;
+    overflow-y: scroll;
+    list-style: none;
+    background-color: white;
+    z-index: 10000000;
+    padding: 0px;
+}
+
+.input-dropdown-widget-dropdown > li {
+    padding: 0.5em;
+    border: 1px solid transparent;
+}
+
+.input-dropdown-widget-dropdown > li:hover {
+    background-color: #e6f5fa;
+    border: 1px dotted #a3bae9;
+    cursor: pointer;
+}
+
+.color-b-1 {
+    color:  #048fc2
+}
+
+.non-td-input {
+    border-color: #b5b8bb #e2e4e7 #e8eaec #bdbfc3;
+    border-style: solid;
+    border-width: 1px;
+    padding-left: 0.25em;
+}
+
+.data-grid {
+    background: linear-gradient(#fff,#f8f8f8);
+    background-color: #f8f8f8;
+    background-repeat: no-repeat;
+    width: 100%;
+    max-width: 1300px;
+    margin: 2em;
+}
+
+.pagination-numbers-ui {
+    margin-right: 1em;
+}
+
+.pagination-numbers-ui:hover {
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.close-sm {
+    font-size: 1rem!important;
+}
+
+.selectize-dropdown,
+.selectize-input {
+    line-height: 12px !important;
+    padding: 4px 4px !important;
+}
+
+.selectize-dropdown,
+.selectize-dropdown-content 
+{
+    z-index: 1000000 !important; 
+    /* must exceed selectize-control in case dropdown is over another
+    selectize widget */
+}
+
+/* this is for the messages pop up */
+.fixed-centre {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0px;
+    /* also have position: relative; set on the cont class */
+}
+
+table.dataTable td {
+    padding: 0 !important;
+}
+
+.overflow-y-scroll {
+    overflow-y: scroll;
+}
+
+input {
+    padding-left: 5px;
+}
+
+.top-and-bottom-dotted-border {
+    border-top: 1px dotted #D9D9D9;
+    border-bottom: 1px dotted #D9D9D9;
+}
+
+.top-solid-border {
+    border-top: 1px solid black;
+}
+
+.bottom-double-border {
+    border-bottom: 3px double black;
+}
+
+.f-s-100 {
+    font-size: 100% !important;
+}
+
+.bootstrap-datetimepicker-widget {
+    font-size: 80%;
+    background-color: white !important;
+}
+
+.bootstrap-datetimepicker-widget table {
+    table-layout: fixed;
+}
+
+.bootstrap-datetimepicker-widget thead {
+    background: linear-gradient(#fff,#fafafa);
+    background-color: #fafafa!important;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+}
+
+.bootstrap-datetimepicker-widget table th {
+    border-top: 1px solid #dee2e6;
+    color: black;
+}
+
+/* formely tables.css */
+
+table {
+    font-size: 80% !important;
+}
+
+table th {
+    padding: 0.75em;
+}
+
+td {
+    height: 36px;
+}
+
+td > input {
+    height: 100%;
+    padding-left: 0.5em;
+}
+
+.col-draggable-icon,
+.col-close-icon {
+    padding: 0px !important;
+}
+
+
+/* standard widths for these standard columns in a data input table */
+
+.col-close-icon {
+    width: 20px;
+}
+
+.col-draggable-icon {
+    width: 20px;
+}
+
+
+div.has_errors {
+    position: relative;
+    height: 100%;
+}
+
+div.has_errors::before,
+div.has_errors::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    border-color: transparent;
+    border-style: solid;
+    z-index: 10000000000000000000;
+}
+
+div.has_errors::after {
+    border-left-color: red;
+    border-bottom-color: red;
+}
+
+.loading-icon {
+    top: 10%;
+    left: 50%;
+    position: absolute;
+}
+
+
+/* buttons */
+
+.xero-btn {
+    padding-left: 4em;
+    padding-right: 4em;
+    font-size: 80% !important;
+    font-weight: 700 !important;
+}
+
+.button {
+    background: rgb(250, 250, 250) linear-gradient(rgb(255, 255, 255), rgb(230, 234, 236)) repeat scroll 0% 0% / auto padding-box border-box;
+    border: 1px solid rgb(207, 210, 212);
+    color: rgb(4, 143, 194);  
+    font-size: 80%;
+    font-weight: 900;
+}
+
+.button-secondary {
+    color: white;
+    font-size: 80%;
+    font-weight: 900;
+    background: linear-gradient(#00b1e6,#0382b3);
+    border: 1px solid #0078a5!important;
+}
+
+.button-secondary:hover {
+    color: white;
+}
+
+.button:focus,
+.button-secondary:focus
+{
+    outline: none;
+    box-shadow: none;
+}
+
+.button:hover {
+    color: rgb(4, 143, 194);  
+}
+
+.btn-group .dropdown-menu {
+    font-size: 80%;
+    top: -1px;
+    color: rgb(4, 143, 194);
+    padding: 0px;
+}
+
+.btn-group .dropdown-item {
+    color: rgb(4, 143, 194);   
+}
+
+.btn-group .dropdown-item:hover {
+    background-color: rgb(224, 238, 243); 
+}
+
+.dropdown-split-button {
+    position: relative;
+}
+
+.dropdown-split-button .btn-group {
+    position: static;
+}
+
+.dropdown-split-button .dropdown-toggle::after {
+    margin-left: 0px !important;
+    /* otherwise the carrat icon is misaligned */
+}
+
+.dropdown-split-button .dropdown-menu {
+    position: absolute;
+    transform: none !important;
+    will-change: none !important;
+    top: 100% !important;
+}
+
+/* inputs */
+
+.input {
+    -webkit-font-smoothing: antialiased;
+    padding: 0;
+    margin: 0;
+    font-size: 11px;
+    font-family: Helvetica,sans-serif;
+    border: 1px solid #7f9db9;
+    padding-left: 2px;
+    padding-right: 2px;
+    border-color: #b5b8bb #e2e4e7 #e8eaec #bdbfc3;
+    border-style: solid;
+    border-width: 1px;
+    height: 25px!important;
+}
+
+td.dataTables_empty {
+    vertical-align: middle;
+}
+
+
+/* added to fix width of nominal transactions table */
+div.dataTables_scrollHeadInner {
+    width: 100% !important;
+}
+
+table.nominal_transactions {
+    width: 100% !important;
+    text-align: center;
+}

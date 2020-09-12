@@ -5,31 +5,11 @@ Objectives -
 
     Good resource - https://hakibenita.com/django-group-by-sql#how-to-group-by-multiple-fields
 
-    NEED TO RE-PRIORITSE MY WORK LOAD BELOW IN ORDER OF PRIORITY.
-
-    Work through the sections below before creating the cash book and sales ledger.  Even then i need to look through
-    all the code and do a rewrite before creating the new ledgers.  And when i do create the cash book i need
-    to create new tests.  I had thought this was just the NL logic again but it is not.  We need to analyse only
-    one side of the double entry for cash book whereas for NL you analyse both sides.
-
-    Answer your own question about errors at top of the form.  See - https://stackoverflow.com/questions/58531111/bootstrap-4-multifield-equivalent?noredirect=1#comment110881808_58531111
-
-    DJANGO ENHANCEMENT LOG - I was surprised that we could not use proxy models based on a parent class instance.
-
     VAT
 
         Nominal journal header needs a output or input flag for the vat analysis
 
     SALES
-
-        I need to refactor all the code for PL create_nom_trans etc
-
-        We can get the polymorphism i want; it just doesn't involve djang
-
-        class Invoice:
-            def __init__(self, header):
-                self.header_obj = header
-                # all DJANGO ORM is just done via this attribute
 
         Create a bad debt write off journal transaction type for the sales ledger
 
