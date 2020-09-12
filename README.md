@@ -26,6 +26,11 @@ Surprisingly, Xero, appears to lack this matching feature.
 ## Todo
 
   1. REST API
-  2. Make the system more configurable
-  3. User module with basic user permissions
-  4. Audit
+  2. Set up a "Deploy To Heroku" button
+  3. Make the system more configurable
+  4. User module with basic user permissions
+  5. Audit
+
+# DEMO
+
+  https://polar-brushlands-38337.herokuapp.com/
