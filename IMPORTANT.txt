@@ -1,6 +1,0 @@
-Worth reading over this before making changes to the software -
-
-    We want to always save Decimal(0.00) to the DB rather than null.  We do this by
-    inheriting from a DecimalBaseModel which has a clean method to ensure this
-    value is saved to the DB.  But remember this is only called within the
-    context of form processing.
