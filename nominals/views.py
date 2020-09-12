@@ -210,23 +210,16 @@ def api_root(request, format=None):
         'nominals': reverse('nominals:nominal-list', request=request, format=format),
     })
 
-
 class NominalList(generics.ListCreateAPIView):
     queryset = Nominal.objects.all()
     serializer_class = NominalSerializer
-
 
 class NominalDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Nominal.objects.all()
     serializer_class = NominalSerializer
 
-
 # TODO - Create a mixin for the shared class attributes
 # Create an EDIT, READ AND LIST FOR THE NOMINAL JOURNALS
-
-
-
-
 
 class CreateNominalJournal(
         RESTBaseCreateTransactionMixin,
@@ -367,6 +360,14 @@ class EditNominalJournal(
     'period': [{'message': 'This field is required.', 'code': 'required'}]}
 
 """
+
+# https://medium.com/@ratrosy/building-apis-with-openapi-ac3c24e33ee3
+
+class JournalDetail(generics.RetrieveAPIView):
+    queryset = NominalHeader.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        pass
 
 
 class NominalTransactionList(generics.ListAPIView):

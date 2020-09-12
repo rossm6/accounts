@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # 'debug_toolbar',
     # custom widgets will slow down page loads massively
     'django_extensions',
+    'drf_yasg',
     'mptt',
     'tempus_dominus',
     'rest_framework',

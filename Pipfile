@@ -18,6 +18,9 @@ django-tempus-dominus = "*"
 django-debug-toolbar = "*"
 djangorestframework = "*"
 coreapi = "*"
+pyyaml = "*"
+uritemplate = "*"
+drf-yasg = {extras = ["validation"],version = "*"}
 
 [requires]
 python_version = "3.8"
