@@ -51,7 +51,9 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
 
         # FIX ME - Same as PL ledger.  Need to improve this.
         # With general solution.
+
         if not self.data and not self.instance.pk:
+            print("DUH")
             self.fields["customer"].queryset = Customer.objects.none()
         if self.instance.pk:
             self.fields["customer"].queryset = Customer.objects.filter(

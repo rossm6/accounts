@@ -23,6 +23,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                RESTBaseCreateTransactionMixin,
                                RESTBaseEditTransactionMixin,
                                RESTBaseTransactionMixin,
+                               RESTIndividualTransactionForHeaderMixin,
                                RESTIndividualTransactionMixin,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
@@ -299,6 +300,7 @@ class CreateNominalJournal(
 
 class EditNominalJournal(
         RESTBaseEditTransactionMixin,
+        RESTIndividualTransactionForHeaderMixin,
         RESTIndividualTransactionMixin,
         RESTBaseTransactionMixin,
         APIView):

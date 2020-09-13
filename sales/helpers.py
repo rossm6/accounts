@@ -1020,13 +1020,12 @@ def create_customers(n):
     i = 0
 
     for word in common_words_dictionary:
-        for word in dictionary:
-            customers.append(
-                Customer(name=word, code=str(i))
-            )
-            if i > n:
-                break
-            i = i + 1
+        customers.append(
+            Customer(name=word, code=str(i))
+        )
+        if i > n:
+            break
+        i = i + 1
     return Customer.objects.bulk_create(customers)
 
 

@@ -146,13 +146,12 @@ def create_suppliers(n):
     i = 0
 
     for word in common_words_dictionary:
-        for word in dictionary:
-            suppliers.append(
-                Supplier(name=word, code=str(i))
-            )
-            if i > n:
-                break
-            i = i + 1
+        suppliers.append(
+            Supplier(name=word, code=str(i))
+        )
+        if i > n:
+            break
+        i = i + 1
     return Supplier.objects.bulk_create(suppliers)
 
 

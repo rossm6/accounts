@@ -33962,8 +33962,6 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
 
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
-        cls.url = reverse("purchases:create")
-
 
     # CORRECT USAGE
     # Basic edit here in so far as we just change a line value

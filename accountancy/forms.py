@@ -546,6 +546,7 @@ class ReadOnlySaleAndPurchaseHeaderFormMixin:
 
         self.fields[contact_model_name].widget = forms.TextInput()
         contact_queryset = self.fields[contact_model_name].queryset
+
         self.initial[contact_model_name] = str(
             contact_queryset[0]
         )

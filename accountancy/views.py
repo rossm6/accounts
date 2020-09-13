@@ -854,6 +854,18 @@ class CreatePurchaseOrSalesTransaction(MatchingMixin, CreateCashBookEntriesMixin
         )
 
 
+class RESTIndividualTransactionForHeaderMixin:
+    def get_header_form_kwargs(self):
+        kwargs = super().get_header_form_kwargs()
+        if not hasattr(self, 'header_to_edit'):
+            raise AttributeError(
+                f"{self.__class__.__name__} has no 'header_to_edit' attribute.  Did you override "
+                "setup() and forget to class super()?"
+            )
+        kwargs["instance"] = self.header_to_edit
+        return kwargs
+
+
 class RESTIndividualTransactionMixin:
 
     def get_line_formset_kwargs(self, header=None):
@@ -877,16 +889,6 @@ class RESTIndividualTransactionMixin:
     def get_match_formset(self, header=None):
         header = self.header_to_edit
         return super().get_match_formset(header)
-
-    def get_header_form_kwargs(self):
-        kwargs = super().get_header_form_kwargs()
-        if not hasattr(self, 'header_to_edit'):
-            raise AttributeError(
-                f"{self.__class__.__name__} has no 'header_to_edit' attribute.  Did you override "
-                "setup() and forget to class super()?"
-            )
-        kwargs["instance"] = self.header_to_edit
-        return kwargs
 
 
 class IndividualTransactionMixin:
@@ -954,7 +956,8 @@ class RESTBaseEditTransactionMixin:
                     self.line_formset.deleted_objects.append(form.instance)
 
         self.lines_to_update = lines_to_update
-        self.new_lines = new_lines = self.get_line_model().objects.bulk_create(self.line_formset.new_objects)
+        self.new_lines = new_lines = self.get_line_model(
+        ).objects.bulk_create(self.line_formset.new_objects)
         self.get_line_model().objects.line_bulk_update(lines_to_update)
         self.get_line_model().objects.filter(
             pk__in=[line.pk for line in self.line_formset.deleted_objects]
@@ -972,6 +975,7 @@ class RESTBaseEditTransactionMixin:
 
 
 class BaseEditTransaction(RESTBaseEditTransactionMixin,
+                          RESTIndividualTransactionForHeaderMixin,
                           RESTIndividualTransactionMixin,
                           IndividualTransactionMixin,
                           BaseTransaction):
@@ -1068,7 +1072,11 @@ class EditPurchaseOrSalesTransaction(
         )
 
 
-class BaseViewTransaction(IndividualTransactionMixin, BaseTransaction):
+class BaseViewTransaction(
+        RESTIndividualTransactionForHeaderMixin,
+        RESTIndividualTransactionMixin,
+        IndividualTransactionMixin,
+        BaseTransaction):
 
     def get_void_form_action(self):
         return self.void_form_action
@@ -1119,15 +1127,16 @@ def create_on_the_fly(**forms):
                     success = True
                     inst = form.save()
                     if 'serializer' in forms[form_name]:
-                        data = forms[form_name]["serializer"](inst)
+                        result = forms[form_name]["serializer"](inst)
                     else:
-                        data = {
-                            'success': success,
-                            'result': {
-                                'id': inst.id,
-                                'text': str(inst)
-                            }
+                        result = {
+                            'id': inst.id,
+                            'text': str(inst)
                         }
+                    data = {
+                        'success': success,
+                        'result': result
+                    }
                     return JsonResponse(
                         data=data
                     )
