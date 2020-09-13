@@ -7,6 +7,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
+from drf_yasg.inspectors import SwaggerAutoSchema
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -210,16 +211,33 @@ def api_root(request, format=None):
         'nominals': reverse('nominals:nominal-list', request=request, format=format),
     })
 
+
+class CustomSwaggerSchema(SwaggerAutoSchema):
+    def add_manual_parameters(self, parameters):
+        print(parameters)
+        p = super().add_manual_parameters(parameters)
+        return p
+
+
 class NominalList(generics.ListCreateAPIView):
     queryset = Nominal.objects.all()
     serializer_class = NominalSerializer
 
+
 class NominalDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Nominal.objects.all()
     serializer_class = NominalSerializer
+    swagger_schema = CustomSwaggerSchema
+
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 # TODO - Create a mixin for the shared class attributes
 # Create an EDIT, READ AND LIST FOR THE NOMINAL JOURNALS
+
 
 class CreateNominalJournal(
         RESTBaseCreateTransactionMixin,
@@ -275,7 +293,7 @@ class CreateNominalJournal(
                     json_str = form_errors.as_json()
                     errors.update(
                         loads(json_str)
-                    )      
+                    )
         return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
 
 
@@ -345,7 +363,7 @@ class EditNominalJournal(
                     json_str = form_errors.as_json()
                     errors.update(
                         loads(json_str)
-                    )      
+                    )
         return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
 
 
@@ -362,6 +380,7 @@ class EditNominalJournal(
 """
 
 # https://medium.com/@ratrosy/building-apis-with-openapi-ac3c24e33ee3
+
 
 class JournalDetail(generics.RetrieveAPIView):
     queryset = NominalHeader.objects.all()

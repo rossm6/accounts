@@ -10,36 +10,6 @@ from .models import PurchaseHeader, PurchaseLine, Supplier
 
 PERIOD = '202007'
 
-
-def create_formset_data(prefix, forms):
-    data = {}
-    for i, form in enumerate(forms):
-        for field in form:
-            data[
-                prefix + "-" + str(i) + "-" + field
-            ] = form[field]
-    if forms:
-        i = i + 1  # pk keys start
-    else:
-        i = 0
-    management_form = {
-        prefix + "-TOTAL_FORMS": i,
-        prefix + "-INITIAL_FORMS": 0,
-        prefix + "-MIN_NUM_FORMS": 0,
-        prefix + "-MAX_NUM_FORMS": 1000
-    }
-    data.update(management_form)
-    return data
-
-
-def create_header(prefix, form):
-    data = {}
-    for field in form:
-        data[prefix + "-" + field] = form[field]
-    data[prefix + "-" + "period"] = PERIOD
-    return data
-
-
 # because Heroku doesn't have one unlike my local Linux OS
 common_words_dictionary = [
     "A",

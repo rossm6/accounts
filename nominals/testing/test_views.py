@@ -3168,6 +3168,10 @@ class VoidJournal(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.status,
+            'v'
+        )    
 
         # NOM LINES
 
@@ -3272,6 +3276,10 @@ class VoidJournal(TestCase):
         self.assertEqual(
             header.total,
             120
+        )
+        self.assertEqual(
+            header.status,
+            'v'
         )
 
         # NOM LINES
@@ -3401,6 +3409,10 @@ class VoidJournal(TestCase):
         self.assertEqual(
             header.total,
             120
+        )
+        self.assertEqual(
+            header.status,
+            'c'
         )
 
         # NOM LINES
@@ -3651,6 +3663,11 @@ class VoidJournal(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.status,
+            'v'
+        )
+
 
         # NOM LINES
 

@@ -7,12 +7,14 @@ from nominals.models import Nominal
 from nominals.helpers import create_default_data as nl_create_default_data
 from purchases.helpers import create_default_data as pl_create_default_data
 from vat.helpers import create_default_data as vt_create_default_data
+from sales.helpers import create_default_data as sl_create_default_data
 
 apps_db_data = [
     'cashbook',
     'items',
     'nominals',
     'purchases',
+    'sales',
     'vat'
 ]
 
@@ -32,6 +34,7 @@ def init():
     it_create_default_data()
     nl_create_default_data()
     pl_create_default_data()
+    sl_create_default_data()
     vt_create_default_data()
 
     bank_nominal = Nominal.objects.get(name="Bank Account")

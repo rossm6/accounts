@@ -1,6 +1,4 @@
 from datetime import datetime, timedelta
-from decimal import Decimal
-from itertools import chain
 from json import loads
 
 from django.shortcuts import reverse
@@ -16,7 +14,6 @@ from vat.models import Vat
 
 from ..helpers import (create_credit_note_with_lines,
                        create_credit_note_with_nom_entries,
-                       create_formset_data, create_header,
                        create_invoice_with_lines,
                        create_invoice_with_nom_entries, create_invoices,
                        create_lines, create_payment_with_nom_entries,
@@ -28,13 +25,6 @@ LINE_FORM_PREFIX = "line"
 MATCHING_FORM_PREFIX = "match"
 PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
-TWOPLACES = Decimal(10) ** -2
-
-def two_dp(n):
-    """
-    n could be an int or a float
-    """
-    return Decimal(n).quantize(TWOPLACES)
 
 def match(match_by, matched_to):
     headers_to_update = []
@@ -58,36 +48,6 @@ def match(match_by, matched_to):
     PurchaseHeader.objects.bulk_update(headers_to_update + [ match_by ], ['due', 'paid'])
     PurchaseMatching.objects.bulk_create(matches)
     return match_by, headers_to_update
-
-
-def add_and_replace_objects(objects, replace_keys, extra_keys_and_values):
-    for obj in objects:
-        for old_key in replace_keys:
-            new_key = replace_keys[old_key]
-            same_value = obj[old_key]
-            obj[new_key] = same_value
-            del obj[old_key]
-        for extra in extra_keys_and_values:
-            extra_key = extra
-            extra_value = extra_keys_and_values[extra_key]
-            obj[extra_key] = extra_value
-    return objects
-
-def get_fields(obj, wanted_keys):
-    d = {}
-    for key in wanted_keys:
-        d[key] = obj[key]
-    return d
-
-
-def to_dict(instance):
-    opts = instance._meta
-    data = {}
-    for f in chain(opts.concrete_fields, opts.private_fields):
-        data[f.name] = f.value_from_object(instance)
-    for f in opts.many_to_many:
-        data[f.name] = [i.id for i in f.value_from_object(instance)]
-    return data
 
 def create_cancelling_headers(n, supplier, ref_prefix, type, value):
     """
@@ -131,8 +91,6 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
         )
         headers.append(i)
     return PurchaseHeader.objects.bulk_create(headers)    
-
-
 
 
 class CreateBroughtForwardInvoice(TestCase):

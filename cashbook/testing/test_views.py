@@ -8,7 +8,7 @@ from django.test import TestCase
 from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
 from nominals.models import Nominal, NominalTransaction
-from purchases.helpers import create_formset_data, create_header
+from accountancy.testing.helpers import *
 from utils.helpers import sort_multiple
 from vat.models import Vat
 
