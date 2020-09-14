@@ -98,3 +98,60 @@ class ViewInvoice(TestCase):
             response.context["header_to_edit"],
             header
         )
+
+
+class ViewBroughtForwardInvoice(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        cls.factory = RequestFactory()
+        cls.customer = Customer.objects.create(name="test_customer")
+        cls.ref = "test matching"
+        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+
+        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        cls.description = "a line description"
+
+        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+
+
+    def test(self):
+
+        header, lines = create_invoice_with_lines(
+            {
+                "type": "sbi",
+                "customer": self.customer,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 2400,
+                "paid": 0,
+                "due": 2400
+            },
+            [
+                {
+                    'item': self.item,
+                    'description': self.description,
+                    'goods': 100,
+                    'vat': 20
+                }
+            ] * 20,
+        )
+
+
+        headers = SaleHeader.objects.all()
+        header = headers[0]
+
+        response = self.client.get(
+            reverse("sales:view", kwargs={"pk": header.pk}))
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+
+        self.assertEqual(
+            response.context["header_to_edit"],
+            header
+        )
