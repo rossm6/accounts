@@ -1,13 +1,33 @@
 from django.db.models import Q
+from itertools import groupby
 
 from .models import PurchaseHeader, PurchaseMatching
 
 
-def creditors():
-    period = '202001'
-    headers = PurchaseHeader.objects.filter(period__lte=period)
-    matches = PurchaseMatching.objects
-    .filter(period__lte=period)
-    .filter(
-        Q(matched_by__in=headers) | Q(matched_to__in=headers)
-    )
+def creditors(period):
+    headers = PurchaseHeader.objects.filter(period__lte=period).order_by("pk")
+
+    matches = (PurchaseMatching.objects
+               .filter(period__gt=period)
+               .filter(
+                   Q(matched_by__in=headers) | Q(matched_to__in=headers)
+               ))
+
+    matches_for_header = {}
+    for match in matches:
+        if match.matched_by_id not in matches_for_header:
+            matches_for_header[match.matched_by_id] = []
+        matches_for_header[match.matched_by_id].append(match)
+        if match.matched_to_id not in matches_for_header:
+            matches_for_header[match.matched_to_id] = []
+        matches_for_header[match.matched_to_id].append(match)
+
+    for header in headers:
+        if header.pk in matches_for_header:
+            for match in matches_for_header[header.pk]:
+                if match.matched_to == header:
+                    header.due += match.value
+                else:
+                    header.due -= match.value
+
+    return [header for header in headers if header.due != 0]

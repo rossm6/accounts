@@ -13919,7 +13919,6 @@ class CreateInvoiceNominalEntries(TestCase):
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
 
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
         cls.url = reverse("purchases:create")

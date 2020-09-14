@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_dropdown.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.2/css/buttons.dataTables.min.css">
+    <link rel="stylesheet" href"https://cdn.datatables.net/scroller/2.0.2/css/scroller.dataTables.min.css">
+    <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+
+<div class="cont">
+    <div>
+        <div class="d-flex justify-content-center">
+            <div>
+                <div class="border data-grid p-4 position-relative">
+                    <div>
+                        {% crispy form %}
+                    </div>
+                    <div class="mt-4 d-flex justify-content-center">
+                        <table class="report" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Supplier
+                                    </th>
+                                    <th>
+                                        Ref
+                                    </th>
+                                    <th>
+                                        Unallocated
+                                    </th>
+                                    <th>
+                                        Current
+                                    </th>
+                                    <th>
+                                        1 period prior
+                                    </th>
+                                    <th>
+                                        2 periods prior
+                                    </th>
+                                    <th>
+                                        3 periods prior
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-bordered">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+
+{% block js %}
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
+<script>
+
+    $(document).ready(function(){
+
+            var form_p = $("form.creditor_form").parents().eq(0);
+
+            form_p.find("form").on("submit", function(e){
+                e.preventDefault();
+                $.ajax({
+                    url: $(this).attr("action"),
+                    data: $(this).serialize(),
+                    type: "GET",
+                    success: function(data, textStatus, jqXHR ){
+                        if(data.success){
+                            // reload the report
+                        }
+                        else{
+                            form_p.find("form").replaceWith($(data.form_html))
+                        }
+                    }
+                });
+            });
+
+
+            $("table.report")
+            .DataTable({
+                ajax: {
+                    url: "{% url 'purchases:creditors_report' %}",
+                    data: function (d) {
+                        d["from_supplier"] = $("input[name='from_supplier']").val() || "";
+                        d["to_supplier"] = $("input[name='to_supplier']").val() || "";
+                        d["period"] = $("input[name='period']").val() || "";
+                        d["get_report"] = true;
+                    },
+                    type: "GET"
+                },
+                columns: [
+                    { 
+                        'data': 'supplier',
+                        'render': function (data, type, full, meta) {
+                            return '<span>' + full.supplier + '</span>';
+                        }
+                    },
+                    { 
+                        'data': 'ref',
+                        'render': function (data, type, full, meta) {
+                            return '<span>' + full.ref + '</span>';
+                        }
+                    },
+                    { 
+                        'data': 'unallocated',
+                        'render': function (data, type, full, meta) {
+                            return '<span>' + full.unallocated + '</span>';
+                        }
+                    },
+                    { 
+                        'data': 'current',
+                        'render': function (data, type, full, meta) {
+                            return '<span>' + full.current + '</span>';
+                        }
+                    },
+                    { 
+                        'data': '1 period prior',
+                        'render': function (data, type, full, meta) {
+                            return '<span>' + full["1 period prior"] + '</span>';
+                        }
+                    },
+                    { 
+                        'data': '2 periods prior',
+                        'render': function (data, type, full, meta) {
+                            return '<span>' + full["2 periods prior"] + '</span>';
+                        }
+                    },
+                    { 
+                        'data': '3 periods prior',
+                        'render': function (data, type, full, meta) {
+                            return '<span>' + full["3 periods prior"] + '</span>';
+                        }
+                    },
+                ],
+                columnDefs: [
+                    {"className": "dt-center", "targets": "_all"},
+                ],
+                dom: 't',
+                scrollY: 500,
+                deferRender: true,
+                scroller: true,
+                serverSide: true,
+                scrollCollapse: true,
+            });
+    });
+
+</script>
+{% endblock js %}

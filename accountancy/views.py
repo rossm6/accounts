@@ -18,6 +18,7 @@ from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
 
+from accountancy.exceptions import FormNotValid
 from nominals.models import Nominal
 
 from .widgets import InputDropDown
@@ -160,7 +161,7 @@ def input_dropdown_widget_load_options_factory(form, paginate_by):
     return load
 
 
-class jQueryDataTable(object):
+class jQueryDataTable:
 
     def order_by(self):
         ordering = []  # will pass this to ORM to order the fields correctly
@@ -1289,6 +1290,94 @@ class DeleteCashBookTransMixin:
                            ).delete()
 
 
+class jQueryDataTableScrollerMixin:
+    """
+    Simply slices the queryset based on the `start` and `length`
+    arguments provided by the plugin
+    """
+
+    def get_queryset(self, form):
+        queryset = super().get_queryset(form)
+        start = self.request.GET.get("start", 0)
+        length = self.request.GET.get("length", 25)
+        queryset = queryset[int(start): int(start) + int(length)]
+        return queryset
+
+
+class jQueryDataTableFilterForScollerMixin:
+    """
+    If search is applied to the Scroller then `recordsFiltered`
+    does not equal necessarily `recordsTotal`
+    """
+
+    def get_queryset(self, form):
+        """
+        The base queryset i.e. before any search or filter is applied
+        """
+        queryset = self.queryset
+        queryset_copy = queryset.all()  # this produces a new queryset obj
+        # as per https://stackoverflow.com/a/34517611
+        self.unfiltered_count = queryset.count()
+        return self.filter(queryset_copy, form)
+
+    def filter(self, queryset):
+        queryset_copy = queryset.all()
+        self.filtered_count = queryset_copy.count()
+        return queryset
+
+
+class jQueryDataTableScrollerFilterMixin(
+        jQueryDataTableScrollerMixin,
+        jQueryDataTableFilterForScollerMixin):
+    pass
+
+
+class AgeDebtReportMixin(TemplateResponseMixin, View):
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data()
+        if 'get_report' in self.request.GET:
+            data = {
+                "draw": int(self.request.GET.get('draw'), 0),
+                "recordsTotal": context["recordsTotal"],
+                "recordsFiltered": context["recordsFiltered"],
+                "data": context["data"]
+            }
+            return JsonResponse(data=data)
+        else:
+            return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        if 'get_report' in self.request.GET:
+            form = self.get_filter_form()(data=self.request.GET)
+            if form.is_valid():
+                queryset = self.get_queryset(form)
+            else:
+                pass
+                # to do
+
+            data = []
+            for header in queryset:
+                data.append({
+                    "supplier": header.supplier.name,
+                    "ref": header.ref,
+                    "unallocated": 0,
+                    "current": 0,
+                    "1 period prior": 1,
+                    "2 periods prior": 2,
+                    "3 periods prior": 3
+                })
+            context["recordsTotal"] = self.unfiltered_count
+            context["recordsFiltered"] = self.filtered_count
+            context["data"] = data
+        else:
+            context["form"] = form = self.get_filter_form()(
+                initial={"period": "202007"})
+
+        return context
+
+
 class LoadMatchingTransactions(jQueryDataTable, ListView):
 
     """
@@ -1299,7 +1388,7 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
         context = {}
         start = self.request.GET.get("start", 0)
         length = self.request.GET.get("length", 25)
-        count = queryset = self.get_queryset().count()
+        count = self.get_queryset().count()
         queryset = self.get_queryset()[int(start): int(start) + int(length)]
         data = []
         for obj in queryset:
@@ -1344,10 +1433,20 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
                     }
                 }
             )
+        # https://datatables.net/manual/server-side#Example-data
+        # total records, before filtering.  I.e. the total number
+        # of records in the DB
         context["recordsTotal"] = count
+        # Total records, after filtering i.e. the total number
+        # of records after filtering has been applied - not just
+        # the number of records being returned for this page
         context["recordsFiltered"] = count
         # this would be wrong if we searched !!!
         context["data"] = data
+
+        # for matching transactions, when this was first built, there
+        # is no optional filtering allowed so count is for before filtered
+        # and total
         return context
 
     def get_header_model(self):
@@ -1421,3 +1520,35 @@ class LoadContacts(ListView):
             contacts.append(s)
         data = {"data": contacts}
         return JsonResponse(data)
+
+
+def ajax_form_validator(forms):
+
+    def func(request):
+        success = False
+        status = 404
+        response_data = {}
+        if form := request.GET.get("form"):
+            data = request.GET
+        elif form := request.POST.get("form"):
+            data = request.POST  
+
+        if form in forms:
+            form_instance = forms[form](data=data)
+            status = 200
+            if form_instance.is_valid():
+                success = True
+            else:
+                ctx = {}
+                ctx.update(csrf(request))
+                form_html = render_crispy_form(form_instance, context=ctx)
+                response_data.update({
+                    "form_html": form_html
+                })
+        response_data.update({
+            "success": success,
+            "status": status
+        })
+        return JsonResponse(data=response_data, status=status)
+
+    return func

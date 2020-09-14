@@ -24,8 +24,9 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                SaleAndPurchaseMatchingFormset)
 from accountancy.helpers import (delay_reverse_lazy,
                                  input_dropdown_widget_attrs_config)
-from accountancy.layouts import (DataTableTdField, PlainFieldErrors,
-                                 TableHelper, create_transaction_header_helper)
+from accountancy.layouts import (DataTableTdField, Div, Field,
+                                 PlainFieldErrors, TableHelper, Hidden,
+                                 create_transaction_header_helper, LabelAndFieldAndErrors)
 from accountancy.widgets import InputDropDown
 from items.models import Item
 from nominals.models import Nominal
@@ -183,3 +184,61 @@ read_only_match = forms.modelformset_factory(
 )
 
 read_only_match.include_empty_form = False
+
+
+class CreditorForm(forms.Form):
+    from_supplier = forms.ModelChoiceField(
+        queryset=Supplier.objects.all(), required=False)
+    to_supplier = forms.ModelChoiceField(
+        queryset=Supplier.objects.all(), required=False)
+    period = forms.CharField(max_length=6, required=False)
+
+    def clean_period(self):
+        if (period := self.cleaned_data.get('period')) is None:
+            return self.initial.get('period')
+        return period
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if (
+            (to_supplier := cleaned_data.get("to_supplier")) and
+            (from_supplier := cleaned_data.get("from_supplier"))
+            and to_supplier.pk < from_supplier.pk
+        ):
+            raise forms.ValidationError(
+                _(
+                    "This is not a valid range for suppliers because the second supplier you choose comes before the first supplier"
+                ),
+                code="invalid supplier range"
+            )
+        return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = "creditor_form"
+        self.helper.form_method = "GET"
+        self.helper.form_action = reverse_lazy(
+            "purchases:validate_forms_by_ajax")
+        self.helper.layout = Layout(
+            Div(
+                Hidden('form', 'creditor_form'),
+                Div(
+                    LabelAndFieldAndErrors("from_supplier", css_class="w-100"),
+                    css_class="col"
+                ),
+                Div(
+                    LabelAndFieldAndErrors("to_supplier", css_class="w-100"),
+                    css_class="col"
+                ),
+                Div(
+                    LabelAndFieldAndErrors("period", css_class="input w-100"),
+                    css_class="col"
+                ),
+                css_class="row"
+            ),
+            Div(
+                HTML("<button class='btn btn-sm btn-primary'>Report</button>"),
+                css_class="text-right mt-3"
+            )
+        )

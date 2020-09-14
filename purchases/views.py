@@ -1,3 +1,4 @@
+from accountancy.views import AgeDebtReportMixin
 from decimal import Decimal
 from functools import reduce
 from itertools import chain
@@ -13,6 +14,7 @@ from django.utils import timezone
 from django.views.generic import ListView
 from querystring_parser import parser
 
+from accountancy.exceptions import FormNotValid
 from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
 from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
@@ -24,7 +26,9 @@ from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
                                ViewTransactionOnLedgerOtherThanNominal,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory)
+                               input_dropdown_widget_validate_choice_factory,
+                               jQueryDataTable,
+                               jQueryDataTableScrollerFilterMixin)
 from cashbook.models import CashBookTransaction
 from items.models import Item
 from nominals.forms import NominalForm
@@ -32,9 +36,9 @@ from nominals.models import Nominal, NominalTransaction
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
-from .forms import (PurchaseHeaderForm, PurchaseLineForm, QuickSupplierForm,
-                    ReadOnlyPurchaseHeaderForm, enter_lines, match,
-                    read_only_lines, read_only_match)
+from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
+                    QuickSupplierForm, ReadOnlyPurchaseHeaderForm, enter_lines,
+                    match, read_only_lines, read_only_match)
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
@@ -125,6 +129,7 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     module = "PL"
     control_nominal_name = "Purchase Ledger Control"
     cash_book_transaction_model = CashBookTransaction
+
 
 class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
     header = {
@@ -260,3 +265,51 @@ create_on_the_fly_view = create_on_the_fly(
         "prefix": "vat"
     }
 )
+
+
+"""
+
+Page loads - show the default creditors
+Submit search form - validate on the server.  If not valid return errors
+
+
+"""
+
+
+from accountancy.views import ajax_form_validator
+
+
+validate_forms_by_ajax = ajax_form_validator({
+    "creditor_form": CreditorForm
+})
+
+
+class AgeCreditorsReport(
+        jQueryDataTableScrollerFilterMixin,
+        jQueryDataTable,
+        AgeDebtReportMixin):
+
+    """
+    This does not order at the moment.  Need to call order on the base queryset
+    """
+
+    model = PurchaseHeader
+    template_name = "purchases/creditors.html"
+
+    def get_queryset(self, form):
+        self.queryset = PurchaseHeader.objects.all()
+        return super().get_queryset(form)
+
+    def get_filter_form(self):
+        return CreditorForm
+
+    def filter(self, queryset, form):
+        from_supplier = form.cleaned_data.get("from_supplier")
+        to_supplier = form.cleaned_data.get("to_supplier")
+        period = form.cleaned_data.get("period")
+        queryset = (
+            queryset
+            .filter(period=period)
+            # to filter by supplier also
+        )
+        return super().filter(queryset)
