@@ -1,4 +1,3 @@
-from accountancy.views import AgeDebtReportMixin
 from decimal import Decimal
 from functools import reduce
 from itertools import chain
@@ -17,18 +16,18 @@ from querystring_parser import parser
 from accountancy.exceptions import FormNotValid
 from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
-from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
+from accountancy.views import (AgeDebtReportMixin, BaseViewTransaction,
+                               BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
                                LoadMatchingTransactions,
                                SalesAndPurchasesTransList,
                                ViewTransactionOnLedgerOtherThanNominal,
-                               create_on_the_fly,
+                               ajax_form_validator, create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory,
-                               jQueryDataTable,
-                               jQueryDataTableScrollerFilterMixin)
+                               jQueryDataTable,)
 from cashbook.models import CashBookTransaction
 from items.models import Item
 from nominals.forms import NominalForm
@@ -276,29 +275,59 @@ Submit search form - validate on the server.  If not valid return errors
 """
 
 
-from accountancy.views import ajax_form_validator
-
-
 validate_forms_by_ajax = ajax_form_validator({
     "creditor_form": CreditorForm
 })
 
 
-class AgeCreditorsReport(
-        jQueryDataTableScrollerFilterMixin,
-        jQueryDataTable,
-        AgeDebtReportMixin):
+class AgeCreditorsReport(AgeDebtReportMixin):
 
     """
-    This does not order at the moment.  Need to call order on the base queryset
+    The business logic here is implemented at the Python level so table ordering
+    cannot be done at the sql level.  Either disable ordering or implement it at
+    the python level...
     """
 
     model = PurchaseHeader
     template_name = "purchases/creditors.html"
+    hide_trans_columns = [
+        'supplier',
+        'total', 
+        'unallocated',
+        'current',
+        '1 month',
+        '2 month',
+        '3 month',
+        {
+            'label': '4 Month & Older',
+            'field': '4 month'
+        }       
+    ]
+    show_trans_columns = [
+        'supplier',
+        'date',
+        {
+            'label': 'Due Date',
+            'field': 'due_date'
+        },
+        'ref',
+        'total',
+        'unallocated',
+        'current',
+        '1 month',
+        '2 month',
+        '3 month',
+        {
+            'label': '4 Month & Older',
+            'field': '4 month'
+        }
+    ]
 
-    def get_queryset(self, form):
-        self.queryset = PurchaseHeader.objects.all()
-        return super().get_queryset(form)
+    def get_header_model(self):
+        return self.model
+
+    def get_queryset(self):
+        return PurchaseHeader.objects.all().select_related('supplier')
 
     def get_filter_form(self):
         return CreditorForm
@@ -309,7 +338,23 @@ class AgeCreditorsReport(
         period = form.cleaned_data.get("period")
         queryset = (
             queryset
-            .filter(period=period)
-            # to filter by supplier also
+            .filter(period__lte=period)
         )
-        return super().filter(queryset)
+        if from_supplier:
+            queryset.filter(supplier__pk__gte=from_supplier.pk)
+        if to_supplier:
+            queryset.filter(supplier__pk__lte=to_supplier.pk)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["columns"] = columns = []
+        for column in self.show_trans_columns:
+            if type(column) is type(""):
+                columns.append({
+                    "label": column.title(),
+                    "field": column
+                })
+            elif isinstance(column, dict):
+                columns.append(column)
+        return context

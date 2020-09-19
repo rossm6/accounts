@@ -1,7 +1,11 @@
 {% load crispy_forms_field %}
-<label {% if field|is_checkbox %} class="d-block" {% endif %} for="{{ field.id_for_label }}">{{ field.label|safe }}</label>
-{% comment %} changed this so that the registered checkbox for the on the fly vat object form looked better {% endcomment %}
+
+{% if field|is_checkbox %}
+{% endif %}
+<label {% if field|is_checkbox %} class="m-0 mr-2" {% endif %} for="{{ field.id_for_label }}">{{ field.label|safe }}</label>
 {% crispy_field field %}
+{% if field|is_checkbox %}
+{% endif %}
 {% if field.help_text %}
     <small id="hint_{{ field.auto_id }}" class="form-text text-muted small">{{ field.help_text|safe }}</small>
 {% endif %}

@@ -26,7 +26,7 @@ from accountancy.helpers import (delay_reverse_lazy,
                                  input_dropdown_widget_attrs_config)
 from accountancy.layouts import (DataTableTdField, Div, Field,
                                  PlainFieldErrors, TableHelper, Hidden,
-                                 create_transaction_header_helper, LabelAndFieldAndErrors)
+                                 create_transaction_header_helper, LabelAndFieldAndErrors, AdvSearchField)
 from accountancy.widgets import InputDropDown
 from items.models import Item
 from nominals.models import Nominal
@@ -191,12 +191,8 @@ class CreditorForm(forms.Form):
         queryset=Supplier.objects.all(), required=False)
     to_supplier = forms.ModelChoiceField(
         queryset=Supplier.objects.all(), required=False)
-    period = forms.CharField(max_length=6, required=False)
-
-    def clean_period(self):
-        if (period := self.cleaned_data.get('period')) is None:
-            return self.initial.get('period')
-        return period
+    period = forms.CharField(max_length=6)
+    show_transactions = forms.BooleanField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -236,6 +232,13 @@ class CreditorForm(forms.Form):
                     css_class="col"
                 ),
                 css_class="row"
+            ),
+            Div(
+                Div(
+                    LabelAndFieldAndErrors("show_transactions", css_class=""),
+                    css_class="col"
+                ),
+                css_class="mt-4 row"
             ),
             Div(
                 HTML("<button class='btn btn-sm btn-primary'>Report</button>"),

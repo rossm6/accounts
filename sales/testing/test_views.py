@@ -9,7 +9,7 @@ from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
 from items.models import Item
 from nominals.models import Nominal, NominalTransaction
-from utils.helpers import sort_multiple
+from accountancy.helpers import sort_multiple
 from vat.models import Vat
 
 from ..helpers import (create_credit_note_with_lines,

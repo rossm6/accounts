@@ -9,7 +9,7 @@ from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
 from nominals.models import Nominal, NominalTransaction
 from accountancy.testing.helpers import *
-from utils.helpers import sort_multiple
+from accountancy.helpers import sort_multiple
 from vat.models import Vat
 
 HEADER_FORM_PREFIX = 'header'

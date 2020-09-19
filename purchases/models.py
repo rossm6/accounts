@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from accountancy.models import (ControlAccountPaymentTransactionMixin, Contact, MatchedHeaders, TransactionHeader,
                                 TransactionLine, Transaction, ControlAccountInvoiceTransactionMixin, CashBookEntryMixin)
@@ -129,6 +130,34 @@ class PurchaseHeader(TransactionHeader):
             return Payment(header=self)
         if self.type == "pr":
             return Refund(header=self)
+
+
+    @staticmethod
+    def creditors(headers, period):
+        matches = (PurchaseMatching.objects
+                .filter(period__gt=period)
+                .filter(
+                    Q(matched_by__in=headers) | Q(matched_to__in=headers)
+                ))
+
+        matches_for_header = {}
+        for match in matches:
+            if match.matched_by_id not in matches_for_header:
+                matches_for_header[match.matched_by_id] = []
+            matches_for_header[match.matched_by_id].append(match)
+            if match.matched_to_id not in matches_for_header:
+                matches_for_header[match.matched_to_id] = []
+            matches_for_header[match.matched_to_id].append(match)
+
+        for header in headers:
+            if header.pk in matches_for_header:
+                for match in matches_for_header[header.pk]:
+                    if match.matched_to == header:
+                        header.due += match.value
+                    else:
+                        header.due -= match.value
+
+        return [header for header in headers if header.due != 0]        
 
 
 class PurchaseLineQuerySet(models.QuerySet):

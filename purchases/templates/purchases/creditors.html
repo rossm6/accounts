@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% load static %}
-{% load crispy_forms_tags %}
 
 {% block head %}
     <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
@@ -22,34 +21,14 @@
         <div class="d-flex justify-content-center">
             <div>
                 <div class="border data-grid p-4 position-relative">
-                    <div>
-                        {% crispy form %}
-                    </div>
+                    {% include 'purchases/creditors_form.html' %}
                     <div class="mt-4 d-flex justify-content-center">
                         <table class="report" style="width: 100%;">
                             <thead>
                                 <tr>
-                                    <th>
-                                        Supplier
-                                    </th>
-                                    <th>
-                                        Ref
-                                    </th>
-                                    <th>
-                                        Unallocated
-                                    </th>
-                                    <th>
-                                        Current
-                                    </th>
-                                    <th>
-                                        1 period prior
-                                    </th>
-                                    <th>
-                                        2 periods prior
-                                    </th>
-                                    <th>
-                                        3 periods prior
-                                    </th>
+                                    {% for col in columns %}
+                                        <th>{{ col.label }}</th>
+                                    {% endfor %}
                                 </tr>
                             </thead>
                             <tbody class="table-bordered">
@@ -74,90 +53,61 @@
 
             var form_p = $("form.creditor_form").parents().eq(0);
 
-            form_p.find("form").on("submit", function(e){
-                e.preventDefault();
-                $.ajax({
-                    url: $(this).attr("action"),
-                    data: $(this).serialize(),
-                    type: "GET",
-                    success: function(data, textStatus, jqXHR ){
-                        if(data.success){
-                            // reload the report
-                        }
-                        else{
-                            form_p.find("form").replaceWith($(data.form_html))
-                        }
-                    }
-                });
-            });
-
-
-            $("table.report")
+            var report_table = $("table.report")
             .DataTable({
-                ajax: {
-                    url: "{% url 'purchases:creditors_report' %}",
-                    data: function (d) {
-                        d["from_supplier"] = $("input[name='from_supplier']").val() || "";
-                        d["to_supplier"] = $("input[name='to_supplier']").val() || "";
-                        d["period"] = $("input[name='period']").val() || "";
-                        d["get_report"] = true;
-                    },
-                    type: "GET"
+                ajax: function(data, callback, settings){
+                    data["from_supplier"] = $(":input[name='from_supplier']").val() || "";
+                    data["to_supplier"] = $(":input[name='to_supplier']").val() || "";
+                    data["period"] = $("input[name='period']").val() || "";
+                    $.ajax({
+                        url: "{% url 'purchases:creditors_report' %}",
+                        type: "GET",
+                        data: data,
+                        success: function(data, textStatus, jqXHR){
+                            if(data.success){
+                                callback(data.data);
+                            }
+                            else{
+                                callback(data);
+                                form_p.find("form").replaceWith($(data.form_html));
+                            }
+                        },
+                        complete: function(jqXHR, textStatus){
+                            if(textStatus != "success"){
+                                console.log("Failed to get data for report");
+                                console.log("logging...");
+                                console.log(jqXHR);
+                                console.log(textStatus);
+                                console.log("end report logging");
+                                alert("There was an error, please try again later.");
+                            }
+                        }
+                    });
                 },
                 columns: [
-                    { 
-                        'data': 'supplier',
-                        'render': function (data, type, full, meta) {
-                            return '<span>' + full.supplier + '</span>';
-                        }
-                    },
-                    { 
-                        'data': 'ref',
-                        'render': function (data, type, full, meta) {
-                            return '<span>' + full.ref + '</span>';
-                        }
-                    },
-                    { 
-                        'data': 'unallocated',
-                        'render': function (data, type, full, meta) {
-                            return '<span>' + full.unallocated + '</span>';
-                        }
-                    },
-                    { 
-                        'data': 'current',
-                        'render': function (data, type, full, meta) {
-                            return '<span>' + full.current + '</span>';
-                        }
-                    },
-                    { 
-                        'data': '1 period prior',
-                        'render': function (data, type, full, meta) {
-                            return '<span>' + full["1 period prior"] + '</span>';
-                        }
-                    },
-                    { 
-                        'data': '2 periods prior',
-                        'render': function (data, type, full, meta) {
-                            return '<span>' + full["2 periods prior"] + '</span>';
-                        }
-                    },
-                    { 
-                        'data': '3 periods prior',
-                        'render': function (data, type, full, meta) {
-                            return '<span>' + full["3 periods prior"] + '</span>';
-                        }
-                    },
+                    {% for column in columns %}
+                        { 'data' : '{{ column.field }}' },
+                    {% endfor %}
                 ],
                 columnDefs: [
                     {"className": "dt-center", "targets": "_all"},
                 ],
                 dom: 't',
-                scrollY: 500,
+                scrollY: 250,
                 deferRender: true,
                 scroller: true,
                 serverSide: true,
                 scrollCollapse: true,
+                language: {
+                    zeroRecords: "No transactions found"
+                },
             });
+
+            form_p.find("form").on("submit", function(e){
+                e.preventDefault();
+                report_table.ajax.reload();
+            });
+
     });
 
 </script>

@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from accountancy.testing.helpers import create_formset_data, create_header
 from nominals.models import Nominal
-from utils.helpers import sort_multiple
+from accountancy.helpers import sort_multiple
 from vat.models import Vat
 
 from ..models import NominalHeader, NominalLine, NominalTransaction

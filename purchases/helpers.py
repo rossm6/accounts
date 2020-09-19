@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from cashbook.models import CashBookTransaction
 from nominals.models import NominalTransaction
-from utils.helpers import sort_multiple
+from accountancy.helpers import sort_multiple
 
 from .models import PurchaseHeader, PurchaseLine, Supplier
 

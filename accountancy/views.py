@@ -1,5 +1,6 @@
 import functools
 from copy import deepcopy
+from datetime import date
 from itertools import chain
 
 from crispy_forms.utils import render_crispy_form
@@ -19,6 +20,7 @@ from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
 
 from accountancy.exceptions import FormNotValid
+from accountancy.helpers import Period, sort_multiple
 from nominals.models import Nominal
 
 from .widgets import InputDropDown
@@ -162,6 +164,26 @@ def input_dropdown_widget_load_options_factory(form, paginate_by):
 
 
 class jQueryDataTable:
+
+    def order_objects(self, objs):
+        """
+        Sometimes it is not possible in Django to use the ORM, or it would be tricky,
+        so we have to order in python.
+        """
+        orm_ordering = self.order_by()  # so we don't repeat ourselves
+        ordering = []
+        for order in orm_ordering:
+            if order[0] == "-":
+                field = order[1:]
+                ordering.append(
+                    (lambda obj: obj.get(field), True)  # descending
+                )
+            else:
+                field = order
+                ordering.append(
+                    (lambda obj: obj.get(field), False)  # ascending
+                )
+        return sort_multiple(objs, *ordering)
 
     def order_by(self):
         ordering = []  # will pass this to ORM to order the fields correctly
@@ -1290,55 +1312,24 @@ class DeleteCashBookTransMixin:
                            ).delete()
 
 
-class jQueryDataTableScrollerMixin:
-    """
-    Simply slices the queryset based on the `start` and `length`
-    arguments provided by the plugin
-    """
-
-    def get_queryset(self, form):
-        queryset = super().get_queryset(form)
-        start = self.request.GET.get("start", 0)
-        length = self.request.GET.get("length", 25)
-        queryset = queryset[int(start): int(start) + int(length)]
-        return queryset
-
-
-class jQueryDataTableFilterForScollerMixin:
-    """
-    If search is applied to the Scroller then `recordsFiltered`
-    does not equal necessarily `recordsTotal`
-    """
-
-    def get_queryset(self, form):
-        """
-        The base queryset i.e. before any search or filter is applied
-        """
-        queryset = self.queryset
-        queryset_copy = queryset.all()  # this produces a new queryset obj
-        # as per https://stackoverflow.com/a/34517611
-        self.unfiltered_count = queryset.count()
-        return self.filter(queryset_copy, form)
-
-    def filter(self, queryset):
-        queryset_copy = queryset.all()
-        self.filtered_count = queryset_copy.count()
-        return queryset
-
-
-class jQueryDataTableScrollerFilterMixin(
-        jQueryDataTableScrollerMixin,
-        jQueryDataTableFilterForScollerMixin):
-    pass
-
-
-class AgeDebtReportMixin(TemplateResponseMixin, View):
+class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
-        if 'get_report' in self.request.GET:
-            data = {
-                "draw": int(self.request.GET.get('draw'), 0),
+        if request.is_ajax():
+            data = {}
+            if 'form_html' not in context:
+                data["success"] = True
+                data["data"] = {
+                    "draw": int(request.GET.get('draw'), 0),
+                    "recordsTotal": context["recordsTotal"],
+                    "recordsFiltered": context["recordsFiltered"],
+                    "data": context["data"]
+                }
+            else:
+                data["form_html"] = context["form_html"]
+            data["data"] = {
+                "draw": int(request.GET.get('draw'), 0),
                 "recordsTotal": context["recordsTotal"],
                 "recordsFiltered": context["recordsFiltered"],
                 "data": context["data"]
@@ -1349,32 +1340,92 @@ class AgeDebtReportMixin(TemplateResponseMixin, View):
 
     def get_context_data(self, **kwargs):
         context = {}
-        if 'get_report' in self.request.GET:
+        if self.request.is_ajax():
+            # get the report
             form = self.get_filter_form()(data=self.request.GET)
             if form.is_valid():
-                queryset = self.get_queryset(form)
+                unfiltered_queryset = self.get_queryset()
+                unfiltered_queryset_copy = unfiltered_queryset.all()
+                unfiltered_count = unfiltered_queryset_copy.count()
+                filtered_queryset = self.filter(unfiltered_queryset, form)
+                filtered_queryset_copy = filtered_queryset.all()
+                filtered_count = filtered_queryset_copy.count()
+                start = self.request.GET.get("start", 0)
+                length = self.request.GET.get("length", 25)
+                queryset = filtered_queryset[int(
+                    start): int(start) + int(length)]
+                period = form.cleaned_data.get("period")
+                creditors = self.get_header_model().creditors(queryset, period)
+                data = []
+                for header in creditors:
+                    tran = {
+                        "supplier": header.supplier.name,
+                        "date": header.date,
+                        "due_date": header.due_date or date(1900, 1, 1), # we must compare date objects otherwise will error
+                        "ref": header.ref,
+                        "total": header.total,
+                    }
+                    if header.is_payment_type():
+                        tran["unallocated"] = header.due
+                        tran["current"] = 0
+                        tran["1 month"] = 0
+                        tran["2 month"] = 0
+                        tran["3 month"] = 0
+                        tran["4 month"] = 0
+                    else:
+                        tran["unallocated"] = 0
+                        period_obj = Period(period)
+                        if header.period == period_obj:
+                            tran["current"] = header.due
+                        else:
+                            tran["current"] = 0
+                        if header.period == period_obj - 1:
+                            tran["1 month"] = header.due
+                        else:
+                            tran["1 month"] = 0
+                        if header.period == period_obj - 2:
+                            tran["2 month"] = header.due
+                        else:
+                            tran["2 month"] = 0
+                        if header.period == period_obj - 3:
+                            tran["3 month"] = header.due
+                        else:
+                            tran["3 month"] = 0
+                        if header.period <= str(period_obj - 4):
+                            tran["4 month"] = header.due
+                        else:
+                            tran["4 month"] = 0
+                    data.append(tran)
+
+                context["recordsTotal"] = unfiltered_count
+                context["recordsFiltered"] = filtered_count
+                data = self.order_objects(data)
+                # we used date of 1900 to sort but need to blank this out
+                # this isn't very nice at all but seems unavoidable
+                for tran in data:
+                    if tran["due_date"] == date(1900, 1, 1):
+                        tran["due_date"] = ""
+                context["data"] = data
             else:
-                pass
-                # to do
-
-            data = []
-            for header in queryset:
-                data.append({
-                    "supplier": header.supplier.name,
-                    "ref": header.ref,
-                    "unallocated": 0,
-                    "current": 0,
-                    "1 period prior": 1,
-                    "2 periods prior": 2,
-                    "3 periods prior": 3
-                })
-            context["recordsTotal"] = self.unfiltered_count
-            context["recordsFiltered"] = self.filtered_count
-            context["data"] = data
+                unfiltered_queryset = self.get_queryset()
+                unfiltered_queryset_copy = unfiltered_queryset.all()
+                unfiltered_count = unfiltered_queryset_copy.count()
+                context["recordsTotal"] = unfiltered_count
+                context["recordsFiltered"] = 0
+                context["data"] = []
+                # i think because the form is get there is no csrf token
+                ctx = {}
+                ctx["form"] = form
+                form_html = render_to_string(
+                    "purchases/creditors_form.html", ctx)
+                context["form_html"] = form_html
         else:
-            context["form"] = form = self.get_filter_form()(
-                initial={"period": "202007"})
-
+            # page load -- render default filter form
+            # no report is rendered because ajax request is made on page load
+            # for the report
+            form = self.get_filter_form()(
+                initial={"period": "202007", "show_transactions": True})
+            context["form"] = form
         return context
 
 
@@ -1531,7 +1582,7 @@ def ajax_form_validator(forms):
         if form := request.GET.get("form"):
             data = request.GET
         elif form := request.POST.get("form"):
-            data = request.POST  
+            data = request.POST
 
         if form in forms:
             form_instance = forms[form](data=data)
