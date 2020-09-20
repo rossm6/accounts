@@ -23,7 +23,7 @@
                 <div class="border data-grid p-4 position-relative">
                     {% include 'purchases/creditors_form.html' %}
                     <div class="mt-4 d-flex justify-content-center">
-                        <table class="report" style="width: 100%;">
+                        <table class="report">
                             <thead>
                                 <tr>
                                     {% for col in columns %}
@@ -47,9 +47,33 @@
 {% block js %}
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
+<script src="{% static 'js/selectize.min.js' %}"></script>
+<script src="{% static 'accountancy/js/contact_selectize.js' %}"></script>
 <script>
 
     $(document).ready(function(){
+
+            var native_select_widget = $(":input[name='from_supplier']");
+            var creation_url = native_select_widget.attr("data-creation-url");
+            var form = native_select_widget.attr("data-form");
+            var form_field = native_select_widget.attr("data-form-field");
+            var load_url = native_select_widget.attr("data-load-url");
+
+            contact_selectize({
+                select_identifier: ":input[name='from_supplier']",
+                creation_url: creation_url,
+                form: form,
+                form_field: form_field,
+                load_url: load_url
+            });
+
+            contact_selectize({
+                select_identifier: ":input[name='to_supplier']",
+                creation_url: creation_url,
+                form: form,
+                form_field: form_field,
+                load_url: load_url
+            });
 
             var form_p = $("form.creditor_form").parents().eq(0);
 
@@ -58,7 +82,11 @@
                 ajax: function(data, callback, settings){
                     data["from_supplier"] = $(":input[name='from_supplier']").val() || "";
                     data["to_supplier"] = $(":input[name='to_supplier']").val() || "";
-                    data["period"] = $("input[name='period']").val() || "";
+                    data["period"] = $(":input[name='period']").val() || "";
+                    var show_transactions = $(":input[name='show_transactions']").prop("checked");
+                    if(show_transactions){
+                        data["show_transactions"] = "yes"
+                    }
                     $.ajax({
                         url: "{% url 'purchases:creditors_report' %}",
                         type: "GET",
@@ -70,6 +98,23 @@
                             else{
                                 callback(data);
                                 form_p.find("form").replaceWith($(data.form_html));
+                                
+                                contact_selectize({
+                                    select_identifier: ":input[name='from_supplier']",
+                                    creation_url: creation_url,
+                                    form: form,
+                                    form_field: form_field,
+                                    load_url: load_url
+                                });
+
+                                contact_selectize({
+                                    select_identifier: ":input[name='to_supplier']",
+                                    creation_url: creation_url,
+                                    form: form,
+                                    form_field: form_field,
+                                    load_url: load_url
+                                });
+
                             }
                         },
                         complete: function(jqXHR, textStatus){
@@ -91,17 +136,47 @@
                 ],
                 columnDefs: [
                     {"className": "dt-center", "targets": "_all"},
+                    {
+                        'render': function (data, type, full, meta) {
+                            console.log(data);
+                            return '<span>' + data + '</span>';
+                        },
+                        "targets": [2]
+                    }
                 ],
                 dom: 't',
                 scrollY: 250,
                 deferRender: true,
                 scroller: true,
                 serverSide: true,
-                scrollCollapse: true,
+                scrollCollapse: false,
                 language: {
                     zeroRecords: "No transactions found"
-                },
+                }
             });
+
+            var first_drawn = false;
+
+            report_table.on("draw.dt", function(){
+                var show_transactions = $(":input[name='show_transactions']").prop("checked");
+                if(show_transactions){
+                    report_table.columns([1,2,3]).visible(true);
+                }
+                else{
+                    report_table.columns([1,2,3]).visible(false);
+                }
+                report_table.columns.adjust();
+                if(!first_drawn){
+                    // it seems we need to set the width of this div otherwise
+                    // the table grows as we toggle between 'show' and 'hide'
+                    // transactions
+                    $("div.dataTables_scroll").width(
+                        $("table.report").width()
+                    );
+                    first_drawn = true;
+                }
+            });
+
 
             form_p.find("form").on("submit", function(e){
                 e.preventDefault();

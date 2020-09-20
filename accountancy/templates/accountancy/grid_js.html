@@ -15,6 +15,7 @@
 <script src="{% static 'js/selectize.min.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
 <script src="{% static 'js/modal_form.js' %}"></script>
+<script src="{% static 'accountancy/js/contact_selectize.js' %}"></script>
 {{ header_form.media }}
 <script>
 
@@ -56,57 +57,13 @@
         var form_field = native_select_widget.attr("data-form-field");
         var load_url = native_select_widget.attr("data-load-url");
 
-        $(".contact-select").selectize({
-            valueField: 'id',
-            labelField: 'code',
-            searchField: 'code',
-            insert: true,
-            create: function(input, callback) {
-                $.ajax({
-                    url: creation_url,
-                    method: "POST",
-                    // here we hard code the form prefix 'supplier'
-                    data: "form=" + form + "&" + form_field + "=" + input + "&csrfmiddlewaretoken=" + Cookies.get('csrftoken'),
-                    success: function (data) {
-                        if(data.success) {
-                            callback({
-                                id: data.result.id,
-                                code: data.result.text
-                            });
-                            // spent ages on this
-                            // selectize.js says the keys should be value and text but according to below this is wrong
-                            // https://github.com/selectize/selectize.js/issues/1329#issuecomment-358857146
-                            // https://stackoverflow.com/questions/24366365/creating-an-item-if-not-already-exists-in-selectize-js-select-box-and-ajax-updat
-                        }
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
-                        callback({
-                            id: '',
-                            code: ''
-                        });
-                    }
-                });
-            },
-            load: function(query, callback) {
-                $.ajax({
-                    url: load_url,
-                    type: 'GET',
-                    dataType: 'json',
-                    data: {
-                        q: query,
-                        page_limit: 10,
-                    },
-                    error: function() {
-                        console.log("error loading suppliers...");
-                    },
-                    success: function(res) {
-                        callback(res.data);
-                    }
-                });
-            }
+        contact_selectize({
+            select_identifier: ".contact-select",
+            creation_url: creation_url,
+            form: form,
+            form_field: form_field,
+            load_url: load_url
         });
-
 
         $(".cashbook-select").selectize();
 

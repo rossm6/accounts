@@ -1,7 +1,7 @@
 import functools
 from copy import deepcopy
 from datetime import date
-from itertools import chain
+from itertools import chain, groupby
 
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
@@ -20,7 +20,7 @@ from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
 
 from accountancy.exceptions import FormNotValid
-from accountancy.helpers import Period, sort_multiple
+from accountancy.helpers import JSONBlankDate, Period, sort_multiple
 from nominals.models import Nominal
 
 from .widgets import InputDropDown
@@ -1314,6 +1314,43 @@ class DeleteCashBookTransMixin:
 
 class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
 
+    """
+
+        CHALLENGE YOURSELF!
+
+            This report does nearly all the work in Python i.e. it pulls out
+            the data from the database and then applies filtering and ordering
+            in Python.  It would be interesting to ee how much could be done
+            in Postgresql directly as I'm pretty confident the ORM cannot
+            be used further.
+
+        Why do it in Python?
+
+            Ordering cannot be applied at the SQL level since the values to be ordered -
+            some at least - are not known when the query executes.  Only after another
+            sql are we in a position to calculate these values.  Likewise, filtering
+            cannot be applied either until the these values have been calculated.
+
+        This is how we approach the problem -
+
+            Get all the transactions out of the DB.  And all the matching transactions.
+
+            We need to know the `recordsTotal`.  This assumes a valid form and is
+            the total number of transactions the report would show without a
+            supplier or customer filter.  The period filter cannot be dismissed
+            because the report makes no sense otherwise.  Only group the
+            transactions for each supplier if this is needed.
+
+            We then apply the contact filtering.  Apply either to the individual
+            transactions or the group set.  From this we get the `recordsFiltered`
+
+            Next we need to order the transactions.  Again either the grouped
+            or the grouped set.
+
+            Finally we take the slice of the relevant set.
+
+    """
+
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
         if request.is_ajax():
@@ -1338,84 +1375,190 @@ class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
         else:
             return self.render_to_response(context)
 
+    """
+
+        I overlooked the following initially -
+
+            Given that most of the report work i.e. filtering is done in Python
+            I have to apply paginatation and count the records in Python also for
+            the jQuery Datatables plugin.
+
+    """
+
+    def filter_by_contact(self, transactions, from_contact, to_contact):
+        """
+        `transactions` could be individual or the summary transaction for a supplier
+        or customer
+        """
+        filtered_by_contact = []
+        if from_contact or to_contact:
+            for tran in transactions:
+                contact_pk = tran["meta"]["contact_pk"]
+                if from_contact and to_contact:
+                    if contact_pk >= from_contact.pk and contact_pk <= to_contact.pk:
+                        filtered_by_contact.append(tran)
+                elif from_contact:
+                    if contact_pk >= from_contact.pk:
+                        filtered_by_contact.append(tran)
+                elif to_contact:
+                    if contact_pk <= to_contact.pk:
+                        filtered_by_contact.append(tran)
+            return filtered_by_contact
+        return transactions
+
+    def aggregate_is_zero(self, aggregate):
+        if (
+            aggregate["total"] or aggregate["unallocated"] or aggregate["current"]
+            or aggregate["1 month"] or aggregate["2 month"] or aggregate["3 month"]
+            or aggregate["4 month"]
+        ):
+            return False
+        else:
+            return True
+
+    def create_report_transaction(self, header, report_period):
+        """
+        `header` e.g. PurchaseHeader or SaleHeader
+        """
+        report_tran = {
+            "meta": {
+                "contact_pk": header.supplier.pk
+            },
+            "supplier": header.supplier.name,
+            "date": header.date,
+            # JSONBlankDate just returns "" instead of the datetime when serialized.
+            # we need this because otherwise the order_objects cannot work
+            # i.e. str < date object will not work
+            "due_date": header.due_date or JSONBlankDate(1900, 1, 1),
+            "ref": header.ref,
+            "total": header.total,
+        }
+        if header.is_payment_type():
+            report_tran["unallocated"] = header.due
+            report_tran["current"] = 0
+            report_tran["1 month"] = 0
+            report_tran["2 month"] = 0
+            report_tran["3 month"] = 0
+            report_tran["4 month"] = 0
+        else:
+            report_tran["unallocated"] = 0
+            period = Period(report_period)
+            if header.period == period:
+                report_tran["current"] = header.due
+            else:
+                report_tran["current"] = 0
+            if header.period == period - 1:
+                report_tran["1 month"] = header.due
+            else:
+                report_tran["1 month"] = 0
+            if header.period == period - 2:
+                report_tran["2 month"] = header.due
+            else:
+                report_tran["2 month"] = 0
+            if header.period == period - 3:
+                report_tran["3 month"] = header.due
+            else:
+                report_tran["3 month"] = 0
+            if header.period <= period - 4:
+                report_tran["4 month"] = header.due
+            else:
+                report_tran["4 month"] = 0
+        return report_tran
+
+    def aggregate_transactions(self, transactions):
+        def _aggregate_transactions(x, y):
+            x["unallocated"] += y["unallocated"]
+            x["total"] += y["total"]
+            x["current"] += y["current"]
+            x["1 month"] += y["1 month"]
+            x["2 month"] += y["2 month"]
+            x["3 month"] += y["3 month"]
+            x["4 month"] += y["4 month"]
+            return x
+        return functools.reduce(_aggregate_transactions, transactions)
+
     def get_context_data(self, **kwargs):
         context = {}
         if self.request.is_ajax():
             # get the report
             form = self.get_filter_form()(data=self.request.GET)
             if form.is_valid():
-                unfiltered_queryset = self.get_queryset()
-                unfiltered_queryset_copy = unfiltered_queryset.all()
-                unfiltered_count = unfiltered_queryset_copy.count()
-                filtered_queryset = self.filter(unfiltered_queryset, form)
-                filtered_queryset_copy = filtered_queryset.all()
-                filtered_count = filtered_queryset_copy.count()
-                start = self.request.GET.get("start", 0)
-                length = self.request.GET.get("length", 25)
-                queryset = filtered_queryset[int(
-                    start): int(start) + int(length)]
+                from_supplier = form.cleaned_data.get("from_supplier")
+                to_supplier = form.cleaned_data.get("to_supplier")
                 period = form.cleaned_data.get("period")
-                creditors = self.get_header_model().creditors(queryset, period)
-                data = []
-                for header in creditors:
-                    tran = {
-                        "supplier": header.supplier.name,
-                        "date": header.date,
-                        "due_date": header.due_date or date(1900, 1, 1), # we must compare date objects otherwise will error
-                        "ref": header.ref,
-                        "total": header.total,
-                    }
-                    if header.is_payment_type():
-                        tran["unallocated"] = header.due
-                        tran["current"] = 0
-                        tran["1 month"] = 0
-                        tran["2 month"] = 0
-                        tran["3 month"] = 0
-                        tran["4 month"] = 0
-                    else:
-                        tran["unallocated"] = 0
-                        period_obj = Period(period)
-                        if header.period == period_obj:
-                            tran["current"] = header.due
-                        else:
-                            tran["current"] = 0
-                        if header.period == period_obj - 1:
-                            tran["1 month"] = header.due
-                        else:
-                            tran["1 month"] = 0
-                        if header.period == period_obj - 2:
-                            tran["2 month"] = header.due
-                        else:
-                            tran["2 month"] = 0
-                        if header.period == period_obj - 3:
-                            tran["3 month"] = header.due
-                        else:
-                            tran["3 month"] = 0
-                        if header.period <= str(period_obj - 4):
-                            tran["4 month"] = header.due
-                        else:
-                            tran["4 month"] = 0
-                    data.append(tran)
+                start = int(self.request.GET.get("start", 0))
+                length = int(self.request.GET.get("length", 25))
+                queryset = (
+                    self.get_transaction_queryset()
+                    .filter(period__lte=period)
+                    .order_by("supplier")
+                )
+                # FIX ME - rename `creditors` to 'unmatched_at_period' on the MODEL
+                # This must preserve the ordering
+                transactions = self.get_header_model().creditors(list(queryset), period)
+
+                # get the recordsTotal for the response
+                if form.cleaned_data.get("show_transactions"):
+                    unfiltered_count = len(transactions)
+                else:
+                    suppliers_trans = groupby(
+                        transactions, key=lambda t: t.supplier)
+                    unfiltered_count = 0
+                    aggregates = []
+                    for supplier, trans in suppliers_trans:
+                        report_trans = [
+                            self.create_report_transaction(tran, period) 
+                            for tran in trans
+                        ]
+                        aggregate = self.aggregate_transactions(report_trans)
+                        if not self.aggregate_is_zero(aggregate):
+                            unfiltered_count += 1
+                            aggregates.append(aggregate)
+                    aggregates = list(chain(aggregates))
+
+                # filter by the supplier or customer.  This is the only true filter because
+                # period is necessary for the report to make sense.  You cannot have a report
+                # without a period.
+
+                if form.cleaned_data.get("show_transactions"):
+                    report_transactions = []
+                    for tran in transactions:
+                        report_transactions.append(
+                            self.create_report_transaction(tran, period)
+                        )
+                    filtered_report_transactions = self.filter_by_contact(
+                        report_transactions,
+                        from_supplier,
+                        to_supplier
+                    )
+                else:
+                    filtered_report_transactions = self.filter_by_contact(
+                        aggregates,
+                        from_supplier,
+                        to_supplier
+                    )
+
+                # get the recordsFiltered count
+                filtered_count = len(filtered_report_transactions)
+                report_transactions = self.order_objects(filtered_report_transactions)
+                report_transactions = report_transactions[start:start + length]
 
                 context["recordsTotal"] = unfiltered_count
                 context["recordsFiltered"] = filtered_count
-                data = self.order_objects(data)
-                # we used date of 1900 to sort but need to blank this out
-                # this isn't very nice at all but seems unavoidable
-                for tran in data:
-                    if tran["due_date"] == date(1900, 1, 1):
-                        tran["due_date"] = ""
-                context["data"] = data
+                context["data"] = report_transactions
+
             else:
-                unfiltered_queryset = self.get_queryset()
-                unfiltered_queryset_copy = unfiltered_queryset.all()
-                unfiltered_count = unfiltered_queryset_copy.count()
-                context["recordsTotal"] = unfiltered_count
+                context["recordsTotal"] = 0
                 context["recordsFiltered"] = 0
                 context["data"] = []
                 # i think because the form is get there is no csrf token
                 ctx = {}
                 ctx["form"] = form
+                fields = ['from_supplier', 'to_supplier']
+                for field in fields:
+                    chosen = form.cleaned_data.get(field)
+                    if chosen:
+                        form.fields[field].widget.choices = [(chosen.pk, str(chosen))]
                 form_html = render_to_string(
                     "purchases/creditors_form.html", ctx)
                 context["form_html"] = form_html

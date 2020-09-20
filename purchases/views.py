@@ -282,17 +282,11 @@ validate_forms_by_ajax = ajax_form_validator({
 
 class AgeCreditorsReport(AgeDebtReportMixin):
 
-    """
-    The business logic here is implemented at the Python level so table ordering
-    cannot be done at the sql level.  Either disable ordering or implement it at
-    the python level...
-    """
-
     model = PurchaseHeader
     template_name = "purchases/creditors.html"
     hide_trans_columns = [
         'supplier',
-        'total', 
+        'total',
         'unallocated',
         'current',
         '1 month',
@@ -301,7 +295,7 @@ class AgeCreditorsReport(AgeDebtReportMixin):
         {
             'label': '4 Month & Older',
             'field': '4 month'
-        }       
+        }
     ]
     show_trans_columns = [
         'supplier',
@@ -326,25 +320,11 @@ class AgeCreditorsReport(AgeDebtReportMixin):
     def get_header_model(self):
         return self.model
 
-    def get_queryset(self):
+    def get_transaction_queryset(self):
         return PurchaseHeader.objects.all().select_related('supplier')
 
     def get_filter_form(self):
         return CreditorForm
-
-    def filter(self, queryset, form):
-        from_supplier = form.cleaned_data.get("from_supplier")
-        to_supplier = form.cleaned_data.get("to_supplier")
-        period = form.cleaned_data.get("period")
-        queryset = (
-            queryset
-            .filter(period__lte=period)
-        )
-        if from_supplier:
-            queryset.filter(supplier__pk__gte=from_supplier.pk)
-        if to_supplier:
-            queryset.filter(supplier__pk__lte=to_supplier.pk)
-        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

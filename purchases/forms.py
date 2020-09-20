@@ -188,11 +188,31 @@ read_only_match.include_empty_form = False
 
 class CreditorForm(forms.Form):
     from_supplier = forms.ModelChoiceField(
-        queryset=Supplier.objects.all(), required=False)
+        queryset=Supplier.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={
+            "data-form": "supplier",
+            "data-form-field": "supplier-code",
+            "data-creation-url": reverse_lazy("purchases:create_on_the_fly"),
+            "data-load-url": reverse_lazy("purchases:load_suppliers"),
+            "data-contact-field": True
+        }))
     to_supplier = forms.ModelChoiceField(
-        queryset=Supplier.objects.all(), required=False)
+        queryset=Supplier.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={
+            "data-form": "supplier",
+            "data-form-field": "supplier-code",
+            "data-creation-url": reverse_lazy("purchases:create_on_the_fly"),
+            "data-load-url": reverse_lazy("purchases:load_suppliers"),
+            "data-contact-field": True
+        }))
     period = forms.CharField(max_length=6)
     show_transactions = forms.BooleanField(required=False)
+
+    def set_none_queryset_for_fields(self, fields):
+        for field in fields:
+            self.fields[field].queryset = self.fields[field].queryset.none()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -207,10 +227,15 @@ class CreditorForm(forms.Form):
                 ),
                 code="invalid supplier range"
             )
+
         return cleaned_data
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if not self.data:
+            self.set_none_queryset_for_fields(["from_supplier", "to_supplier"])
+
         self.helper = FormHelper()
         self.helper.form_class = "creditor_form"
         self.helper.form_method = "GET"
