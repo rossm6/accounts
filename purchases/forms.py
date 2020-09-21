@@ -239,8 +239,6 @@ class CreditorForm(forms.Form):
         self.helper = FormHelper()
         self.helper.form_class = "creditor_form"
         self.helper.form_method = "GET"
-        self.helper.form_action = reverse_lazy(
-            "purchases:validate_forms_by_ajax")
         self.helper.layout = Layout(
             Div(
                 Hidden('form', 'creditor_form'),

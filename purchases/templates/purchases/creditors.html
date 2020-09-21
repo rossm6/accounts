@@ -21,7 +21,9 @@
         <div class="d-flex justify-content-center">
             <div>
                 <div class="border data-grid p-4 position-relative">
-                    {% include 'purchases/creditors_form.html' %}
+                    <div class="form_and_errors_wrapper">
+                        {% include 'purchases/creditors_form.html' %}
+                    </div>
                     <div class="mt-4 d-flex justify-content-center">
                         <table class="report">
                             <thead>
@@ -59,23 +61,33 @@
             var form_field = native_select_widget.attr("data-form-field");
             var load_url = native_select_widget.attr("data-load-url");
 
-            contact_selectize({
-                select_identifier: ":input[name='from_supplier']",
-                creation_url: creation_url,
-                form: form,
-                form_field: form_field,
-                load_url: load_url
-            });
+            var form_wrapper = $("div.form_and_errors_wrapper");
 
-            contact_selectize({
-                select_identifier: ":input[name='to_supplier']",
-                creation_url: creation_url,
-                form: form,
-                form_field: form_field,
-                load_url: load_url
-            });
+            function form_init(){
 
-            var form_p = $("form.creditor_form").parents().eq(0);
+                contact_selectize({
+                    select_identifier: ":input[name='from_supplier']",
+                    creation_url: creation_url,
+                    form: form,
+                    form_field: form_field,
+                    load_url: load_url
+                });
+
+                contact_selectize({
+                    select_identifier: ":input[name='to_supplier']",
+                    creation_url: creation_url,
+                    form: form,
+                    form_field: form_field,
+                    load_url: load_url
+                });
+
+                form_wrapper.find("form").on("submit", function(e){
+                    e.preventDefault();
+                    report_table.ajax.reload();
+                });
+            }
+
+            form_init();
 
             var report_table = $("table.report")
             .DataTable({
@@ -97,25 +109,9 @@
                             }
                             else{
                                 callback(data);
-                                form_p.find("form").replaceWith($(data.form_html));
-                                
-                                contact_selectize({
-                                    select_identifier: ":input[name='from_supplier']",
-                                    creation_url: creation_url,
-                                    form: form,
-                                    form_field: form_field,
-                                    load_url: load_url
-                                });
-
-                                contact_selectize({
-                                    select_identifier: ":input[name='to_supplier']",
-                                    creation_url: creation_url,
-                                    form: form,
-                                    form_field: form_field,
-                                    load_url: load_url
-                                });
-
                             }
+                            form_wrapper.empty().append($(data.form_html));
+                            form_init();
                         },
                         complete: function(jqXHR, textStatus){
                             if(textStatus != "success"){
@@ -175,12 +171,6 @@
                     );
                     first_drawn = true;
                 }
-            });
-
-
-            form_p.find("form").on("submit", function(e){
-                e.preventDefault();
-                report_table.ajax.reload();
             });
 
     });

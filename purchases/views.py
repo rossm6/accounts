@@ -16,7 +16,7 @@ from querystring_parser import parser
 from accountancy.exceptions import FormNotValid
 from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
-from accountancy.views import (AgeDebtReportMixin, BaseViewTransaction,
+from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
                                BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
@@ -265,76 +265,18 @@ create_on_the_fly_view = create_on_the_fly(
     }
 )
 
-
-"""
-
-Page loads - show the default creditors
-Submit search form - validate on the server.  If not valid return errors
-
-
-"""
-
-
+# This was created for the Aged Creditor form but was not used in the end.
+# Still this may be useful.
 validate_forms_by_ajax = ajax_form_validator({
     "creditor_form": CreditorForm
 })
 
 
-class AgeCreditorsReport(AgeDebtReportMixin):
-
+class AgeCreditorsReport(AgeMatchingReportMixin):
     model = PurchaseHeader
+    matching_model = PurchaseMatching
+    filter_form = CreditorForm
+    form_template = "purchases/creditors_form.html"
     template_name = "purchases/creditors.html"
-    hide_trans_columns = [
-        'supplier',
-        'total',
-        'unallocated',
-        'current',
-        '1 month',
-        '2 month',
-        '3 month',
-        {
-            'label': '4 Month & Older',
-            'field': '4 month'
-        }
-    ]
-    show_trans_columns = [
-        'supplier',
-        'date',
-        {
-            'label': 'Due Date',
-            'field': 'due_date'
-        },
-        'ref',
-        'total',
-        'unallocated',
-        'current',
-        '1 month',
-        '2 month',
-        '3 month',
-        {
-            'label': '4 Month & Older',
-            'field': '4 month'
-        }
-    ]
-
-    def get_header_model(self):
-        return self.model
-
-    def get_transaction_queryset(self):
-        return PurchaseHeader.objects.all().select_related('supplier')
-
-    def get_filter_form(self):
-        return CreditorForm
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["columns"] = columns = []
-        for column in self.show_trans_columns:
-            if type(column) is type(""):
-                columns.append({
-                    "label": column.title(),
-                    "field": column
-                })
-            elif isinstance(column, dict):
-                columns.append(column)
-        return context
+    contact_range_field_names = ['from_supplier', 'to_supplier']
+    contact_field_name = "supplier"

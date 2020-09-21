@@ -3,6 +3,7 @@ from itertools import groupby
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
 class Contact(models.Model):
@@ -604,6 +605,36 @@ class MatchedHeaders(models.Model):
 
     class Meta:
         abstract = True
+
+    @classmethod
+    def get_not_fully_matched_at_period(cls, headers, period):
+        """
+        To be called by the subclass so cls is the subclass
+        """
+        matches = (cls.objects
+                   .filter(period__gt=period)
+                   .filter(
+                       Q(matched_by__in=headers) | Q(matched_to__in=headers)
+                   ))
+
+        matches_for_header = {}
+        for match in matches:
+            if match.matched_by_id not in matches_for_header:
+                matches_for_header[match.matched_by_id] = []
+            matches_for_header[match.matched_by_id].append(match)
+            if match.matched_to_id not in matches_for_header:
+                matches_for_header[match.matched_to_id] = []
+            matches_for_header[match.matched_to_id].append(match)
+
+        for header in headers:
+            if header.pk in matches_for_header:
+                for match in matches_for_header[header.pk]:
+                    if match.matched_to == header:
+                        header.due += match.value
+                    else:
+                        header.due -= match.value
+
+        return [header for header in headers if header.due != 0]
 
 
 class MultiLedgerTransactions(DecimalBaseModel):

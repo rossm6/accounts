@@ -1312,7 +1312,7 @@ class DeleteCashBookTransMixin:
                            ).delete()
 
 
-class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
+class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
 
     """
 
@@ -1351,39 +1351,41 @@ class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
 
     """
 
+    show_trans_columns = [
+        # add the subclasses' contact_field_name here
+        'date',
+        {
+            'label': 'Due Date',
+            'field': 'due_date'
+        },
+        'ref',
+        'total',
+        'unallocated',
+        'current',
+        '1 month',
+        '2 month',
+        '3 month',
+        {
+            'label': '4 Month & Older',
+            'field': '4 month'
+        }
+    ]
+
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
         if request.is_ajax():
             data = {}
-            if 'form_html' not in context:
-                data["success"] = True
-                data["data"] = {
-                    "draw": int(request.GET.get('draw'), 0),
-                    "recordsTotal": context["recordsTotal"],
-                    "recordsFiltered": context["recordsFiltered"],
-                    "data": context["data"]
-                }
-            else:
-                data["form_html"] = context["form_html"]
+            data["success"] = True
             data["data"] = {
                 "draw": int(request.GET.get('draw'), 0),
                 "recordsTotal": context["recordsTotal"],
                 "recordsFiltered": context["recordsFiltered"],
                 "data": context["data"]
             }
+            data["form_html"] = context["form_html"]
             return JsonResponse(data=data)
         else:
             return self.render_to_response(context)
-
-    """
-
-        I overlooked the following initially -
-
-            Given that most of the report work i.e. filtering is done in Python
-            I have to apply paginatation and count the records in Python also for
-            the jQuery Datatables plugin.
-
-    """
 
     def filter_by_contact(self, transactions, from_contact, to_contact):
         """
@@ -1420,11 +1422,12 @@ class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
         """
         `header` e.g. PurchaseHeader or SaleHeader
         """
+        contact_field_name = self.get_contact_field_name()
         report_tran = {
             "meta": {
-                "contact_pk": header.supplier.pk
+                "contact_pk": getattr(header, contact_field_name).pk
             },
-            "supplier": header.supplier.name,
+            "supplier": getattr(header, contact_field_name).name,
             "date": header.date,
             # JSONBlankDate just returns "" instead of the datetime when serialized.
             # we need this because otherwise the order_objects cannot work
@@ -1479,35 +1482,38 @@ class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
 
     def get_context_data(self, **kwargs):
         context = {}
+        contact_field_name = self.get_contact_field_name()
         if self.request.is_ajax():
             # get the report
             form = self.get_filter_form()(data=self.request.GET)
+            from_contact_field, to_contact_field = self.get_contact_range_field_names()
             if form.is_valid():
-                from_supplier = form.cleaned_data.get("from_supplier")
-                to_supplier = form.cleaned_data.get("to_supplier")
+                from_contact = form.cleaned_data.get(from_contact_field)
+                to_contact = form.cleaned_data.get(to_contact_field)
                 period = form.cleaned_data.get("period")
                 start = int(self.request.GET.get("start", 0))
                 length = int(self.request.GET.get("length", 25))
                 queryset = (
                     self.get_transaction_queryset()
                     .filter(period__lte=period)
-                    .order_by("supplier")
+                    .order_by(contact_field_name)
                 )
-                # FIX ME - rename `creditors` to 'unmatched_at_period' on the MODEL
-                # This must preserve the ordering
-                transactions = self.get_header_model().creditors(list(queryset), period)
+                transactions = self.get_matching_model().get_not_fully_matched_at_period(
+                    list(queryset), 
+                    period
+                )
 
                 # get the recordsTotal for the response
                 if form.cleaned_data.get("show_transactions"):
                     unfiltered_count = len(transactions)
                 else:
-                    suppliers_trans = groupby(
-                        transactions, key=lambda t: t.supplier)
+                    contact_trans = groupby(
+                        transactions, key=lambda t: getattr(t, contact_field_name))
                     unfiltered_count = 0
                     aggregates = []
-                    for supplier, trans in suppliers_trans:
+                    for contact, trans in contact_trans:
                         report_trans = [
-                            self.create_report_transaction(tran, period) 
+                            self.create_report_transaction(tran, period)
                             for tran in trans
                         ]
                         aggregate = self.aggregate_transactions(report_trans)
@@ -1528,19 +1534,20 @@ class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
                         )
                     filtered_report_transactions = self.filter_by_contact(
                         report_transactions,
-                        from_supplier,
-                        to_supplier
+                        from_contact,
+                        to_contact
                     )
                 else:
                     filtered_report_transactions = self.filter_by_contact(
                         aggregates,
-                        from_supplier,
-                        to_supplier
+                        from_contact,
+                        to_contact
                     )
 
                 # get the recordsFiltered count
                 filtered_count = len(filtered_report_transactions)
-                report_transactions = self.order_objects(filtered_report_transactions)
+                report_transactions = self.order_objects(
+                    filtered_report_transactions)
                 report_transactions = report_transactions[start:start + length]
 
                 context["recordsTotal"] = unfiltered_count
@@ -1551,17 +1558,22 @@ class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
                 context["recordsTotal"] = 0
                 context["recordsFiltered"] = 0
                 context["data"] = []
-                # i think because the form is get there is no csrf token
-                ctx = {}
-                ctx["form"] = form
-                fields = ['from_supplier', 'to_supplier']
-                for field in fields:
-                    chosen = form.cleaned_data.get(field)
-                    if chosen:
-                        form.fields[field].widget.choices = [(chosen.pk, str(chosen))]
-                form_html = render_to_string(
-                    "purchases/creditors_form.html", ctx)
-                context["form_html"] = form_html
+            # Whether the form fails or not render the form again because if it is successful
+            # it could have failed last so we need to a new error without errors showing
+            ctx = {}
+            ctx["form"] = form
+            fields = [from_contact_field, to_contact_field]
+            for field in fields:
+                field_value = form.cleaned_data.get(field)
+                if field_value:
+                    choice = (field_value.pk, str(field_value))
+                else:
+                    choice = iter(form.fields[field].widget.choices)
+                    choice = next(choice)
+                form.fields[field].widget.choices = [choice]
+            form_html = render_to_string(
+                self.get_form_template(), ctx)
+            context["form_html"] = form_html
         else:
             # page load -- render default filter form
             # no report is rendered because ajax request is made on page load
@@ -1569,7 +1581,48 @@ class AgeDebtReportMixin(jQueryDataTable, TemplateResponseMixin, View):
             form = self.get_filter_form()(
                 initial={"period": "202007", "show_transactions": True})
             context["form"] = form
+
+        context["columns"] = columns = []
+        self.show_trans_columns.insert(0, contact_field_name)
+        for column in self.show_trans_columns:
+            if type(column) is type(""):
+                columns.append({
+                    "label": column.title(),
+                    "field": column
+                })
+            elif isinstance(column, dict):
+                columns.append(column)
+
         return context
+
+    def get_header_model(self):
+        return self.model
+
+    def get_transaction_queryset(self):
+        return (
+            self.get_header_model()
+            .objects
+            .all()
+            .select_related(self.get_contact_field_name())
+        )
+        
+    def get_matching_model(self):
+        return self.matching_model
+
+    def get_filter_form(self):
+        return self.filter_form
+
+    def get_contact_field_name(self):
+        return self.contact_field_name
+
+    def get_contact_range_field_names(self):
+        return self.contact_range_field_names
+
+    def get_form_template(self):
+        return self.form_template
+
+    def get_form_template(self):
+        return self.form_template
 
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):

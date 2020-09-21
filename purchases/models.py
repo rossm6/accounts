@@ -18,23 +18,30 @@ class PurchaseTransaction(Transaction):
         super().__init__(*args, **kwargs)
         self.module = "PL"
 
+
 class BroughtForwardInvoice(PurchaseTransaction):
     pass
+
 
 class Invoice(ControlAccountInvoiceTransactionMixin, PurchaseTransaction):
     pass
 
+
 class BroughtForwardCreditNote(PurchaseTransaction):
     pass
+
 
 class CreditNote(Invoice):
     pass
 
+
 class Payment(CashBookEntryMixin, ControlAccountPaymentTransactionMixin, PurchaseTransaction):
     pass
 
+
 class BroughtForwardPayment(PurchaseTransaction):
     pass
+
 
 class Refund(Payment):
     pass
@@ -42,6 +49,7 @@ class Refund(Payment):
 
 class BroughtForwardRefund(PurchaseTransaction):
     pass
+
 
 class PurchaseHeader(TransactionHeader):
     # FIX ME - rename to "no_nominal_required"
@@ -131,35 +139,6 @@ class PurchaseHeader(TransactionHeader):
         if self.type == "pr":
             return Refund(header=self)
 
-
-    @staticmethod
-    def creditors(headers, period):
-        matches = (PurchaseMatching.objects
-                .filter(period__gt=period)
-                .filter(
-                    Q(matched_by__in=headers) | Q(matched_to__in=headers)
-                ))
-
-        matches_for_header = {}
-        for match in matches:
-            if match.matched_by_id not in matches_for_header:
-                matches_for_header[match.matched_by_id] = []
-            matches_for_header[match.matched_by_id].append(match)
-            if match.matched_to_id not in matches_for_header:
-                matches_for_header[match.matched_to_id] = []
-            matches_for_header[match.matched_to_id].append(match)
-
-        for header in headers:
-            if header.pk in matches_for_header:
-                for match in matches_for_header[header.pk]:
-                    if match.matched_to == header:
-                        header.due += match.value
-                    else:
-                        header.due -= match.value
-
-        return [header for header in headers if header.due != 0]        
-
-
 class PurchaseLineQuerySet(models.QuerySet):
 
     def line_bulk_update(self, instances):
@@ -220,3 +199,7 @@ class PurchaseMatching(MatchedHeaders):
     # So we can do for two trans, t1 and t2
     # t1.matched_to_these.all()
     # t2.matched_by_these.all()
+
+    @classmethod
+    def get_not_fully_matched_at_period(cls, headers, period):
+        return super(PurchaseMatching, cls).get_not_fully_matched_at_period(headers, period)
