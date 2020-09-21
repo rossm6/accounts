@@ -7,7 +7,9 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import ListView
 from drf_yasg.inspectors import SwaggerAutoSchema
+from mptt.utils import get_cached_trees
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -17,6 +19,7 @@ from rest_framework.views import APIView, exception_handler
 
 from accountancy.forms import (BaseVoidTransactionForm,
                                NominalTransactionSearchForm)
+from accountancy.helpers import FY
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
                                NominalTransList,
@@ -28,6 +31,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory)
+from nominals.forms import TrialBalanceForm
 from nominals.serializers import NominalHeaderSerializer, NominalLineSerializer
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
@@ -193,6 +197,91 @@ class VoidTransaction(BaseVoidTransaction):
     form = BaseVoidTransactionForm
     success_url = reverse_lazy("nominals:transaction_enquiry")
     module = 'NL'
+
+
+class TrialBalance(ListView):
+    template_name = "nominals/trial_balance.html"
+    columns = [
+        'Nominal',
+        'parent',
+        'grand_parent',
+        'Debit',
+        'Credit',
+        'YTD Debit',
+        'YTD Credit'
+    ]
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data()
+        # return JsonResponse(data=context["report"], safe=False)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        context["columns"] = columns = [col for col in self.columns]
+        if self.request.GET:
+            context["form"] = form = TrialBalanceForm(
+                data=self.request.GET,
+                initial={
+                    "from_period": "202001",
+                    "to_period": "202007"
+                }
+            )
+            if form.is_valid():
+                from_period = form.cleaned_data.get("from_period")
+                to_period = form.cleaned_data.get("to_period")
+            else:
+                self.object_list = context["report"] = []  # show empty table
+                return context
+        else:
+            from_period = "202001"
+            to_period = "202007"
+            context["form"] = TrialBalanceForm(
+                initial={
+                    "from_period": from_period,
+                    "to_period": to_period
+                }
+            )
+        nominals = Nominal.objects.all().prefetch_related("children")
+        # hits the DB but will cache result
+        root_nominals = get_cached_trees(nominals)
+        # this means we can use get_ancestors() on the nodes now without hitting the DB again
+        nominal_map = {nominal.pk: nominal for nominal in nominals}
+        nominal_totals_for_period_range = (
+            NominalTransaction.objects
+            .values("nominal")
+            .annotate(total=Sum("value"))
+            .filter(period__gte=from_period)
+            .filter(period__lte=to_period)
+        )
+        # get the start of the financial year the to_period is in
+        from_period = FY(to_period).start()
+        nominal_ytd_totals = (
+            NominalTransaction.objects
+            .values("nominal")
+            .annotate(total=Sum("value"))
+            .filter(period__gte=from_period)
+            .filter(period__lte=to_period)
+        )
+        report = []
+        for nominal_total in nominal_totals_for_period_range:
+            nominal_pk = nominal_total["nominal"]
+            total = nominal_total["total"]
+            parents = [
+                parent.name for parent in nominal_map[nominal_pk].get_ancestors()]
+            for ytd in nominal_ytd_totals:
+                if ytd["nominal"] == nominal_pk:
+                    ytd = ytd["total"]
+                    break
+            nominal_report = {
+                "nominal": nominal_map[nominal_pk].name,
+                "total": total,
+                "parents": parents,
+                "ytd": ytd
+            }
+            report.append(nominal_report)
+        self.object_list = context["report"] = report
+        return context
 
 
 """

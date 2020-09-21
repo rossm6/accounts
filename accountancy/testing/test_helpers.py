@@ -96,13 +96,6 @@ class PeriodTestGeneral(TestCase):
             p1 <= p2
         )
 
-    def test_less_than_or_equal_to_with_different_objects_1(self):
-        p1 = Period("202007")
-        p2 = "202008"
-        self.assertTrue(
-            p1 <= p2
-        )
-
     def test_str(self):
         p = Period("202007")
         self.assertEqual(

@@ -256,3 +256,53 @@ read_only_lines = forms.modelformset_factory(
 )
 
 read_only_lines.include_empty_form = True
+
+from accountancy.helpers import Period
+
+class TrialBalanceForm(forms.Form):
+    from_period = forms.CharField(max_length=6)
+    to_period = forms.CharField(max_length=6)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "GET"
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        "from_period", css_class="w-100"),
+                    css_class="col"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        "to_period", css_class="w-100"),
+                    css_class="col"
+                ),
+                css_class="row"
+            ),
+            Div(
+                HTML("<button class='btn btn-sm btn-primary'>Report</button>"),
+                css_class="text-right mt-3"
+            )
+        )
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        from_period = cleaned_data.get("from_period")
+        to_period = cleaned_data.get("to_period")
+
+        if from_period and to_period:
+            from_period = Period(from_period)
+            to_period = Period(to_period)
+            if to_period < from_period:
+                raise forms.ValidationError(
+                    _(
+                        "Please correct the period range so that the `to_period` is not before the `from_period`"
+                    ),
+                    code=f"invalid period range"
+                )
+
+        return cleaned_data

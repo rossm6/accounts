@@ -23,6 +23,22 @@ class JSONBlankDate(date):
         return ""
 
 
+class FY:
+    """
+    Financial Year class.
+    """
+    def __init__(self, period_str, periods_in_fy=12):
+        if len(period_str) != 6:
+            raise ValueError(
+                "The period must be 6 characters.  "
+                "The first 4 is the FY and the last two is the accounting period."
+            )
+        self.period = period_str
+
+    def start(self):
+        fy, period = int(self.period[:4]), int(self.period[4:])
+        return str(fy) + "01" 
+    
 class Period:
     def __init__(self, period_str, periods_in_fy=12):
         if len(period_str) != 6:
@@ -67,11 +83,26 @@ class Period:
         else:
             return str(self) <= other
 
+    # NOT TESTED
+    def __lt__(self, other):
+        if type(other) is type(self):
+            return str(self) < str(other)
+        else:
+            return str(self) < other
+
+    # NOT TESTED
     def __ge__(self, other):
         if type(other) is type(self):
             return str(self) >= str(other)
         else:
             return str(self) >= other
+
+    # NOT TESTED
+    def __gt__(self, other):
+        if type(other) is type(self):
+            return str(self) > str(other)
+        else:
+            return str(self) > other
 
     def __str__(self):
         return self.period

@@ -6,7 +6,7 @@ from .views import (CreateNominalJournal, CreateTransaction,
                     NominalList, NominalTransactionDetail,
                     NominalTransactionList, TransactionEnquiry,
                     ViewTransaction, VoidTransaction, api_root,
-                    create_on_the_fly_view, load_options, validate_choice)
+                    create_on_the_fly_view, load_options, validate_choice, TrialBalance)
 
 app_name = "nominals"
 urlpatterns = [
@@ -14,6 +14,8 @@ urlpatterns = [
     path("edit/<int:pk>", EditTransaction.as_view(), name="edit"),
     path("view/<int:pk>", ViewTransaction.as_view(), name="view"),
     path("void", VoidTransaction.as_view(), name="void"),
+    path("trial_balance", TrialBalance.as_view(), name="trial_balance"),
+
     path("create_on_the_fly", create_on_the_fly_view, name="create_on_the_fly"),
     path("load_options", load_options, name="load_options"),
     path("transactions", TransactionEnquiry.as_view(), name="transaction_enquiry"),

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_dropdown.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowgroup/1.1.2/css/rowGroup.dataTables.min.css">
+    <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
+    <style>
+
+        tr.dtrg-level-1 td {
+            padding-left: 2em !important;
+        }
+
+        tr.odd td:first-child,
+        tr.even td:first-child {
+            padding-left: 4em !important;
+        }
+
+    </style>
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+
+<div class="cont">
+    <div>
+        <div class="d-flex justify-content-center">
+            <div>
+                <div class="border data-grid p-4 position-relative">
+                    <div class="form_and_errors_wrapper">
+                        {% include 'accountancy/aged_matching_report_form.html' %}
+                    </div>
+                    <div class="mt-4 d-flex justify-content-center">
+                        <table class="report" style="min-width: 800px;">
+                            <thead>
+                                <tr>
+                                    {% for col in columns %}
+                                        <th>{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody class="table-bordered">
+                                {% for row in report %}
+                                    <tr>
+                                        <td>{{ row.nominal }}</td>
+                                        <td>{{ row.parents.1 }}</td>
+                                        <td>{{ row.parents.0 }}</td>
+                                        {% if row.total > 0 %}
+                                            <td>{{ row.total }}</td>
+                                            <td></td>
+                                        {% else %}
+                                            <td></td> 
+                                            <td>{{ row.total }}</td>                                       
+                                        {% endif %}
+                                        {% if row.total > 0 %}
+                                            <td>{{ row.ytd }}</td>
+                                            <td></td>
+                                        {% else %}
+                                            <td></td> 
+                                            <td>{{ row.ytd }}</td>                                       
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+
+{% block js %}
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowgroup/1.1.2/js/dataTables.rowGroup.min.js"></script>
+<script>
+    $(document).ready(function(){
+
+        $("table.report").DataTable({
+            dom: "t",
+            order: [
+                [2, 'asc'],
+                [1, 'asc']
+            ],
+            rowGroup: {
+                dataSrc: [2, 1],
+                emptyDataGroup: null
+            },
+            columnDefs: [
+                { targets: [1, 2], visible: false},
+            ]
+        });
+
+    });
+</script>
+{% endblock js %}
