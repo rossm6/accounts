@@ -276,7 +276,7 @@ class AgeCreditorsReport(AgeMatchingReportMixin):
     model = PurchaseHeader
     matching_model = PurchaseMatching
     filter_form = CreditorForm
-    form_template = "purchases/creditors_form.html"
-    template_name = "purchases/creditors.html"
+    form_template = "accountancy/aged_matching_report_form.html"
+    template_name = "accountancy/aged_matching_report.html"
     contact_range_field_names = ['from_supplier', 'to_supplier']
     contact_field_name = "supplier"

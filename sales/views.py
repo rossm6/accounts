@@ -3,7 +3,7 @@ from django.utils import timezone
 
 from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
-from accountancy.views import (BaseVoidTransaction,
+from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
@@ -19,9 +19,9 @@ from nominals.models import Nominal, NominalTransaction
 from vat.forms import QuickVatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
-from .forms import (QuickCustomerForm, ReadOnlySaleHeaderForm, SaleHeaderForm,
-                    SaleLineForm, enter_lines, match, read_only_lines,
-                    read_only_match)
+from .forms import (DebtorForm, QuickCustomerForm, ReadOnlySaleHeaderForm,
+                    SaleHeaderForm, SaleLineForm, enter_lines, match,
+                    read_only_lines, read_only_match)
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
@@ -114,6 +114,7 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
     module = "SL"
     control_nominal_name = SALES_CONTROL_ACCOUNT
     cash_book_transaction_model = CashBookTransaction
+
 
 class ViewTransaction(CustomerMixin, ViewTransactionOnLedgerOtherThanNominal):
     header = {
@@ -249,3 +250,13 @@ create_on_the_fly_view = create_on_the_fly(
         "prefix": "vat"
     }
 )
+
+
+class AgeDebtorsReport(AgeMatchingReportMixin):
+    model = SaleHeader
+    matching_model = SaleMatching
+    filter_form = DebtorForm
+    form_template = "accountancy/aged_matching_report_form.html"
+    template_name = "accountancy/aged_matching_report.html"
+    contact_range_field_names = ['from_customer', 'to_customer']
+    contact_field_name = "customer"

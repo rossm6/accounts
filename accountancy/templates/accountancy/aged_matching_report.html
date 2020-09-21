@@ -22,7 +22,7 @@
             <div>
                 <div class="border data-grid p-4 position-relative">
                     <div class="form_and_errors_wrapper">
-                        {% include 'purchases/creditors_form.html' %}
+                        {% include 'accountancy/aged_matching_report_form.html' %}
                     </div>
                     <div class="mt-4 d-flex justify-content-center">
                         <table class="report">
@@ -55,7 +55,14 @@
 
     $(document).ready(function(){
 
-            var native_select_widget = $(":input[name='from_supplier']");
+            // from server
+            var contact_field_name = "{{ contact_field_name }}";
+            var from_contact_field = "{{ from_contact_field }}";
+            var to_contact_field = "{{ to_contact_field }}";
+            var report_url = "{{ request.path }}";
+
+            // from client
+            var native_select_widget = $(":input[name='" + from_contact_field + "']");
             var creation_url = native_select_widget.attr("data-creation-url");
             var form = native_select_widget.attr("data-form");
             var form_field = native_select_widget.attr("data-form-field");
@@ -66,7 +73,7 @@
             function form_init(){
 
                 contact_selectize({
-                    select_identifier: ":input[name='from_supplier']",
+                    select_identifier: ":input[name='" + from_contact_field + "']",
                     creation_url: creation_url,
                     form: form,
                     form_field: form_field,
@@ -74,7 +81,7 @@
                 });
 
                 contact_selectize({
-                    select_identifier: ":input[name='to_supplier']",
+                    select_identifier: ":input[name='" + to_contact_field + "']",
                     creation_url: creation_url,
                     form: form,
                     form_field: form_field,
@@ -92,15 +99,15 @@
             var report_table = $("table.report")
             .DataTable({
                 ajax: function(data, callback, settings){
-                    data["from_supplier"] = $(":input[name='from_supplier']").val() || "";
-                    data["to_supplier"] = $(":input[name='to_supplier']").val() || "";
+                    data[from_contact_field] = $(":input[name='" + from_contact_field + "']").val() || "";
+                    data[to_contact_field] = $(":input[name='" + to_contact_field + "']").val() || "";
                     data["period"] = $(":input[name='period']").val() || "";
                     var show_transactions = $(":input[name='show_transactions']").prop("checked");
                     if(show_transactions){
                         data["show_transactions"] = "yes"
                     }
                     $.ajax({
-                        url: "{% url 'purchases:creditors_report' %}",
+                        url: report_url,
                         type: "GET",
                         data: data,
                         success: function(data, textStatus, jqXHR){

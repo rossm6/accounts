@@ -1,4 +1,5 @@
 from django import forms
+from django.urls import reverse_lazy
 
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
@@ -11,11 +12,11 @@ from accountancy.forms import (BaseTransactionHeaderForm,
                                SaleAndPurchaseLineForm,
                                SaleAndPurchaseLineFormset,
                                SaleAndPurchaseMatchingForm,
-                               SaleAndPurchaseMatchingFormset)
+                               SaleAndPurchaseMatchingFormset,
+                               aged_matching_report_factory)
 from accountancy.helpers import input_dropdown_widget_attrs_config
 from accountancy.widgets import InputDropDown
 from nominals.models import Nominal
-from django.urls import reverse_lazy
 
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
@@ -44,7 +45,6 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
                 }
             )
         }
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -162,3 +162,11 @@ read_only_match = forms.modelformset_factory(
 )
 
 read_only_match.include_empty_form = False
+
+
+# returns form class
+DebtorForm = aged_matching_report_factory(
+    Customer,
+    reverse_lazy("sales:create_on_the_fly"),
+    reverse_lazy("sales:load_customers")
+)

@@ -4,9 +4,10 @@ from django import forms
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
 
-from .layouts import (AdvSearchField, Draggable, Label, PlainField,
+from .layouts import (AdvSearchField, DataTableTdField, Draggable, Label,
+                      LabelAndFieldAndErrors, PlainField, PlainFieldErrors,
                       TableHelper, Td, Th, Tr,
-                      create_transaction_header_helper, PlainFieldErrors, DataTableTdField)
+                      create_transaction_header_helper)
 
 
 class BaseAjaxForm(forms.ModelForm):
@@ -48,7 +49,8 @@ class BaseAjaxForm(forms.ModelForm):
                 queryset = querysets["get"]
             self.fields[field].queryset = queryset
             self.fields[field].load_queryset = querysets["load"]
-            self.fields[field].post_queryset = querysets["post"] # We need this to validate inputs for the input dropdown widget
+            # We need this to validate inputs for the input dropdown widget
+            self.fields[field].post_queryset = querysets["post"]
             if iterator := fields[field].get('iterator'):
                 self.fields[field].iterator = iterator
             if searchable_fields := fields[field].get('searchable_fields'):
@@ -443,6 +445,7 @@ class CashBookTransactionSearchForm(forms.Form):
         date = self.cleaned_data["date"]
         return date
 
+
 class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     date = forms.DateField(
@@ -738,7 +741,7 @@ class BaseCashBookLineForm(BroughtForwardLineForm):
                     'nominal': PlainFieldErrors,
                 }
             }
-        ).render()    
+        ).render()
 
 
 class SaleAndPurchaseLineForm(BroughtForwardLineForm):
@@ -761,7 +764,6 @@ class SaleAndPurchaseLineForm(BroughtForwardLineForm):
                 }
             }
         ).render()
-
 
 
 class ReadOnlySaleAndPurchaseLineFormMixin:
@@ -791,7 +793,7 @@ class ReadOnlySaleAndPurchaseLineFormMixin:
                     'amount': PlainFieldErrors
                 }
             },
-        ).render()    
+        ).render()
 
 
 class SaleAndPurchaseMatchingForm(forms.ModelForm):
@@ -1192,3 +1194,111 @@ class BaseVoidTransactionForm(forms.Form):
                 ),
                 code="invalid-transaction-to-void"
             )
+
+
+def aged_matching_report_factory(
+        contact_model,
+        contact_creation_url,
+        contact_load_url):
+    """
+    Creates a form for AgedCreditor and AgedDebtor report
+    """
+
+    contact_field_name = contact_model.__name__.lower()
+    from_contact_field = "from_" + contact_field_name
+    to_contact_field = "to_" + contact_field_name
+
+    class Form(forms.Form):
+        period = forms.CharField(max_length=6)
+        show_transactions = forms.BooleanField(required=False)
+
+        def set_none_queryset_for_fields(self, fields):
+            for field in fields:
+                self.fields[field].queryset = self.fields[field].queryset.none()
+
+        def clean(self):
+            cleaned_data = super().clean()
+            if (
+                (to_contact := cleaned_data.get(to_contact_field)) and
+                (from_contact := cleaned_data.get(from_contact_field))
+                and to_contact.pk < from_contact.pk
+            ):
+                raise forms.ValidationError(
+                    _(
+                        f"This is not a valid range for {contact_field_name}s "
+                        f"because the second {contact_field_name} you choose comes before the first {contact_field_name}"
+                    ),
+                    code=f"invalid {contact_field_name} range"
+                )
+
+            return cleaned_data
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+            # dynamically set the contact range fields
+            # it will not work if you assign the form field to a variable
+            # and use for both fields.  I didn't try a deep copy.
+
+            self.fields[from_contact_field] = forms.ModelChoiceField(
+                queryset=contact_model.objects.all(),
+                required=False,
+                widget=forms.Select(attrs={
+                    "data-form": contact_field_name,
+                    "data-form-field": contact_field_name + "-code",
+                    "data-creation-url": contact_creation_url,
+                    "data-load-url": contact_load_url,
+                    "data-contact-field": True
+                }))
+
+            self.fields[to_contact_field] = forms.ModelChoiceField(
+                queryset=contact_model.objects.all(),
+                required=False,
+                widget=forms.Select(attrs={
+                    "data-form": contact_field_name,
+                    "data-form-field": contact_field_name + "-code",
+                    "data-creation-url": contact_creation_url,
+                    "data-load-url": contact_load_url,
+                    "data-contact-field": True
+                }))
+
+            if not self.data:
+                self.set_none_queryset_for_fields(
+                    [from_contact_field, to_contact_field])
+
+            self.helper = FormHelper()
+            self.helper.form_method = "GET"
+            self.helper.layout = Layout(
+                Div(
+                    Div(
+                        LabelAndFieldAndErrors(
+                            from_contact_field, css_class="w-100"),
+                        css_class="col"
+                    ),
+                    Div(
+                        LabelAndFieldAndErrors(
+                            to_contact_field, css_class="w-100"),
+                        css_class="col"
+                    ),
+                    Div(
+                        LabelAndFieldAndErrors(
+                            "period", css_class="input w-100"),
+                        css_class="col"
+                    ),
+                    css_class="row"
+                ),
+                Div(
+                    Div(
+                        LabelAndFieldAndErrors(
+                            "show_transactions", css_class=""),
+                        css_class="col"
+                    ),
+                    css_class="mt-4 row"
+                ),
+                Div(
+                    HTML("<button class='btn btn-sm btn-primary'>Report</button>"),
+                    css_class="text-right mt-3"
+                )
+            )
+
+    return Form

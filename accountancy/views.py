@@ -1427,7 +1427,7 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
             "meta": {
                 "contact_pk": getattr(header, contact_field_name).pk
             },
-            "supplier": getattr(header, contact_field_name).name,
+            contact_field_name: getattr(header, contact_field_name).name,
             "date": header.date,
             # JSONBlankDate just returns "" instead of the datetime when serialized.
             # we need this because otherwise the order_objects cannot work
@@ -1483,10 +1483,11 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
     def get_context_data(self, **kwargs):
         context = {}
         contact_field_name = self.get_contact_field_name()
+        from_contact_field, to_contact_field = self.get_contact_range_field_names()
+
         if self.request.is_ajax():
             # get the report
             form = self.get_filter_form()(data=self.request.GET)
-            from_contact_field, to_contact_field = self.get_contact_range_field_names()
             if form.is_valid():
                 from_contact = form.cleaned_data.get(from_contact_field)
                 to_contact = form.cleaned_data.get(to_contact_field)
@@ -1583,8 +1584,11 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
             context["form"] = form
 
         context["columns"] = columns = []
-        self.show_trans_columns.insert(0, contact_field_name)
-        for column in self.show_trans_columns:
+
+        show_trans_columns = self.show_trans_columns.copy()
+        show_trans_columns.insert(0, contact_field_name)
+
+        for column in show_trans_columns:
             if type(column) is type(""):
                 columns.append({
                     "label": column.title(),
@@ -1592,6 +1596,10 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
                 })
             elif isinstance(column, dict):
                 columns.append(column)
+
+        context["contact_field_name"] = contact_field_name
+        context["from_contact_field"] = from_contact_field
+        context["to_contact_field"] = to_contact_field
 
         return context
 
