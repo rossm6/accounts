@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.css"/>
+    <style>
+
+        table.dataTable td {
+            padding-left: 0.75rem !important;
+            vertical-align: middle !important;
+        }
+
+        table.dataTable thead {
+            background-color: #f5f5f5;
+        }
+
+        .has-search .form-control {
+            padding-left: 2.375rem;
+        }
+
+        .has-search .form-control-feedback {
+            position: absolute;
+            z-index: 2;
+            display: block;
+            width: 2.375rem;
+            height: 2.375rem;
+            line-height: 2.375rem;
+            text-align: center;
+            pointer-events: none;
+            color: #aaa;
+        }
+
+        div.dataTables_length label {
+            margin: 0;
+        }
+
+        li.list-group-item {
+            border: none;
+        }
+
+
+
+    </style>
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+
+<div class="cont">
+    <div class="border-bottom bg-white">
+        <div class="container p-3">
+            <h1 class="p-0 m-0 h4 font-weight-bold">Contacts</h1>
+        </div>
+    </div>
+    <div>
+        <div class="container">
+            <div class="mt-5">
+                <div class="row no-gutters border">
+                    <div class="col-2 border-right">
+                        <ul class="list-group">
+                            <a href="#" class="link-unstyled">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {% if contact_filter == "all" %}<strong>All</strong>{% else %}All{% endif %}
+                                    <span class="badge badge-primary badge-pill">{{ counts.all }}</span>
+                                </li>                            
+                            </a>
+                            <a href="#" class="link-unstyled">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {% if contact_filter == "customer" %}<strong>Customer</strong>{% else %}Customer{% endif %}
+                                    <span class="badge badge-primary badge-pill">{{ counts.customers }}</span>
+                                </li>                            
+                            </a>
+                            <a href="#" class="link-unstyled">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {% if contact_filter == "supplier" %}<strong>Supplier</strong>{% else %}Supplier{% endif %}
+                                    <span class="badge badge-primary badge-pill">{{ counts.suppliers }}</span>
+                                </li>                            
+                            </a>
+                        </ul>
+                    </div>
+                    <div class="col d-flex-column p-3">
+                        <div class="mb-4 text-right">
+                            <!-- Example split danger button -->
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-success">New</button>
+                                <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="sr-only">Toggle Dropdown</span>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{% url 'contacts:create_customer' %}">Customer</a>
+                                    {% comment %} <a class="dropdown-item" href="{% url 'contacts:create_supplier' %}">Supplier</a> {% endcomment %}
+                                </div>
+                            </div>                            
+                        </div>
+                        <div>
+                            <div class="d-none">
+                                {% comment %} this search box is moved when the jquery datatable is initialised {% endcomment %}
+                                <div class="form-group has-search w-100 m-0">
+                                    <span class="fa fa-search form-control-feedback"></span>
+                                    <input type="text" class="contact-search form-control" placeholder="Search">
+                                </div>
+                            </div>
+                            <table class="table table-borderless">
+                                <thead class="thead">
+                                    <tr>
+                                        {% comment %} <th class="text-center">
+                                            <input type="checkbox" name="select_all" value="1" id="example-select-all" class="align-middle">
+                                        </th> {% endcomment %}
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        {% comment %} <th>Email</th> {% endcomment %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>        
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+
+{% block js %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
+<script src="https://cdn.datatables.net/plug-ins/1.10.21/pagination/select.js"></script>
+<script src="{% static 'accountancy/js/datatable_extensions.js' %}"></script>
+<script>
+    $(document).ready(function(){
+   
+        var table = $("table")
+        .on('init.dt', function (e, settings, json) {
+            var search_box = $("div.has-search");
+            $("div.search-col").append(search_box);            
+        })  
+        .DataTable({
+            ajax: {
+                url: "",
+            },
+            serverSide: true,
+            order: [
+                [ 0, 'asc' ]
+            ],
+            columns: [
+                {
+                    "data": "code"
+                },
+                {
+                    "data": "name"
+                },
+                {
+                    "data": "email"
+                },
+            ],
+            dom: "<'row'<'d-flex align-items-center col-6'l><'search-col d-flex align-items-center col-6'>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        });
+
+    });
+</script>
+{% endblock js %}

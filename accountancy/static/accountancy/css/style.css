@@ -273,41 +273,6 @@ div.has_errors::after {
     color: rgb(4, 143, 194);  
 }
 
-.btn-group .dropdown-menu {
-    font-size: 80%;
-    top: -1px;
-    color: rgb(4, 143, 194);
-    padding: 0px;
-}
-
-.btn-group .dropdown-item {
-    color: rgb(4, 143, 194);   
-}
-
-.btn-group .dropdown-item:hover {
-    background-color: rgb(224, 238, 243); 
-}
-
-.dropdown-split-button {
-    position: relative;
-}
-
-.dropdown-split-button .btn-group {
-    position: static;
-}
-
-.dropdown-split-button .dropdown-toggle::after {
-    margin-left: 0px !important;
-    /* otherwise the carrat icon is misaligned */
-}
-
-.dropdown-split-button .dropdown-menu {
-    position: absolute;
-    transform: none !important;
-    will-change: none !important;
-    top: 100% !important;
-}
-
 /* inputs */
 
 .input {
@@ -338,4 +303,9 @@ div.dataTables_scrollHeadInner {
 table.nominal_transactions {
     width: 100% !important;
     text-align: center;
+}
+
+.link-unstyled, .link-unstyled:link, .link-unstyled:hover {
+    color: inherit;
+    text-decoration: inherit;
 }

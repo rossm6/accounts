@@ -61,6 +61,16 @@
                 <a class="dropdown-item" href="#">Reports</a>
               </div>
             </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Contacts
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                <a class="dropdown-item" href="{% url 'contacts:contact_list' %}?q=all">All</a>
+                <a class="dropdown-item" href="{% url 'contacts:contact_list' %}?q=customers">Customers</a>
+                <a class="dropdown-item" href="{% url 'contacts:contact_list' %}?q=suppliers">Suppliers</a>
+              </div>
+            </li>
           </ul>
         </div>
       </nav>
@@ -79,5 +89,6 @@
     {% block js %}
     {% endblock js %}
     <script src="{% static 'accountancy/js/content_loaded.js' %}"></script>
+    <script src="{% static 'accountancy/js/reload.js' %}"></script>
   </body>
 </html>

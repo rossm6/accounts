@@ -4,10 +4,60 @@ from django import forms
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
 
+from accountancy.models import Address
+
 from .layouts import (AdvSearchField, DataTableTdField, Draggable, Label,
                       LabelAndFieldAndErrors, PlainField, PlainFieldErrors,
                       TableHelper, Td, Th, Tr,
                       create_transaction_header_helper)
+
+
+class AddressForm(forms.ModelForm):
+    class Meta:
+        model = Address
+        fields = ('address', 'address_2', 'city', 'county', 'post_code')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Div(
+                LabelAndFieldAndErrors(
+                    'address',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            ),
+            Div(
+                LabelAndFieldAndErrors(
+                    'address_2',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            ),
+            Div(
+                LabelAndFieldAndErrors(
+                    'city',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            ),
+            Div(
+                LabelAndFieldAndErrors(
+                    'county',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            ),
+            Div(
+                LabelAndFieldAndErrors(
+                    'post_code',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            )
+        )
 
 
 class BaseAjaxForm(forms.ModelForm):

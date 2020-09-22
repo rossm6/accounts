@@ -1,3 +1,7 @@
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout
+from accountancy.layouts import Div, LabelAndFieldAndErrors
+
 from django import forms
 from django.urls import reverse_lazy
 
@@ -28,6 +32,40 @@ class QuickCustomerForm(forms.ModelForm):
         fields = ('code', )
 
 
+class CustomerForm(forms.ModelForm):
+    class Meta:
+        model = Customer
+        fields = ('code', 'name', 'email',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Div(
+                LabelAndFieldAndErrors(
+                    'code',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            ),
+            Div(
+                LabelAndFieldAndErrors(
+                    'name',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            ),
+            Div(
+                LabelAndFieldAndErrors(
+                    'email',
+                    css_class="form-control form-control-sm w-100"
+                ),
+                css_class="form-group"
+            ),
+        )
+
+
 class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
 
     class Meta:
@@ -53,7 +91,6 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
         # With general solution.
 
         if not self.data and not self.instance.pk:
-            print("DUH")
             self.fields["customer"].queryset = Customer.objects.none()
         if self.instance.pk:
             self.fields["customer"].queryset = Customer.objects.filter(

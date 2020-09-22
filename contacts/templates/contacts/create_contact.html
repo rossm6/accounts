@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+
+<div class="cont">
+    <div class="border-bottom bg-white">
+        <div class="container p-3">
+            <h1 class="p-0 m-0 h4 font-weight-bold">Create Contact</h1>
+        </div>
+    </div>
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-center">
+                <form class="mt-5 w-50" method="POST">
+                    {% crispy form %}
+                    {% crispy address_form %}
+                    <div class="d-flex justify-content-between">
+                        <a class="btn btn-sm btn-info" href="{% url 'contacts:contact_list' %}">Cancel</a>
+                        <button type="submit" class="btn btn-sm btn-success">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

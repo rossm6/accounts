@@ -165,25 +165,61 @@ def input_dropdown_widget_load_options_factory(form, paginate_by):
 
 class jQueryDataTable:
 
-    def order_objects(self, objs):
+    def paginate_objects(self, objects):
+        """
+        Only use this if you are using pagination.  Not suitable
+        for jQueryDataTable scroller.
+        """
+        start = self.request.GET.get("start", 0)
+        paginate_by = self.request.GET.get("length", 25)
+        p = Paginator(objects, paginate_by)
+        trans_count = p.count
+        page_number = int(int(start) / int(paginate_by)) + 1
+        try:
+            page_obj = p.page(page_number)
+        except PageNotAnInteger:
+            page_obj = p.page(1)
+        except EmptyPage:
+            page_obj = p.page(1)
+            page_obj.object_list = []
+            page_obj.has_other_pages = False
+        return p, page_obj
+
+
+    def order_objects(self, objs, type="dict"):
         """
         Sometimes it is not possible in Django to use the ORM, or it would be tricky,
         so we have to order in python.
+
+        Supports model instances and dict objects.  Just specify the type as either
+        "dict" or "instance"
         """
         orm_ordering = self.order_by()  # so we don't repeat ourselves
+        print(orm_ordering)
         ordering = []
         for order in orm_ordering:
             if order[0] == "-":
                 field = order[1:]
-                ordering.append(
-                    (lambda obj: obj.get(field), True)  # descending
-                )
+                if type == "dict":
+                    ordering.append(
+                        (lambda obj: obj.get(field), True)  # descending
+                    )
+                else:
+                    ordering.append(
+                        (lambda obj: getattr(obj, field), True)  # descending
+                    )                    
             else:
                 field = order
-                ordering.append(
-                    (lambda obj: obj.get(field), False)  # ascending
-                )
+                if type == "dict":
+                    ordering.append(
+                        (lambda obj: obj.get(field), False)  # ascending
+                    )
+                else:
+                    ordering.append(
+                        (lambda obj: getattr(obj, field), False)  # ascending
+                    )                    
         return sort_multiple(objs, *ordering)
+
 
     def order_by(self):
         ordering = []  # will pass this to ORM to order the fields correctly
