@@ -264,14 +264,26 @@ class TrialBalance(ListView):
             .filter(period__lte=to_period)
         )
         report = []
+        debit_total = 0
+        credit_total = 0
+        ytd_debit_total = 0
+        ytd_credit_total = 0
         for nominal_total in nominal_totals_for_period_range:
             nominal_pk = nominal_total["nominal"]
             total = nominal_total["total"]
+            if total > 0:
+                debit_total += total
+            else:
+                credit_total += total
             parents = [
                 parent.name for parent in nominal_map[nominal_pk].get_ancestors()]
             for ytd in nominal_ytd_totals:
                 if ytd["nominal"] == nominal_pk:
                     ytd = ytd["total"]
+                    if ytd > 0:
+                        ytd_debit_total += ytd
+                    else:
+                        ytd_credit_total += ytd
                     break
             nominal_report = {
                 "nominal": nominal_map[nominal_pk].name,
@@ -280,6 +292,10 @@ class TrialBalance(ListView):
                 "ytd": ytd
             }
             report.append(nominal_report)
+        context["debit_total"] = debit_total
+        context["credit_total"] = credit_total
+        context["ytd_debit_total"] = ytd_debit_total
+        context["ytd_credit_total"] = ytd_credit_total
         self.object_list = context["report"] = report
         return context
 

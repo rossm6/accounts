@@ -11,13 +11,26 @@
     <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
     <style>
 
+        tr.dtrg-level-0 td {
+            padding-left: 1.5em !important;
+        }
+
         tr.dtrg-level-1 td {
-            padding-left: 2em !important;
+            padding-left: 3em !important;
         }
 
         tr.odd td:first-child,
         tr.even td:first-child {
-            padding-left: 4em !important;
+            padding-left: 4.5em !important;
+        }
+
+        table.dataTable td.value {
+            padding-left: 1.5em !important;
+        }
+
+        tfoot {
+            background-color: #D4D4D4;
+            font-weight: 900;
         }
 
     </style>
@@ -51,22 +64,33 @@
                                         <td>{{ row.parents.1 }}</td>
                                         <td>{{ row.parents.0 }}</td>
                                         {% if row.total > 0 %}
-                                            <td>{{ row.total }}</td>
-                                            <td></td>
+                                            <td class="value">{{ row.total }}</td>
+                                            <td class="value"></td>
                                         {% else %}
-                                            <td></td> 
-                                            <td>{{ row.total }}</td>                                       
+                                            <td class="value"></td> 
+                                            <td class="value">{{ row.total }}</td>                                       
                                         {% endif %}
                                         {% if row.total > 0 %}
-                                            <td>{{ row.ytd }}</td>
-                                            <td></td>
+                                            <td class="value">{{ row.ytd }}</td>
+                                            <td class="value"></td>
                                         {% else %}
-                                            <td></td> 
-                                            <td>{{ row.ytd }}</td>                                       
+                                            <td class="value"></td> 
+                                            <td class="value">{{ row.ytd }}</td>                                       
                                         {% endif %}
                                     </tr>
                                 {% endfor %}
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td class="value">Totals</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="value">{{ debit_total }}</td>
+                                    <td class="value">{{ credit_total }}</td>
+                                    <td class="value">{{ ytd_debit_total }}</td>
+                                    <td class="value">{{ ytd_credit_total }}</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>

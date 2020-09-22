@@ -271,13 +271,13 @@ class TrialBalanceForm(forms.Form):
             Div(
                 Div(
                     LabelAndFieldAndErrors(
-                        "from_period", css_class="w-100"),
-                    css_class="col"
+                        "from_period", css_class="input"),
+                    css_class="col-2"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
-                        "to_period", css_class="w-100"),
-                    css_class="col"
+                        "to_period", css_class="input"),
+                    css_class="col-2"
                 ),
                 css_class="row"
             ),
