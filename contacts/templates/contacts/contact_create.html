@@ -21,10 +21,9 @@
             <div class="d-flex justify-content-center">
                 <form class="mt-5 w-50" method="POST">
                     {% crispy form %}
-                    {% crispy address_form %}
                     <div class="d-flex justify-content-between">
-                        <a class="btn btn-sm btn-info" href="{% url 'contacts:contact_list' %}">Cancel</a>
-                        <button type="submit" class="btn btn-sm btn-success">Save</button>
+                        <a class="btn btn-secondary" href="{% url 'contacts:contact_list' %}">Cancel</a>
+                        <button type="submit" class="btn btn-success">Save</button>
                     </div>
                 </form>
             </div>

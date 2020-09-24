@@ -1,0 +1,80 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
+    <meta name="generator" content="Jekyll v4.1.1">
+    <title>Accounts Signup</title>
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.5/examples/sign-in/">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">    
+
+    <style>
+
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    <link href="{% static 'users/css/style.css' %}" rel="stylesheet">
+  </head>
+    <body class="text-center">
+        
+        {% load crispy_forms_tags %}
+        {% crispy form %}
+    <script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function(){
+
+            var awaiting = false;
+            var form_elem_last_focussed_by_id;
+            
+            function validate_form(){
+                
+                $.ajax({
+                    url: "{% url 'users:validate_form' %}",
+                    type: "POST",
+                    data: "form=signup&" + $("form").serialize(),
+                    success: function(data, textStatus, jqXHR){
+                        $("form").replaceWith($(data.form_html));
+                        $("form").find("#" + form_elem_last_focussed_by_id).focus();
+                    },
+                    error: function(){
+                        alert("some error occured validating the form");
+                    }
+                });
+
+            }
+
+            $(document).on("change", ":input", function(){
+                if(!awaiting){
+                    validate_form();
+                }
+            });
+
+            $(document).on("focus", ":input", function(){
+                form_elem_last_focussed_by_id = $(this).attr("id");
+            });
+
+            $(document).on("submit", "form", function(e){
+                e.preventDefault();
+            });
+
+        });
+    </script>
+    </body>
+</html>

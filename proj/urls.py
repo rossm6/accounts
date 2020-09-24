@@ -28,6 +28,8 @@ urlpatterns = [
     path('nominals/', include("nominals.urls")),
     path('purchases/', include("purchases.urls")),
     path('sales/', include("sales.urls")),
+    path('users/', include("users.urls")),
+    path('users/', include("django.contrib.auth.urls")),
     path('', RedirectView.as_view(url=reverse_lazy(
         "purchases:transaction_enquiry")), name="home")
 

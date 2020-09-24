@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     'nominals',
     'purchases',
     'sales',
+    'users',
     'vat'
 ]
 

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block head %}
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+
+<div class="cont">
+    <div class="border-bottom bg-white">
+        <div class="container p-3">
+            <h1 class="p-0 m-0 h4 font-weight-bold">Contact Details</h1>
+        </div>
+    </div>
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-end mt-3">
+                <button class="btn btn-primary btn-sm mr-2">Audit</button>
+                <a href="{{ edit_href }}" class="btn btn-success btn-sm" role="button">Edit</a>
+            </div>
+            <div>
+                <div class="row">
+                    <div class="col-sm-3 col-md-2 col-5">
+                        <label style="font-weight:bold;">Code</label>
+                    </div>
+                    <div class="col-md-8 col-6">
+                        {{ contact.code }}
+                    </div>
+                </div>
+                <hr />
+
+                <div class="row">
+                    <div class="col-sm-3 col-md-2 col-5">
+                        <label style="font-weight:bold;">Name</label>
+                    </div>
+                    <div class="col-md-8 col-6">
+                        {{ contact.name }}
+                    </div>
+                </div>
+                
+                <hr />
+
+                <div class="row">
+                    <div class="col-sm-3 col-md-2 col-5">
+                        <label style="font-weight:bold;">Email</label>
+                    </div>
+                    <div class="col-md-8 col-6">
+                        {{ contact.email }}
+                    </div>
+                </div>
+                <hr />
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

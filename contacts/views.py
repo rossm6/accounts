@@ -2,12 +2,10 @@ from itertools import chain
 
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
-from django.views.generic import CreateView, View
-from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from django.urls import reverse_lazy
+from django.views.generic import CreateView, DetailView, UpdateView, View, DeleteView
+from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
-from accountancy.forms import AddressForm
-from accountancy.models import Address
 from accountancy.views import jQueryDataTable
 from purchases.models import Supplier
 from sales.forms import CustomerForm
@@ -91,9 +89,17 @@ class ContactListView(jQueryDataTable, TemplateResponseMixin, View):
                 "name": contact.name,
                 "email": contact.email
             }
+            if contact.__class__.__name__ == "Customer":
+                pk = contact.pk
+                href = reverse_lazy(
+                    "contacts:customer_detail", kwargs={"pk": pk})
+            else:
+                pk = contact.pk
+                href = reverse_lazy(
+                    "contacts:supplier_detail", kwargs={"pk": pk})
             o["DT_RowData"] = {
-                "pk": contact.pk,
-                "href": ""  # TO DO
+                "pk": pk,
+                "href": href
             }
             rows.append(o)
         context["paginator_object"] = paginator_object
@@ -104,35 +110,30 @@ class ContactListView(jQueryDataTable, TemplateResponseMixin, View):
 class CreateCustomer(CreateView):
     model = Customer
     form_class = CustomerForm
-    template_name = "contacts/create_contact.html"
+    template_name = "contacts/contact_create.html"
     prefix = "customer"
     success_url = reverse_lazy("contacts:contact_list")
 
+
+class CustomerDetail(DetailView):
+    model = Customer
+    template_name = "contacts/contact_detail.html"
+    context_object_name = "contact"
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.method == "GET":
-            context["address_form"] = AddressForm(prefix="address")
+        context["edit_href"] = reverse_lazy("contacts:edit_customer", kwargs={
+                                            "pk": context["contact"].pk})
         return context
 
-    def form_valid(self, customer_form, address_form):
-        address = address_form.save()
-        customer_form.instance.address = address
-        return super().form_valid(customer_form)
 
-    def form_invalid(self, customer_form, address_form):
-        return self.render_to_response(
-            self.get_context_data(
-                form=customer_form,
-                address_form=address_form
-            )
-        )
+class SupplierDetail(CustomerDetail):
+    model = Supplier
 
-    def post(self, request, *args, **kwargs):
-        self.object = None # this is what the superclass does.
-        # without form errors will complain about this missing
-        customer_form = self.get_form()
-        address_form = AddressForm(data=self.request.POST, prefix="address")
-        if customer_form.is_valid() and address_form.is_valid():
-            return self.form_valid(customer_form, address_form)
-        else:
-            return self.form_invalid(customer_form, address_form)
+
+class CustomerUpdate(UpdateView):
+    model = Customer
+    form_class = CustomerForm
+    template_name = "contacts/contact_create.html"
+    context_object_name = "contact"
+    success_url = reverse_lazy("contacts:contact_list")

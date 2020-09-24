@@ -5,22 +5,10 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-
-class Address(models.Model):
-    address = models.CharField(max_length=200)
-    address_2 = models.CharField(max_length=200)
-    city = models.CharField(max_length=30)
-    county = models.CharField(max_length=30)
-    post_code = models.CharField(max_length=10)
-
-    def __str__(self):
-        return f"{self.address} - {self.post_code}"
-
 class Contact(models.Model):
     code = models.CharField(max_length=10)
     name = models.CharField(max_length=100)
     email = models.EmailField()
-    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return self.code
