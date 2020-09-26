@@ -24,6 +24,7 @@ drf-yasg = {extras = ["validation"],version = "*"}
 whitenoise = "*"
 dj-database-url = "*"
 gunicorn = "*"
+django-anymail = {extras = ["mailgun"],version = "*"}
 
 [requires]
 python_version = "3.8"

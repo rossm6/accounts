@@ -192,6 +192,22 @@ USE_L10N = True
 USE_TZ = True
 
 
+LOGIN_URL = '/users/sigin'
+LOGIN_REDIRECT_URL = '/users/profile'
+LOGOUT_REDIRECT_URL = '/users/signin'
+
+ANYMAIL = {
+    "MAILGUN_API_KEY": os.environ.get('MAILGUN_API_KEY', ''),
+    "MAILGUN_SENDER_DOMAIN": os.environ.get('MAILGUN_DOMAIN', ''),
+}
+
+# EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
+EMAIL_BACKEND = "users.backends.CustomEmailBackend"
+
+DEFAULT_FROM_EMAIL = "you@example.com"
+# the email address that error messages come from, such as those sent to ADMINS and MANAGERS
+SERVER_EMAIL = "your-server@example.com"
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 

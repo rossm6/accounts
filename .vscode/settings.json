@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/home/ross/.local/share/virtualenvs/accounts-kFnakJ5x/bin/python"
+    "python.pythonPath": "/home/ross/.local/share/virtualenvs/accounts-kFnakJ5x/bin/python",
+    "editor.detectIndentation": false
 }

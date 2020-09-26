@@ -1,11 +1,14 @@
 from django.contrib.auth.models import User
-from django.urls import reverse_lazy
-from django.views.generic import CreateView
+from django.contrib.auth.views import (LoginView, PasswordResetConfirmView,
+                                       PasswordResetView)
 from django.shortcuts import render
-
-from users.forms import SignUpForm
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, UpdateView
 
 from accountancy.views import ajax_form_validator
+from users.forms import (SignInForm, SignUpForm, UserPasswordResetForm,
+                         UserProfileForm, UserSetPasswordForm)
+
 
 class SignUp(CreateView):
     model = User
@@ -19,5 +22,23 @@ validate_forms_by_ajax = ajax_form_validator({
 })
 
 
-def profile(request):
-    return render(request, "registration/profile.html", {})
+class SignIn(LoginView):
+    form_class = SignInForm
+
+
+class Profile(UpdateView):
+    model = User
+    form_class = UserProfileForm
+    template_name = "registration/profile.html"
+    success_url = reverse_lazy("users:profile")
+
+    def get_object(self):
+        return self.request.user
+
+
+class UserPasswordResetView(PasswordResetView):
+    form_class = UserPasswordResetForm
+
+
+class UserPasswordResetConfirmView(PasswordResetConfirmView):
+    form_class = UserSetPasswordForm

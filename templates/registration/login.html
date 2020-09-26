@@ -1,0 +1,12 @@
+{% extends 'registration/base.html' %}
+
+{% block content %}
+    <div class="mx-auto">
+        {% load crispy_forms_tags %}
+        {% crispy form %}
+        <div class="small d-flex justify-content-center">
+            <a class="mr-3" href="{% url 'users:signup' %}">Sign Up</a>
+            <a class="ml-3" href="{% url 'users:password_reset' %}">Reset Password</a>
+        </div>
+    </div>
+{% endblock content %}
