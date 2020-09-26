@@ -1,15 +1,22 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from simple_history import register
 
-from accountancy.models import (ControlAccountPaymentTransactionMixin, Contact, MatchedHeaders, TransactionHeader,
-                                TransactionLine, Transaction, ControlAccountInvoiceTransactionMixin, CashBookEntryMixin)
+from accountancy.models import (CashBookEntryMixin, Contact,
+                                ControlAccountInvoiceTransactionMixin,
+                                ControlAccountPaymentTransactionMixin,
+                                MatchedHeaders, Transaction, TransactionHeader,
+                                TransactionLine)
 from items.models import Item
 from vat.models import Vat
 
 
 class Supplier(Contact):
     pass
+
+
+register(Supplier)
 
 
 class PurchaseTransaction(Transaction):
@@ -138,6 +145,7 @@ class PurchaseHeader(TransactionHeader):
             return Payment(header=self)
         if self.type == "pr":
             return Refund(header=self)
+
 
 class PurchaseLineQuerySet(models.QuerySet):
 

@@ -25,6 +25,7 @@ whitenoise = "*"
 dj-database-url = "*"
 gunicorn = "*"
 django-anymail = {extras = ["mailgun"],version = "*"}
+django-simple-history = "*"
 
 [requires]
 python_version = "3.8"

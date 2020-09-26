@@ -1,16 +1,21 @@
 from django.conf import settings
 from django.db import models
+from simple_history import register
 
-from accountancy.models import (Contact, ControlAccountInvoiceTransactionMixin,
-                                MatchedHeaders, ControlAccountPaymentTransactionMixin,
-                                Transaction, TransactionHeader,
-                                TransactionLine, CashBookEntryMixin)
+from accountancy.models import (CashBookEntryMixin, Contact,
+                                ControlAccountInvoiceTransactionMixin,
+                                ControlAccountPaymentTransactionMixin,
+                                MatchedHeaders, Transaction, TransactionHeader,
+                                TransactionLine)
 from items.models import Item
 from vat.models import Vat
 
 
 class Customer(Contact):
     pass
+
+
+register(Customer)
 
 
 class SalesTransaction(Transaction):
@@ -56,7 +61,7 @@ class SaleHeader(TransactionHeader):
     no_analysis_required = [
         ('sbi', 'Brought Forward Invoice'),
         ('sbc', 'Brought Forward Credit Note'),
-        ('sbp', 'Brought Forward Receipt'), # sbp = Sales B/F payment
+        ('sbp', 'Brought Forward Receipt'),  # sbp = Sales B/F payment
         ('sbr', 'Brought Forward Refund'),
     ]
     # FIX ME - rename to "nominals_required"
@@ -138,6 +143,7 @@ class SaleHeader(TransactionHeader):
             return Receipt(header=self)
         if self.type == "sr":
             return Refund(header=self)
+
 
 class SaleLineQuerySet(models.QuerySet):
 

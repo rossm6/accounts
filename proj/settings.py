@@ -71,8 +71,9 @@ INSTALLED_APPS = [
     'django_extensions',
     'drf_yasg',
     'mptt',
-    'tempus_dominus',
     'rest_framework',
+    'simple_history',
+    'tempus_dominus',
 
     # ours
     'accountancy',
@@ -97,6 +98,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'proj.urls'
