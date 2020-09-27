@@ -1,8 +1,53 @@
 from functools import reduce
 
+from django.utils import timezone
+from simple_history.utils import (get_change_reason_from_object,
+                                  get_history_manager_for_model)
+
+
+def bulk_delete_with_history(objects, model, batch_size=None, default_user=None, default_change_reason="", default_date=None):
+    """
+    The package `simple_history` does not log what was deleted if the items
+    are deleted in bulk.  This does.
+    """
+    model_manager = model._default_manager
+    model_manager.filter(pk__in=[obj.pk for obj in objects]).delete()
+
+    history_manager = get_history_manager_for_model(model)
+
+    history_type = "-"
+    historical_instances = []
+    for instance in objects:
+        history_user = getattr(
+            instance,
+            "_history_user",
+            default_user or history_manager.model.get_default_history_user(
+                instance),
+        )
+        row = history_manager.model(
+            history_date=getattr(
+                instance, "_history_date", default_date or timezone.now()
+            ),
+            history_user=history_user,
+            history_change_reason=get_change_reason_from_object(
+                instance) or default_change_reason,
+            history_type=history_type,
+            **{
+                field.attname: getattr(instance, field.attname)
+                for field in instance._meta.fields
+                if field.name not in history_manager.model._history_excluded_fields
+            }
+        )
+        if hasattr(history_manager.model, "history_relation"):
+            row.history_relation_id = instance.pk
+        historical_instances.append(row)
+
+    return history_manager.bulk_create(
+        historical_instances, batch_size=batch_size
+    )
+
 
 def sort_multiple(sequence, *sort_order):
-
     """Sort a sequence by multiple criteria.
 
     Accepts a sequence and 0 or more (key, reverse) tuples, where
