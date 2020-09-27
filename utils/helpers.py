@@ -1,8 +1,49 @@
 from functools import reduce
 
+from django.db import models
 from django.utils import timezone
 from simple_history.utils import (get_change_reason_from_object,
                                   get_history_manager_for_model)
+from simple_history.models import HistoricalRecords
+
+from sales.models import Customer
+
+
+
+class TurnSignalOffAndOn:
+    """
+
+    Turn off the signal before a task.  Then reconnect the signal.
+
+    It is important to understand however that signals are global in django.
+    So if we disconnect, before the reconnection, the signal will be received
+    even in other contexts i.e. different requests, different threads.
+
+    I keep this here as a reminder.  But really it is of no use.
+    If this concern isn't relevant, just disconnect the signal altogether.
+
+    """
+    def __init__(self, signal, receiver, sender, dispatch_uid=None):
+        self.signal = signal
+        self.receiver = receiver
+        self.sender = sender
+        self.dispatch_uid = dispatch_uid
+
+    def __enter__(self):
+        self.signal.disconnect(
+            receiver=self.receiver,
+            sender=self.sender,
+            dispatch_uid=self.dispatch_uid,
+            weak=False
+        )
+
+    def __exit__(self, type, value, traceback):
+        self.signal_connect(
+            receiver=self.receiver,
+            sender=self.sender,
+            dispatch_uid=self.dispatch_uid,
+            weak=False
+        )
 
 
 def bulk_delete_with_history(objects, model, batch_size=None, default_user=None, default_change_reason="", default_date=None):
@@ -10,11 +51,24 @@ def bulk_delete_with_history(objects, model, batch_size=None, default_user=None,
     The package `simple_history` does not log what was deleted if the items
     are deleted in bulk.  This does.
     """
-    model_manager = model._default_manager
+    
+    # We must ensure the post_delete signal is turned off first
+    receiver = None
+    receiver_objects = models.signals.post_delete._live_receivers(model)
+    if receiver_objects:
+        for receiver in receiver_objects:
+            if receiver.__self__.__class__.__name__ == HistoricalRecords.__name__:
+                models.signals.post_delete.disconnect(receiver, sender=model)
+                break
+
+    model_manager = model._default_manager   
     model_manager.filter(pk__in=[obj.pk for obj in objects]).delete()
 
-    history_manager = get_history_manager_for_model(model)
+    # re connect the receiver that was disconnected now that delete has been called on the queryset
+    if receiver:
+        models.signals.post_delete.connect(receiver, sender=model, weak=False)
 
+    history_manager = get_history_manager_for_model(model)
     history_type = "-"
     historical_instances = []
     for instance in objects:
