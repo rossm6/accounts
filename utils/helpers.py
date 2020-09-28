@@ -1,59 +1,72 @@
+import re
 from functools import reduce
 
 from django.db import models
+from django.db.models.fields.reverse_related import ManyToManyRel, ManyToOneRel
 from django.utils import timezone
+from more_itertools import pairwise
+from simple_history.models import HistoricalRecords
 from simple_history.utils import (get_change_reason_from_object,
                                   get_history_manager_for_model)
-from simple_history.models import HistoricalRecords
 
 from sales.models import Customer
 
 
+def get_historical_change(obj1, obj2):
+    audit = {}
+    if not obj1:
+        # then obj1 should be the creation audit log
+        d = obj2.__dict__
+        for field, value in d.items():
+            if not re.search("^history_", field) and not re.search("^_", field):
+                audit[field] = {
+                    "old": "",  # this since is the first audit log
+                    "new": str(value)
+                }
+    else:
+        diff = obj2.diff_against(obj1)
+        for change in diff.changes:
+            audit[change.field] = {
+                "old": str(change.old),
+                "new": str(change.new)
+            }
+    return audit
 
-class TurnSignalOffAndOn:
+
+def get_all_historical_changes(objects):
     """
-
-    Turn off the signal before a task.  Then reconnect the signal.
-
-    It is important to understand however that signals are global in django.
-    So if we disconnect, before the reconnection, the signal will be received
-    even in other contexts i.e. different requests, different threads.
-
-    I keep this here as a reminder.  But really it is of no use.
-    If this concern isn't relevant, just disconnect the signal altogether.
-
+    The objects are assumed ordered from oldest to most recent
     """
-    def __init__(self, signal, receiver, sender, dispatch_uid=None):
-        self.signal = signal
-        self.receiver = receiver
-        self.sender = sender
-        self.dispatch_uid = dispatch_uid
-
-    def __enter__(self):
-        self.signal.disconnect(
-            receiver=self.receiver,
-            sender=self.sender,
-            dispatch_uid=self.dispatch_uid,
-            weak=False
-        )
-
-    def __exit__(self, type, value, traceback):
-        self.signal_connect(
-            receiver=self.receiver,
-            sender=self.sender,
-            dispatch_uid=self.dispatch_uid,
-            weak=False
-        )
+    changes = []
+    if objects:
+        objects = list(objects)
+        objects.insert(0, None)
+        for obj1, obj2 in pairwise(objects):
+            changes.append(get_historical_change(obj1, obj2))
+    return changes
 
 
-def bulk_delete_with_history(objects, model, batch_size=None, default_user=None, default_change_reason="", default_date=None):
+def get_deleted_objects(model_objects, audit_logs, pk_field):
     """
-    The package `simple_history` does not log what was deleted if the items
-    are deleted in bulk.  This does.
+    `simple_history` does not support bulk_delete so we bulk_delete
+    when we can.  Still we need to cater for objects deleted via
+    the admin but might not have been audit logged.
+
+    This helper functions just checkes if an audit log exists
+    for an object not in model_objects.
+
+    We assume the audit logs are ordered from oldest to most recent.
     """
-    
-    # We must ensure the post_delete signal is turned off first
-    receiver = None
+    deleted = {}
+    model_map = {obj.pk: obj for obj in model_objects}
+    for log in audit_logs:
+        pk_value = getattr(log, pk_field)
+        if pk_value not in model_map:
+            deleted[pk_value] = log
+    return deleted
+
+
+def disconnect_simple_history_receiver_for_post_delete_signal(model):
     receiver_objects = models.signals.post_delete._live_receivers(model)
     if receiver_objects:
         for receiver in receiver_objects:
@@ -61,12 +74,34 @@ def bulk_delete_with_history(objects, model, batch_size=None, default_user=None,
                 models.signals.post_delete.disconnect(receiver, sender=model)
                 break
 
-    model_manager = model._default_manager   
-    model_manager.filter(pk__in=[obj.pk for obj in objects]).delete()
 
-    # re connect the receiver that was disconnected now that delete has been called on the queryset
-    if receiver:
-        models.signals.post_delete.connect(receiver, sender=model, weak=False)
+def bulk_delete_with_history(objects, model, batch_size=None, default_user=None, default_change_reason="", default_date=None):
+    """
+
+    The package `simple_history` does not log what was deleted if the items
+    are deleted in bulk.  This does.
+
+    Although it isn't great.  Obviously we have to disconnect the receiver
+    from the package so we don't get duplicate audit logs which would also
+    be extremely expensive.  The downside though is any delete done through
+    the admin, or, for that matter, any delete done via code i don't control,
+    will not produce an audit log if this has been called already.
+
+    But I could just write code which checks if objects are missing from
+    the created audit logs and create delete logs on the fly for the view.
+    There wouldn't really be the need to save the logs to the DB.
+
+    Another approach is to perhaps add an attribute / flag to the instance
+    to be deleted.  This is based on this answer - https://stackoverflow.com/questions/11179380/pass-additional-parameters-to-post-save-signal
+    Not sure it would work with delete though.  Certainly you'd need to pull
+    the objects into memory first before deleting.
+
+    """
+
+    disconnect_simple_history_receiver_for_post_delete_signal(model)
+
+    model_manager = model._default_manager
+    model_manager.filter(pk__in=[obj.pk for obj in objects]).delete()
 
     history_manager = get_history_manager_for_model(model)
     history_type = "-"

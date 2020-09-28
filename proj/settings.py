@@ -231,28 +231,28 @@ ACCOUNTANCY_MODULES = {
 }
 
 
-DEFAULT_RENDERER_CLASSES = (
-    'rest_framework.renderers.JSONRenderer',
-)
+# DEFAULT_RENDERER_CLASSES = (
+#     'rest_framework.renderers.JSONRenderer',
+# )
 
-# Browsable API is great for development but i don't really want it to be
-# viewable for end users.  The consumers of the API, like a third party software
-# company, are expected to use the API via a Python client.
+# # Browsable API is great for development but i don't really want it to be
+# # viewable for end users.  The consumers of the API, like a third party software
+# # company, are expected to use the API via a Python client.
 
-if DEBUG:
-    # Based on this SO answer - https://stackoverflow.com/a/49395080
-    DEFAULT_RENDERER_CLASSES = DEFAULT_RENDERER_CLASSES + (
-        'rest_framework.renderers.BrowsableAPIRenderer',
-    )
+# if DEBUG:
+#     # Based on this SO answer - https://stackoverflow.com/a/49395080
+#     DEFAULT_RENDERER_CLASSES = DEFAULT_RENDERER_CLASSES + (
+#         'rest_framework.renderers.BrowsableAPIRenderer',
+#     )
 
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ),
-    'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES,
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
-}
+# REST_FRAMEWORK = {
+#     'DEFAULT_PERMISSION_CLASSES': (
+#         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+#     ),
+#     'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES,
+#     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+#     'PAGE_SIZE': 10
+# }
 
 
 # production
