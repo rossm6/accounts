@@ -3,13 +3,15 @@ from itertools import chain
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView, UpdateView, View, DeleteView
+from django.views.generic import (CreateView, DeleteView, DetailView,
+                                  UpdateView, View)
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
 from accountancy.views import jQueryDataTable
 from purchases.models import Supplier
 from sales.forms import CustomerForm
 from sales.models import Customer
+from utils.helpers import get_all_historical_changes
 
 
 class ContactListView(jQueryDataTable, TemplateResponseMixin, View):
@@ -122,8 +124,16 @@ class CustomerDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        instance = context["contact"]
         context["edit_href"] = reverse_lazy("contacts:edit_customer", kwargs={
-                                            "pk": context["contact"].pk})
+                                            "pk": instance.pk})
+        audit_records = self.model.history.filter(
+            **{
+                Customer._meta.pk.name: instance.pk
+            }
+        ).order_by("pk")
+        changes = get_all_historical_changes(audit_records)
+        context["audits"] = changes
         return context
 
 

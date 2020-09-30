@@ -1,22 +1,28 @@
+from uuid import uuid4
+
 from django.conf import settings
 from django.db import models
 from simple_history import register
 
-from accountancy.models import (CashBookEntryMixin, Contact,
+from accountancy.models import (Audit, CashBookEntryMixin, Contact,
                                 ControlAccountInvoiceTransactionMixin,
                                 ControlAccountPaymentTransactionMixin,
                                 MatchedHeaders, Transaction, TransactionHeader,
                                 TransactionLine)
+from accountancy.signals import audit_post_delete
 from items.models import Item
+from utils.helpers import \
+    disconnect_simple_history_receiver_for_post_delete_signal
 from vat.models import Vat
 
 
-class Customer(Contact):
+class Customer(Audit, Contact):
     pass
 
 
 register(Customer)
-
+disconnect_simple_history_receiver_for_post_delete_signal(Customer)
+audit_post_delete.connect(Customer.post_delete, sender=Customer, dispatch_uid=uuid4())
 
 class SalesTransaction(Transaction):
     def __init__(self, *args, **kwargs):

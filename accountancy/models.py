@@ -5,6 +5,9 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
+from accountancy.signals import audit_post_delete
+from utils.helpers import create_historical_records, DELETED_HISTORY_TYPE
+
 class Contact(models.Model):
     code = models.CharField(max_length=10)
     name = models.CharField(max_length=100)
@@ -16,6 +19,15 @@ class Contact(models.Model):
     class Meta:
         abstract = True
 
+class Audit:
+
+    @classmethod
+    def post_delete(cls, sender, instance, **kwargs):
+        return create_historical_records([instance], instance._meta.model, DELETED_HISTORY_TYPE)
+
+    def delete(self):
+        audit_post_delete.send(sender=self._meta.model, instance=self)
+        super().delete()
 
 class Transaction:
     def __init__(self, *args, **kwargs):

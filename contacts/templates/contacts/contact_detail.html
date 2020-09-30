@@ -3,6 +3,7 @@
 {% load static %}
 
 {% block head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
     {% block extra_head %}
     {% endblock extra_head %}
 {% endblock head %}
@@ -52,6 +53,50 @@
                     </div>
                 </div>
                 <hr />
+
+                <div>
+                    <h1 class="mt-5 h4 font-weight-bold">Audit</h1>
+                    <table class="audits">
+                        <thead>
+                            <tr>
+                                <th>Datetime</th>
+                                <th>User</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for audit in audits %}
+                                <tr data-audit-pk="{{ audit.meta.AUDIT_id }}">
+                                    <td>{{ audit.meta.AUDIT_date }}</td>
+                                    <td>{{ audit.meta.AUDIT_user }}</td>
+                                    <td>{{ audit.meta.AUDIT_action }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="audit_fields mt-5">
+                        {% for audit in audits %}
+                            <div class="d-none" data-audit-pk="{{ audit.meta.AUDIT_id }}">
+                                <div class="row font-weight-bold">
+                                    <div class="col">Field</div>
+                                    <div class="col">Old</div>
+                                    <div class="col">New</div>
+                                </div>
+                                {% for field, change in audit.items %}
+                                    {% if field != "meta" %}
+                                        <div class="row">
+                                            <div class="col border-top border-right">{{ field }}</div>
+                                            <div class="col border-top border-right">{{ change.old }}</div>
+                                            <div class="col border-top border-right">{{ change.new }}</div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
                 
             </div>
         </div>
@@ -59,3 +104,24 @@
 </div>
 
 {% endblock content %}
+
+
+{% block js %}
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function(){
+
+        var table = $("table.audits").DataTable({
+            dom: "t"
+        });
+
+        $("table.audits tr").on("click", function(){
+            var audit_pk = $(this).attr("data-audit-pk");
+            $("div.audit_fields").children().addClass("d-none");
+            var details = $("div.audit_fields").find("[data-audit-pk=" + audit_pk + "]");
+            details.removeClass("d-none");
+        });
+
+    });
+</script>
+{% endblock js %}

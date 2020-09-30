@@ -122,6 +122,9 @@ class GetAllHistoricalChangesTest(TestCase):
         )
 
     def test_getting_deleted_objects(self):
+        """
+        Where there is no audit log for the deletion
+        """
         customer = Customer.objects.create(code="1", name="11", email="111")
         customer.name = "12"
         customer.save()
@@ -129,7 +132,7 @@ class GetAllHistoricalChangesTest(TestCase):
         deleted = get_deleted_objects(
             [], 
             historical_records,
-            Customer._meta.pk.name 
+            Customer._meta.pk.name
         )
         self.assertEqual(
             len(deleted.keys()),
@@ -140,8 +143,27 @@ class GetAllHistoricalChangesTest(TestCase):
             customer.pk
         )
         self.assertEqual(
-            deleted[customer.pk],
-            historical_records[1]
+            deleted[customer.pk].history_type,
+            "-"
+        )
+
+    def test_getting_deleted_objects_where_there_exists_an_audit_log_for_deletion(self):
+        """
+        Where there IS a audit log for the deletion
+        """
+        customer = Customer.objects.create(code="1", name="11", email="111")
+        customer.name = "12"
+        customer.save()
+        customer.delete()
+        historical_records = Customer.history.all().order_by("pk")
+        deleted = get_deleted_objects(
+            [], 
+            historical_records,
+            Customer._meta.pk.name
+        )
+        self.assertEqual(
+            len(deleted.keys()),
+            0
         )
 
 
