@@ -3,7 +3,17 @@
 {% load static %}
 
 {% block head %}
-<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="{% static 'accountancy/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/audit_table.css' %}">
+    <style>
+
+        div.contact-details {
+            background-color: #fdfdfd;
+        }
+
+    </style>
     {% block extra_head %}
     {% endblock extra_head %}
 {% endblock head %}
@@ -11,94 +21,47 @@
 {% block content %}
 
 <div class="cont">
-    <div class="border-bottom bg-white">
-        <div class="container p-3">
-            <h1 class="p-0 m-0 h4 font-weight-bold">Contact Details</h1>
-        </div>
-    </div>
     <div>
         <div class="container">
-            <div class="d-flex justify-content-end mt-3">
-                <button class="btn btn-primary btn-sm mr-2">Audit</button>
-                <a href="{{ edit_href }}" class="btn btn-success btn-sm" role="button">Edit</a>
-            </div>
-            <div>
-                <div class="row">
-                    <div class="col-sm-3 col-md-2 col-5">
-                        <label style="font-weight:bold;">Code</label>
+            <div class="d-flex justify-content-center">
+                <div class="border rounded w-75 p-4 mt-5">
+                    <h1 class="h4 font-weight-bold">Contact Details</h1>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button class="btn btn-primary btn-sm mr-2 audit-btn">Audit</button>
+                        <a href="{{ edit_href }}" class="btn btn-success btn-sm" role="button">Edit</a>
                     </div>
-                    <div class="col-md-8 col-6">
-                        {{ contact.code }}
-                    </div>
-                </div>
-                <hr />
-
-                <div class="row">
-                    <div class="col-sm-3 col-md-2 col-5">
-                        <label style="font-weight:bold;">Name</label>
-                    </div>
-                    <div class="col-md-8 col-6">
-                        {{ contact.name }}
-                    </div>
-                </div>
-                
-                <hr />
-
-                <div class="row">
-                    <div class="col-sm-3 col-md-2 col-5">
-                        <label style="font-weight:bold;">Email</label>
-                    </div>
-                    <div class="col-md-8 col-6">
-                        {{ contact.email }}
-                    </div>
-                </div>
-                <hr />
-
-                <div>
-                    <h1 class="mt-5 h4 font-weight-bold">Audit</h1>
-                    <table class="audits">
-                        <thead>
-                            <tr>
-                                <th>Datetime</th>
-                                <th>User</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for audit in audits %}
-                                <tr data-audit-pk="{{ audit.meta.AUDIT_id }}">
-                                    <td>{{ audit.meta.AUDIT_date }}</td>
-                                    <td>{{ audit.meta.AUDIT_user }}</td>
-                                    <td>{{ audit.meta.AUDIT_action }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-
-                    <div class="audit_fields mt-5">
-                        {% for audit in audits %}
-                            <div class="d-none" data-audit-pk="{{ audit.meta.AUDIT_id }}">
-                                <div class="row font-weight-bold">
-                                    <div class="col">Field</div>
-                                    <div class="col">Old</div>
-                                    <div class="col">New</div>
+                    <div>
+                        <div class="small border rounded p-4 my-2 contact-details">
+                            <div class="row no-gutters">
+                                <div class="col-sm-3 col-md-2 col-5">
+                                    <label style="font-weight:bold;">Code</label>
                                 </div>
-                                {% for field, change in audit.items %}
-                                    {% if field != "meta" %}
-                                        <div class="row">
-                                            <div class="col border-top border-right">{{ field }}</div>
-                                            <div class="col border-top border-right">{{ change.old }}</div>
-                                            <div class="col border-top border-right">{{ change.new }}</div>
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
+                                <div class="col-md-8 col-6">
+                                    {{ contact.code }}
+                                </div>
                             </div>
-                        {% endfor %}
+                            <div class="row no-gutters">
+                                <div class="col-sm-3 col-md-2 col-5">
+                                    <label style="font-weight:bold;">Name</label>
+                                </div>
+                                <div class="col-md-8 col-6">
+                                    {{ contact.name }}
+                                </div>
+                            </div>
+                            <div class="row no-gutters">
+                                <div class="col-sm-3 col-md-2 col-5">
+                                    <label style="font-weight:bold;">Email</label>
+                                </div>
+                                <div class="col-md-8 col-6">
+                                    {{ contact.email }}
+                                </div>
+                            </div>
+                        </div>
+                        {% include 'accountancy/single_object_audit.html' %}
                     </div>
-
                 </div>
-                
             </div>
+
         </div>
     </div>
 </div>
@@ -108,18 +71,12 @@
 
 {% block js %}
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="{% static 'accountancy/js/audit.js' %}"></script>
 <script>
     $(document).ready(function(){
-
-        var table = $("table.audits").DataTable({
-            dom: "t"
-        });
-
-        $("table.audits tr").on("click", function(){
-            var audit_pk = $(this).attr("data-audit-pk");
-            $("div.audit_fields").children().addClass("d-none");
-            var details = $("div.audit_fields").find("[data-audit-pk=" + audit_pk + "]");
-            details.removeClass("d-none");
+        
+        $("button.audit-btn").on("click", function(){
+            $("div.audit_section").toggleClass("d-none");
         });
 
     });

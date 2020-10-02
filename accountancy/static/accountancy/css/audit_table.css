@@ -1,0 +1,24 @@
+table.dataTable thead th {
+    padding: 10px 10px !important;
+}
+
+table.dataTable tbody td {
+    vertical-align: middle;
+    padding: 2px 10px !important;
+}
+
+table thead th {
+    border-bottom: 0 !important;
+}
+
+table.dataTable.no-footer {
+    border-bottom: 0;
+}
+
+table.dataTable thead th {
+    border-bottom: 1px solid #dee2e6;
+}
+
+div.audit_section {
+    background-color: #fdfdfd;
+}

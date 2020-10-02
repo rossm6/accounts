@@ -48,15 +48,12 @@ def get_search_vectors(searchable_fields):
     return functools.reduce(lambda a, b: a + b, search_vectors)
 
 
-def get_trig_vectors(searchable_fields, search_text):
-    trig_vectors = [
-        TrigramSimilarity(field, search_text)
-        for field in searchable_fields
-    ]
-    return functools.reduce(lambda a, b: a + b, trig_vectors)
-
-
 def get_trig_vectors_for_different_inputs(fields_and_inputs):
+    """
+    This builds a TrigramSimilarity search across multiple columns / fields
+    for the given input.
+    """
+    print(fields_and_inputs)
     trig_vectors = [
         TrigramSimilarity(field, _input)
         for field, _input in fields_and_inputs

@@ -26,10 +26,10 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
 from accountancy.helpers import (delay_reverse_lazy,
                                  input_dropdown_widget_attrs_config)
 from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
-                                 Hidden,
-                                 PlainFieldErrors, TableHelper,
+                                 Hidden, PlainFieldErrors, TableHelper,
                                  create_transaction_header_helper)
 from accountancy.widgets import InputDropDown
+from contacts.forms import BaseContactForm
 from items.models import Item
 from nominals.models import Nominal
 from vat.models import Vat
@@ -54,6 +54,11 @@ class QuickSupplierForm(forms.ModelForm):
     class Meta:
         model = Supplier
         fields = ('code', )
+
+
+class SupplierForm(BaseContactForm):
+    class Meta(BaseContactForm.Meta):
+        model = Supplier
 
 
 class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):

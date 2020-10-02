@@ -27,7 +27,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
                                ajax_form_validator, create_on_the_fly,
                                input_dropdown_widget_load_options_factory,
                                input_dropdown_widget_validate_choice_factory,
-                               jQueryDataTable,)
+                               jQueryDataTable)
 from cashbook.models import CashBookTransaction
 from items.models import Item
 from nominals.forms import NominalForm
