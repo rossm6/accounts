@@ -1,16 +1,25 @@
 from django.db import models
+from simple_history import register
 
-from accountancy.models import TransactionHeader, TransactionLine, MultiLedgerTransactions, Transaction, CashBookPaymentTransactionMixin
-from vat.models import Vat
+from accountancy.models import (CashBookPaymentTransactionMixin,
+                                MultiLedgerTransactions, Transaction,
+                                TransactionHeader, TransactionLine)
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
+from vat.models import Vat
+
 
 class CashBook(models.Model):
     name = models.CharField(max_length=10)
-    nominal = models.ForeignKey('nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
+    nominal = models.ForeignKey(
+        'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
+
+
+register(CashBook)
+
 
 class CashBookTransaction(Transaction):
 
@@ -18,14 +27,18 @@ class CashBookTransaction(Transaction):
         super().__init__(*args, **kwargs)
         self.module = "CB"
 
+
 class Payment(CashBookPaymentTransactionMixin, CashBookTransaction):
     pass
+
 
 class BroughtForwardPayment(CashBookTransaction):
     pass
 
+
 class Refund(Payment):
     pass
+
 
 class BroughtForwardRefund(CashBookTransaction):
     pass
@@ -90,6 +103,9 @@ class CashBookHeader(TransactionHeader):
             return Refund(header=self)
 
 
+register(CashBookHeader)
+
+
 class CashBookLineQuerySet(models.QuerySet):
 
     def line_bulk_update(self, instances):
@@ -108,11 +124,16 @@ class CashBookLineQuerySet(models.QuerySet):
 
 class CashBookLine(TransactionLine):
     header = models.ForeignKey(CashBookHeader, on_delete=models.CASCADE)
-    nominal = models.ForeignKey('nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
-    vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Vat Code")
-    goods_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_good_line")
-    vat_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_vat_line")
-    total_nominal_transaction = models.ForeignKey('nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_total_line")
+    nominal = models.ForeignKey(
+        'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
+    vat_code = models.ForeignKey(
+        Vat, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Vat Code")
+    goods_nominal_transaction = models.ForeignKey(
+        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_good_line")
+    vat_nominal_transaction = models.ForeignKey(
+        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_vat_line")
+    total_nominal_transaction = models.ForeignKey(
+        'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_total_line")
 
     objects = CashBookLineQuerySet.as_manager()
 
@@ -120,11 +141,14 @@ class CashBookLine(TransactionLine):
         ordering = ['line_no']
 
 
+register(CashBookLine)
+
 all_module_types = (
     PurchaseHeader.analysis_required +
     SaleHeader.analysis_required +
     CashBookHeader.analysis_required
 )
+
 
 class CashBookTransaction(MultiLedgerTransactions):
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
@@ -135,3 +159,6 @@ class CashBookTransaction(MultiLedgerTransactions):
             models.UniqueConstraint(
                 fields=['module', 'header', 'line', 'field'], name="cashbook_unique_batch")
         ]
+
+
+register(CashBookTransaction)

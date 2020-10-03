@@ -1,17 +1,50 @@
 from datetime import date, timedelta
 from functools import reduce
 
+from django.db.models import Q
 from django.urls import reverse_lazy
 from django.utils import timezone
+from utils.helpers import get_all_historical_changes
 
 
 class AuditTransaction:
     def __init__(self, header_tran, header_model, line_model, match_model):
-        self.audit_header = header_tran
-        self.audit_lines = []
-        if self.header_tran.type in self.header_tran._meta.model.get_types_requiring_lines():
-            self.audit_lines = line_model.objects.filter(header=header_tran.pk)
-        self.audit_matches = match_model.objects.all_for_header(header=header_tran)
+        self.audit_header_history = header_tran.history.all().order_by("pk")
+        self.audit_lines_history = []
+        if header_tran.type in header_tran._meta.model.get_types_requiring_lines():
+            self.audit_lines_history = (
+                line_model.history.filter(
+                    header=header_tran.pk
+                ).order_by("pk")
+            )
+        self.audit_matches_history = (
+            match_model.history.filter(
+                Q(matched_by=header_tran.pk) | Q(matched_to=header_tran.pk)
+            ).order_by("pk")
+        )
+
+    def get_historical_changes(self):
+        self.audit_header_history_changes = get_all_historical_changes(
+            self.audit_header_history
+        )
+        for change in self.audit_header_history_changes:
+            change["meta"]["transaction_aspect"] = "header"
+        self.audit_lines_history_changes = get_all_historical_changes(
+            self.audit_lines_history
+        )
+        for change in self.audit_lines_history_changes:
+            change["meta"]["transaction_aspect"] = "line"
+        self.audit_matches_history_changes = get_all_historical_changes(
+            self.audit_matches_history
+        )
+        for change in self.audit_matches_history_changes:
+            change["meta"]["transaction_aspect"] = "match"
+
+        all_changes = (self.audit_header_history_changes +
+            self.audit_lines_history_changes + self.audit_matches_history_changes)
+        all_changes.sort(key=lambda c: c["meta"]["AUDIT_date"])
+        return all_changes
+
 
 class JSONBlankDate(date):
     """
@@ -35,6 +68,7 @@ class FY:
     """
     Financial Year class.
     """
+
     def __init__(self, period_str, periods_in_fy=12):
         if len(period_str) != 6:
             raise ValueError(
@@ -45,8 +79,9 @@ class FY:
 
     def start(self):
         fy, period = int(self.period[:4]), int(self.period[4:])
-        return str(fy) + "01" 
-    
+        return str(fy) + "01"
+
+
 class Period:
     def __init__(self, period_str, periods_in_fy=12):
         if len(period_str) != 6:

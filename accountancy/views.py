@@ -22,6 +22,7 @@ from querystring_parser import parser
 from accountancy.exceptions import FormNotValid
 from accountancy.helpers import JSONBlankDate, Period, sort_multiple
 from nominals.models import Nominal
+from utils.helpers import bulk_delete_with_history
 
 from .widgets import InputDropDown
 
@@ -1015,10 +1016,10 @@ class RESTBaseEditTransactionMixin:
         self.new_lines = new_lines = self.get_line_model(
         ).objects.bulk_create(self.line_formset.new_objects)
         self.get_line_model().objects.line_bulk_update(lines_to_update)
-        self.get_line_model().objects.filter(
-            pk__in=[line.pk for line in self.line_formset.deleted_objects]
-        ).delete()
-
+        bulk_delete_with_history(
+            self.line_formset.deleted_objects,
+            self.get_line_model()
+        )
         if self.requires_analysis(self.header_form):
             existing_nom_trans = self.get_nominal_transaction_model(
             ).objects.filter(header=self.header_obj.pk)
@@ -1058,8 +1059,10 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
             to_update,
             ['value']
         )
-        self.get_match_model().objects.filter(
-            pk__in=[o.pk for o in to_delete]).delete()
+        bulk_delete_with_history(
+            to_delete,
+            self.get_match_model()
+        )
         self.get_header_model().objects.bulk_update(
             self.match_formset.headers,
             ['due', 'paid']
@@ -1267,9 +1270,10 @@ class BaseVoidTransaction(View):
                     match.matched_by.paid += match.value
                     match.matched_by.due -= match.value
                     headers_to_update.append(match.matched_by)
-            matching_model.objects.filter(
-                pk__in=[match.pk for match in matches]
-            ).delete()
+            bulk_delete_with_history(
+                matches,
+                matching_model
+            )
 
         self.get_header_model().objects.bulk_update(
             headers_to_update,
@@ -1282,7 +1286,15 @@ class BaseVoidTransaction(View):
                 .objects
                 .filter(module=self.get_transaction_module())
                 .filter(header=transaction_to_void.pk)
-            ).delete()
+            )
+            # the extra sql hit is because
+            # the below method requires the objects we are deleting
+            # so we can't just delete in sql straight away
+            if nom_trans:
+                bulk_delete_with_history(
+                    nom_trans,
+                    self.get_nominal_transaction_model()
+                )
 
     def form_is_invalid(self):
         self.success = False
@@ -1342,7 +1354,15 @@ class DeleteCashBookTransMixin:
                            .objects
                            .filter(module=self.get_transaction_module())
                            .filter(header=transaction_to_void.pk)
-                           ).delete()
+                           )
+        # the extra sql hit is because
+        # the below method requires the objects we are deleting
+        # so we can't just delete in sql straight away
+        if cash_book_trans:
+            bulk_delete_with_history(
+                cash_book_trans,
+                self.get_cash_book_transaction_model()
+            )
 
 
 class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):

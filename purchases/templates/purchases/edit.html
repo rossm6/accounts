@@ -5,6 +5,14 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/audit_table.css' %}">
+    <style>
+        <!-- without this the body scrollbar is removed -->
+        .modal-open {
+            overflow: auto;
+            padding-right: 0 !important;
+        }
+    </style>
 {% endblock extra_head %}
 
 {% block totals %}
@@ -17,9 +25,14 @@
 
 {% block buttons_footer %}
 <div class="d-flex justify-content-between align-items-center p-2 border bg-white">
-    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#nominalTransactions">
-        Show Nominal Transactions
-    </button>
+    <div>
+        <button type="button" class="btn btn-primary btn-sm" data-backdrop="false" data-toggle="modal" data-target="#auditModal">
+            Audit
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#nominalTransactions">
+            Show Nominal Transactions
+        </button>
+    </div>
     <div>
         <button type="submit" class="btn btn-success xero-btn approve" name="approve" value="do_not_add_another">Save</button>
     </div>
@@ -99,6 +112,21 @@
 
 {% block modal_forms %}
     {% include 'accountancy/on_the_fly.html' %}
+    <div class="modal draggable fade" tabindex="-1" id="auditModal" aria-labelledby="auditModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title font-weight-bold" id="auditModalLabel">Audit</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            {% include 'accountancy/audit.html' %}
+          </div>
+        </div>
+      </div>
+    </div>    
 {% endblock modal_forms %}
 
 {% block extra_js %}
@@ -106,4 +134,15 @@
     {% include 'accountancy/grid_js.html' with header_form=header_form %}
     {% include 'accountancy/edit_matching_js.html' %}
     <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+    <script src="{% static 'accountancy/js/audit.js' %}"></script>
+    <script>
+      $(document).ready(function(){
+        $('.modal.draggable > .modal-dialog').draggable({
+            cursor: 'move',
+            handle: '.modal-header'
+        });
+        $('.modal.draggable>.modal-dialog>.modal-content>.modal-header').css('cursor', 'move');
+      });
+    </script>
 {% endblock extra_js %}

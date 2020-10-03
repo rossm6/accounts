@@ -39,16 +39,15 @@ class PurchaseLineModelTest(TestCase):
                     nominal=self.nominal,
                     vat_code=self.vat_code,
                     vat=20,
-                    line_no=i - 1
+                    line_no=i
                 )
             )
         PurchaseLine.objects.bulk_create(lines)
         lines = PurchaseLine.objects.all()
         self.assertEqual(len(lines), 10)
-        l = 10
         for index, line in enumerate(lines):
             self.assertEqual(
-                line.pk,
-                l - index
+                line.line_no,
+                index + 1
             )
         

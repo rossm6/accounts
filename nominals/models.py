@@ -1,11 +1,13 @@
+from utils.helpers import bulk_delete_with_history
 from itertools import groupby
 
 from django.conf import settings
 from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
+from simple_history import register
 
-from accountancy.models import (DecimalBaseModel, TransactionHeader,
-                                TransactionLine, MultiLedgerTransactions)
+from accountancy.models import (DecimalBaseModel, MultiLedgerTransactions,
+                                TransactionHeader, TransactionLine)
 from cashbook.models import CashBookHeader
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -19,6 +21,9 @@ class Nominal(MPTTModel):
 
     def __str__(self):
         return self.name
+
+
+register(Nominal)
 
 
 class NominalTransaction:
@@ -188,14 +193,13 @@ class Journal(NominalTransaction):
             line_cls=line_cls,
             vat_nominal=vat_nominal
         )
-
         nom_trans = (new_nom_trans if new_nom_trans else []) + \
             nom_trans_to_update
-
         nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
-        nom_tran_cls.objects.filter(
-            pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
-
+        bulk_delete_with_history(
+            nom_trans_to_delete,
+            nom_tran_cls
+        )
         return nom_trans
 
 
@@ -218,6 +222,9 @@ class NominalHeader(TransactionHeader):
     def get_type_transaction(self):
         if self.type == "nj":
             return Journal(header=self)
+
+
+register(NominalHeader)
 
 
 class NominalLineQuerySet(models.QuerySet):
@@ -247,6 +254,9 @@ class NominalLine(TransactionLine):
         'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_vat_line")
 
     objects = NominalLineQuerySet.as_manager()
+
+
+register(NominalLine)
 
 
 class NominalTransactionQuerySet(models.QuerySet):
@@ -285,3 +295,6 @@ class NominalTransaction(MultiLedgerTransactions):
             models.UniqueConstraint(
                 fields=['module', 'header', 'line', 'field'], name="nominal_unique_batch")
         ]
+
+
+register(NominalTransaction)

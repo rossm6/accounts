@@ -57,7 +57,10 @@
                                 </div>
                             </div>
                         </div>
-                        {% include 'accountancy/single_object_audit.html' %}
+                        <div class="d-none audit_section p-3 border rounded">
+                            <h2 class="h4 font-weight-bold">Audit</h2>
+                            {% include 'accountancy/audit.html' %}
+                        </div>
                     </div>
                 </div>
             </div>

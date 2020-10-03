@@ -99,7 +99,7 @@ $(document).ready(function () {
         input_dropdown_widget.close_input_dropdowns();
     });
 
-    $("td").on("click focusin", function (event) {
+    $("table.line td").on("click focusin", function (event) {
         $("td input.can_highlight").not($(this)).removeClass("data-input-focus-border");
         if ($(this).find("input").hasClass("can_highlight")) {
             $(this).find("input").addClass("data-input-focus-border");

@@ -95,6 +95,7 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
         t = self.request.GET.get("t", "pi")
         return t
 
+from accountancy.helpers import AuditTransaction
 
 class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     header = {
@@ -129,6 +130,13 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     control_nominal_name = "Purchase Ledger Control"
     cash_book_transaction_model = CashBookTransaction
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        header = context["header_to_edit"]
+        audit = AuditTransaction(header, PurchaseHeader, PurchaseLine, PurchaseMatching)
+        context["audits"] = audit.get_historical_changes()
+        context["multi_object_audit"] = True
+        return context
 
 class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
     header = {

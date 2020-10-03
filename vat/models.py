@@ -1,4 +1,6 @@
 from django.db import models
+from simple_history import register
+
 
 class Vat(models.Model):
     code = models.CharField(max_length=10)
@@ -12,3 +14,6 @@ class Vat(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.name} - {self.rate}%"
+
+
+register(Vat)

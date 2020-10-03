@@ -1,0 +1,50 @@
+<table class="audits bg-white table">
+    <thead class="table-bordered">
+        <tr>
+            <th>Datetime</th>
+            <th>User</th>
+            <th>Action</th>
+            {% if multi_object_audit %}
+                <th>Aspect</th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody class="table-bordered">
+        {% for audit in audits %}
+            <tr class="pointer" {% if multi_object_audit %} data-audit-aspect="{{ audit.meta.transaction_aspect }}" {% endif %} data-audit-pk="{{ audit.meta.AUDIT_id }}">
+                <td>{{ audit.meta.AUDIT_date }}</td>
+                <td>{{ audit.meta.AUDIT_user }}</td>
+                <td>{{ audit.meta.AUDIT_action }}</td>
+                {% if multi_object_audit %}
+                    <td class="text-uppercase">{{ audit.meta.transaction_aspect }}</td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="audit_fields mt-3">
+    {% for audit in audits %}
+        <div class="d-none" {% if multi_object_audit %} data-audit-aspect="{{ audit.meta.transaction_aspect }}" {% endif %} data-audit-pk="{{ audit.meta.AUDIT_id }}">
+            <table class="table bg-white">
+                <thead> 
+                    <tr>
+                        <th>Field</th>
+                        <th>Old</th>
+                        <th>New</th>
+                    </tr>
+                </thead>
+                <tbody class="table-bordered">
+                    {% for field, change in audit.items %}
+                        {% if field != "meta" %}
+                            <tr>
+                                <td>{{ field }}</td>
+                                <td>{{ change.old }}</td>
+                                <td>{{ change.new }}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+</div>

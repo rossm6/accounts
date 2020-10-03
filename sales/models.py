@@ -22,7 +22,9 @@ class Customer(Audit, Contact):
 
 register(Customer)
 disconnect_simple_history_receiver_for_post_delete_signal(Customer)
-audit_post_delete.connect(Customer.post_delete, sender=Customer, dispatch_uid=uuid4())
+audit_post_delete.connect(Customer.post_delete,
+                          sender=Customer, dispatch_uid=uuid4())
+
 
 class SalesTransaction(Transaction):
     def __init__(self, *args, **kwargs):
@@ -151,6 +153,9 @@ class SaleHeader(TransactionHeader):
             return Refund(header=self)
 
 
+register(SaleHeader)
+
+
 class SaleLineQuerySet(models.QuerySet):
 
     def line_bulk_update(self, instances):
@@ -191,6 +196,9 @@ class SaleLine(TransactionLine):
         ordering = ['line_no']
 
 
+register(SaleLine)
+
+
 class SaleMatching(MatchedHeaders):
     # matched_by is the header record through which
     # all the other transactions were matched
@@ -210,3 +218,6 @@ class SaleMatching(MatchedHeaders):
     # So we can do for two trans, t1 and t2
     # t1.matched_to_these.all()
     # t2.matched_by_these.all()
+
+
+register(SaleMatching)

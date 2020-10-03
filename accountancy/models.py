@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Q
 
 from accountancy.signals import audit_post_delete
-from utils.helpers import create_historical_records, DELETED_HISTORY_TYPE
+from utils.helpers import create_historical_records, DELETED_HISTORY_TYPE, bulk_delete_with_history
 
 class Contact(models.Model):
     code = models.CharField(max_length=10)
@@ -273,8 +273,10 @@ class ControlAccountInvoiceTransactionMixin:
             control_nominal=control_nominal
         )
         nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
-        nom_tran_cls.objects.filter(
-            pk__in=[nom_tran.pk for nom_tran in nom_trans_to_delete]).delete()
+        bulk_delete_with_history(
+            nom_trans_to_delete,
+            nom_tran_cls,
+        )
 
 
 class CashBookEntryMixin:
@@ -408,8 +410,10 @@ class ControlAccountPaymentTransactionMixin:
             control_nom_tran.nominal = control_nominal
             nom_tran_cls.objects.bulk_update(nom_trans, ["value", "nominal"])
         elif nom_trans and self.header_obj.total == 0:
-            nom_tran_cls.objects.filter(
-                pk__in=[t.pk for t in nom_trans]).delete()
+            bulk_delete_with_history(
+                nom_trans,
+                nom_tran_cls
+            )
         elif not nom_trans and nom_trans != 0:
             # create nom trans
             self.create_nominal_transactions(
@@ -599,15 +603,6 @@ class TransactionLine(DecimalBaseModel):
             return False
 
 
-class MatchedHeadersQuerySet(models.QuerySet):
-
-    def all_for_header(self, **kwargs):
-        header = kwargs.get("header")
-        return self.filter(
-            Q(matched_by=header) | Q(matched_to=header)
-        )
-
-
 class MatchedHeaders(models.Model):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
@@ -626,8 +621,6 @@ class MatchedHeaders(models.Model):
 
     class Meta:
         abstract = True
-
-    objects = MatchedHeadersQuerySet.as_manager()
 
     @classmethod
     def get_not_fully_matched_at_period(cls, headers, period):
