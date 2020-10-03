@@ -125,7 +125,7 @@ class Journal(NominalTransaction):
                 nom_tran_cls, line, vat_nominal
             )
         if nominal_transactions:
-            nominal_transactions = nom_tran_cls.objects.bulk_create(
+            nominal_transactions = nom_tran_cls.objects.audited_bulk_create(
                 nominal_transactions)
             nominal_transactions = sorted(
                 nominal_transactions, key=lambda n: n.line)
@@ -134,7 +134,7 @@ class Journal(NominalTransaction):
                     tran.field: tran for tran in list(line_nominal_trans)}
                 line.add_nominal_transactions(nom_tran_map)
             line_cls = kwargs.get('line_cls')
-            line_cls.objects.bulk_update(
+            line_cls.objects.audited_bulk_update(
                 lines, ['goods_nominal_transaction', 'vat_nominal_transaction'])
 
             return nominal_transactions
@@ -195,7 +195,7 @@ class Journal(NominalTransaction):
         )
         nom_trans = (new_nom_trans if new_nom_trans else []) + \
             nom_trans_to_update
-        nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
+        nom_tran_cls.objects.audited_bulk_line_update(nom_trans_to_update)
         bulk_delete_with_history(
             nom_trans_to_delete,
             nom_tran_cls
@@ -227,20 +227,20 @@ class NominalHeader(TransactionHeader):
 register(NominalHeader)
 
 
-class NominalLineQuerySet(models.QuerySet):
+# class NominalLineQuerySet(models.QuerySet):
 
-    def line_bulk_update(self, instances):
-        return self.bulk_update(
-            instances,
-            [
-                "line_no",
-                'description',
-                'goods',
-                'vat',
-                "nominal",
-                "vat_code",
-            ]
-        )
+#     def line_bulk_update(self, instances):
+#         return self.bulk_update(
+#             instances,
+#             [
+#                 "line_no",
+#                 'description',
+#                 'goods',
+#                 'vat',
+#                 "nominal",
+#                 "vat_code",
+#             ]
+#         )
 
 
 class NominalLine(TransactionLine):
@@ -253,28 +253,36 @@ class NominalLine(TransactionLine):
     vat_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_vat_line")
 
-    objects = NominalLineQuerySet.as_manager()
-
+    @classmethod
+    def fields_to_update(cls):
+        return [
+            "line_no",
+            'description',
+            'goods',
+            'vat',
+            "nominal",
+            "vat_code",           
+        ]
 
 register(NominalLine)
 
 
-class NominalTransactionQuerySet(models.QuerySet):
+# class NominalTransactionQuerySet(models.QuerySet):
 
-    # DO WE NEED THIS?
-    # I THINK IT SLIPPED IN BY ACCIDENT
-    def line_bulk_update(self, instances):
-        return self.bulk_update(
-            instances,
-            [
-                "nominal",
-                "value",
-                "ref",
-                "period",
-                "date",
-                "type"
-            ]
-        )
+#     # DO WE NEED THIS?
+#     # I THINK IT SLIPPED IN BY ACCIDENT
+#     def line_bulk_update(self, instances):
+#         return self.bulk_update(
+#             instances,
+#             [
+#                 "nominal",
+#                 "value",
+#                 "ref",
+#                 "period",
+#                 "date",
+#                 "type"
+#             ]
+#         )
 
 
 all_module_types = (
@@ -288,7 +296,6 @@ all_module_types = (
 class NominalTransaction(MultiLedgerTransactions):
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
-    objects = NominalTransactionQuerySet.as_manager()
 
     class Meta:
         constraints = [
@@ -296,5 +303,15 @@ class NominalTransaction(MultiLedgerTransactions):
                 fields=['module', 'header', 'line', 'field'], name="nominal_unique_batch")
         ]
 
+    @classmethod
+    def fields_to_update(cls):
+        return [
+            "nominal",
+            "value",
+            "ref",
+            "period",
+            "date",
+            "type"            
+        ]
 
 register(NominalTransaction)

@@ -12,7 +12,7 @@
     <tbody class="table-bordered">
         {% for audit in audits %}
             <tr class="pointer" {% if multi_object_audit %} data-audit-aspect="{{ audit.meta.transaction_aspect }}" {% endif %} data-audit-pk="{{ audit.meta.AUDIT_id }}">
-                <td>{{ audit.meta.AUDIT_date }}</td>
+                <td data-order="{{ audit.meta.AUDIT_date|date:"Ymd"}}{{ audit.meta.AUDIT_date|time:"His" }}">{{ audit.meta.AUDIT_date }}</td>
                 <td>{{ audit.meta.AUDIT_user }}</td>
                 <td>{{ audit.meta.AUDIT_action }}</td>
                 {% if multi_object_audit %}

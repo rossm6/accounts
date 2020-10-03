@@ -6,8 +6,9 @@
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/audit_table.css' %}">
+    {% comment %} this is conflicting with the other, non-audit, tables {% endcomment %}
     <style>
-        <!-- without this the body scrollbar is removed -->
+        {% comment %} Without this the audit modal removes the body scrollbar {% endcomment %}
         .modal-open {
             overflow: auto;
             padding-right: 0 !important;

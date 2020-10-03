@@ -4,9 +4,13 @@ from itertools import groupby
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from simple_history.utils import (bulk_create_with_history,
+                                  bulk_update_with_history)
 
 from accountancy.signals import audit_post_delete
-from utils.helpers import create_historical_records, DELETED_HISTORY_TYPE, bulk_delete_with_history
+from utils.helpers import (DELETED_HISTORY_TYPE, bulk_delete_with_history,
+                           create_historical_records)
+
 
 class Contact(models.Model):
     code = models.CharField(max_length=10)
@@ -19,8 +23,25 @@ class Contact(models.Model):
     class Meta:
         abstract = True
 
-class Audit:
 
+class AuditQuerySet(models.QuerySet):
+
+    def audited_bulk_create(self, objs, batch_size=None, ignore_conflicts=False, user=None):
+        return bulk_create_with_history(objs, self.model, batch_size=batch_size, default_user=user)
+
+    def audited_bulk_update(self, objs, fields, batch_size=None, user=None):
+        return bulk_update_with_history(objs, self.model, fields, batch_size=batch_size, default_user=user)
+
+    def audited_bulk_line_update(self, objs, batch_size=None, user=None):
+        return self.audited_bulk_update(
+            objs,
+            self.model.fields_to_update(),
+            batch_size=batch_size,
+            user=user
+        )
+
+
+class Audit:
     @classmethod
     def post_delete(cls, sender, instance, **kwargs):
         return create_historical_records([instance], instance._meta.model, DELETED_HISTORY_TYPE)
@@ -28,6 +49,7 @@ class Audit:
     def delete(self):
         audit_post_delete.send(sender=self._meta.model, instance=self)
         super().delete()
+
 
 class Transaction:
     def __init__(self, *args, **kwargs):
@@ -130,13 +152,12 @@ class ControlAccountInvoiceTransactionMixin:
         if lines := kwargs.get('lines'):
             # This might not be needed but i cannot find
             lines = sorted(lines, key=lambda l: l.pk)
-        # anywhere in the Django docs mention of the necessary order of objects returned from bulk_create
         for line in lines:
             nominal_transactions += self._create_nominal_transactions_for_line(
                 line, nom_tran_cls, vat_nominal, control_nominal
             )
         if nominal_transactions:
-            nominal_transactions = nom_tran_cls.objects.bulk_create(
+            nominal_transactions = nom_tran_cls.objects.audited_bulk_create(
                 nominal_transactions)
             nominal_transactions = sorted(
                 nominal_transactions, key=lambda n: n.line)
@@ -148,7 +169,7 @@ class ControlAccountInvoiceTransactionMixin:
                     tran.field: tran for tran in list(line_nominal_trans)}
                 line.add_nominal_transactions(nom_tran_map)
             line_cls = kwargs.get('line_cls')
-            line_cls.objects.bulk_update(lines, [
+            line_cls.objects.audited_bulk_update(lines, [
                 'goods_nominal_transaction', 'vat_nominal_transaction', 'total_nominal_transaction'])
 
     def _edit_nominal_transactions_for_line(self, nom_trans, line, vat_nominal, control_nominal):
@@ -272,7 +293,7 @@ class ControlAccountInvoiceTransactionMixin:
             vat_nominal=vat_nominal,
             control_nominal=control_nominal
         )
-        nom_tran_cls.objects.line_bulk_update(nom_trans_to_update)
+        nom_tran_cls.objects.audited_bulk_line_update(nom_trans_to_update)
         bulk_delete_with_history(
             nom_trans_to_delete,
             nom_tran_cls,
@@ -380,7 +401,7 @@ class ControlAccountPaymentTransactionMixin:
                     field="t"
                 )
             )
-            return nom_tran_cls.objects.bulk_create(nom_trans)
+            return nom_tran_cls.objects.audited_bulk_create(nom_trans)
 
     def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         nom_trans = nom_tran_cls.objects.filter(
@@ -408,7 +429,7 @@ class ControlAccountPaymentTransactionMixin:
             bank_nom_tran.nominal = self.header_obj.cash_book.nominal
             control_nom_tran.value = -1 * f * self.header_obj.total
             control_nom_tran.nominal = control_nominal
-            nom_tran_cls.objects.bulk_update(nom_trans, ["value", "nominal"])
+            nom_tran_cls.objects.audited_bulk_update(nom_trans, ["value", "nominal"])
         elif nom_trans and self.header_obj.total == 0:
             bulk_delete_with_history(
                 nom_trans,
@@ -448,7 +469,7 @@ class DecimalBaseModel(models.Model):
                     setattr(self, field_name, Decimal(0.00))
 
 
-class TransactionHeader(DecimalBaseModel):
+class TransactionHeader(DecimalBaseModel, Audit):
     """
 
     Base transaction which can be sub classed.
@@ -511,6 +532,8 @@ class TransactionHeader(DecimalBaseModel):
     class Meta:
         abstract = True
 
+    objects = AuditQuerySet.as_manager()
+
     def is_void(self):
         return self.status == "v"
 
@@ -559,17 +582,7 @@ class TransactionHeader(DecimalBaseModel):
         return cls.credits
 
 
-# class Invoice(TransactionHeader):
-#     class Meta:
-#         proxy = True
-
-
-# class Receipt(TransactionHeader):
-#     class Meta:
-#         proxy = True
-
-
-class TransactionLine(DecimalBaseModel):
+class TransactionLine(DecimalBaseModel, Audit):
     line_no = models.IntegerField()
     description = models.CharField(max_length=100)
     goods = models.DecimalField(
@@ -588,6 +601,8 @@ class TransactionLine(DecimalBaseModel):
     class Meta:
         abstract = True
 
+    objects = AuditQuerySet.as_manager()
+
     def add_nominal_transactions(self, nominal_trans):
         if "g" in nominal_trans:
             self.goods_nominal_transaction = nominal_trans["g"]
@@ -603,7 +618,7 @@ class TransactionLine(DecimalBaseModel):
             return False
 
 
-class MatchedHeaders(models.Model):
+class MatchedHeaders(models.Model, Audit):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
     """
@@ -621,6 +636,8 @@ class MatchedHeaders(models.Model):
 
     class Meta:
         abstract = True
+
+    objects = AuditQuerySet.as_manager()
 
     @classmethod
     def get_not_fully_matched_at_period(cls, headers, period):
@@ -653,7 +670,7 @@ class MatchedHeaders(models.Model):
         return [header for header in headers if header.due != 0]
 
 
-class MultiLedgerTransactions(DecimalBaseModel):
+class MultiLedgerTransactions(DecimalBaseModel, Audit):
     module = models.CharField(max_length=3)  # e.g. 'PL' for purchase ledger
     # we don't bother with ForeignKeys to the header and line models
     # because this would require generic foreign keys which means extra overhead
@@ -693,3 +710,5 @@ class MultiLedgerTransactions(DecimalBaseModel):
             models.UniqueConstraint(
                 fields=['module', 'header', 'line', 'field'], name="unique_batch")
         ]
+
+    objects = AuditQuerySet.as_manager()

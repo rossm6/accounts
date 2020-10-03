@@ -156,20 +156,20 @@ class SaleHeader(TransactionHeader):
 register(SaleHeader)
 
 
-class SaleLineQuerySet(models.QuerySet):
+# class SaleLineQuerySet(models.QuerySet):
 
-    def line_bulk_update(self, instances):
-        return self.bulk_update(
-            instances,
-            [
-                "line_no",
-                "description",
-                "goods",
-                "vat",
-                "nominal",
-                "vat_code"
-            ]
-        )
+#     def line_bulk_update(self, instances):
+#         return self.bulk_update(
+#             instances,
+#             [
+#                 "line_no",
+#                 "description",
+#                 "goods",
+#                 "vat",
+#                 "nominal",
+#                 "vat_code"
+#             ]
+#         )
 
 
 class SaleLine(TransactionLine):
@@ -190,14 +190,21 @@ class SaleLine(TransactionLine):
     # It does not make sense that a line would exist without a nominal transaction but the purchase line is created
     # before the nominal transaction so it must do the create without the id for the nominal transaction
 
-    objects = SaleLineQuerySet.as_manager()
-
     class Meta:
         ordering = ['line_no']
 
+    @classmethod
+    def fields_to_update(self):
+        return [
+            "line_no",
+            "description",
+            "goods",
+            "vat",
+            "nominal",
+            "vat_code"            
+        ]
 
 register(SaleLine)
-
 
 class SaleMatching(MatchedHeaders):
     # matched_by is the header record through which

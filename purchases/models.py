@@ -157,24 +157,6 @@ class PurchaseHeader(TransactionHeader):
 
 register(PurchaseHeader)
 
-
-class PurchaseLineQuerySet(models.QuerySet):
-
-    def line_bulk_update(self, instances):
-        return self.bulk_update(
-            instances,
-            [
-                "line_no",
-                "description",
-                "goods",
-                "vat",
-                "item",
-                "nominal",
-                "vat_code"
-            ]
-        )
-
-
 class PurchaseLine(TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
     item = models.ForeignKey(
@@ -193,14 +175,22 @@ class PurchaseLine(TransactionLine):
     # It does not make sense that a line would exist without a nominal transaction but the purchase line is created
     # before the nominal transaction so it must do the create without the id for the nominal transaction
 
-    objects = PurchaseLineQuerySet.as_manager()
-
     class Meta:
         ordering = ['line_no']
 
+    @classmethod
+    def fields_to_update(cls):
+        return [
+            "line_no",
+            "description",
+            "goods",
+            "vat",
+            "item",
+            "nominal",
+            "vat_code"            
+        ]
 
 register(PurchaseLine)
-
 
 class PurchaseMatching(MatchedHeaders):
     # matched_by is the header record through which

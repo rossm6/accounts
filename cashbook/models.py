@@ -106,20 +106,20 @@ class CashBookHeader(TransactionHeader):
 register(CashBookHeader)
 
 
-class CashBookLineQuerySet(models.QuerySet):
+# class CashBookLineQuerySet(models.QuerySet):
 
-    def line_bulk_update(self, instances):
-        return self.bulk_update(
-            instances,
-            [
-                "line_no",
-                "description",
-                "goods",
-                "vat",
-                "nominal",
-                "vat_code"
-            ]
-        )
+#     def line_bulk_update(self, instances):
+#         return self.bulk_update(
+#             instances,
+#             [
+#                 "line_no",
+#                 "description",
+#                 "goods",
+#                 "vat",
+#                 "nominal",
+#                 "vat_code"
+#             ]
+#         )
 
 
 class CashBookLine(TransactionLine):
@@ -135,11 +135,19 @@ class CashBookLine(TransactionLine):
     total_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_total_line")
 
-    objects = CashBookLineQuerySet.as_manager()
-
     class Meta:
         ordering = ['line_no']
 
+    @classmethod
+    def fields_to_update(cls):
+        return [
+            "line_no",
+            "description",
+            "goods",
+            "vat",
+            "nominal",
+            "vat_code"            
+        ]
 
 register(CashBookLine)
 
@@ -160,5 +168,14 @@ class CashBookTransaction(MultiLedgerTransactions):
                 fields=['module', 'header', 'line', 'field'], name="cashbook_unique_batch")
         ]
 
+    @classmethod
+    def fields_to_update(cls):
+        return [
+            "value",
+            "ref",
+            "period",
+            "date",
+            "type"            
+        ]
 
 register(CashBookTransaction)

@@ -1,24 +1,24 @@
-table.dataTable thead th {
+table.dataTable.audits thead th {
     padding: 10px 10px !important;
 }
 
-table.dataTable tbody td {
+table.dataTable.audits tbody td {
     vertical-align: middle;
     padding: 2px 10px !important;
 }
 
-table thead th {
+table.audits thead th {
     border-bottom: 0 !important;
 }
 
-table.dataTable.no-footer {
+table.dataTable.no-footer.audits {
     border-bottom: 0;
 }
 
-table.dataTable thead th {
+table.dataTable.audits thead th {
     border-bottom: 1px solid #dee2e6;
 }
 
-div.audit_section {
+div.audit_section.audits {
     background-color: #fdfdfd;
 }

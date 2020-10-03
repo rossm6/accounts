@@ -775,7 +775,7 @@ class RESTBaseCreateTransactionMixin:
                 lines.append(line)
                 line_no = line_no + 1
         if lines:
-            self.lines = self.get_line_model().objects.bulk_create(lines)
+            self.lines = self.get_line_model().objects.audited_bulk_create(lines)
             self.create_or_update_related_transactions(lines=lines)
 
     def get_header_form_kwargs(self):
@@ -808,11 +808,11 @@ class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
                 if match.value != 0:
                     matches.append(match)
         if matches:
-            self.get_header_model().objects.bulk_update(
+            self.get_header_model().objects.audited_bulk_update(
                 self.match_formset.headers,
                 ['due', 'paid']
             )
-            self.get_match_model().objects.bulk_create(matches)
+            self.get_match_model().objects.audited_bulk_create(matches)
 
 
 class CreateCashBookEntriesMixin:
@@ -1014,8 +1014,8 @@ class RESTBaseEditTransactionMixin:
 
         self.lines_to_update = lines_to_update
         self.new_lines = new_lines = self.get_line_model(
-        ).objects.bulk_create(self.line_formset.new_objects)
-        self.get_line_model().objects.line_bulk_update(lines_to_update)
+        ).objects.audited_bulk_create(self.line_formset.new_objects)
+        self.get_line_model().objects.audited_bulk_line_update(lines_to_update)
         bulk_delete_with_history(
             self.line_formset.deleted_objects,
             self.get_line_model()
@@ -1046,7 +1046,7 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
         self.match_formset.save(commit=False)
         new_matches = filter(
             lambda o: True if o.value else False, self.match_formset.new_objects)
-        self.get_match_model().objects.bulk_create(new_matches)
+        self.get_match_model().objects.audited_bulk_create(new_matches)
         changed_objects = [obj for obj,
                            _tuple in self.match_formset.changed_objects]
         # exclude zeros from update
@@ -1055,7 +1055,7 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
         # delete the zero values
         to_delete = filter(
             lambda o: True if not o.value else False, changed_objects)
-        self.get_match_model().objects.bulk_update(
+        self.get_match_model().objects.audited_bulk_update(
             to_update,
             ['value']
         )
@@ -1063,7 +1063,7 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
             to_delete,
             self.get_match_model()
         )
-        self.get_header_model().objects.bulk_update(
+        self.get_header_model().objects.audited_bulk_update(
             self.match_formset.headers,
             ['due', 'paid']
         )
@@ -1275,7 +1275,7 @@ class BaseVoidTransaction(View):
                 matching_model
             )
 
-        self.get_header_model().objects.bulk_update(
+        self.get_header_model().objects.audited_bulk_update(
             headers_to_update,
             ["paid", "due", "status"]
         )
