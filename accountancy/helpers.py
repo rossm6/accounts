@@ -5,6 +5,14 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 
 
+class AuditTransaction:
+    def __init__(self, header_tran, header_model, line_model, match_model):
+        self.audit_header = header_tran
+        self.audit_lines = []
+        if self.header_tran.type in self.header_tran._meta.model.get_types_requiring_lines():
+            self.audit_lines = line_model.objects.filter(header=header_tran.pk)
+        self.audit_matches = match_model.objects.all_for_header(header=header_tran)
+
 class JSONBlankDate(date):
     """
     The serializer used by Django when encoding into Json for JsonResponse

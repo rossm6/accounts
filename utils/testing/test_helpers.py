@@ -68,7 +68,7 @@ class GetAllHistoricalChangesTest(TestCase):
         )
         self.assertEqual(
             len(audit.keys()),
-            1
+            2 # the name field - which changed - and the meta field
         )
 
     def test_getting_all_historical_changes(self):
@@ -93,7 +93,7 @@ class GetAllHistoricalChangesTest(TestCase):
         )
         self.assertEqual(
             creation_change["id"]["new"],
-            "1"
+            str(customer.id)
         )
         self.assertEqual(
             creation_change["code"]["old"],

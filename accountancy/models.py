@@ -599,6 +599,15 @@ class TransactionLine(DecimalBaseModel):
             return False
 
 
+class MatchedHeadersQuerySet(models.QuerySet):
+
+    def all_for_header(self, **kwargs):
+        header = kwargs.get("header")
+        return self.filter(
+            Q(matched_by=header) | Q(matched_to=header)
+        )
+
+
 class MatchedHeaders(models.Model):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
@@ -617,6 +626,8 @@ class MatchedHeaders(models.Model):
 
     class Meta:
         abstract = True
+
+    objects = MatchedHeadersQuerySet.as_manager()
 
     @classmethod
     def get_not_fully_matched_at_period(cls, headers, period):
