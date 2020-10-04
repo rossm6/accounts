@@ -22,3 +22,8 @@ table.dataTable.audits thead th {
 div.audit_section.audits {
     background-color: #fdfdfd;
 }
+
+.modal-open {
+    overflow: auto;
+    padding-right: 0 !important;
+}

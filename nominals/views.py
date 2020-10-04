@@ -100,6 +100,7 @@ class EditTransaction(BaseEditTransaction):
     module = "NL"
 
 
+
 class ViewTransaction(BaseViewTransaction):
     header = {
         "model": NominalHeader,

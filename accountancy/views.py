@@ -20,7 +20,8 @@ from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from querystring_parser import parser
 
 from accountancy.exceptions import FormNotValid
-from accountancy.helpers import JSONBlankDate, Period, sort_multiple
+from accountancy.helpers import (AuditTransaction, JSONBlankDate, Period,
+                                 sort_multiple)
 from nominals.models import Nominal
 from utils.helpers import bulk_delete_with_history
 
@@ -183,7 +184,6 @@ class jQueryDataTable:
             page_obj.has_other_pages = False
         return p, page_obj
 
-
     def order_objects(self, objs, type="dict"):
         """
         Sometimes it is not possible in Django to use the ORM, or it would be tricky,
@@ -205,7 +205,7 @@ class jQueryDataTable:
                 else:
                     ordering.append(
                         (lambda obj: getattr(obj, field), True)  # descending
-                    )                    
+                    )
             else:
                 field = order
                 if type == "dict":
@@ -215,9 +215,8 @@ class jQueryDataTable:
                 else:
                     ordering.append(
                         (lambda obj: getattr(obj, field), False)  # ascending
-                    )                    
+                    )
         return sort_multiple(objs, *ordering)
-
 
     def order_by(self):
         ordering = []  # will pass this to ORM to order the fields correctly
@@ -1037,6 +1036,21 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
                           IndividualTransactionMixin,
                           BaseTransaction):
 
+    def get_audit(self):
+        header = self.header_to_edit
+        audit = AuditTransaction(
+            header,
+            self.get_header_model(),
+            self.get_line_model()
+        )
+        return audit.get_historical_changes()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["audits"] = self.get_audit()
+        context["multi_object_audit"] = True
+        return context
+
     def get_success_message(self):
         return "Transaction was edited successfully."
 
@@ -1115,6 +1129,16 @@ class EditPurchaseOrSalesTransaction(
         EditCashBookEntriesMixin,
         NominalTransactionsMixin,
         BaseEditTransaction):
+
+    def get_audit(self):
+        header = self.header_to_edit
+        audit = AuditTransaction(
+            header,
+            self.get_header_model(),
+            self.get_line_model(),
+            self.get_match_model()
+        )
+        return audit.get_historical_changes()
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -1553,7 +1577,7 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
                     .order_by(contact_field_name)
                 )
                 transactions = self.get_matching_model().get_not_fully_matched_at_period(
-                    list(queryset), 
+                    list(queryset),
                     period
                 )
 
@@ -1666,7 +1690,7 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
             .all()
             .select_related(self.get_contact_field_name())
         )
-        
+
     def get_matching_model(self):
         return self.matching_model
 

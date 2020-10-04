@@ -5,15 +5,7 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'purchases/css/purchase_input.css' %}">
-    <link rel="stylesheet" href="{% static 'accountancy/css/audit_table.css' %}">
-    {% comment %} this is conflicting with the other, non-audit, tables {% endcomment %}
-    <style>
-        {% comment %} Without this the audit modal removes the body scrollbar {% endcomment %}
-        .modal-open {
-            overflow: auto;
-            padding-right: 0 !important;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'accountancy/css/audit.css' %}">
 {% endblock extra_head %}
 
 {% block totals %}
@@ -113,21 +105,7 @@
 
 {% block modal_forms %}
     {% include 'accountancy/on_the_fly.html' %}
-    <div class="modal draggable fade" tabindex="-1" id="auditModal" aria-labelledby="auditModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-scrollable modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title font-weight-bold" id="auditModalLabel">Audit</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            {% include 'accountancy/audit.html' %}
-          </div>
-        </div>
-      </div>
-    </div>    
+    {% include 'accountancy/audit_transaction.html' %}
 {% endblock modal_forms %}
 
 {% block extra_js %}
@@ -137,13 +115,5 @@
     <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
     <script src="{% static 'accountancy/js/audit.js' %}"></script>
-    <script>
-      $(document).ready(function(){
-        $('.modal.draggable > .modal-dialog').draggable({
-            cursor: 'move',
-            handle: '.modal-header'
-        });
-        $('.modal.draggable>.modal-dialog>.modal-content>.modal-header').css('cursor', 'move');
-      });
-    </script>
+    <script src="{% static 'accountancy/js/audit_transaction.js' %}"></script>
 {% endblock extra_js %}
