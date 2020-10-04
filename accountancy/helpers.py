@@ -1,9 +1,11 @@
 from datetime import date, timedelta
 from functools import reduce
+from itertools import groupby
 
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.utils import timezone
+
 from utils.helpers import get_all_historical_changes
 
 
@@ -17,13 +19,13 @@ class AuditTransaction:
             self.audit_lines_history = (
                 line_model.history.filter(
                     header=header_tran.pk
-                ).order_by("pk")
+                ).order_by(line_model._meta.pk.name, "pk")
             )
         if match_model:
             self.audit_matches_history = (
                 match_model.history.filter(
                     Q(matched_by=header_tran.pk) | Q(matched_to=header_tran.pk)
-                ).order_by("pk")
+                ).order_by(line_model._meta.pk.name, "pk")
             )
             self.match_model_pk_name = match_model._meta.pk.name
         
@@ -36,19 +38,20 @@ class AuditTransaction:
         for change in self.audit_header_history_changes:
             change["meta"]["transaction_aspect"] = "header"
         all_changes += self.audit_header_history_changes
-        self.audit_lines_history_changes = get_all_historical_changes(
-            self.audit_lines_history, self.line_model_pk_name
-        )
-        for change in self.audit_lines_history_changes:
-            change["meta"]["transaction_aspect"] = "line"
-        all_changes += self.audit_lines_history_changes
+
+        for line_pk, history in groupby(self.audit_lines_history, key=lambda l: getattr(l, self.line_model_pk_name)):
+            changes = get_all_historical_changes(history, self.line_model_pk_name)
+            for change in changes:
+                change["meta"]["transaction_aspect"] = "line"
+            all_changes += changes
+
         if hasattr(self, "audit_matches_history"):
-            self.audit_matches_history_changes = get_all_historical_changes(
-                self.audit_matches_history, self.match_model_pk_name
-            )
-            for change in self.audit_matches_history_changes:
-                change["meta"]["transaction_aspect"] = "match"
-            all_changes += self.audit_matches_history_changes
+            for match_pk, history in groupby(self.audit_matches_history, lambda m: getattr(m, self.match_model_pk_name)):
+                changes = get_all_historical_changes(history, self.match_model_pk_name)
+                for change in changes:
+                    change["meta"]["transaction_aspect"] = "match"
+                all_changes += changes
+
         all_changes.sort(key=lambda c: c["meta"]["AUDIT_date"])
         return all_changes
 

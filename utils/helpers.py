@@ -74,9 +74,8 @@ def get_historical_change(obj1, obj2, pk_name="id"):
 
 def get_all_historical_changes(objects, pk_name="id"):
     """
-    The objects are assumed ordered from oldest to most recent
+    The `objects` are assumed ordered from oldest to most recent.
     """
-
     changes = []
     if objects:
         objects = list(objects)
