@@ -71,6 +71,86 @@ class GetAllHistoricalChangesTest(TestCase):
             2 # the name field - which changed - and the meta field
         )
 
+    def test_historical_change_for_updated_but_no_change(self):
+        """
+        Simple history will create an audit log even if there have been
+        no changes, for performance reasons.
+
+        Periodically we'll need to run a utility they provide to
+        remove the duplicates.
+
+        But regardless i don't want to show these duplicates
+        in the UI.
+        """
+        customer = Customer.objects.create(code="1", name="11", email="111")
+        customer.name = "11" # No change !!!
+        customer.save() # Create another log
+        historical_records = Customer.history.all()
+        self.assertEqual(
+            len(historical_records),
+            2
+        )
+        audit = get_historical_change(
+            historical_records[1], historical_records[0]
+        )
+        self.assertIsNone(
+            audit
+        )
+
+    def test_historical_change_for_deleted(self):
+        """
+        Check that a deleted log is returned with values of item
+        deleted showing in `old` column, not new.
+        """
+        customer = Customer.objects.create(code="1", name="11", email="111")
+        pk = customer.pk
+        customer.delete() # Create another log
+        historical_records = Customer.history.all()
+        self.assertEqual(
+            len(historical_records),
+            2
+        )
+        audit = get_historical_change(
+            historical_records[1], historical_records[0]
+        )
+        self.assertEqual(
+            audit["meta"]["AUDIT_id"],
+            historical_records[0].pk
+        )
+        self.assertEqual(
+            audit["meta"]["AUDIT_action"],
+            "Delete"
+        )
+        self.assertEqual(
+            audit["meta"]["object_pk"],
+            pk
+        )
+        self.assertEqual(
+            audit["code"]["old"],
+            customer.code
+        )
+        self.assertEqual(
+            audit["code"]["new"],
+            ""
+        )
+        self.assertEqual(
+            audit["name"]["old"],
+            customer.name
+        )
+        self.assertEqual(
+            audit["name"]["new"],
+            ""
+        )
+        self.assertEqual(
+            audit["email"]["old"],
+            customer.email
+        )
+        self.assertEqual(
+            audit["email"]["new"],
+            ""
+        )
+
+
     def test_getting_all_historical_changes(self):
         customer = Customer.objects.create(code="1", name="11", email="111")
         customer.name = "12"
@@ -121,9 +201,12 @@ class GetAllHistoricalChangesTest(TestCase):
             "12"
         )
 
+
+
     def test_getting_deleted_objects(self):
         """
-        Where there is no audit log for the deletion
+        Where there is no audit log for the deletion.
+        Not sure this is really needed...
         """
         customer = Customer.objects.create(code="1", name="11", email="111")
         customer.name = "12"

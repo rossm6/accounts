@@ -309,3 +309,23 @@ table.nominal_transactions {
     color: inherit;
     text-decoration: inherit;
 }
+
+.border-medium-width {
+    border-width: medium !important;
+}
+
+.bg-less-light {
+    background-color: #b8bdc3;
+}
+
+.header_aspect_audit {
+    border: 2px solid #343a40;
+}
+
+.line_aspect_audit {
+    border: 2px solid #6c757d;
+}
+
+.match_aspect_audit {
+    border: 2px solid #b8bdc3;
+}

@@ -23,7 +23,7 @@ def get_action(history_type):
         return "Delete"
 
 
-def get_historical_change(obj1, obj2):
+def get_historical_change(obj1, obj2, pk_name="id"):
     audit = {}
     if not obj1:
         # then obj2 should be the creation audit log
@@ -35,33 +35,58 @@ def get_historical_change(obj1, obj2):
                     "new": str(value),
                 }
     else:
-        diff = obj2.diff_against(obj1)
-        for change in diff.changes:
-            audit[change.field] = {
-                "old": str(change.old),
-                "new": str(change.new),
-            }
-
+        if obj2.history_type != "-":
+            # i.e. not deleted
+            diff = obj2.diff_against(obj1)
+            if not diff.changes:
+                # simple_history creates an audit log every time
+                # you save.  Of course I also create the records
+                # through bulk_create, bulk_update
+                # So duplicates, or unnecessary even, logs are created
+                # Periodically we ought to remove these from the DB
+                # Regardless, never show them in the UI
+                return None
+            for change in diff.changes:
+                audit[change.field] = {
+                    "old": str(change.old),
+                    "new": str(change.new),
+                }
+        else:
+            # like the audit for creation, only values should show in old column
+            d = obj2.__dict__
+            for field, value in d.items():
+                if not re.search("^history_", field) and not re.search("^_", field):
+                    audit[field] = {
+                        "old": str(value),
+                        "new": ""
+                    }    
+        
     audit["meta"] = {
         "AUDIT_id": obj2.history_id,
         "AUDIT_action": get_action(obj2.history_type),
         "AUDIT_user": obj2.history_user_id,
-        "AUDIT_date": obj2.history_date
+        "AUDIT_date": obj2.history_date,
+        "object_pk": getattr(obj2, pk_name)
     }
 
     return audit
 
 
-def get_all_historical_changes(objects):
+def get_all_historical_changes(objects, pk_name="id"):
     """
     The objects are assumed ordered from oldest to most recent
     """
+
     changes = []
     if objects:
         objects = list(objects)
         objects.insert(0, None)
         for obj1, obj2 in pairwise(objects):
-            changes.append(get_historical_change(obj1, obj2))
+            change = get_historical_change(obj1, obj2, pk_name)
+            if change:
+                # because change could be `None` which points to a duplicate audit log
+                # see the note in `get_historical_change` of this same module
+                changes.append(change)
 
     user_ids = [change["meta"]["AUDIT_user"]
                 for change in changes if type(change["meta"]["AUDIT_user"]) is int]
@@ -94,7 +119,6 @@ def get_deleted_objects(model_objects, audit_logs, pk_field):
     def f(a): return getattr(a, pk_field)
     audits_sorted_by_model_object = sorted(audit_logs, key=f)
     audits_per_model_object = groupby(audits_sorted_by_model_object, key=f)
-    audits_per_model_object = audits_per_model_object
     audits_per_model_object = {
         pk_field: list(audit_logs)
         for pk_field, audit_logs in audits_per_model_object

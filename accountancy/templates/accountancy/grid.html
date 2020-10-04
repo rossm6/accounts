@@ -31,12 +31,14 @@
                                     {% csrf_token %}
                                 {% endif %}
                                     {% load crispy_forms_tags %}
-                                    {% crispy header_form %}
+                                    <div data-audit-aspect-section="header">
+                                        {% crispy header_form %}
+                                    </div>
                                     {% if line_formset %}
                                     <div>
                                         {{ line_formset.management_form|crispy }}
                                     </div>
-                                    <div class="lines">
+                                    <div class="lines" data-audit-aspect-section="line">
                                         <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="{{ line_form_prefix }}">
                                                 {% crispy line_formset %}
                                         </table>

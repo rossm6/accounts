@@ -8,40 +8,47 @@ from utils.helpers import get_all_historical_changes
 
 
 class AuditTransaction:
-    def __init__(self, header_tran, header_model, line_model, match_model):
+    def __init__(self, header_tran, header_model, line_model, match_model=None):
         self.audit_header_history = header_tran.history.all().order_by("pk")
-        self.audit_lines_history = []
+        self.header_model_pk_name = header_model._meta.pk.name
+        self.audit_lines_history = [] # may be empty if payment for example (which has no lines)
+        self.line_model_pk_name = line_model._meta.pk.name
         if header_tran.type in header_tran._meta.model.get_types_requiring_lines():
             self.audit_lines_history = (
                 line_model.history.filter(
                     header=header_tran.pk
                 ).order_by("pk")
             )
-        self.audit_matches_history = (
-            match_model.history.filter(
-                Q(matched_by=header_tran.pk) | Q(matched_to=header_tran.pk)
-            ).order_by("pk")
-        )
+        if match_model:
+            self.audit_matches_history = (
+                match_model.history.filter(
+                    Q(matched_by=header_tran.pk) | Q(matched_to=header_tran.pk)
+                ).order_by("pk")
+            )
+            self.match_model_pk_name = match_model._meta.pk.name
+        
 
     def get_historical_changes(self):
+        all_changes = []
         self.audit_header_history_changes = get_all_historical_changes(
-            self.audit_header_history
+            self.audit_header_history, self.header_model_pk_name
         )
         for change in self.audit_header_history_changes:
             change["meta"]["transaction_aspect"] = "header"
+        all_changes += self.audit_header_history_changes
         self.audit_lines_history_changes = get_all_historical_changes(
-            self.audit_lines_history
+            self.audit_lines_history, self.line_model_pk_name
         )
         for change in self.audit_lines_history_changes:
             change["meta"]["transaction_aspect"] = "line"
-        self.audit_matches_history_changes = get_all_historical_changes(
-            self.audit_matches_history
-        )
-        for change in self.audit_matches_history_changes:
-            change["meta"]["transaction_aspect"] = "match"
-
-        all_changes = (self.audit_header_history_changes +
-            self.audit_lines_history_changes + self.audit_matches_history_changes)
+        all_changes += self.audit_lines_history_changes
+        if hasattr(self, "audit_matches_history"):
+            self.audit_matches_history_changes = get_all_historical_changes(
+                self.audit_matches_history, self.match_model_pk_name
+            )
+            for change in self.audit_matches_history_changes:
+                change["meta"]["transaction_aspect"] = "match"
+            all_changes += self.audit_matches_history_changes
         all_changes.sort(key=lambda c: c["meta"]["AUDIT_date"])
         return all_changes
 

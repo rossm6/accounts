@@ -11,12 +11,24 @@
     </thead>
     <tbody class="table-bordered">
         {% for audit in audits %}
-            <tr class="pointer" {% if multi_object_audit %} data-audit-aspect="{{ audit.meta.transaction_aspect }}" {% endif %} data-audit-pk="{{ audit.meta.AUDIT_id }}">
+            <tr class="pointer" {% if multi_object_audit %} data-audit-aspect="{{ audit.meta.transaction_aspect }}" {% endif %} data-object-pk="{{ audit.meta.object_pk }}" data-audit-pk="{{ audit.meta.AUDIT_id }}">
                 <td data-order="{{ audit.meta.AUDIT_date|date:"Ymd"}}{{ audit.meta.AUDIT_date|time:"His" }}">{{ audit.meta.AUDIT_date }}</td>
                 <td>{{ audit.meta.AUDIT_user }}</td>
-                <td>{{ audit.meta.AUDIT_action }}</td>
+                <td>
+                    {% with audit.meta.AUDIT_action as action %}
+                        <span class="font-weight-bold text-white p-2 text-uppercase rounded {% if action == "Create" %} bg-success {% elif action == "Update" %} bg-warning {% else %} bg-danger {% endif %}">
+                            {{ action }}
+                        </span>
+                    {% endwith %}
+                </td>
                 {% if multi_object_audit %}
-                    <td class="text-uppercase">{{ audit.meta.transaction_aspect }}</td>
+                    {% with audit.meta.transaction_aspect as aspect %}
+                        <td>
+                            <span class="p-2 text-uppercase rounded text-white font-weight-bold {% if aspect == "header" %} bg-dark {% elif aspect == "line" %} bg-secondary  {% else %} bg-less-light {% endif %}">
+                                {{ audit.meta.transaction_aspect }}
+                            </span>
+                        </td>
+                    {% endwith %}
                 {% endif %}
             </tr>
         {% endfor %}
