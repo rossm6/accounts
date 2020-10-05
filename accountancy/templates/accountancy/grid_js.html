@@ -1,9 +1,9 @@
 {% load static %}
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-<script src="{% static 'js/infinite_scroll.js' %}"></script>
-<script src="{% static 'js/input_dropdown_widget.js' %}"></script>
 <script src="{% static 'js/grid.js' %}"></script>
 <script src="{% static 'js/error_tooltip.js' %}"></script>
+<script src="{% static 'js/selectize.min.js' %}"></script>
+<script src="{% static 'accountancy/js/input_grid_selectize.js' %}"></script>
 <script>
     {% include "accountancy/input_grid.js" %}
     {% comment %} this requires server side input so is a template {% endcomment %}
@@ -12,7 +12,6 @@
     {% include "accountancy/calculator.js" %}
     {% comment %} again needs server side injection so we know whether we have debit or credit transaction type {% endcomment %}
 </script>
-<script src="{% static 'js/selectize.min.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
 <script src="{% static 'js/modal_form.js' %}"></script>
 <script src="{% static 'accountancy/js/contact_selectize.js' %}"></script>

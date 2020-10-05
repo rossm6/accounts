@@ -22,7 +22,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
-                               LoadMatchingTransactions, LoadNominal, LoadVat,
+                               LoadMatchingTransactions,
                                SalesAndPurchasesTransList,
                                ViewTransactionOnLedgerOtherThanNominal,
                                ajax_form_validator, create_on_the_fly,
@@ -179,14 +179,6 @@ class LoadPurchaseMatchingTransactions(LoadMatchingTransactions):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
     contact_name = "supplier"
-
-
-class LoadNominals(LoadNominal):
-    model = Nominal
-
-
-class LoadVatCodes(LoadVat):
-    model = Vat
 
 
 class LoadSuppliers(LoadContacts):

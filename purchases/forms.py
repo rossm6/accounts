@@ -23,8 +23,6 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                SaleAndPurchaseMatchingForm,
                                SaleAndPurchaseMatchingFormset,
                                aged_matching_report_factory)
-from accountancy.helpers import (delay_reverse_lazy,
-                                 input_dropdown_widget_attrs_config)
 from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  Hidden, PlainFieldErrors, TableHelper,
                                  create_transaction_header_helper)
@@ -92,12 +90,6 @@ class ReadOnlyPurchaseHeaderForm(ReadOnlySaleAndPurchaseHeaderFormMixin, ReadOnl
     pass
 
 
-attrs_config = input_dropdown_widget_attrs_config(
-    "purchases", ["nominal", "vat_code"])
-nominal_attrs, vat_code_attrs = [
-    attrs_config[attrs] for attrs in attrs_config]
-
-
 class PurchaseLineForm(SaleAndPurchaseLineForm):
     class Meta:
         model = PurchaseLine
@@ -105,8 +97,8 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
         fields = ('id', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
         widgets = {
-            "nominal": InputDropDown(attrs=nominal_attrs),
-            "vat_code": InputDropDown(attrs=vat_code_attrs, model_attrs=['rate'])
+            "nominal": forms.Select(attrs={"data-url": reverse_lazy("nominals:load_nominals")}),
+            "vat_code": forms.Select(attrs={"data-url": reverse_lazy("vat:load_vat_codes")})
         }
         # used in Transaction form set_querysets method
         ajax_fields = {

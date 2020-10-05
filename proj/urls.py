@@ -15,7 +15,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import include, path, reverse_lazy, re_path
+from django.urls import include, path, re_path, reverse_lazy
 from django.views.generic.base import RedirectView
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
@@ -30,6 +30,7 @@ urlpatterns = [
     path('sales/', include("sales.urls")),
     path('users/', include("users.urls")),
     path('users/', include("django.contrib.auth.urls")),
+    path('vat/', include("vat.urls")),
     path('', RedirectView.as_view(url=reverse_lazy(
         "purchases:transaction_enquiry")), name="home")
 

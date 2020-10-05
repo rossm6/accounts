@@ -71,8 +71,6 @@
         }
     };
 
-    // danger here is we create a form and increment the total count
-    // but the form is not added
     TableFormset.prototype.create = function (fields) {
         var form_no = +this.get_total_forms();
         var new_row = this.get_empty_form_as_string();

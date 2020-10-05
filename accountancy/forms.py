@@ -671,9 +671,7 @@ line_css_classes = {
     "Td": {
         "item": "h-100 w-100 border-0",
         "description": "can_highlight h-100 w-100 border-0",
-        "nominal": "h-100 w-100 border-0",
         "goods": "can_highlight h-100 w-100 border-0",
-        "vat_code": "h-100 w-100 border-0",
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }

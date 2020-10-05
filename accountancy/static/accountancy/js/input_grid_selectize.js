@@ -5,12 +5,13 @@
     // vat selectize
     function vat(select_menu) {
         var $select = $(select_menu);
-        var load_url = $select.attr("data-load-url");
+        var load_url = $select.attr("data-url");
         return $select.selectize({
             openOnFocus: true,
             valueField: 'id',
             labelField: 'code',
             searchField: 'code',
+            dropdownParent: 'body',
             render: {
                 option: function (item, escape) {
                     var label = item.code;
@@ -58,13 +59,14 @@
 
         // Similarly, with ordering of options, it seems you must specify the $score order for it to work
         var $select = $(select_menu);
-        var load_url = $select.attr("data-load-url");
+        var load_url = $select.attr("data-url");
         return $select.selectize({
             openOnFocus: true,
             valueField: 'opt_value',
             labelField: 'opt_label',
             searchField: 'opt_label', // was `name` but this means the dropdown doesn't appear as you type
             optgroupField: 'group_label',
+            dropdownParent: 'body',
             lockOptgroupOrder: true,
             sortField: [
                 {

@@ -13,7 +13,8 @@ class AuditTransaction:
     def __init__(self, header_tran, header_model, line_model, match_model=None):
         self.audit_header_history = header_tran.history.all().order_by("pk")
         self.header_model_pk_name = header_model._meta.pk.name
-        self.audit_lines_history = [] # may be empty if payment for example (which has no lines)
+        # may be empty if payment for example (which has no lines)
+        self.audit_lines_history = []
         self.line_model_pk_name = line_model._meta.pk.name
         if header_tran.type in header_tran._meta.model.get_types_requiring_lines():
             self.audit_lines_history = (
@@ -28,7 +29,6 @@ class AuditTransaction:
                 ).order_by(line_model._meta.pk.name, "pk")
             )
             self.match_model_pk_name = match_model._meta.pk.name
-        
 
     def get_historical_changes(self):
         all_changes = []
@@ -40,14 +40,16 @@ class AuditTransaction:
         all_changes += self.audit_header_history_changes
 
         for line_pk, history in groupby(self.audit_lines_history, key=lambda l: getattr(l, self.line_model_pk_name)):
-            changes = get_all_historical_changes(history, self.line_model_pk_name)
+            changes = get_all_historical_changes(
+                history, self.line_model_pk_name)
             for change in changes:
                 change["meta"]["transaction_aspect"] = "line"
             all_changes += changes
 
         if hasattr(self, "audit_matches_history"):
             for match_pk, history in groupby(self.audit_matches_history, lambda m: getattr(m, self.match_model_pk_name)):
-                changes = get_all_historical_changes(history, self.match_model_pk_name)
+                changes = get_all_historical_changes(
+                    history, self.match_model_pk_name)
                 for change in changes:
                     change["meta"]["transaction_aspect"] = "match"
                 all_changes += changes
@@ -182,7 +184,6 @@ def input_dropdown_widget_attrs_config(app_name, fields):
         configs[field] = {
             "data-new": "#new-" + field,
             "data-load-url": delay_reverse_lazy(app_name + ":load_options", "field=" + field),
-            "data-validation-url": delay_reverse_lazy(app_name + ":validate_choice", "field=" + field)
         }
     return configs
 

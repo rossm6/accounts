@@ -2,6 +2,7 @@ import collections
 from json import loads
 
 from django.conf import settings
+from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -98,7 +99,6 @@ class EditTransaction(BaseEditTransaction):
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
     module = "NL"
-
 
 
 class ViewTransaction(BaseViewTransaction):
@@ -299,6 +299,60 @@ class TrialBalance(ListView):
         context["ytd_credit_total"] = ytd_credit_total
         self.object_list = context["report"] = report
         return context
+
+
+class LoadNominal(ListView):
+    paginate_by = 50
+    model = Nominal
+
+    def get_model(self):
+        return self.model
+
+    def get_queryset(self):
+        if q := self.request.GET.get('q'):
+            return (
+                self.get_model().objects.annotate(
+                    similarity=TrigramSimilarity('name', q),
+                ).filter(similarity__gt=0.3).order_by('-similarity')
+            )
+        return self.get_model().objects.none()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        # we need to know the root nodes for each node which has no children
+        nodes = context["page_obj"].object_list
+        selectable_nodes = [node for node in nodes if node.is_leaf_node()]
+        all_nominals = Nominal.objects.all().prefetch_related("children")  # whole set
+        # hits the DB but will cache result
+        # root nodes are the groups for the select menu
+        root_nominals = get_cached_trees(all_nominals)
+        root_nominals.sort(key=lambda n: n.pk)
+        options = [
+            {
+                "group": node.get_root(),
+                "option": node,
+                "group_order": root_nominals.index(node.get_root())
+            }
+            for node in selectable_nodes
+        ]
+        context["options"] = options
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        options = []
+        for option in context["options"]:
+            o = {
+                'group_value': option["group"].pk,
+                'group_label': str(option["group"]),
+                'opt_value': option["option"].pk,
+                'opt_label': str(option["option"]),
+                'group_order': option["group_order"]
+            }
+            options.append(o)
+        options.sort(key=lambda o: o["group_order"])
+        print(options)
+        data = {"data": options}
+        return JsonResponse(data)
 
 
 """

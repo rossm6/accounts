@@ -106,7 +106,7 @@ input, input[type="password"], textarea, select {
 .selectize-dropdown,
 .selectize-dropdown-content 
 {
-    z-index: 1000000 !important; 
+    /* z-index: 1000000 !important; */
     /* must exceed selectize-control in case dropdown is over another
     selectize widget */
 }
@@ -218,7 +218,7 @@ div.has_errors::after {
     left: 0;
     border-color: transparent;
     border-style: solid;
-    z-index: 10000000000000000000;
+    /* z-index: 10000000000000000000; */
 }
 
 div.has_errors::after {
@@ -329,3 +329,4 @@ table.nominal_transactions {
 .match_aspect_audit {
     border: 2px solid #b8bdc3;
 }
+

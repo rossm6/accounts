@@ -17,6 +17,22 @@ $(document).ready(function () {
         empty_form_identifier: ".empty-form",
     });
 
+    $("div.lines :input")
+    .filter(function(index){
+        return this.name.match(/^line-\d+-nominal$/);
+    })
+    .focus(function(){
+        input_grid_selectize.nominal(this);
+    });
+
+    $("div.lines :input")
+    .filter(function(index){
+        return this.name.match(/^line-\d+-vat_code$/);
+    })
+    .focus(function(){
+        input_grid_selectize.vat(this);
+    });
+
     function two_decimal_places(n_str) {
         if (n_str) {
             return parseFloat(n_str).toFixed(2);
@@ -24,7 +40,7 @@ $(document).ready(function () {
     }
 
     main_grid.add_callback = function (new_line) {
-        input_dropdown_widget.add(new_line);
+        // input_dropdown_widget.add(new_line);
         new_line.find("td.col-close-icon").on("click", function () {
             main_grid.delete_line($(this));
         });
@@ -65,8 +81,7 @@ $(document).ready(function () {
             });
             if (id_input_field && !id_input_field.val()) {
                 main_grid.delete_line($this);
-            }
-            else{
+            } else {
                 $(this).parents("tr").find("input.delete-line").prop("checked", true);
                 $tr.addClass("deleted-row");
             }
@@ -96,19 +111,17 @@ $(document).ready(function () {
 
     $("html").on("click focusin", function () {
         $("td input.can_highlight").removeClass("data-input-focus-border");
-        input_dropdown_widget.close_input_dropdowns();
+        //input_dropdown_widget.close_input_dropdowns();
     });
 
     $("table.line td").on("click focusin", function (event) {
         $("td input.can_highlight").not($(this)).removeClass("data-input-focus-border");
         if ($(this).find("input").hasClass("can_highlight")) {
             $(this).find("input").addClass("data-input-focus-border");
-            input_dropdown_widget.close_input_dropdowns();
+            //input_dropdown_widget.close_input_dropdowns();
         }
         event.stopPropagation();
     });
-
-    input_dropdown_widget.init();
 
     $("input[type=number]").each(function () {
         var n = two_decimal_places($(this).val());
@@ -119,19 +132,5 @@ $(document).ready(function () {
         var n = two_decimal_places($(this).val());
         $(this).val(n);
     });
-
-
-
-    // When we delete / reorder the line it will write to hidden input fields
-    // When the form is validated on the server any form which appears blank to the user
-    // Will have lots of "field required" errors.  So before submitting we need to blank
-    // the values of the excess hidden forms.  By excess, i mean those apparently blank forms
-    // which come after the last apparently not blank form.  Any other blank form is left
-
-
-    // $("form").submit(function(){
-    //     main_grid.clean_empty_forms();
-    // });
-
 
 });
