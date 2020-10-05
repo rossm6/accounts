@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from items.models import Item
 from nominals.models import Nominal, NominalTransaction
 from accountancy.helpers import sort_multiple
 from vat.models import Vat
@@ -42,7 +41,7 @@ class ViewInvoice(TestCase):
         cls.due_date = (datetime.now() + timedelta(days=31)
                         ).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -81,7 +80,7 @@ class ViewInvoice(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -120,7 +119,7 @@ class ViewBroughtForwardInvoice(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
@@ -140,7 +139,7 @@ class ViewBroughtForwardInvoice(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -176,7 +175,7 @@ class ViewCreditNote(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -210,7 +209,7 @@ class ViewCreditNote(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -254,7 +253,7 @@ class ViewBroughtForwardCreditNote(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
@@ -275,7 +274,7 @@ class ViewBroughtForwardCreditNote(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -311,7 +310,7 @@ class ViewPayment(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -376,7 +375,7 @@ class ViewBroughtForwardPayment(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -439,7 +438,7 @@ class ViewRefund(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -507,7 +506,7 @@ class ViewBroughtForwardRefund(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS

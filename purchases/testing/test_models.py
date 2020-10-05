@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from items.models import Item
 from nominals.models import Nominal
 from vat.models import Vat
 
@@ -19,7 +18,6 @@ class PurchaseLineModelTest(TestCase):
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
@@ -33,7 +31,6 @@ class PurchaseLineModelTest(TestCase):
             lines.append(
                 PurchaseLine(
                     header=invoice,
-                    item=self.item,
                     description=self.description,
                     goods=100,
                     nominal=self.nominal,

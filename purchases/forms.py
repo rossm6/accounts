@@ -30,7 +30,6 @@ from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  create_transaction_header_helper)
 from accountancy.widgets import InputDropDown
 from contacts.forms import BaseContactForm
-from items.models import Item
 from nominals.models import Nominal
 from vat.models import Vat
 
@@ -94,8 +93,8 @@ class ReadOnlyPurchaseHeaderForm(ReadOnlySaleAndPurchaseHeaderFormMixin, ReadOnl
 
 
 attrs_config = input_dropdown_widget_attrs_config(
-    "purchases", ["item", "nominal", "vat_code"])
-item_attrs, nominal_attrs, vat_code_attrs = [
+    "purchases", ["nominal", "vat_code"])
+nominal_attrs, vat_code_attrs = [
     attrs_config[attrs] for attrs in attrs_config]
 
 
@@ -103,19 +102,14 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
     class Meta:
         model = PurchaseLine
         # WHY DO WE INCLUDE THE ID?
-        fields = ('id', 'item', 'description', 'goods',
+        fields = ('id', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
         widgets = {
-            "item": InputDropDown(attrs=item_attrs),
             "nominal": InputDropDown(attrs=nominal_attrs),
             "vat_code": InputDropDown(attrs=vat_code_attrs, model_attrs=['rate'])
         }
         # used in Transaction form set_querysets method
         ajax_fields = {
-            "item": {
-                "empty_label": "(None)",
-                "searchable_fields": ('code', 'description')
-            },
             "nominal": {
                 "searchable_fields": ('name',),
                 "querysets": {

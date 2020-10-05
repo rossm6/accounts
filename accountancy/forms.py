@@ -748,7 +748,7 @@ class SaleAndPurchaseLineForm(BroughtForwardLineForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if hasattr(self, 'brought_forward') and self.brought_forward:
-            self.fields["item"].required = False
+            pass
 
         self.helpers = TableHelper(
             self._meta.fields,

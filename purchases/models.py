@@ -11,7 +11,6 @@ from accountancy.models import (Audit, CashBookEntryMixin, Contact,
                                 MatchedHeaders, Transaction, TransactionHeader,
                                 TransactionLine)
 from accountancy.signals import audit_post_delete
-from items.models import Item
 from utils.helpers import \
     disconnect_simple_history_receiver_for_post_delete_signal
 from vat.models import Vat
@@ -159,8 +158,6 @@ register(PurchaseHeader)
 
 class PurchaseLine(TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
-    item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, null=True, blank=True)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
     vat_code = models.ForeignKey(
@@ -185,7 +182,6 @@ class PurchaseLine(TransactionLine):
             "description",
             "goods",
             "vat",
-            "item",
             "nominal",
             "vat_code"            
         ]

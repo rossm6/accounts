@@ -41,10 +41,26 @@
 
 {% block modal_forms %}
     {% include 'accountancy/on_the_fly.html' %}
+    <div class="m-5" style="height: 1000px;">
+        <form>
+            <select id="test_vat" name="test" data-load-url="/purchases/load_vat_codes">
+            </select>
+            <div class="my-5"></div>
+            <select id="test_nominal" name="test" data-load-url="/purchases/load_nominals">
+            </select>
+        </form>
+    </div>
 {% endblock modal_forms %}
 
 {% block extra_js %}
     {% include 'accountancy/grid_js.html' with header_form=header_form %}
     {% include 'accountancy/matching_js.html' %}
+    <script src="{% static 'accountancy/js/input_grid_selectize.js' %}"></script>
     <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
+    <script>
+        $(document).ready(function(){
+            var test_vat_selectize = input_grid_selectize.vat("#test_vat");
+            var test_nominal_selectize = input_grid_selectize.nominal("#test_nominal");
+        });
+    </script>
 {% endblock extra_js %}

@@ -2,7 +2,6 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 
 from cashbook.models import CashBook
-from items.helpers import create_default_data as it_create_default_data
 from nominals.models import Nominal
 from nominals.helpers import create_default_data as nl_create_default_data
 from purchases.helpers import create_default_data as pl_create_default_data
@@ -11,7 +10,6 @@ from sales.helpers import create_default_data as sl_create_default_data
 
 apps_db_data = [
     'cashbook',
-    'items',
     'nominals',
     'purchases',
     'sales',
@@ -31,7 +29,6 @@ def init():
     get_user_model().objects.all().delete()
     get_user_model().objects.create_user(username="ross", password="Test123!", is_superuser=True, is_staff=True)
     
-    it_create_default_data()
     nl_create_default_data()
     pl_create_default_data()
     sl_create_default_data()

@@ -10,7 +10,6 @@ from accountancy.models import (Audit, CashBookEntryMixin, Contact,
                                 MatchedHeaders, Transaction, TransactionHeader,
                                 TransactionLine)
 from accountancy.signals import audit_post_delete
-from items.models import Item
 from utils.helpers import \
     disconnect_simple_history_receiver_for_post_delete_signal
 from vat.models import Vat
@@ -156,26 +155,8 @@ class SaleHeader(TransactionHeader):
 register(SaleHeader)
 
 
-# class SaleLineQuerySet(models.QuerySet):
-
-#     def line_bulk_update(self, instances):
-#         return self.bulk_update(
-#             instances,
-#             [
-#                 "line_no",
-#                 "description",
-#                 "goods",
-#                 "vat",
-#                 "nominal",
-#                 "vat_code"
-#             ]
-#         )
-
-
 class SaleLine(TransactionLine):
     header = models.ForeignKey(SaleHeader, on_delete=models.CASCADE)
-    item = models.ForeignKey(
-        Item, on_delete=models.CASCADE, null=True, blank=True)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
     vat_code = models.ForeignKey(
@@ -196,7 +177,6 @@ class SaleLine(TransactionLine):
     @classmethod
     def fields_to_update(self):
         return [
-            "line_no",
             "description",
             "goods",
             "vat",

@@ -7,7 +7,6 @@ from django.utils import timezone
 
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from items.models import Item
 from nominals.models import Nominal, NominalTransaction
 from accountancy.helpers import sort_multiple
 from vat.models import Vat
@@ -161,7 +160,7 @@ class CreateInvoice(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -350,7 +349,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -397,10 +396,7 @@ class CreateInvoice(TestCase):
         self.assertEqual(len(lines), 20)
         line_no = 1
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -444,7 +440,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -452,7 +448,7 @@ class CreateInvoice(TestCase):
                 'vat': 20
             }]) * 10
         line_forms += ([{
-                'item': '',
+                
                 'description': '',
                 'goods': '',
                 'nominal': '',
@@ -498,10 +494,7 @@ class CreateInvoice(TestCase):
         self.assertEqual(len(lines), 10)
         line_no = 1
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -575,7 +568,6 @@ class CreateInvoice(TestCase):
             }
         )
         line_forms = ([{
-                'item': self.item.pk,
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -583,7 +575,6 @@ class CreateInvoice(TestCase):
                 'vat': 20
             }]) * 10
         line_forms += ([{
-                'item': '',
                 'description': '',
                 'goods': '',
                 'nominal': '',
@@ -630,7 +621,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -672,10 +663,6 @@ class CreateInvoice(TestCase):
         lines = PurchaseLine.objects.all()
         for line in lines:
             self.assertEqual(
-                line.item,
-                self.item
-            )
-            self.assertEqual(
                 line.description,
                 self.description
             )
@@ -713,7 +700,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -754,10 +741,7 @@ class CreateInvoice(TestCase):
         )
         lines = PurchaseLine.objects.all()
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -977,7 +961,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -1018,10 +1002,7 @@ class CreateInvoice(TestCase):
         )
         lines = PurchaseLine.objects.all()
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -1067,7 +1048,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -1110,10 +1091,7 @@ class CreateInvoice(TestCase):
         lines = PurchaseLine.objects.all()
         self.assertEqual(len(lines), 20)
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -1180,7 +1158,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -1224,10 +1202,7 @@ class CreateInvoice(TestCase):
         lines = PurchaseLine.objects.all()
         self.assertEqual(len(lines), 20)
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -1294,7 +1269,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -1348,7 +1323,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -1397,7 +1372,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -1438,10 +1413,7 @@ class CreateInvoice(TestCase):
         )
         lines = PurchaseLine.objects.all()
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -1480,7 +1452,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -1532,7 +1504,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -1573,10 +1545,7 @@ class CreateInvoice(TestCase):
         )
         lines = PurchaseLine.objects.all()
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -1621,7 +1590,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -1664,10 +1633,7 @@ class CreateInvoice(TestCase):
         lines = PurchaseLine.objects.all()
         self.assertEqual(len(lines), 20)
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -1734,7 +1700,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -1777,10 +1743,7 @@ class CreateInvoice(TestCase):
         lines = PurchaseLine.objects.all()
         self.assertEqual(len(lines), 20)
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -1846,7 +1809,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -1900,7 +1863,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -1952,7 +1915,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -1993,10 +1956,7 @@ class CreateInvoice(TestCase):
         )
         lines = PurchaseLine.objects.all()
         for line in lines:
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -2035,7 +1995,7 @@ class CreateInvoice(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -2105,7 +2065,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -10})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -2159,7 +2119,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 130}) # rememeber the invoice we create above is not including VAT. So 120 total, not 100.00
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -2212,7 +2172,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 10})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -2265,7 +2225,7 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -130}) # Trying to match -130.00 when due is only -120.00
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -2404,7 +2364,7 @@ class CreatePayment(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -6393,7 +6353,7 @@ class EditInvoice(TestCase):
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -6436,7 +6396,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -6477,7 +6437,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6534,7 +6494,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
 
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
@@ -6571,7 +6531,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6598,7 +6558,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -6635,7 +6595,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6682,7 +6642,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
 
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
@@ -6713,7 +6673,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6768,7 +6728,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -6791,7 +6751,7 @@ class EditInvoice(TestCase):
 
         line_no = 1
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6821,7 +6781,7 @@ class EditInvoice(TestCase):
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = lines_as_dicts
         line_no = 1
         # THIS MIRRORS WHAT WOULD HAPPEN THROUGH THE UI
@@ -6857,7 +6817,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for index, line in enumerate(lines[:8]):
             self.assertEqual(line.pk, lines_orig[index].pk)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6867,7 +6827,7 @@ class EditInvoice(TestCase):
             line_no = line_no + 1
 
         self.assertEqual(lines[8].pk, lines_orig[-1].pk)
-        self.assertEqual(lines[8].item, self.item)
+        
         self.assertEqual(lines[8].description, self.description)
         self.assertEqual(lines[8].goods, 100)
         self.assertEqual(lines[8].nominal, self.nominal)
@@ -6876,7 +6836,7 @@ class EditInvoice(TestCase):
         self.assertEqual(lines[8].line_no, 9)
 
         self.assertEqual(lines[9].pk, lines_orig[-2].pk)
-        self.assertEqual(lines[9].item, self.item)
+        
         self.assertEqual(lines[9].description, self.description)
         self.assertEqual(lines[9].goods, 100)
         self.assertEqual(lines[9].nominal, self.nominal)
@@ -6897,7 +6857,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -6920,7 +6880,7 @@ class EditInvoice(TestCase):
 
         line_no = 1
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6951,7 +6911,7 @@ class EditInvoice(TestCase):
 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = lines_as_dicts
         line_no = 1
 
@@ -6988,7 +6948,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for index, line in enumerate(lines[:8]):
             self.assertEqual(line.pk, lines_orig[index].pk)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -6998,7 +6958,7 @@ class EditInvoice(TestCase):
             line_no = line_no + 1
 
         self.assertEqual(lines[8].pk, lines_orig[-1].pk)
-        self.assertEqual(lines[8].item, self.item)
+        
         self.assertEqual(lines[8].description, self.description)
         self.assertEqual(lines[8].goods, 100)
         self.assertEqual(lines[8].nominal, self.nominal)
@@ -7019,7 +6979,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -7056,7 +7016,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7104,10 +7064,10 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -7150,7 +7110,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7182,7 +7142,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -7219,7 +7179,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7267,10 +7227,10 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -7309,7 +7269,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 20)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7340,7 +7300,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -7377,7 +7337,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7425,7 +7385,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 200
         line_trans[-1]["vat"] = 40
         line_forms = line_trans
@@ -7460,7 +7420,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines[:-2]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7468,7 +7428,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 200)
         self.assertEqual(line.nominal, self.nominal)
@@ -7499,7 +7459,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -7536,7 +7496,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7584,7 +7544,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
         line_forms = line_trans
 
@@ -7616,7 +7576,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7651,7 +7611,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -7688,7 +7648,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7736,7 +7696,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 0
         line_trans[-1]["vat"] = 0
         line_forms = line_trans
@@ -7770,7 +7730,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -7807,7 +7767,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7855,10 +7815,10 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -7897,7 +7857,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:10]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7905,7 +7865,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         for line in lines[10:]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -7936,7 +7896,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -7973,7 +7933,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8021,10 +7981,10 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -8063,7 +8023,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:10]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8071,7 +8031,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         for line in lines[10:]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8101,7 +8061,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -8136,7 +8096,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8183,7 +8143,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -8217,7 +8177,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8225,7 +8185,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 200)
         self.assertEqual(line.nominal, self.nominal)
@@ -8255,7 +8215,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -8290,7 +8250,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8338,7 +8298,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -8372,7 +8332,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8380,7 +8340,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 200)
         self.assertEqual(line.nominal, self.nominal)
@@ -8411,7 +8371,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -8448,7 +8408,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8496,10 +8456,10 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -8538,7 +8498,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8573,7 +8533,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -8608,7 +8568,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8655,7 +8615,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -8689,7 +8649,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8726,7 +8686,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -8763,7 +8723,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8812,7 +8772,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
         line_forms = line_trans
 
@@ -8846,7 +8806,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8878,7 +8838,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -8915,7 +8875,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -8964,7 +8924,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10 
         line_forms = line_trans
@@ -8999,7 +8959,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines[:-1]:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9009,7 +8969,7 @@ class EditInvoice(TestCase):
 
         line = lines[-1]
         self.assertEqual(line.line_no, line_no)
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 50)
         self.assertEqual(line.nominal, self.nominal)
@@ -9040,7 +9000,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -9077,7 +9037,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9125,7 +9085,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
         line_forms = line_trans
 
@@ -9159,7 +9119,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9190,7 +9150,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -9227,7 +9187,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9275,7 +9235,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10 
         line_forms = line_trans
@@ -9310,7 +9270,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines[:-1]:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9320,7 +9280,7 @@ class EditInvoice(TestCase):
 
         line = lines[-1]
         self.assertEqual(line.line_no, line_no)
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 50)
         self.assertEqual(line.nominal, self.nominal)
@@ -9352,7 +9312,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -9389,7 +9349,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9437,7 +9397,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
         line_forms = line_trans
 
@@ -9469,7 +9429,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9506,7 +9466,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -9543,7 +9503,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[2].due, -600)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9591,7 +9551,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -9624,7 +9584,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9663,7 +9623,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -9704,7 +9664,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9761,11 +9721,11 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
 
         new_lines = [ # whereas new here so no ID
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -9807,7 +9767,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:10]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9815,7 +9775,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         for line in lines[10:]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9850,7 +9810,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -9891,7 +9851,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -9948,10 +9908,10 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -9995,7 +9955,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:10]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10003,7 +9963,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         for line in lines[10:]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10037,7 +9997,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -10076,7 +10036,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10133,7 +10093,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -10171,7 +10131,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10179,7 +10139,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 200)
         self.assertEqual(line.nominal, self.nominal)
@@ -10213,7 +10173,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -10252,7 +10212,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10309,7 +10269,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -10347,7 +10307,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10355,7 +10315,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 200)
         self.assertEqual(line.nominal, self.nominal)
@@ -10389,7 +10349,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -10430,7 +10390,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10487,10 +10447,10 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         new_lines = [ # whereas new here so no ID
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -10533,7 +10493,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10570,7 +10530,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -10609,7 +10569,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10665,7 +10625,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ] # here we are posting the ID for the lines which already exist
-        lines_as_dicts = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         lines_as_dicts[-1]["goods"] = 200
         lines_as_dicts[-1]["vat"] = 40
         line_forms = lines_as_dicts
@@ -10703,7 +10663,7 @@ class EditInvoice(TestCase):
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10741,7 +10701,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -10782,7 +10742,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10839,7 +10799,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
         line_forms = line_trans
 
@@ -10877,7 +10837,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -10912,7 +10872,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -10953,7 +10913,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11010,7 +10970,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10 
         line_forms = line_trans
@@ -11049,7 +11009,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines[:-1]:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11059,7 +11019,7 @@ class EditInvoice(TestCase):
 
         line = lines[-1]
         self.assertEqual(line.line_no, line_no)
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 50)
         self.assertEqual(line.nominal, self.nominal)
@@ -11094,7 +11054,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -11135,7 +11095,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11191,7 +11151,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
         line_forms = line_trans
 
@@ -11229,7 +11189,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11264,7 +11224,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -11305,7 +11265,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11361,7 +11321,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10 
         line_forms = line_trans
@@ -11400,7 +11360,7 @@ class EditInvoice(TestCase):
         line_no = 1
         for line in lines[:-1]:
             self.assertEqual(line.line_no, line_no)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11410,7 +11370,7 @@ class EditInvoice(TestCase):
 
         line = lines[-1]
         self.assertEqual(line.line_no, line_no)
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 50)
         self.assertEqual(line.nominal, self.nominal)
@@ -11446,7 +11406,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -11487,7 +11447,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11543,7 +11503,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["DELETE"] = 'yes' # DELETE THE LAST LINE
         line_forms = line_trans
 
@@ -11579,7 +11539,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11616,7 +11576,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -11657,7 +11617,7 @@ class EditInvoice(TestCase):
         self.assertEqual(headers[3].due, -1200)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11713,7 +11673,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -11750,7 +11710,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11795,7 +11755,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -11832,7 +11792,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11879,7 +11839,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
 
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
@@ -11910,7 +11870,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -11941,7 +11901,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -11978,7 +11938,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12025,7 +11985,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
 
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
@@ -12056,7 +12016,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12088,7 +12048,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -12125,7 +12085,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12172,7 +12132,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 200
         line_trans[-1]["vat"] = 40
         line_forms = line_trans
@@ -12205,7 +12165,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12213,7 +12173,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 200)
         self.assertEqual(line.nominal, self.nominal)
@@ -12245,7 +12205,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -12282,7 +12242,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12329,7 +12289,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -12362,7 +12322,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12370,7 +12330,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 50)
         self.assertEqual(line.nominal, self.nominal)
@@ -12402,7 +12362,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -12439,7 +12399,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12486,7 +12446,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -12519,7 +12479,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines[:9]:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12527,7 +12487,7 @@ class EditInvoice(TestCase):
             self.assertEqual(line.vat, 20)
 
         line = lines[-1]
-        self.assertEqual(line.item, self.item)
+        
         self.assertEqual(line.description, self.description)
         self.assertEqual(line.goods, 50)
         self.assertEqual(line.nominal, self.nominal)
@@ -12557,7 +12517,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -12594,7 +12554,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12641,7 +12601,7 @@ class EditInvoice(TestCase):
         matching_data["match-INITIAL_FORMS"] = 2 
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -12674,7 +12634,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12711,7 +12671,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -12748,7 +12708,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12797,7 +12757,7 @@ class EditInvoice(TestCase):
         # SO TRYING TO MATCH -1200 to a 1140 invoice which is wrong
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -12830,7 +12790,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12869,7 +12829,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -12906,7 +12866,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -12957,7 +12917,7 @@ class EditInvoice(TestCase):
         # MATCHING IS VALID
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -12990,7 +12950,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -13027,7 +12987,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -13064,7 +13024,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -13115,7 +13075,7 @@ class EditInvoice(TestCase):
         # MATCHING IS VALID
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_trans[-1]["nominal"] = 99999999
@@ -13149,7 +13109,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -13185,7 +13145,7 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -13222,7 +13182,7 @@ class EditInvoice(TestCase):
 
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -13273,7 +13233,7 @@ class EditInvoice(TestCase):
         # MATCHING IS VALID
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
         line_trans[-1]["vat"] = 10
         line_forms = line_trans
@@ -13306,7 +13266,7 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -13532,7 +13492,7 @@ class GeneralTransactionTests(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -13569,7 +13529,7 @@ class GeneralTransactionTests(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -13607,7 +13567,7 @@ class GeneralTransactionTests(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -13905,7 +13865,7 @@ class CreateInvoiceNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -13943,7 +13903,7 @@ class CreateInvoiceNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -13996,10 +13956,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -14182,7 +14139,7 @@ class CreateInvoiceNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -14232,10 +14189,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -14379,7 +14333,7 @@ class CreateInvoiceNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 0,
                 'nominal': self.nominal.pk,
@@ -14433,10 +14387,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -14586,7 +14537,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 20,
                 'nominal': self.nominal.pk,
@@ -14595,7 +14546,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }]) * 10
         line_forms += (
             [{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -20,
                 'nominal': self.nominal.pk,
@@ -14659,10 +14610,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -14701,10 +14649,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -15057,7 +15002,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 0,
                 'nominal': self.nominal.pk,
@@ -15103,7 +15048,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2400})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -15172,10 +15117,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -15377,7 +15319,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -15446,10 +15388,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -15639,7 +15578,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -15713,7 +15652,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2400.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -15789,7 +15728,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -1200})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -15858,10 +15797,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -16063,7 +15999,7 @@ class CreateInvoiceNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -16116,10 +16052,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -16297,7 +16230,7 @@ class CreateInvoiceNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -16350,10 +16283,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -16540,7 +16470,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -16609,10 +16539,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -16813,7 +16740,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -16882,10 +16809,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -17075,7 +16999,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -0.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -17150,7 +17074,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -17226,7 +17150,7 @@ class CreateInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 1200})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -17295,10 +17219,7 @@ class CreateInvoiceNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -17490,7 +17411,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -17529,7 +17450,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -17584,10 +17505,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -17770,7 +17688,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -17822,10 +17740,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -17967,7 +17882,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 0,
                 'nominal': self.nominal.pk,
@@ -18022,10 +17937,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -18175,7 +18087,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 20,
                 'nominal': self.nominal.pk,
@@ -18184,7 +18096,7 @@ class CreateCreditNoteNominalEntries(TestCase):
             }]) * 10
         line_forms += (
             [{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -20,
                 'nominal': self.nominal.pk,
@@ -18248,10 +18160,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -18292,10 +18201,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -18673,7 +18579,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 0,
                 'nominal': self.nominal.pk,
@@ -18718,7 +18624,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -18787,10 +18693,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -18991,7 +18894,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -19060,10 +18963,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -19253,7 +19153,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -0.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -19328,7 +19228,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -19404,7 +19304,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 1200})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -19473,10 +19373,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -19678,7 +19575,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -19731,10 +19628,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -19913,7 +19807,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -19966,10 +19860,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -20156,7 +20047,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2400})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -20225,10 +20116,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -20430,7 +20318,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -20499,10 +20387,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -20693,7 +20578,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -20768,7 +20653,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2400.01})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -20843,7 +20728,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -1200})
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         line_forms = ([{
-                'item': self.item.pk,
+                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -20912,10 +20797,7 @@ class CreateCreditNoteNominalEntries(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                self.item
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -21181,10 +21063,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                None
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -22643,10 +22522,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
                 line.line_no,
                 i + 1
             )
-            self.assertEqual(
-                line.item,
-                None
-            )
+
             self.assertEqual(
                 line.description,
                 self.description
@@ -24072,7 +23948,7 @@ class CreatePaymentNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -26163,7 +26039,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -27385,7 +27261,7 @@ class CreateRefundNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -29459,7 +29335,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -30686,7 +30562,7 @@ class EditInvoiceNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -30723,7 +30599,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -30776,7 +30652,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -30876,7 +30752,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 50
         line_forms[-1]["vat"] = 10
@@ -30928,7 +30804,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -30952,7 +30828,7 @@ class EditInvoiceNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.line_no, i + 1)
         self.assertEqual(edited_line.header, header)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 50)
         self.assertEqual(edited_line.nominal, self.nominal)
@@ -31100,7 +30976,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -31153,7 +31029,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -31253,7 +31129,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -31304,7 +31180,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -31406,7 +31282,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -31459,7 +31335,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -31559,7 +31435,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = 20
@@ -31612,7 +31488,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -31636,7 +31512,7 @@ class EditInvoiceNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 0)
         self.assertEqual(edited_line.nominal, self.nominal)
@@ -31772,7 +31648,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -31825,7 +31701,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -31925,7 +31801,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 100
         line_forms[-1]["vat"] = 0
@@ -31978,7 +31854,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -32002,7 +31878,7 @@ class EditInvoiceNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 100)
         self.assertEqual(edited_line.nominal, self.nominal)
@@ -32138,7 +32014,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -32191,7 +32067,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -32291,7 +32167,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = 0
@@ -32331,7 +32207,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -32384,7 +32260,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -32484,7 +32360,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 100
         line_forms[-1]["vat"] = 20
@@ -32537,7 +32413,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no , i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -32643,7 +32519,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -32696,7 +32572,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -32796,7 +32672,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         for form in line_forms:
             form["DELETE"] = "yes"
@@ -32965,7 +32841,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -33051,7 +32927,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -33183,7 +33059,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -33218,7 +33094,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.00,
                     'nominal': self.nominal.pk,
@@ -33259,7 +33135,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': -0.01,
                     'nominal': self.nominal.pk,
@@ -33361,7 +33237,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -33421,7 +33297,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -33456,7 +33332,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.00,
                     'nominal': self.nominal.pk,
@@ -33497,7 +33373,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': -0.01,
                     'nominal': self.nominal.pk,
@@ -33599,7 +33475,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -33652,7 +33528,7 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -33705,7 +33581,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -33805,7 +33681,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -33858,7 +33734,7 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -33956,7 +33832,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
@@ -33979,7 +33855,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -34027,7 +33903,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34067,7 +33943,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 50
         line_forms[-1]["vat"] = 10
@@ -34119,7 +33995,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34143,7 +34019,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.line_no, i + 1)
         self.assertEqual(edited_line.header, header)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 50)
         self.assertEqual(edited_line.nominal, None)
@@ -34185,7 +34061,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -34232,7 +34108,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34272,7 +34148,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -34323,7 +34199,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34370,7 +34246,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -34417,7 +34293,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34457,7 +34333,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = 20
@@ -34509,7 +34385,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34533,7 +34409,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 0)
         self.assertEqual(edited_line.nominal, None)
@@ -34577,7 +34453,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -34624,7 +34500,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34664,7 +34540,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 100
         line_forms[-1]["vat"] = 0
@@ -34715,7 +34591,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34739,7 +34615,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 100)
         self.assertEqual(edited_line.nominal, None)
@@ -34783,7 +34659,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -34830,7 +34706,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34870,7 +34746,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = 0
@@ -34908,7 +34784,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -34955,7 +34831,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -34995,7 +34871,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 100
         line_forms[-1]["vat"] = 20
@@ -35048,7 +34924,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no , i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -35133,7 +35009,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, None)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -35424,7 +35300,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, None)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -36120,7 +35996,7 @@ class EditCreditNoteNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -36157,7 +36033,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -36210,7 +36086,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no , i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -36310,7 +36186,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = -50
         line_forms[-1]["vat"] = -10
@@ -36366,7 +36242,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no , i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -36390,7 +36266,7 @@ class EditCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no , i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, -50)
         self.assertEqual(edited_line.nominal, self.nominal)
@@ -36539,7 +36415,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -36592,7 +36468,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -36692,7 +36568,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -36747,7 +36623,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -36849,7 +36725,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -36902,7 +36778,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -37002,7 +36878,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = -20
@@ -37060,7 +36936,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -37084,7 +36960,7 @@ class EditCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 0)
         self.assertEqual(edited_line.nominal, self.nominal)
@@ -37220,7 +37096,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -37273,7 +37149,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -37373,7 +37249,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = -100
         line_forms[-1]["vat"] = 0
@@ -37429,7 +37305,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -37453,7 +37329,7 @@ class EditCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, -100)
         self.assertEqual(edited_line.nominal, self.nominal)
@@ -37589,7 +37465,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -37642,7 +37518,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -37743,7 +37619,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         for form in line_forms:
             form["goods"] *= -1
@@ -37783,7 +37659,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -37836,7 +37712,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -37936,7 +37812,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 100
         line_forms[-1]["vat"] = 20
@@ -37992,7 +37868,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -38098,7 +37974,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -38148,7 +38024,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -38248,7 +38124,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         for form in line_forms:
             form["DELETE"] = "yes"
@@ -38417,7 +38293,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal.pk,
@@ -38503,7 +38379,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -38635,7 +38511,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -38670,7 +38546,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.00,
                     'nominal': self.nominal.pk,
@@ -38711,7 +38587,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 0.01,
                     'nominal': self.nominal.pk,
@@ -38813,7 +38689,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -38873,7 +38749,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -38908,7 +38784,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.00,
                     'nominal': self.nominal.pk,
@@ -38949,7 +38825,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 0.01,
                     'nominal': self.nominal.pk,
@@ -39051,7 +38927,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    'item': self.item.pk,
+                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -39104,7 +38980,7 @@ class EditCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -39155,7 +39031,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -39255,7 +39131,7 @@ class EditCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -39311,7 +39187,7 @@ class EditCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, self.nominal)
@@ -39409,7 +39285,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
@@ -39433,7 +39309,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -39481,7 +39357,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -39521,7 +39397,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = -50
         line_forms[-1]["vat"] = -10
@@ -39576,7 +39452,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -39600,7 +39476,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.line_no, i + 1)
         self.assertEqual(edited_line.header, header)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, -50)
         self.assertEqual(edited_line.nominal, None)
@@ -39642,7 +39518,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -39689,7 +39565,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -39729,7 +39605,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -39783,7 +39659,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -39830,7 +39706,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -39877,7 +39753,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -39917,7 +39793,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = -20
@@ -39972,7 +39848,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -39996,7 +39872,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 0)
         self.assertEqual(edited_line.nominal, None)
@@ -40040,7 +39916,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -40087,7 +39963,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -40127,7 +40003,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = -100
         line_forms[-1]["vat"] = -0
@@ -40181,7 +40057,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -40205,7 +40081,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        self.assertEqual(edited_line.item, self.item)
+        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, -100)
         self.assertEqual(edited_line.nominal, None)
@@ -40249,7 +40125,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -40296,7 +40172,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -40336,7 +40212,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = 0
@@ -40378,7 +40254,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -40425,7 +40301,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -40465,7 +40341,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         data.update(header_data)
 
         lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'item', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
         line_forms = line_trans
         line_forms[-1]["goods"] = -100
         line_forms[-1]["vat"] = -20
@@ -40521,7 +40397,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no , i + 1)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -40607,7 +40483,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, None)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -40898,7 +40774,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, None)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -41592,7 +41468,7 @@ class EditPaymentNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -42879,7 +42755,7 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -43684,7 +43560,7 @@ class EditRefundNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -44951,7 +44827,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -45728,7 +45604,7 @@ class VoidTransactionsTest(TestCase):
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
 
-        cls.item = Item.objects.create(code="aa", description="aa-aa")
+        
         cls.description = "a line description"
 
         # ASSETS
@@ -45765,7 +45641,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -45818,7 +45694,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -45897,7 +45773,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -45938,7 +45814,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -45995,7 +45871,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -46135,7 +46011,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -46173,7 +46049,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -46278,7 +46154,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -46412,7 +46288,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -46475,7 +46351,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -46580,7 +46456,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -46714,7 +46590,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -46778,7 +46654,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -46829,7 +46705,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -46908,7 +46784,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -46950,7 +46826,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -47002,7 +46878,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -47081,7 +46957,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -47122,7 +46998,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -47195,7 +47071,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -47304,7 +47180,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -47345,7 +47221,7 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    'item': self.item,
+                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -47420,7 +47296,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -47531,7 +47407,7 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            self.assertEqual(line.item, self.item)
+            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)

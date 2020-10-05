@@ -17,6 +17,7 @@ from django.template.context_processors import csrf
 from django.template.loader import render_to_string
 from django.views.generic import ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
+from mptt.utils import get_cached_trees
 from querystring_parser import parser
 
 from accountancy.exceptions import FormNotValid
@@ -1851,6 +1852,87 @@ class LoadContacts(ListView):
             }
             contacts.append(s)
         data = {"data": contacts}
+        return JsonResponse(data)
+
+
+class LoadVat(ListView):
+    paginate_by = 50
+
+    def get_model(self):
+        return self.model
+
+    def get_queryset(self):
+        if q := self.request.GET.get('q'):
+            return (
+                self.get_model().objects.annotate(
+                    similarity=TrigramSimilarity('code', q),
+                ).filter(similarity__gt=0.3).order_by('-similarity')
+            )
+        return self.get_model().objects.all()
+
+    def render_to_response(self, context, **response_kwargs):
+        vats = []
+        for vat in context["page_obj"].object_list:
+            v = {
+                "rate": vat.rate,
+                'code': vat.code,
+                "id": vat.id
+            }
+            vats.append(v)
+        data = {"data": vats}
+        return JsonResponse(data)
+
+
+class LoadNominal(ListView):
+    paginate_by = 50
+
+    def get_model(self):
+        return self.model
+
+    def get_queryset(self):
+        if q := self.request.GET.get('q'):
+            return (
+                self.get_model().objects.annotate(
+                    similarity=TrigramSimilarity('name', q),
+                ).filter(similarity__gt=0.3).order_by('-similarity')
+            )
+        return self.get_model().objects.none()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        # we need to know the root nodes for each node which has no children
+        nodes = context["page_obj"].object_list
+        selectable_nodes = [node for node in nodes if node.is_leaf_node()]
+        all_nominals = Nominal.objects.all().prefetch_related("children")  # whole set
+        # hits the DB but will cache result
+        # root nodes are the groups for the select menu
+        root_nominals = get_cached_trees(all_nominals)
+        root_nominals.sort(key=lambda n: n.pk)
+        options = [
+            {
+                "group": node.get_root(),
+                "option": node,
+                "group_order": root_nominals.index(node.get_root())
+            }
+            for node in selectable_nodes
+        ]
+        context["options"] = options
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        options = []
+        for option in context["options"]:
+            o = {
+                'group_value': option["group"].pk,
+                'group_label': str(option["group"]),
+                'opt_value': option["option"].pk,
+                'opt_label': str(option["option"]),
+                'group_order': option["group_order"]
+            }
+            options.append(o)
+        options.sort(key=lambda o: o["group_order"])
+        print(options)
+        data = {"data": options}
         return JsonResponse(data)
 
 

@@ -55,7 +55,7 @@ class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
         "formset": enter_lines,
         "prefix": "line",
         # VAT would not work at the moment
-        "override_choices": ["item", "nominal"]
+        "override_choices": ["nominal"]
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
     }
@@ -94,7 +94,7 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
         "formset": enter_lines,
         "prefix": "line",
         # VAT would not work at the moment
-        "override_choices": ["item", "nominal"]
+        "override_choices": ["nominal"]
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
     }

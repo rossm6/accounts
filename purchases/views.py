@@ -16,12 +16,13 @@ from querystring_parser import parser
 from accountancy.exceptions import FormNotValid
 from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
+from accountancy.helpers import AuditTransaction
 from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
                                BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
-                               LoadMatchingTransactions,
+                               LoadMatchingTransactions, LoadNominal, LoadVat,
                                SalesAndPurchasesTransList,
                                ViewTransactionOnLedgerOtherThanNominal,
                                ajax_form_validator, create_on_the_fly,
@@ -29,10 +30,10 @@ from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
                                input_dropdown_widget_validate_choice_factory,
                                jQueryDataTable)
 from cashbook.models import CashBookTransaction
-from items.models import Item
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import QuickVatForm
+from vat.models import Vat
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
@@ -69,7 +70,7 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
         "formset": enter_lines,
         "prefix": "line",
         # VAT would not work at the moment
-        "override_choices": ["item", "nominal"]
+        "override_choices": ["nominal"]
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
     }
@@ -95,7 +96,6 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
         t = self.request.GET.get("t", "pi")
         return t
 
-from accountancy.helpers import AuditTransaction
 
 class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     header = {
@@ -109,7 +109,7 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
         "formset": enter_lines,
         "prefix": "line",
         # VAT would not work at the moment
-        "override_choices": ["item", "nominal"]
+        "override_choices": ["nominal"]
         # because VAT requires (value, label, [ model field attrs ])
         # but VAT codes will never be that numerous
     }
@@ -129,6 +129,7 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     module = "PL"
     control_nominal_name = "Purchase Ledger Control"
     cash_book_transaction_model = CashBookTransaction
+
 
 class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
     header = {
@@ -178,6 +179,14 @@ class LoadPurchaseMatchingTransactions(LoadMatchingTransactions):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
     contact_name = "supplier"
+
+
+class LoadNominals(LoadNominal):
+    model = Nominal
+
+
+class LoadVatCodes(LoadVat):
+    model = Vat
 
 
 class LoadSuppliers(LoadContacts):
