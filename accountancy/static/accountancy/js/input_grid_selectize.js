@@ -50,6 +50,21 @@
                     }
                 }
             },
+            create: function (input, callback) {
+                var self = this;
+                var selectize_callback_adapter = function (data) {
+                    if (data.success) {
+                        callback(data.new_object);
+                    } else {
+                        callback({});
+                    }
+                }
+                // so it isn't garbage collected
+                modal = new ModalForm({
+                    modal: $("#new-vat_code"),
+                    callback: selectize_callback_adapter,
+                })
+            },
             openOnFocus: true,
             valueField: 'id',
             labelField: 'code',

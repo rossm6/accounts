@@ -16,7 +16,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
-from vat.forms import QuickVatForm
+from vat.forms import VatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (DebtorForm, QuickCustomerForm, ReadOnlySaleHeaderForm,
@@ -66,7 +66,7 @@ class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
     }
     create_on_the_fly = {
         "nominal_form": NominalForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="nominal"),
-        "vat_form": QuickVatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
+        "vat_form": VatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
     }
     template_name = "sales/create.html"
     success_url = reverse_lazy("sales:transaction_enquiry")
@@ -105,7 +105,7 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
     }
     create_on_the_fly = {
         "nominal_form": NominalForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="nominal"),
-        "vat_form": QuickVatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
+        "vat_form": VatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
     }
     template_name = "sales/edit.html"
     success_url = reverse_lazy("sales:transaction_enquiry")
@@ -245,7 +245,7 @@ create_on_the_fly_view = create_on_the_fly(
         "prefix": "customer"
     },
     vat={
-        "form": QuickVatForm,
+        "form": VatForm,
         "serializer": vat_object_for_input_dropdown_widget,
         "prefix": "vat"
     }

@@ -1,7 +1,9 @@
 from itertools import chain
 
+from crispy_forms.utils import render_crispy_form
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
+from django.template.context_processors import csrf
 from django.urls import reverse_lazy
 from django.views.generic import (CreateView, DeleteView, DetailView,
                                   UpdateView, View)
@@ -10,7 +12,7 @@ from querystring_parser import parser
 
 from accountancy.views import (get_trig_vectors_for_different_inputs,
                                jQueryDataTable)
-from purchases.forms import SupplierForm
+from purchases.forms import ModalSupplierForm, SupplierForm
 from purchases.models import Supplier
 from sales.forms import CustomerForm
 from sales.models import Customer
@@ -48,7 +50,6 @@ class ContactListView(jQueryDataTable, TemplateResponseMixin, View):
             page_load_context = self.get_page_load_context_data(**kwargs)
             return self.render_to_response(page_load_context)
 
-
     def apply_search(self, queryset):
         parsed_request = parser.parse(self.request.GET.urlencode())
         if search_value := parsed_request["search"]["value"]:
@@ -75,7 +76,7 @@ class ContactListView(jQueryDataTable, TemplateResponseMixin, View):
         for q in querysets:
             copy_queryset = querysets[q].all()
             counts[q] = copy_queryset.count()
-        return counts  
+        return counts
 
     def get_page_load_context_data(self, **kwargs):
         context = {}
@@ -153,21 +154,58 @@ class CreateAndUpdateMixin:
         return context
 
 
-class CreateCustomer(CreateAndUpdateMixin, CreateView):
+class ContactCreateMixin:
+
+    def get_form_class(self):
+        if self.request.is_ajax():
+            return self.ajax_form_class
+        return self.form_class
+
+    def form_valid(self, form):
+        redirect_response = super().form_valid(form)
+        if self.request.is_ajax():
+            data = {}
+            new_contact = self.object
+            data["new_object"] = {
+                "id": new_contact.pk,
+                "code": str(new_contact),
+            }
+            data["success"] = True
+            return JsonResponse(data=data)
+        return redirect_response
+
+    def render_to_response(self, context, **response_kwargs):
+        # form is not valid
+        if self.request.is_ajax():
+            ctx = {}
+            ctx.update(csrf(self.request))
+            form = context["form"]
+            form_html = render_crispy_form(form, context=ctx)
+            data = {
+                "form_html": form_html,
+                "success": False
+            }
+            return JsonResponse(data=data)
+        return super().render_to_response(context, **response_kwargs)
+
+
+class CreateCustomer(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     model = Customer
     form_class = CustomerForm
     template_name = "contacts/contact_create_and_edit.html"
     prefix = "customer"
     success_url = reverse_lazy("contacts:contact_list")
-    title = "Create Contact"
+    title = "Create Customer"
 
 
-class CreateSupplier(CreateAndUpdateMixin, CreateView):
+class CreateSupplier(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     model = Supplier
     form_class = SupplierForm
+    ajax_form_class = ModalSupplierForm
     template_name = "contacts/contact_create_and_edit.html"
     prefix = "supplier"
-
+    title = "Create Supplier"
+    success_url = reverse_lazy("contacts:contact_list")
 
 class CustomerDetail(DetailView):
     model = Customer

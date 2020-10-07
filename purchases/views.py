@@ -32,13 +32,14 @@ from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
-from vat.forms import QuickVatForm
+from purchases.forms import ModalSupplierForm
+from vat.forms import VatForm
 from vat.models import Vat
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
-                    QuickSupplierForm, ReadOnlyPurchaseHeaderForm, enter_lines,
-                    match, read_only_lines, read_only_match)
+                    ReadOnlyPurchaseHeaderForm, enter_lines, match,
+                    read_only_lines, read_only_match)
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 
@@ -80,8 +81,9 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
         "prefix": "match"
     }
     create_on_the_fly = {
+        "contact_form": ModalSupplierForm(action=reverse_lazy("contacts:create_supplier"), prefix="supplier"),
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
-        "vat_form": QuickVatForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="vat")
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat"),
     }
     template_name = "purchases/create.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
@@ -119,8 +121,9 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
         "prefix": "match"
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="nominal"),
-        "vat_form": QuickVatForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="vat")
+        "contact_form": ModalSupplierForm(action=reverse_lazy("contacts:create_supplier"), prefix="supplier"),
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat"),
     }
     template_name = "purchases/edit.html"
     success_url = reverse_lazy("purchases:transaction_enquiry")
@@ -250,21 +253,6 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
 validate_choice = input_dropdown_widget_validate_choice_factory(
     PurchaseLineForm())
 
-create_on_the_fly_view = create_on_the_fly(
-    nominal={
-        "form": NominalForm,
-        "prefix": "nominal"
-    },
-    supplier={
-        "form": QuickSupplierForm,
-        "prefix": "supplier"
-    },
-    vat={
-        "form": QuickVatForm,
-        "serializer": vat_object_for_input_dropdown_widget,
-        "prefix": "vat"
-    }
-)
 
 # This was created for the Aged Creditor form but was not used in the end.
 # Still this may be useful.

@@ -16,7 +16,6 @@
 
         var select_identifier = opts.select_identifier;
         var creation_url = opts.creation_url;
-        var form = opts.form;
         var form_field = opts.form_field;
         var load_url = opts.load_url;
 
@@ -26,33 +25,18 @@
             searchField: 'code',
             insert: true,
             create: function (input, callback) {
-                $.ajax({
-                    url: creation_url,
-                    method: "POST",
-                    // here we hard code the form prefix 'supplier'
-                    data: "form=" + form + "&" + form_field + "=" + input + "&csrfmiddlewaretoken=" + Cookies.get('csrftoken'),
-                    success: function (data) {
-                        if (data.success) {
-                            callback({
-                                id: data.result.id,
-                                code: data.result.text
-                            });
-                            // spent ages on this
-                            // selectize.js says the keys should be value and text but according to below this is wrong
-                            // https://github.com/selectize/selectize.js/issues/1329#issuecomment-358857146
-                            // https://stackoverflow.com/questions/24366365/creating-an-item-if-not-already-exists-in-selectize-js-select-box-and-ajax-updat
-                        }
-                        else{
-                            callback({});
-                            alert("There was an error creating the contact");
-                        }
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
+                var selectize_callback_adapter = function (data) {
+                    if (data.success) {
+                        callback(data.new_object);
+                    } else {
                         callback({});
-                        alert("There was an error creating the contact");
                     }
-                });
+                }
+                // so it isn't garbage collected
+                modal = new ModalForm({
+                    modal: $("#new-contact"),
+                    callback: selectize_callback_adapter,
+                })
             },
             load: function (query, callback) {
                 $.ajax({

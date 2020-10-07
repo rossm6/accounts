@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+<style>
+    .modal-footer{
+        border: 0 !important;
+    }
+</style>
+{% endblock head %}
+
+{% block content %}
+
+<div class="cont">
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-center">
+                <div class="w-75">
+                    <div class="border rounded p-4 mt-5">
+                        <h1 class="h4 font-weight-bold">{% firstof nominal 'Create Vat Code' %}</h1>
+                        <div class="mt-4">
+                            {% load crispy_forms_tags %}
+                            {% crispy form %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block js %}
+<script src="{% static 'js/selectize.min.js' %}"></script>
+<script>
+    $(document).ready(function(){
+        $("form select").selectize();
+        $("button.cancel").hide();
+    });
+</script>
+{% endblock js %}

@@ -26,14 +26,13 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                aged_matching_report_factory)
 from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  Hidden, PlainFieldErrors, TableHelper,
-                                 create_transaction_header_helper)
+                                 create_transaction_header_helper, LabelAndFieldAndErrors)
 from accountancy.widgets import InputDropDown, SelectWithDataAttr
 from contacts.forms import BaseContactForm
 from nominals.models import Nominal
 from vat.models import Vat
 
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
-
 
 """
 
@@ -44,19 +43,59 @@ A note on formsets -
 
 """
 
-
-class QuickSupplierForm(forms.ModelForm):
-    """
-    Used to create a supplier on the fly in the transaction views
-    """
-    class Meta:
-        model = Supplier
-        fields = ('code', )
-
-
 class SupplierForm(BaseContactForm):
+    """
+    `action` is what reverse_lazy returns.  If you aren't careful,
+    and deviate from below, you will get a circulate import error.
+    
+    I don't understand what is going on fully.
+    """
     class Meta(BaseContactForm.Meta):
         model = Supplier
+    
+    def __init__(self, *args, **kwargs):
+        if (action := kwargs.get("action")) is not None:
+            kwargs.pop("action")
+        else:
+            action = ""
+        super().__init__(*args, **kwargs)
+        self.helper.form_action = action
+
+class ModalSupplierForm(SupplierForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper.form_tag = True
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        'code',
+                        css_class="form-control form-control-sm w-100"
+                    ),
+                    css_class="form-group"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        'name',
+                        css_class="form-control form-control-sm w-100"
+                    ),
+                    css_class="form-group"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        'email',
+                        css_class="form-control form-control-sm w-100"
+                    ),
+                    css_class="form-group"
+                ),
+                css_class="modal-body"
+            ),
+            Div(
+                HTML('<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
+                HTML('<button type="submit" class="btn btn-sm btn-success">Save</button>'),
+                css_class="modal-footer"
+            )
+        )
 
 
 class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
@@ -70,7 +109,7 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
                 attrs={
                     "data-form": "supplier",
                     "data-form-field": "supplier-code",
-                    "data-creation-url": reverse_lazy("purchases:create_on_the_fly"),
+                    "data-creation-url": reverse_lazy("contacts:create_supplier"),
                     "data-load-url": reverse_lazy("purchases:load_suppliers"),
                     "data-contact-field": True
                 }

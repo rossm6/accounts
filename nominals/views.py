@@ -11,7 +11,6 @@ from django.template.context_processors import csrf
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
-from drf_yasg.inspectors import SwaggerAutoSchema
 from mptt.utils import get_cached_trees
 
 from accountancy.forms import (BaseVoidTransactionForm,
@@ -30,7 +29,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                input_dropdown_widget_validate_choice_factory)
 from nominals.forms import TrialBalanceForm
 from nominals.serializers import NominalHeaderSerializer, NominalLineSerializer
-from vat.forms import QuickVatForm
+from vat.forms import VatForm
 from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
@@ -58,7 +57,7 @@ class CreateTransaction(BaseCreateTransaction):
     }
     create_on_the_fly = {
         "nominal_form": NominalForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="nominal"),
-        "vat_form": QuickVatForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="vat")
+        "vat_form": VatForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="vat")
     }
     template_name = "nominals/create.html"
     success_url = reverse_lazy("nominals:transaction_enquiry")
@@ -88,7 +87,7 @@ class EditTransaction(BaseEditTransaction):
     }
     create_on_the_fly = {
         "nominal_form": NominalForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="nominal"),
-        "vat_form": QuickVatForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="vat")
+        "vat_form": VatForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="vat")
     }
     template_name = "nominals/edit.html"
     success_url = reverse_lazy("nominals:transaction_enquiry")
@@ -135,7 +134,7 @@ create_on_the_fly_view = create_on_the_fly(
         "prefix": "nominal"
     },
     vat={
-        "form": QuickVatForm,
+        "form": VatForm,
         "serializer": vat_object_for_input_dropdown_widget,
         "prefix": "vat"
     }
@@ -371,6 +370,7 @@ class NominalCreate(CreateView):
             }
             data["success"] = True
             return JsonResponse(data=data)
+        return redirect_response
 
     def render_to_response(self, context, **response_kwargs):
         # form is not valid

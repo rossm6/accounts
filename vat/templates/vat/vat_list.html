@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="cont">
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-center">
+                <div class="w-75">
+                    <div class="border rounded p-4 mt-5">
+                        <div class="d-flex justify-content-between">
+                            <h1 class="h4 font-weight-bold">Vat List</h1>
+                            <div>
+                                <a class="btn btn-sm btn-success" href="{% url 'vat:vat_create' %}">Create</a>
+                            </div>
+                        </div>
+                        <table class="mt-4 table">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Rate</th>
+                                    <th>Registered</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-bordered">
+                                {% for vat in vats %}
+                                    <tr class="pointer" data-href="{% url 'vat:vat_detail' pk=vat.pk %}">
+                                        <td>{{ vat.code }}</td>
+                                        <td>{{ vat.name }}</td>
+                                        <td>{{ vat.rate }}</td>
+                                        <td>{{ vat.registered }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block js %}
+<script>
+    $(document).ready(function(){
+
+        $("tbody tr").on("click", function(){
+            var href = $(this).attr("data-href");
+            window.location.href = href;
+        });
+        
+    });
+</script>
+{% endblock js %}

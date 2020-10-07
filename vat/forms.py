@@ -6,8 +6,7 @@ from accountancy.layouts import Div, LabelAndFieldAndErrors, Field
 
 from .models import Vat
 
-
-class QuickVatForm(forms.ModelForm):
+class VatForm(forms.ModelForm):
 
     class Meta:
         model = Vat
