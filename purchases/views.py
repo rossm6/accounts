@@ -80,7 +80,7 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
         "prefix": "match"
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="nominal"),
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
         "vat_form": QuickVatForm(action=reverse_lazy("purchases:create_on_the_fly"), prefix="vat")
     }
     template_name = "purchases/create.html"

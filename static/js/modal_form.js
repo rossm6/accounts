@@ -11,23 +11,24 @@
         $.ajax({
             url: self.form.attr("action"),
             method: "POST",
-            data: "form=" + self.form.attr("data-form") + "&" + self.form.serialize(),
+            data: self.form.serialize(),
             success: function (data) {
                 if(data.success) {
-                    self.callback(data.result);
+                    self.callback(data);
                     self.remove_events();
                 }
                 else{
-                    var form = data.result.form_html;
+                    var form = data.form_html;
                     self.modal.find("form").replaceWith($(form));
                     // look for any select element and selectize it
                     self.modal.find("select").selectize();
                     // do not remove the events
+                    self.callback(data);
                 }
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
-                self.callback();
+                self.callback(data);
                 self.remove_events();
             }
         });
@@ -36,7 +37,7 @@
     ModalForm.prototype.cancel = function () {
         // it seems we have to call callback else it breaks the plugin
         // so we just pass an empty value and text
-        this.callback();
+        this.callback({});
         this.remove_events();
     };
 
@@ -48,8 +49,8 @@
     };
 
     function ModalForm (opts) {
+        alert("modal");
         this.modal = opts.modal;
-        this.input = opts.input;
         this.callback = opts.callback;
         this.form = this.modal.find("form");
         this.cancel_btn = this.modal.find("button.cancel");

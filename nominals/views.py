@@ -1,22 +1,18 @@
 import collections
 from json import loads
 
+from crispy_forms.utils import render_crispy_form
 from django.conf import settings
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.template.context_processors import csrf
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import ListView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from drf_yasg.inspectors import SwaggerAutoSchema
 from mptt.utils import get_cached_trees
-from rest_framework import generics
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_400_BAD_REQUEST
-from rest_framework.views import APIView, exception_handler
 
 from accountancy.forms import (BaseVoidTransactionForm,
                                NominalTransactionSearchForm)
@@ -354,206 +350,56 @@ class LoadNominal(ListView):
         return JsonResponse(data)
 
 
-"""
+class NominalCreate(CreateView):
+    model = Nominal
+    form_class = NominalForm
+    success_url = reverse_lazy("nominals:nominals_list")
+    template_name = "nominals/nominal_create_and_edit.html"
+    prefix = "nominal"
 
-REST API VIEWS
+    def form_valid(self, form):
+        redirect_response = super().form_valid(form)
+        if self.request.is_ajax():
+            data = {}
+            new_nominal = self.object
+            group = new_nominal.get_root()  # i.e. asset, liabilities etc
+            data["new_object"] = {
+                "opt_value": new_nominal.pk,
+                "opt_label": str(new_nominal),
+                "group_value": group.pk,
+                "group_label": str(group)
+            }
+            data["success"] = True
+            return JsonResponse(data=data)
 
-Use the OpenAPI schema and this python client for making requests to the API -
-
-    https://github.com/triaxtec/openapi-python-client 
-
-"""
-
-
-@api_view(['GET'])
-def api_root(request, format=None):
-    return Response({
-        'nominals': reverse('nominals:nominal-list', request=request, format=format),
-    })
-
-
-class CustomSwaggerSchema(SwaggerAutoSchema):
-    def add_manual_parameters(self, parameters):
-        p = super().add_manual_parameters(parameters)
-        return p
-
-
-class NominalList(generics.ListCreateAPIView):
-    queryset = Nominal.objects.all()
-    serializer_class = NominalSerializer
-
-
-class NominalDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Nominal.objects.all()
-    serializer_class = NominalSerializer
-    swagger_schema = CustomSwaggerSchema
-
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
-
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
-# TODO - Create a mixin for the shared class attributes
-# Create an EDIT, READ AND LIST FOR THE NOMINAL JOURNALS
+    def render_to_response(self, context, **response_kwargs):
+        # form is not valid
+        if self.request.is_ajax():
+            ctx = {}
+            ctx.update(csrf(self.request))
+            form = context["form"]
+            form_html = render_crispy_form(form, context=ctx)
+            data = {
+                "form_html": form_html,
+                "success": False
+            }
+            return JsonResponse(data=data)
+        return super().render_to_response(context, **response_kwargs)
 
 
-class CreateNominalJournal(
-        RESTBaseCreateTransactionMixin,
-        RESTBaseTransactionMixin,
-        APIView):
-    """
-    Inspired by this SO answer - https://stackoverflow.com/questions/35485085/multiple-models-in-django-rest-framework
-    """
-    header = {
-        "model": NominalHeader,
-        "form": NominalHeaderForm,
-        "prefix": "header",
-    }
-    line = {
-        "model": NominalLine,
-        "formset": enter_lines,
-        "prefix": "line",
-        "can_order": False
-    }
-    module = 'NL'
-    nominal_model = Nominal
-    nominal_transaction_model = NominalTransaction
-    forms = ['header_form']
-    formsets = ['line_formset']
-
-    def get_successful_response(self):
-        data = {}
-        data["header"] = NominalHeaderSerializer(self.header_obj).data
-        data["lines"] = NominalLineSerializer(self.lines, many=True).data
-        data["nom_trans"] = NominalTransactionSerializer(
-            self.nom_trans, many=True).data
-        return JsonResponse(data=data)
-
-    def invalid_forms(self):
-        errors = {}
-        for form in self.forms:
-            if hasattr(self, form):
-                form_instance = getattr(self, form)
-                if not form_instance.is_valid():
-                    json_str = form_instance.errors.as_json()
-                    errors.update(
-                        loads(json_str)
-                    )
-        for formset in self.formsets:
-            if hasattr(self, formset):
-                formset_instance = getattr(self, formset)
-                if formset_instance.non_form_errors():
-                    json_str = formset_instance.non_form_errors().as_json()
-                    non_form_errors = loads(json_str)
-                    for error in non_form_errors:
-                        errors.update(error)
-                for form_errors in formset_instance.errors:
-                    json_str = form_errors.as_json()
-                    errors.update(
-                        loads(json_str)
-                    )
-        return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
+class NominalList(ListView):
+    model = Nominal
+    template_name = "nominals/nominal_list.html"
+    context_object_name = "nominals"
 
 
-class EditNominalJournal(
-        RESTBaseEditTransactionMixin,
-        RESTIndividualTransactionForHeaderMixin,
-        RESTIndividualTransactionMixin,
-        RESTBaseTransactionMixin,
-        APIView):
-    """
-    Inspired by this SO answer - https://stackoverflow.com/questions/35485085/multiple-models-in-django-rest-framework
-    """
-    header = {
-        "model": NominalHeader,
-        "form": NominalHeaderForm,
-        "prefix": "header",
-    }
-    line = {
-        "model": NominalLine,
-        "formset": enter_lines,
-        "prefix": "line",
-        "can_order": False
-    }
-    module = 'NL'
-    nominal_model = Nominal
-    nominal_transaction_model = NominalTransaction
-    # This isn't that nice
-    forms = ['header_form']
-    formsets = ['line_formset']
-
-    # use set up from accountancy generic views to set header_to_edit
-
-    def setup(self, request, *args, **kwargs):
-        super().setup(request, *args, **kwargs)
-        pk = self.kwargs.get('pk')
-        header = get_object_or_404(self.get_header_model(), pk=pk)
-        self.header_to_edit = header
-
-    def get_successful_response(self):
-        data = {}
-        data["header"] = NominalHeaderSerializer(self.header_obj).data
-        lines = self.new_lines + self.lines_to_update
-        lines.sort(key=lambda l: l.pk)
-        data["lines"] = NominalLineSerializer(lines, many=True).data
-        data["nom_trans"] = NominalTransactionSerializer(
-            self.nom_trans, many=True).data
-        return JsonResponse(data=data)
-
-    def invalid_forms(self):
-        errors = {}
-        for form in self.forms:
-            if hasattr(self, form):
-                form_instance = getattr(self, form)
-                if not form_instance.is_valid():
-                    json_str = form_instance.errors.as_json()
-                    errors.update(
-                        loads(json_str)
-                    )
-        for formset in self.formsets:
-            if hasattr(self, formset):
-                formset_instance = getattr(self, formset)
-                if formset_instance.non_form_errors():
-                    json_str = formset_instance.non_form_errors().as_json()
-                    errors.update(
-                        loads(json_str)
-                    )
-                for form_errors in formset_instance.errors:
-                    json_str = form_errors.as_json()
-                    errors.update(
-                        loads(json_str)
-                    )
-        return JsonResponse(data=errors, status=HTTP_400_BAD_REQUEST)
+class NominalDetail(DetailView):
+    model = Nominal
+    template_name = "nominals/nominal_detail.html"
 
 
-"""
-
-    Example json output for form validation errors below.  this differs
-    to what rest does.  https://www.django-rest-framework.org/api-guide/exceptions/ 
-
-    {'ref': [{'message': 'This field is required.', 'code': 'required'}], 
-    'date': [{'message': 'This field is required.', 'code': 'required'}], 
-    'type': [{'message': 'This field is required.', 'code': 'required'}], 
-    'period': [{'message': 'This field is required.', 'code': 'required'}]}
-
-"""
-
-# https://medium.com/@ratrosy/building-apis-with-openapi-ac3c24e33ee3
-
-
-class JournalDetail(generics.RetrieveAPIView):
-    queryset = NominalHeader.objects.all()
-
-    def get(self, request, *args, **kwargs):
-        pass
-
-
-class NominalTransactionList(generics.ListAPIView):
-    queryset = NominalTransaction.objects.all()
-    serializer_class = NominalTransactionSerializer
-
-
-class NominalTransactionDetail(generics.RetrieveAPIView):
-    queryset = NominalTransaction.objects.all()
-    serializer_class = NominalTransactionSerializer
+class NominalEdit(UpdateView):
+    model = Nominal
+    form_class = NominalForm
+    template_name = "nominals/nominal_create_and_edit.html"
+    success_url = reverse_lazy("nominals:nominals_list")

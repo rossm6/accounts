@@ -94,6 +94,18 @@
     }
 
 
+    function group_options(selectize_instance, data) {
+        selectize_instance.clearOptionGroups();
+        selectize_instance.clearOptions();
+        $.each(data, function (index, value) {
+            selectize_instance.addOptionGroup(value["group_label"], {
+                label: value["group_label"],
+                value: value["group_label"]
+            });
+        });
+    }
+
+
     function nominal(select_menu) {
         // based on - https://stackoverflow.com/a/50959514
         // difference is we load from a remote source
@@ -109,7 +121,24 @@
         // Similarly, with ordering of options, it seems you must specify the $score order for it to work
         var $select = $(select_menu);
         var load_url = $select.attr("data-url");
+        var modal;
         return $select.selectize({
+            create: function (input, callback) {
+                var self = this;
+                var selectize_callback_adapter = function (data) {
+                    if (data.success) {
+                        group_options(self, [data.new_object]);
+                        callback(data.new_object);
+                    } else {
+                        callback({});
+                    }
+                }
+                // so it isn't garbage collected
+                modal = new ModalForm({
+                    modal: $("#new-nominal"),
+                    callback: selectize_callback_adapter,
+                })
+            },
             openOnFocus: true,
             valueField: 'opt_value',
             labelField: 'opt_label',
@@ -144,18 +173,16 @@
                         console.log("Logging complete");
                     },
                     success: function (res, textStatus, jqXHR) {
-                        self.clearOptionGroups();
-                        self.clearOptions();
-                        $.each(res.data, function (index, value) {
-                            self.addOptionGroup(value["group_label"], {
-                                label: value["group_label"],
-                                value: value["group_label"]
-                            });
-                        });
+                        group_options(self, res.data);
                         callback(res.data);
                     },
                 });
             },
+            render: {
+                option_create: function (data, escape) {
+                    return "<div class='create p-2'>Create new nominal: " + escape(data.input) + "</div>"
+                }
+            }
         });
     }
 

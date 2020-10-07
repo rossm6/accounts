@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% comment %} 
+
+    We might want to create a custom template tag, or use mptt ones.
+
+{% endcomment %}
+
+<div class="cont">
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-center">
+                <div class="w-75">
+                    <div class="border rounded p-4 mt-5">
+                        <div class="d-flex justify-content-between">
+                            <h1 class="h4 font-weight-bold">Nominal List</h1>
+                            <div>
+                                <a class="btn btn-sm btn-success" href="{% url 'nominals:nominal_create' %}">Create</a>
+                            </div>
+                        </div>
+                        <ul class="mt-4 list-unstyled">
+                            {% for nominal in nominals %}
+                                {% if not nominal.is_root_node %}
+                                    {% if not nominal.is_leaf_node %}
+                                        <li class="pl-2 font-weight-bold text-secondary">{{ nominal }}</li>
+                                    {% else %}
+                                        <a href="{% url 'nominals:nominal_detail' pk=nominal.pk %}">
+                                            <li class="pl-4">{{ nominal }}</li>
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="font-weight-bold text-black">{{ nominal }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

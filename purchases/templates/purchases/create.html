@@ -48,10 +48,4 @@
     {% include 'accountancy/matching_js.html' %}
     <script src="{% static 'accountancy/js/input_grid_selectize.js' %}"></script>
     <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
-    <script>
-        $(document).ready(function(){
-            var test_vat_selectize = input_grid_selectize.vat("#test_vat");
-            var test_nominal_selectize = input_grid_selectize.nominal("#test_nominal");
-        });
-    </script>
 {% endblock extra_js %}

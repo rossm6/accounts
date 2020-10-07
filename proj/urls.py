@@ -33,39 +33,4 @@ urlpatterns = [
     path('vat/', include("vat.urls")),
     path('', RedirectView.as_view(url=reverse_lazy(
         "purchases:transaction_enquiry")), name="home")
-
-    # ** Django REST ** #
-
-    # Use the `get_schema_view()` helper to add a `SchemaView` to project URLs.
-    #   * `title` and `description` parameters are passed to `SchemaGenerator`.
-    #   * Provide view name for use with `reverse()`.
-    # path('openapi', get_schema_view(
-    #     title="Accounts",
-    #     description="API for Accounts",
-    #     version="1.0.0"
-    # ), name='openapi-schema'),
 ]
-
-# # We need this at least for logging into the Django REST Framework Browsable API
-# urlpatterns += [
-#     path('api-auth/', include('rest_framework.urls')),
-# ]
-
-# schema_view = get_schema_view(
-#    openapi.Info(
-#       title="Snippets API",
-#       default_version='v1',
-#       description="Test description",
-#       terms_of_service="https://www.google.com/policies/terms/",
-#       contact=openapi.Contact(email="contact@snippets.local"),
-#       license=openapi.License(name="BSD License"),
-#    ),
-#    public=True,
-#    permission_classes=(permissions.AllowAny,),
-# )
-
-# urlpatterns += [
-#    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-#    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-#    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-# ]

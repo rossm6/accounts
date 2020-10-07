@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     'django_extensions',
     'drf_yasg',
     'mptt',
-    'rest_framework',
     'simple_history',
     'tempus_dominus',
 

@@ -42,13 +42,15 @@
                             // https://github.com/selectize/selectize.js/issues/1329#issuecomment-358857146
                             // https://stackoverflow.com/questions/24366365/creating-an-item-if-not-already-exists-in-selectize-js-select-box-and-ajax-updat
                         }
+                        else{
+                            callback({});
+                            alert("There was an error creating the contact");
+                        }
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
-                        callback({
-                            id: '',
-                            code: ''
-                        });
+                        callback({});
+                        alert("There was an error creating the contact");
                     }
                 });
             },
