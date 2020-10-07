@@ -350,7 +350,6 @@ class LoadNominal(ListView):
             }
             options.append(o)
         options.sort(key=lambda o: o["group_order"])
-        print(options)
         data = {"data": options}
         return JsonResponse(data)
 
@@ -375,7 +374,6 @@ def api_root(request, format=None):
 
 class CustomSwaggerSchema(SwaggerAutoSchema):
     def add_manual_parameters(self, parameters):
-        print(parameters)
         p = super().add_manual_parameters(parameters)
         return p
 

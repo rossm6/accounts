@@ -26,8 +26,6 @@ from accountancy.helpers import (AuditTransaction, JSONBlankDate, Period,
 from nominals.models import Nominal
 from utils.helpers import bulk_delete_with_history
 
-from .widgets import InputDropDown
-
 
 def format_dates(objects, date_keys, format):
     """
@@ -56,7 +54,6 @@ def get_trig_vectors_for_different_inputs(fields_and_inputs):
     This builds a TrigramSimilarity search across multiple columns / fields
     for the given input.
     """
-    print(fields_and_inputs)
     trig_vectors = [
         TrigramSimilarity(field, _input)
         for field, _input in fields_and_inputs
@@ -194,7 +191,6 @@ class jQueryDataTable:
         "dict" or "instance"
         """
         orm_ordering = self.order_by()  # so we don't repeat ourselves
-        print(orm_ordering)
         ordering = []
         for order in orm_ordering:
             if order[0] == "-":

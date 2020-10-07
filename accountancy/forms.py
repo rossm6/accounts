@@ -23,6 +23,8 @@ class BaseAjaxForm(forms.ModelForm):
 
     It only supports foreign key model choices at the moment ...
 
+    WARNING - The iterator cannot be set at this stage after form initialisation.
+
     """
 
     def __init__(self, *args, **kwargs):
@@ -51,8 +53,6 @@ class BaseAjaxForm(forms.ModelForm):
             self.fields[field].load_queryset = querysets["load"]
             # We need this to validate inputs for the input dropdown widget
             self.fields[field].post_queryset = querysets["post"]
-            if iterator := fields[field].get('iterator'):
-                self.fields[field].iterator = iterator
             if searchable_fields := fields[field].get('searchable_fields'):
                 self.fields[field].searchable_fields = searchable_fields
             self.fields[field].empty_label = fields[field].get(
@@ -589,6 +589,9 @@ class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
 class BaseTransactionLineForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def clean(self):
         cleaned_data = super().clean()
         goods = cleaned_data.get("goods")
@@ -669,9 +672,10 @@ class SaleAndPurchaseLineFormset(BaseLineFormset):
 
 line_css_classes = {
     "Td": {
-        "item": "h-100 w-100 border-0",
         "description": "can_highlight h-100 w-100 border-0",
         "goods": "can_highlight h-100 w-100 border-0",
+        "nominal": "can_highlight input-grid-selectize-unfocussed",
+        "vat_code": "can_highlight input-grid-selectize-unfocussed",
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }

@@ -32,30 +32,32 @@
             .not(this.empty_form_identifier)
             .each(function (index, element) {
                 var element = $(element);
-                var blank = true;
+                var order;
                 element.find(":input:visible").each(function (index, field) {
                     var field = $(field);
                     if(field.attr("type") == "checkbox"){
                         if(field.prop("checked")){
-                            blank = false;
-                            return false;
+                            order = index;
+                            return false; // end the loop
                         }
                     }
                     else{
                         if(field.val()){
-                            blank = false;
-                            return false;
+                            order = index;
+                            return false; // end the loop
                         }
                     }
 
                 });
-                if (blank == false) {
-                    // we only want to set ORDER on if all the fields are not blank
-                    // otherwise server side validation will consider the form to have changed
-                    // blank forms will then fail en masse
+                console.log("order is");
+                console.log(order);
+                if (order != undefined) {
+                    // only order the row if any of the visible fields are not blank
+                    // otherwise visibly empty forms will be validated on the server because on the server side
+                    // the order input field has a value set
                     $(element)
                         .find("input" + instance.order_identifier)
-                        .val(index);
+                        .val(order);
                 }
             });
     };

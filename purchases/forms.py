@@ -7,6 +7,7 @@ from tempus_dominus.widgets import DatePicker
 
 from accountancy.fields import (AjaxModelChoiceField,
                                 AjaxRootAndLeavesModelChoiceField,
+                                ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
@@ -26,7 +27,7 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
 from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  Hidden, PlainFieldErrors, TableHelper,
                                  create_transaction_header_helper)
-from accountancy.widgets import InputDropDown
+from accountancy.widgets import InputDropDown, SelectWithDataAttr
 from contacts.forms import BaseContactForm
 from nominals.models import Nominal
 from vat.models import Vat
@@ -91,16 +92,39 @@ class ReadOnlyPurchaseHeaderForm(ReadOnlySaleAndPurchaseHeaderFormMixin, ReadOnl
 
 
 class PurchaseLineForm(SaleAndPurchaseLineForm):
+    """
+    WARNING, WHEN YOU COME TO REFACTOR THE CODE - 
+
+    You cannot instantiate a ModelForm and then just override the iterator.
+    It has to be done during the instantiation of the field it seems.
+
+    Also, the widget seems it cannot be defined in the Meta class
+
+    """
+    nominal = ModelChoiceFieldChooseIterator(
+        queryset=Nominal.objects.none(),
+        iterator=RootAndLeavesModelChoiceIterator,
+        widget=forms.Select(
+                attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+        )
+    )
+    vat_code = ModelChoiceFieldChooseIterator(
+        iterator=ModelChoiceIteratorWithFields,
+        queryset=Vat.objects.all(),
+        widget=SelectWithDataAttr(
+            attrs={
+                "data-url": reverse_lazy("vat:load_vat_codes"),
+                # i.e. add the rate value to the option as data-rate
+                "data-attrs": ["rate"]
+            }
+        )
+    )
+
     class Meta:
         model = PurchaseLine
         # WHY DO WE INCLUDE THE ID?
         fields = ('id', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
-        widgets = {
-            "nominal": forms.Select(attrs={"data-url": reverse_lazy("nominals:load_nominals")}),
-            "vat_code": forms.Select(attrs={"data-url": reverse_lazy("vat:load_vat_codes")})
-        }
-        # used in Transaction form set_querysets method
         ajax_fields = {
             "nominal": {
                 "searchable_fields": ('name',),
@@ -108,11 +132,9 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
                     "load": Nominal.objects.all().prefetch_related("children"),
                     "post": Nominal.objects.filter(children__isnull=True)
                 },
-                "iterator": RootAndLeavesModelChoiceIterator
             },
             "vat_code": {
                 "searchable_fields": ('code', 'rate',),
-                "iterator": ModelChoiceIteratorWithFields
             }
         }
 

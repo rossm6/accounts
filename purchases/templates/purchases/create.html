@@ -41,15 +41,6 @@
 
 {% block modal_forms %}
     {% include 'accountancy/on_the_fly.html' %}
-    <div class="m-5" style="height: 1000px;">
-        <form>
-            <select id="test_vat" name="test" data-load-url="/purchases/load_vat_codes">
-            </select>
-            <div class="my-5"></div>
-            <select id="test_nominal" name="test" data-load-url="/purchases/load_nominals">
-            </select>
-        </form>
-    </div>
 {% endblock modal_forms %}
 
 {% block extra_js %}

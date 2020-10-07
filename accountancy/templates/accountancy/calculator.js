@@ -13,7 +13,7 @@ $(document).ready(function () {
         var goods = tr.find(":input").filter(function (index) {
             return this.name.match(/line-\d+-goods/);
         });
-        var vat_code = tr.find(":input").filter(function (index) {
+        var vat_code = tr.find(":input.selectized").filter(function (index) {
             return this.name.match(/line-\d+-vat_code/);
         });
         var vat = tr.find(":input").filter(function (index) {
@@ -114,7 +114,7 @@ $(document).ready(function () {
             elements.vat.val(
                 calculate_vat(
                     elements.goods.val(),
-                    elements.vat_code.attr("data-model-attr-rate")
+                    elements.vat_code.attr("data-rate")
                 )
             );
             event.stopPropagation();

@@ -98,7 +98,7 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
         and the label.  But when the user chooses a vat code object we also need to know
         the Vat rate, which is an attribute of the model.
 
-        This is iterator will us -
+        This iterator will give us -
 
             (value, label, [ (object_attr, object_attr_value), (object_attr, object_attr_value) ])
 
@@ -132,6 +132,13 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
         return (value, label, tmp)
 
 
+class ModelChoiceFieldChooseIterator(ModelChoiceField):
+    def __init__(self, *args, **kwargs):
+        iterator = kwargs.pop("iterator")
+        super().__init__(*args, **kwargs)
+        self.iterator = iterator
+
+
 class AjaxModelChoiceField(ModelChoiceField):
     def __init__(self, *args, **kwargs):
         queryset = kwargs["get_queryset"]
@@ -152,8 +159,7 @@ class AjaxModelChoiceField(ModelChoiceField):
 
 
 # FIX ME - remove this class and add the iterator manually to AjaxRoortAndLeavesModelChoiceField
-class RootAndLeavesModelChoiceField(object):
-
+class RootAndLeavesModelChoiceField:
     def __init__(self, *args, **kwargs):
         self.iterator = RootAndLeavesModelChoiceIterator
 

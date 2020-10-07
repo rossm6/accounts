@@ -17,12 +17,27 @@ $(document).ready(function () {
         empty_form_identifier: ".empty-form",
     });
 
+    var selectized_menus = {}; // keep track of the menus we create so we can destroy them also when removing the lines
+
+    function destory_selectized_menus ($tr) {
+        // loop through input elements in row
+        $tr.find(":input").each(function(index, elem){
+            if (elem.name in selectized_menus){
+                selectized_menus[elem.name][0].selectize.destroy();
+                delete selectized_menus[elem.name];
+            }
+        });
+    }
+    
     $("div.lines :input")
     .filter(function(index){
         return this.name.match(/^line-\d+-nominal$/);
     })
     .focus(function(){
-        input_grid_selectize.nominal(this);
+        if(!$(this).hasClass("selectized")){
+            var s = input_grid_selectize.nominal(this);
+            selectized_menus[this.name] = s;
+        }
     });
 
     $("div.lines :input")
@@ -30,7 +45,10 @@ $(document).ready(function () {
         return this.name.match(/^line-\d+-vat_code$/);
     })
     .focus(function(){
-        input_grid_selectize.vat(this);
+        if(!$(this).hasClass("selectized")){
+            var s = input_grid_selectize.vat(this);
+            selectized_menus[this.name] = s;
+        }
     });
 
     function two_decimal_places(n_str) {
@@ -40,7 +58,6 @@ $(document).ready(function () {
     }
 
     main_grid.add_callback = function (new_line) {
-        // input_dropdown_widget.add(new_line);
         new_line.find("td.col-close-icon").on("click", function () {
             main_grid.delete_line($(this));
         });
@@ -81,6 +98,7 @@ $(document).ready(function () {
             });
             if (id_input_field && !id_input_field.val()) {
                 main_grid.delete_line($this);
+                destory_selectized_menus($(this).parents("tr").eq(0));
             } else {
                 $(this).parents("tr").find("input.delete-line").prop("checked", true);
                 $tr.addClass("deleted-row");
@@ -104,21 +122,23 @@ $(document).ready(function () {
 
     $("td.col-close-icon").on("click", function (event) {
         main_grid.delete_line($(this));
+        destory_selectized_menus($(this).parents("tr").eq(0));
         event.stopPropagation();
     });
 
     {% endif %}
 
     $("html").on("click focusin", function () {
-        $("td input.can_highlight").removeClass("data-input-focus-border");
-        //input_dropdown_widget.close_input_dropdowns();
+        $("table.line td").find("*").removeClass("data-input-focus-border");
     });
 
     $("table.line td").on("click focusin", function (event) {
-        $("td input.can_highlight").not($(this)).removeClass("data-input-focus-border");
-        if ($(this).find("input").hasClass("can_highlight")) {
-            $(this).find("input").addClass("data-input-focus-border");
-            //input_dropdown_widget.close_input_dropdowns();
+        $("td").find("*").not($(this)).removeClass("data-input-focus-border");
+        if ($(this).find(":input").hasClass("can_highlight")) {
+            $(this).find(":input.can_highlight").addClass("data-input-focus-border");
+            // the above won't work though for adding the border to the input with the selectized widget
+            // so... we do this
+            $(this).find("div.selectize-input").addClass("data-input-focus-border");
         }
         event.stopPropagation();
     });
