@@ -2,8 +2,7 @@ from django.urls import path
 
 from .views import (AgeCreditorsReport, CreateTransaction, EditTransaction,
                     LoadPurchaseMatchingTransactions, LoadSuppliers,
-                    TransactionEnquiry, ViewTransaction, VoidTransaction,
-                    load_options, validate_choice, validate_forms_by_ajax)
+                    TransactionEnquiry, ViewTransaction, VoidTransaction)
 
 app_name = "purchases"
 urlpatterns = [
@@ -12,14 +11,8 @@ urlpatterns = [
     path("view/<int:pk>", ViewTransaction.as_view(), name="view"),
     path("void", VoidTransaction.as_view(), name="void"),
     path("creditors_report", AgeCreditorsReport.as_view(), name="creditors_report"),
-
     path("load_matching_transactions", LoadPurchaseMatchingTransactions.as_view(),
          name="load_matching_transactions"),
-    path("load_options", load_options, name="load_options"),
     path("load_suppliers", LoadSuppliers.as_view(), name="load_suppliers"),
-
     path("transactions", TransactionEnquiry.as_view(), name="transaction_enquiry"),
-    path("validate_choice", validate_choice, name="validate_choice"),
-    path("validate_forms_by_ajax", validate_forms_by_ajax,
-         name="validate_forms_by_ajax")
 ]

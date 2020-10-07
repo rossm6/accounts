@@ -3,7 +3,8 @@ from crispy_forms.layout import Layout
 from django import forms
 from django.urls import reverse_lazy
 
-from accountancy.fields import (ModelChoiceIteratorWithFields,
+from accountancy.fields import (ModelChoiceFieldChooseIterator,
+                                ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseTransactionHeaderForm,
                                ReadOnlyBaseTransactionHeaderForm,
@@ -18,23 +19,30 @@ from accountancy.forms import (BaseTransactionHeaderForm,
                                aged_matching_report_factory)
 from accountancy.helpers import input_dropdown_widget_attrs_config
 from accountancy.layouts import Div, LabelAndFieldAndErrors
-from accountancy.widgets import InputDropDown
-from contacts.forms import BaseContactForm
+from accountancy.widgets import SelectWithDataAttr
+from contacts.forms import BaseContactForm, ModalContactForm
 from nominals.models import Nominal
+from vat.models import Vat
 
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
-
-
-class QuickCustomerForm(forms.ModelForm):
-
-    class Meta:
-        model = Customer
-        fields = ('code', )
 
 
 class CustomerForm(BaseContactForm):
     class Meta(BaseContactForm.Meta):
         model = Customer
+
+    def __init__(self, *args, **kwargs):
+        if (action := kwargs.get("action")) is not None:
+            kwargs.pop("action")
+        else:
+            action = ""
+        super().__init__(*args, **kwargs)
+        self.helper.form_action = action
+        # same as the PL form so needs factoring out
+
+
+class ModalCustomerForm(ModalContactForm, CustomerForm):
+    pass
 
 
 class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
@@ -48,7 +56,7 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
                 attrs={
                     "data-form": "customer",
                     "data-form-field": "customer-code",
-                    "data-creation-url": reverse_lazy("sales:create_on_the_fly"),
+                    "data-creation-url": reverse_lazy("contacts:create_customer"),
                     "data-load-url": reverse_lazy("sales:load_customers"),
                     "data-contact-field": True
                 }
@@ -79,16 +87,30 @@ nominal_attrs, vat_code_attrs = [
 
 
 class SaleLineForm(SaleAndPurchaseLineForm):
+    nominal = ModelChoiceFieldChooseIterator(
+        queryset=Nominal.objects.none(),
+        iterator=RootAndLeavesModelChoiceIterator,
+        widget=forms.Select(
+            attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+        )
+    )
+    vat_code = ModelChoiceFieldChooseIterator(
+        iterator=ModelChoiceIteratorWithFields,
+        queryset=Vat.objects.all(),
+        widget=SelectWithDataAttr(
+            attrs={
+                "data-url": reverse_lazy("vat:load_vat_codes"),
+                # i.e. add the rate value to the option as data-rate
+                "data-attrs": ["rate"]
+            }
+        )
+    )
+
     class Meta:
         model = SaleLine
         # WHY DO WE INCLUDE THE ID?
         fields = ('id', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
-        widgets = {
-            "nominal": InputDropDown(attrs=nominal_attrs),
-            "vat_code": InputDropDown(attrs=vat_code_attrs, model_attrs=['rate'])
-        }
-        # used in Transaction form set_querysets method
         ajax_fields = {
             "nominal": {
                 "searchable_fields": ('name',),
@@ -96,11 +118,9 @@ class SaleLineForm(SaleAndPurchaseLineForm):
                     "load": Nominal.objects.all().prefetch_related("children"),
                     "post": Nominal.objects.filter(children__isnull=True)
                 },
-                "iterator": RootAndLeavesModelChoiceIterator
             },
             "vat_code": {
                 "searchable_fields": ('code', 'rate',),
-                "iterator": ModelChoiceIteratorWithFields
             }
         }
 
@@ -165,7 +185,6 @@ read_only_match = forms.modelformset_factory(
 )
 
 read_only_match.include_empty_form = False
-
 
 # returns form class
 DebtorForm = aged_matching_report_factory(

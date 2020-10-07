@@ -760,7 +760,6 @@ class SaleAndPurchaseLineForm(BroughtForwardLineForm):
             column_layout_object_css_classes=self.column_layout_object_css_classes,
             field_layout_overrides={
                 'Td': {
-                    'item': PlainFieldErrors,
                     'description': PlainFieldErrors,
                     'nominal': PlainFieldErrors,
                 }

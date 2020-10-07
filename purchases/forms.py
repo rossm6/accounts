@@ -5,9 +5,7 @@ from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
 
-from accountancy.fields import (AjaxModelChoiceField,
-                                AjaxRootAndLeavesModelChoiceField,
-                                ModelChoiceFieldChooseIterator,
+from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
@@ -25,14 +23,16 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                SaleAndPurchaseMatchingFormset,
                                aged_matching_report_factory)
 from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
-                                 Hidden, PlainFieldErrors, TableHelper,
-                                 create_transaction_header_helper, LabelAndFieldAndErrors)
-from accountancy.widgets import InputDropDown, SelectWithDataAttr
-from contacts.forms import BaseContactForm
+                                 Hidden, LabelAndFieldAndErrors,
+                                 PlainFieldErrors, TableHelper,
+                                 create_transaction_header_helper)
+from accountancy.widgets import SelectWithDataAttr
+from contacts.forms import BaseContactForm, ModalContactForm
 from nominals.models import Nominal
 from vat.models import Vat
 
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
+
 
 """
 
@@ -43,16 +43,17 @@ A note on formsets -
 
 """
 
+
 class SupplierForm(BaseContactForm):
     """
     `action` is what reverse_lazy returns.  If you aren't careful,
     and deviate from below, you will get a circulate import error.
-    
+
     I don't understand what is going on fully.
     """
     class Meta(BaseContactForm.Meta):
         model = Supplier
-    
+
     def __init__(self, *args, **kwargs):
         if (action := kwargs.get("action")) is not None:
             kwargs.pop("action")
@@ -61,41 +62,8 @@ class SupplierForm(BaseContactForm):
         super().__init__(*args, **kwargs)
         self.helper.form_action = action
 
-class ModalSupplierForm(SupplierForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper.form_tag = True
-        self.helper.layout = Layout(
-            Div(
-                Div(
-                    LabelAndFieldAndErrors(
-                        'code',
-                        css_class="form-control form-control-sm w-100"
-                    ),
-                    css_class="form-group"
-                ),
-                Div(
-                    LabelAndFieldAndErrors(
-                        'name',
-                        css_class="form-control form-control-sm w-100"
-                    ),
-                    css_class="form-group"
-                ),
-                Div(
-                    LabelAndFieldAndErrors(
-                        'email',
-                        css_class="form-control form-control-sm w-100"
-                    ),
-                    css_class="form-group"
-                ),
-                css_class="modal-body"
-            ),
-            Div(
-                HTML('<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
-                HTML('<button type="submit" class="btn btn-sm btn-success">Save</button>'),
-                css_class="modal-footer"
-            )
-        )
+class ModalSupplierForm(ModalContactForm, SupplierForm):
+    pass
 
 
 class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
@@ -144,7 +112,7 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
         queryset=Nominal.objects.none(),
         iterator=RootAndLeavesModelChoiceIterator,
         widget=forms.Select(
-                attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+            attrs={"data-url": reverse_lazy("nominals:load_nominals")}
         )
     )
     vat_code = ModelChoiceFieldChooseIterator(

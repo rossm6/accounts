@@ -8,7 +8,9 @@
 {% endblock extra_head %}
 
 {% block modal_forms %}
-    {% include 'accountancy/on_the_fly.html' %}
+    <div class="modal-on-the-fly-forms">
+        {% include 'accountancy/on_the_fly.html' %}
+    </div>
 {% endblock modal_forms %}
 
 {% block extra_js %}

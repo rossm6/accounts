@@ -18,26 +18,14 @@ from accountancy.forms import (BaseVoidTransactionForm,
 from accountancy.helpers import FY
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
-                               NominalTransList,
-                               RESTBaseCreateTransactionMixin,
-                               RESTBaseEditTransactionMixin,
-                               RESTBaseTransactionMixin,
-                               RESTIndividualTransactionForHeaderMixin,
-                               RESTIndividualTransactionMixin,
-                               create_on_the_fly,
-                               input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory)
+                               NominalTransList)
 from nominals.forms import TrialBalanceForm
-from nominals.serializers import NominalHeaderSerializer, NominalLineSerializer
 from vat.forms import VatForm
-from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
                     ReadOnlyNominalHeaderForm, ReadOnlyNominalLineForm,
                     enter_lines, read_only_lines)
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
-from .serializers import NominalSerializer, NominalTransactionSerializer
-
 
 class CreateTransaction(BaseCreateTransaction):
     header = {
@@ -56,8 +44,8 @@ class CreateTransaction(BaseCreateTransaction):
         # but VAT codes will never be that numerous
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="nominal"),
-        "vat_form": VatForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="vat")
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat")
     }
     template_name = "nominals/create.html"
     success_url = reverse_lazy("nominals:transaction_enquiry")
@@ -86,8 +74,8 @@ class EditTransaction(BaseEditTransaction):
         "can_order": False
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="nominal"),
-        "vat_form": VatForm(action=reverse_lazy("nominals:create_on_the_fly"), prefix="vat")
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat")
     }
     template_name = "nominals/edit.html"
     success_url = reverse_lazy("nominals:transaction_enquiry")
@@ -120,25 +108,6 @@ class ViewTransaction(BaseViewTransaction):
         context = super().get_context_data(**kwargs)
         context["edit_view_name"] = "nominals:edit"
         return context
-
-
-load_options = input_dropdown_widget_load_options_factory(
-    NominalLineForm(), 25)
-
-validate_choice = input_dropdown_widget_validate_choice_factory(
-    NominalLineForm())
-
-create_on_the_fly_view = create_on_the_fly(
-    nominal={
-        "form": NominalForm,
-        "prefix": "nominal"
-    },
-    vat={
-        "form": VatForm,
-        "serializer": vat_object_for_input_dropdown_widget,
-        "prefix": "vat"
-    }
-)
 
 
 class TransactionEnquiry(NominalTransList):

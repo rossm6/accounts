@@ -25,9 +25,6 @@ from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
                                LoadMatchingTransactions,
                                SalesAndPurchasesTransList,
                                ViewTransactionOnLedgerOtherThanNominal,
-                               ajax_form_validator, create_on_the_fly,
-                               input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory,
                                jQueryDataTable)
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
@@ -35,7 +32,6 @@ from nominals.models import Nominal, NominalTransaction
 from purchases.forms import ModalSupplierForm
 from vat.forms import VatForm
 from vat.models import Vat
-from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
                     ReadOnlyPurchaseHeaderForm, enter_lines, match,
@@ -188,10 +184,6 @@ class LoadSuppliers(LoadContacts):
     model = Supplier
 
 
-load_options = input_dropdown_widget_load_options_factory(
-    PurchaseLineForm(), 25)
-
-
 class TransactionEnquiry(SalesAndPurchasesTransList):
     model = PurchaseHeader
     fields = [
@@ -248,17 +240,6 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
             return self.overdue_queryset
         elif group == "p":
             return self.paid_queryset
-
-
-validate_choice = input_dropdown_widget_validate_choice_factory(
-    PurchaseLineForm())
-
-
-# This was created for the Aged Creditor form but was not used in the end.
-# Still this may be useful.
-validate_forms_by_ajax = ajax_form_validator({
-    "creditor_form": CreditorForm
-})
 
 
 class AgeCreditorsReport(AgeMatchingReportMixin):

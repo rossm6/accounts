@@ -4,8 +4,7 @@ from django import forms
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 
-from accountancy.fields import (AjaxModelChoiceField,
-                                AjaxRootAndLeavesModelChoiceField,
+from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceField,
                                 RootAndLeavesModelChoiceIterator)
@@ -13,13 +12,12 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
                                ReadOnlyBaseTransactionHeaderForm)
-from accountancy.helpers import (delay_reverse_lazy,
-                                 input_dropdown_widget_attrs_config)
+from accountancy.helpers import Period, delay_reverse_lazy
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  PlainFieldErrors, TableHelper,
                                  create_journal_header_helper,
                                  create_transaction_header_helper)
-from accountancy.widgets import InputDropDown
+from accountancy.widgets import SelectWithDataAttr
 from vat.models import Vat
 
 from .models import Nominal, NominalHeader, NominalLine
@@ -41,7 +39,6 @@ class NominalForm(forms.ModelForm):
             action = kwargs.pop("action")
         else:
             action = ''
-        # we do this in QuickVatForm also so later create a new class
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_tag = True
@@ -97,31 +94,42 @@ class ReadOnlyNominalHeaderForm(NominalHeaderForm):
         self.initial["type"] = self.instance.get_type_display()
 
 
+# A lot of this is common to the other modules so should be factored out
+
 line_css_classes = {
     "Td": {
         "description": "can_highlight h-100 w-100 border-0",
-        "nominal": "h-100 w-100 border-0",
         "goods": "can_highlight h-100 w-100 border-0",
-        "vat_code": "h-100 w-100 border-0",
+        "nominal": "can_highlight input-grid-selectize-unfocussed",
+        "vat_code": "can_highlight input-grid-selectize-unfocussed",
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }
 
-attrs_config = input_dropdown_widget_attrs_config(
-    "nominals", ["nominal", "vat_code"])
-nominal_attrs, vat_code_attrs = [attrs_config[attrs] for attrs in attrs_config]
-
 
 class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
+    nominal = ModelChoiceFieldChooseIterator(
+        queryset=Nominal.objects.none(),
+        iterator=RootAndLeavesModelChoiceIterator,
+        widget=forms.Select(
+            attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+        )
+    )
+    vat_code = ModelChoiceFieldChooseIterator(
+        iterator=ModelChoiceIteratorWithFields,
+        queryset=Vat.objects.all(),
+        widget=SelectWithDataAttr(
+            attrs={
+                "data-url": reverse_lazy("vat:load_vat_codes"),
+                # i.e. add the rate value to the option as data-rate
+                "data-attrs": ["rate"]
+            }
+        )
+    )
 
     class Meta:
         model = NominalLine
         fields = ('id', 'description', 'goods', 'nominal', 'vat_code', 'vat',)
-        widgets = {
-            "nominal": InputDropDown(attrs=nominal_attrs),
-            "vat_code": InputDropDown(attrs=vat_code_attrs, model_attrs=['rate'])
-        }
-        # used in Transaction form set_querysets method
         ajax_fields = {
             "nominal": {
                 "searchable_fields": ('name',),
@@ -129,11 +137,9 @@ class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
                     "load": Nominal.objects.all().prefetch_related("children"),
                     "post": Nominal.objects.filter(children__isnull=True)
                 },
-                "iterator": RootAndLeavesModelChoiceIterator
             },
             "vat_code": {
                 "searchable_fields": ('code', 'rate',),
-                "iterator": ModelChoiceIteratorWithFields
             }
         }
 
@@ -257,7 +263,6 @@ read_only_lines = forms.modelformset_factory(
 
 read_only_lines.include_empty_form = True
 
-from accountancy.helpers import Period
 
 class TrialBalanceForm(forms.Form):
     from_period = forms.CharField(max_length=6)
@@ -286,7 +291,6 @@ class TrialBalanceForm(forms.Form):
                 css_class="text-right mt-3"
             )
         )
-
 
     def clean(self):
         cleaned_data = super().clean()

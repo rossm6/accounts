@@ -9,17 +9,13 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                EditPurchaseOrSalesTransaction, LoadContacts,
                                LoadMatchingTransactions,
                                SalesAndPurchasesTransList,
-                               ViewTransactionOnLedgerOtherThanNominal,
-                               create_on_the_fly,
-                               input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory)
+                               ViewTransactionOnLedgerOtherThanNominal)
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
-from vat.serializers import vat_object_for_input_dropdown_widget
 
-from .forms import (DebtorForm, QuickCustomerForm, ReadOnlySaleHeaderForm,
+from .forms import (DebtorForm, ModalCustomerForm, ReadOnlySaleHeaderForm,
                     SaleHeaderForm, SaleLineForm, enter_lines, match,
                     read_only_lines, read_only_match)
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
@@ -65,8 +61,9 @@ class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
         "prefix": "match"
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="nominal"),
-        "vat_form": VatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
+        "contact_form": ModalCustomerForm(action=reverse_lazy("contacts:create_customer"), prefix="customer"),
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat")
     }
     template_name = "sales/create.html"
     success_url = reverse_lazy("sales:transaction_enquiry")
@@ -104,8 +101,9 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
         "prefix": "match"
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="nominal"),
-        "vat_form": VatForm(action=reverse_lazy("sales:create_on_the_fly"), prefix="vat")
+        "contact_form": ModalCustomerForm(action=reverse_lazy("contacts:create_customer"), prefix="customer"),
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat")
     }
     template_name = "sales/edit.html"
     success_url = reverse_lazy("sales:transaction_enquiry")
@@ -170,10 +168,6 @@ class LoadCustomers(LoadContacts):
     model = Customer
 
 
-load_options = input_dropdown_widget_load_options_factory(
-    SaleLineForm(), 25)
-
-
 class TransactionEnquiry(SalesAndPurchasesTransList):
     model = SaleHeader
     fields = [
@@ -230,26 +224,6 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
             return self.overdue_queryset
         elif group == "p":
             return self.paid_queryset
-
-
-validate_choice = input_dropdown_widget_validate_choice_factory(
-    SaleLineForm())
-
-create_on_the_fly_view = create_on_the_fly(
-    nominal={
-        "form": NominalForm,
-        "prefix": "nominal"
-    },
-    customer={
-        "form": QuickCustomerForm,
-        "prefix": "customer"
-    },
-    vat={
-        "form": VatForm,
-        "serializer": vat_object_for_input_dropdown_widget,
-        "prefix": "vat"
-    }
-)
 
 
 class AgeDebtorsReport(AgeMatchingReportMixin):

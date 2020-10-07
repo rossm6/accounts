@@ -62,6 +62,7 @@ class VatCreate(CreateView):
     form_class = VatForm
     template_name = "vat/vat_create_and_edit.html"
     success_url = reverse_lazy("vat:vat_list")
+    prefix="vat"
 
     def form_valid(self, form):
         redirect_response = super().form_valid(form)

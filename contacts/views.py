@@ -14,7 +14,7 @@ from accountancy.views import (get_trig_vectors_for_different_inputs,
                                jQueryDataTable)
 from purchases.forms import ModalSupplierForm, SupplierForm
 from purchases.models import Supplier
-from sales.forms import CustomerForm
+from sales.forms import CustomerForm, ModalCustomerForm
 from sales.models import Customer
 from utils.helpers import get_all_historical_changes
 
@@ -192,6 +192,7 @@ class ContactCreateMixin:
 class CreateCustomer(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     model = Customer
     form_class = CustomerForm
+    ajax_form_class = ModalCustomerForm
     template_name = "contacts/contact_create_and_edit.html"
     prefix = "customer"
     success_url = reverse_lazy("contacts:contact_list")
@@ -206,6 +207,7 @@ class CreateSupplier(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     prefix = "supplier"
     title = "Create Supplier"
     success_url = reverse_lazy("contacts:contact_list")
+
 
 class CustomerDetail(DetailView):
     model = Customer

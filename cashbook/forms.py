@@ -1,18 +1,21 @@
 from django import forms
+from django.urls import reverse_lazy
+from django.utils.translation import ugettext_lazy as _
 
-from accountancy.fields import (ModelChoiceIteratorWithFields,
+from accountancy.fields import (ModelChoiceFieldChooseIterator,
+                                ModelChoiceIteratorWithFields,
+                                RootAndChildrenModelChoiceField,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseCashBookLineForm,
                                BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
                                SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineFormset)
-from accountancy.helpers import input_dropdown_widget_attrs_config
 from accountancy.layouts import (PlainFieldErrors, TableHelper,
                                  create_cashbook_header_helper)
-from accountancy.widgets import InputDropDown
+from accountancy.widgets import SelectWithDataAttr
 from nominals.models import Nominal
-from django.utils.translation import ugettext_lazy as _
+from vat.models import Vat
 
 from .models import CashBookHeader, CashBookLine
 
@@ -47,29 +50,38 @@ class ReadOnlyCashBookHeaderForm(CashBookHeaderForm):
 line_css_classes = {
     "Td": {
         "description": "can_highlight h-100 w-100 border-0",
-        "nominal": "h-100 w-100 border-0",
         "goods": "can_highlight h-100 w-100 border-0",
+        "nominal": "h-100 w-100 border-0",
         "vat_code": "h-100 w-100 border-0",
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }
 
-attrs_config = input_dropdown_widget_attrs_config(
-    "nominals", ["nominal", "vat_code"])
-nominal_attrs, vat_code_attrs = [attrs_config[attrs] for attrs in attrs_config]
-
 
 class CashBookLineForm(BaseCashBookLineForm):
+    nominal = ModelChoiceFieldChooseIterator(
+        queryset=Nominal.objects.none(),
+        iterator=RootAndLeavesModelChoiceIterator,
+        widget=forms.Select(
+            attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+        )
+    )
+    vat_code = ModelChoiceFieldChooseIterator(
+        iterator=ModelChoiceIteratorWithFields,
+        queryset=Vat.objects.all(),
+        widget=SelectWithDataAttr(
+            attrs={
+                "data-url": reverse_lazy("vat:load_vat_codes"),
+                # i.e. add the rate value to the option as data-rate
+                "data-attrs": ["rate"]
+            }
+        )
+    )
     class Meta:
         model = CashBookLine
         # WHY DO WE INCLUDE THE ID?
         fields = ('id', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
-        widgets = {
-            "nominal": InputDropDown(attrs=nominal_attrs),
-            "vat_code": InputDropDown(attrs=vat_code_attrs, model_attrs=['rate'])
-        }
-        # used in Transaction form set_querysets method
         ajax_fields = {
             "nominal": {
                 "searchable_fields": ('name',),
@@ -77,11 +89,9 @@ class CashBookLineForm(BaseCashBookLineForm):
                     "load": Nominal.objects.all().prefetch_related("children"),
                     "post": Nominal.objects.filter(children__isnull=True)
                 },
-                "iterator": RootAndLeavesModelChoiceIterator
             },
             "vat_code": {
                 "searchable_fields": ('code', 'rate',),
-                "iterator": ModelChoiceIteratorWithFields
             }
         }
 

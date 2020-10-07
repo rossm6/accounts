@@ -5,15 +5,12 @@ from django.urls import reverse_lazy
 from accountancy.forms import (BaseVoidTransactionForm,
                                CashBookTransactionSearchForm)
 from accountancy.views import (BaseVoidTransaction, CreateCashBookTransaction,
+                               DeleteCashBookTransMixin,
                                EditCashBookTransaction, NominalTransList,
-                               ViewTransactionOnLedgerOtherThanNominal,
-                               create_on_the_fly,
-                               input_dropdown_widget_load_options_factory,
-                               input_dropdown_widget_validate_choice_factory, DeleteCashBookTransMixin)
+                               ViewTransactionOnLedgerOtherThanNominal)
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
-from vat.serializers import vat_object_for_input_dropdown_widget
 
 from .forms import (CashBookHeaderForm, CashBookLineForm,
                     ReadOnlyCashBookHeaderForm, enter_lines, read_only_lines)
@@ -38,8 +35,8 @@ class CreateTransaction(CreateCashBookTransaction):
         # but VAT codes will never be that numerous
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("cashbook:create_on_the_fly"), prefix="nominal"),
-        "vat_form": VatForm(action=reverse_lazy("cashbook:create_on_the_fly"), prefix="vat")
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat"),
     }
     template_name = "cashbook/create.html"
     success_url = reverse_lazy("cashbook:transaction_enquiry")
@@ -72,8 +69,8 @@ class EditTransaction(EditCashBookTransaction):
         # but VAT codes will never be that numerous
     }
     create_on_the_fly = {
-        "nominal_form": NominalForm(action=reverse_lazy("cashbook:create_on_the_fly"), prefix="nominal"),
-        "vat_form": VatForm(action=reverse_lazy("cashbook:create_on_the_fly"), prefix="vat")
+        "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
+        "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat"),
     }
     template_name = "cashbook/edit.html"
     success_url = reverse_lazy("cashbook:transaction_enquiry")
@@ -120,10 +117,6 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     module = 'CB'
     cash_book_transaction_model = CashBookTransaction
 
-load_options = input_dropdown_widget_load_options_factory(
-    CashBookLineForm(), 25)
-
-
 class TransactionEnquiry(NominalTransList):
     model = CashBookHeader
     fields = [
@@ -164,19 +157,3 @@ class TransactionEnquiry(NominalTransList):
             .annotate(total=Sum("value"))
             .order_by(*self.order_by())
         )
-
-
-validate_choice = input_dropdown_widget_validate_choice_factory(
-    CashBookLineForm())
-
-create_on_the_fly_view = create_on_the_fly(
-    nominal={
-        "form": NominalForm,
-        "prefix": "nominal"
-    },
-    vat={
-        "form": VatForm,
-        "serializer": vat_object_for_input_dropdown_widget,
-        "prefix": "vat"
-    }
-)
