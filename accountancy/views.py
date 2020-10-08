@@ -558,6 +558,8 @@ class RESTBaseTransactionMixin:
                 formset_class = self.line.get('formset')
                 return formset_class(**self.get_line_formset_kwargs(header))
 
+    # This needs moving from the Base to the higher level class used
+    # only by sales and purchases
     def matching_is_invalid(self):
         self.match_formset = self.get_match_formset()
         if self.match_formset:

@@ -16426,8 +16426,8 @@ class EditCreditNoteNominalEntries(TestCase):
             }
         )
 
-        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "sc", 100)
-        match(header, [ (headers_to_match_against[0], 100), (headers_to_match_against[1], -100) ] )
+        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "sc", -100)
+        match(header, [ (headers_to_match_against[0], -100), (headers_to_match_against[1], 100) ] )
 
         headers = SaleHeader.objects.all().order_by("pk")
         self.assertEqual(
@@ -16462,7 +16462,7 @@ class EditCreditNoteNominalEntries(TestCase):
         )
         self.assertEqual(
             matches[0].value,
-            100
+            -100
         )   
         self.assertEqual(
             matches[1].matched_by,
@@ -16474,7 +16474,7 @@ class EditCreditNoteNominalEntries(TestCase):
         )
         self.assertEqual(
             matches[1].value,
-            -100
+            100
         ) 
 
         header = headers[0]
@@ -16541,11 +16541,11 @@ class EditCreditNoteNominalEntries(TestCase):
         )
         self.assertEqual(
             headers[1].total,
-            100
+            -100
         )
         self.assertEqual(
             headers[1].paid,
-            100
+            -100
         )
         self.assertEqual(
             headers[1].due,
@@ -16553,11 +16553,11 @@ class EditCreditNoteNominalEntries(TestCase):
         )
         self.assertEqual(
             headers[2].total,
-            -100
+            100
         )
         self.assertEqual(
             headers[2].paid,
-            -100
+            100
         )
         self.assertEqual(
             headers[2].due,
@@ -16672,7 +16672,7 @@ class EditCreditNoteNominalEntries(TestCase):
         )
         self.assertEqual(
             matches[0].value,
-            100
+            -100
         )   
         self.assertEqual(
             matches[1].matched_by,
@@ -16684,7 +16684,7 @@ class EditCreditNoteNominalEntries(TestCase):
         )
         self.assertEqual(
             matches[1].value,
-            -100
+            100
         )
 
 

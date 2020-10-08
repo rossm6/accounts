@@ -856,33 +856,91 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         if not self.data and not self.instance.pk:
             q = self.fields["matched_to"].queryset
             self.fields["matched_to"].queryset = q.none()
-        # GET and POST requests for CREATE AND EDIT
-        if self.instance.pk:
+
+        # Do not confuse creating and editing a match with creating / editing a transaction
+        # Because a user can edit an invoice and create a matching transaction
+
+        if not self.instance.pk:
+            # GET and POST requests for creating a match
+            self.f1 = 1
+            self.matched_by_initial = 0
+            self.matched_to_initial = 0
+            # the value entered by the user is taken as given
+            self.fields["matched_by"].required = False
+            if self.data:
+                self.initial_value = self.matched_to_initial
+        else:
+            # GET and POST requests for editing a match
+
+            # the transactions which show as matched to the transaction being edited or viewed
+            # need to show in the same way as they would do if any one of them was being edited or viewed
+            # e.g.
+            # a credit note for 120.00 shows on the account as -120.00.  I.e. Per transaction enquiry
+            # yet if the credit note is being edited / viewed it shows as 120.00
+            # indeed the same is true of creating the credit note in the first place.  The user enter 120.00
+            # into the total and positive values for the lines also
+            # assume now a refund is put on and matched to the credit note
+            # so in this matching relationship the credit note is the matched_to and the refund is the matched_by
+            # the refund is then viewed in view / edit mode.  The credit note will show in the matching transaction
+            # section because it is matched to the refund.  It needs to show with a total of 120.00 and paid 120.00.
+            # Otherwise is confusing to the user at a glance.  They'd had to think about the credit note in the context
+            # of the other transactions to know whether it had debited or credited the account.  Consistency is therefore important.
+
+            # also we must remember that the value to match - that is the `value` column - in the matching section, is the `value`
+            # of the matched transaction which matches / pays the transaction being viewed or edited.
+            # following on from our example, this means the value in the UI can be anywhere between 0 and 120.00
+
+            # the logic for determing the correct sign for this value is simple.  It just depends on whether
+            # the transaction being edited / viewed is the matched_by or the matched_to.  `f1` is the factor
+            # which determines the sign based on this logic.
+
+            # `f2` is the factor which flips the sign based on the first consideration above.  I.e. should this transaction
+            # show in the UI as a negative or positive.  For our example above the credit note for 120.00 should show as
+            # 120.00.  By contrast an invoice entered for a value of -120.00 ought to show in the UI as -120.00.  Again
+            # the logic is simple.  The sign is flipped based on whether the transaction is a negative transaction or not.
+            # Since the credit note is saved in the DB as -120.00 and it is a negative transaction we flip the sign so it
+            # becomes +120.00 in the UI.  Whereas the invoice, from the example above, would save to the DB as -120.00 and
+            # since the invoice is NOT a negative type of transaction we don't flip the sign.
+
+            # We begin with changing the sign assuming a GET request
+            # Finally we reverse the logic IF it is a POST request
+
             if self.tran_being_created_or_edited.pk == self.instance.matched_to_id:
                 matched_header = self.instance.matched_by
-                f = -1
+                self.matched_by_initial = self.initial["value"] * -1
+                self.initial_value = self.matched_by_initial
+                f1 = -1
             else:
                 matched_header = self.instance.matched_to
-                f = 1
+                self.matched_to_initial = self.initial["value"]
+                self.initial_value = self.matched_to_initial
+                f1 = 1
+
+            self.f1 = f1 # needed for method `change_values_for_UI`
+
+            if matched_header.is_negative_type():
+                f2 = -1
+            else:
+                f2 = 1
+
+            self.f2 = f2 # needed for method `change_values_for_UI`
+
             self.fields["type"].initial = matched_header.type
             self.fields["ref"].initial = matched_header.ref
             self.fields["total"].initial = matched_header.total
             self.fields["paid"].initial = matched_header.paid
             self.fields["due"].initial = matched_header.due
-            self.initial["value"] *= f
+
+            self.change_values_for_ui()
+
             # matched_to is a field rendered on the client because it is for the user to pick (in some situations)
             # but matched_by, although a field, can always be determined server side so we override the POST data to do so
-            if self.tran_being_created_or_edited.pk:
+            if self.data:
                 self.data = self.data.copy()
                 # we are editing a transaction in the system
                 self.data[self.prefix + "-" +
                           "matched_by"] = self.initial.get('matched_by', self.tran_being_created_or_edited.pk)
                 # FIX ME - set matched_by to read only so we don't need to do this
-        if not self.instance.pk and self.data:
-            # creating a new transaction
-            # matched_by is not required at form level therefore
-            # view will attach matched_by to instance after successful validation
-            self.fields["matched_by"].required = False
 
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) +
@@ -909,6 +967,42 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
             }
         ).render()
 
+    def change_values_for_ui(self):
+        if self.instance.pk:
+            self.fields["total"].initial *= self.f2
+            self.fields["paid"].initial *= self.f2
+            self.fields["due"].initial *= self.f2
+            self.initial["value"] *= (self.f1 * self.f2)
+
+    def clean_value(self):
+        value = self.cleaned_data.get("value")
+        if value:
+            if self.instance.pk:
+                value *= self.f2
+                # convert the value entered through UI
+                # to the value ready to be validated
+
+                # Explanation -
+                # E.g. a PL refund for 120.00 is posted and matched to a PL invoice for -120.00
+                # which was already posted.
+
+                # The invoice is being edited.  So in the UI the refund shows as matched with -
+                # total = 120
+                # paid = 120
+                # value = 120
+
+                # But the match record in the DB joining these two transactions has value = -120.00
+                # because value is the amount which pays the matched_to transaction which is in this
+                # case is the negative invoice.
+
+                # So the form input is 120.00 but the server must validate with a value between 0 and
+                # -120.00.
+            else:
+                pass
+                # as mentioned in __init__
+                # for new matches we just take the value as given
+        return value
+
     def clean(self):
         # The purpose of this clean is to check that each match is valid
         # But we can only do the check if the matched_to transaction in the relationship IS NOT the
@@ -916,7 +1010,10 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         # it is a matched to.
         # This is because we don't know how much is being matched to other transactions at this point
         cleaned_data = super().clean()
-        initial_value = self.initial.get("value", 0)
+        initial_value = self.initial_value
+        # we do not use self.initial[value] because this has been changed so it
+        # suits the UI.  At form init we store self.initial_value before changes
+        # are made
         matched_by = cleaned_data.get("matched_by")
         matched_to = cleaned_data.get("matched_to")
         value = cleaned_data.get("value")
@@ -1107,7 +1204,7 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
         self.headers = []
         header_to_update = None
         for form in self.forms:
-            initial_value = form.initial.get("value", 0)
+            initial_value = form.initial_value or 0
             value = form.instance.value
             diff = value - initial_value
             total_matching_value += value
@@ -1117,7 +1214,6 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
                 # here we just consider those matches where matched_by is the transaction being edited.
                 header_to_update = form.instance.matched_to
             else:
-                # FIX LATER ON.  ONE TEST AT LEAST WILL FAIL WITH THIS
                 form.instance.value = -1 * value
                 header_to_update = form.instance.matched_by
             header_to_update.due -= diff

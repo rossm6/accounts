@@ -279,7 +279,8 @@ class CreateInvoice(TestCase):
                 matching_forms[4]["matched_to"],
                 matching_forms[-1]["matched_to"]
             ]
-        )
+        ).order_by("pk")
+
         self.assertEqual(
             len(unaffected_headers),
             2
@@ -7223,6 +7224,8 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 600
+
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -7381,6 +7384,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 600
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -7540,6 +7544,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 600
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -7811,6 +7816,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 1000
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -7977,6 +7983,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 1000
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -8139,6 +8146,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 660
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -8290,7 +8298,7 @@ class EditInvoice(TestCase):
         _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -660})
-        matching_forms[1]["value"] = -600
+        matching_forms[1]["value"] = 600
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -8452,6 +8460,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 1000
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -8611,6 +8620,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 700
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -8763,7 +8773,7 @@ class EditInvoice(TestCase):
         _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
-        matching_forms[-1]["value"] = -480
+        matching_forms[-1]["value"] = 480
 
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
@@ -8915,11 +8925,11 @@ class EditInvoice(TestCase):
         _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
-        matching_forms[-1]["value"] = -540
 
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 540
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -9081,6 +9091,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 500
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -9231,6 +9242,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 500
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -9393,6 +9405,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 700
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -9547,6 +9560,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 700
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
@@ -9707,6 +9721,7 @@ class EditInvoice(TestCase):
         matching_forms[0]["value"] = -1000
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 1000
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -9895,6 +9910,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 1000
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -10079,6 +10095,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 620
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -10252,7 +10269,7 @@ class EditInvoice(TestCase):
         _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -640})
-        matching_forms[1]["value"] = -600
+        matching_forms[1]["value"] = 600
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -10430,7 +10447,7 @@ class EditInvoice(TestCase):
         _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -1000})
-        matching_forms[0]["value"] = -1000
+        matching_forms[1]["value"] = 1000
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -10612,6 +10629,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 600
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -10782,7 +10800,7 @@ class EditInvoice(TestCase):
         _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
-        matching_forms[-1]["value"] = -400
+        matching_forms[1]["value"] = 400
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -10953,7 +10971,7 @@ class EditInvoice(TestCase):
         _matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(_matching_trans, {"id": "matched_to"}, {"value": -600}) # Same value as matched originally
-        matching_forms[-1]["value"] = -500
+        matching_forms[-1]["value"] = 500
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -11138,6 +11156,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 480
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -11308,6 +11327,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 450
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -11490,6 +11510,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 700
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -11660,6 +11681,7 @@ class EditInvoice(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
+        matching_forms[1]["value"] = 700
         # These are the existing matches increased
         # Now add the new
         matching_forms += add_and_replace_objects( 
@@ -11773,6 +11795,14 @@ class EditInvoice(TestCase):
         invoices[1] = match_to[0]
         match_by, match_to = match(payment, [ (invoices[0], 600) ]) # SECOND MATCH
 
+        # invoice 1
+        # invoice 2
+        # -200
+
+        # payment
+        # invoice 1
+        # 600
+
         headers = PurchaseHeader.objects.all()
         headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
 
@@ -11833,7 +11863,7 @@ class EditInvoice(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = -800 # USER WANTS TO ENTER A NEGATIVE HERE EVEN THOUGH WILL BE SAVED AS POSITIVE
+        matching_trans[1]["value"] = 800
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
@@ -11848,6 +11878,7 @@ class EditInvoice(TestCase):
         data.update(matching_data)
 
         response = self.client.post(url, data)
+        #print(response.content)
         self.assertEqual(response.status_code, 302)
         headers = PurchaseHeader.objects.all()
         headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
@@ -11979,7 +12010,7 @@ class EditInvoice(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = -100 # USER WANTS TO ENTER A NEGATIVE HERE EVEN THOUGH WILL BE SAVED AS POSITIVE
+        matching_trans[1]["value"] = 100
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
@@ -12126,7 +12157,7 @@ class EditInvoice(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = -1000 # USER WANTS TO ENTER A NEGATIVE HERE EVEN THOUGH WILL BE SAVED AS POSITIVE
+        matching_trans[1]["value"] = 1000
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
@@ -12283,7 +12314,7 @@ class EditInvoice(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = -940 # USER WANTS TO ENTER A NEGATIVE HERE EVEN THOUGH WILL BE SAVED AS POSITIVE
+        matching_trans[1]["value"] = 940
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
@@ -12440,7 +12471,7 @@ class EditInvoice(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = -100 # USER WANTS TO ENTER A NEGATIVE HERE EVEN THOUGH WILL BE SAVED AS POSITIVE
+        matching_trans[1]["value"] = 100
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
@@ -12595,7 +12626,7 @@ class EditInvoice(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = 100 # THIS IS WRONG.  SHOULD BE A NEGATIVE.
+        matching_trans[1]["value"] = -100 # THIS IS WRONG.  SHOULD BE A POSITIVE.
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
@@ -12749,7 +12780,7 @@ class EditInvoice(TestCase):
         # THIS IS THE DIFFERENCE
         matching_trans[1]["id"] = matches[1].pk
         matching_trans[1]["matched_to"] = invoices[0].pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
-        matching_trans[1]["value"] = -1000
+        matching_trans[1]["value"] = 1000
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
