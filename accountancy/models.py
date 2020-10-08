@@ -429,7 +429,8 @@ class ControlAccountPaymentTransactionMixin:
             bank_nom_tran.nominal = self.header_obj.cash_book.nominal
             control_nom_tran.value = -1 * f * self.header_obj.total
             control_nom_tran.nominal = control_nominal
-            nom_tran_cls.objects.audited_bulk_update(nom_trans, ["value", "nominal"])
+            nom_tran_cls.objects.audited_bulk_update(
+                nom_trans, ["value", "nominal"])
         elif nom_trans and self.header_obj.total == 0:
             bulk_delete_with_history(
                 nom_trans,

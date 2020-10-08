@@ -153,7 +153,6 @@ class PurchaseHeader(TransactionHeader):
         if self.type == "pr":
             return Refund(header=self)
 
-
 register(PurchaseHeader)
 
 class PurchaseLine(TransactionLine):

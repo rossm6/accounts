@@ -678,8 +678,8 @@ class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMi
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
 
-        if 'transaction_type' not in kwargs:
-            kwargs['transaction_type'] = "debit" if self.type_is_debit() else "credit"
+        if 'negative_transaction_types' not in kwargs:
+            kwargs['negative_transaction_types'] = self.get_header_model().negatives
 
         if hasattr(self, 'create_on_the_fly'):
             for form in self.create_on_the_fly:

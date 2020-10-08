@@ -1,6 +1,6 @@
 $(document).ready(function () {
 
-    var transaction_type = "{{ transaction_type }}";
+    var negative_transaction_types = "{{ negative_transaction_types }}";
 
     function calculate_vat(goods, vat_rate) {
         if (goods && vat_rate) {
@@ -33,12 +33,12 @@ $(document).ready(function () {
         var goods;
         var vat;
         var total;
-        if(lines.length){
+        if (lines.length) {
             goods = 0;
             vat = 0;
             lines.each(function (index, line) {
                 var elements = get_elements($(line));
-                if(!elements.delete){
+                if (!elements.delete) {
                     var g = (+elements.goods.val() || 0) * 100;
                     var v = (+elements.vat.val() || 0) * 100;
                     goods = goods + g;
@@ -49,8 +49,7 @@ $(document).ready(function () {
             goods = goods / 100;
             vat = vat / 100;
             total = total / 100;
-        }
-        else{
+        } else {
             goods = 0;
             vat = 0;
             total = $("input[name='header-total']").val();
@@ -64,7 +63,8 @@ $(document).ready(function () {
             var elem = $(tr).find(":input").filter(function (index) {
                 return this.name.match(/match-\d+-value/);
             });
-            matched_total = matched_total + ((+elem.val() || 0) * 100);
+            var match_value = (+elem.val() || 0) * 100;
+            matched_total = matched_total + match_value;
         });
         new_matches.each(function (index, tr) {
             var elem = $(tr).find(":input").filter(function (index) {
@@ -73,13 +73,7 @@ $(document).ready(function () {
             matched_total = matched_total + ((+elem.val() || 0) * 100);
         });
         matched_total = matched_total / 100;
-        var due;
-        if(transaction_type == "debit"){
-            due = total + matched_total;
-        }
-        else{
-            due = total - matched_total;
-        }
+        var due = total - matched_total;
         goods = goods.toFixed(2);
         vat = vat.toFixed(2);
         total = total.toFixed(2);
@@ -95,14 +89,11 @@ $(document).ready(function () {
     }
 
     $("table.line").on("change", ":input", function (event) {
-
         var input = $(this);
         var tr = input.parents("tr").eq(0);
         var elements = get_elements(tr);
-
         // calculate the VAT if the user changed value in field other than vat
         // because they may want to override
-
         if (
             !(
                 $(this).filter(function (index) {
@@ -110,7 +101,6 @@ $(document).ready(function () {
                 }).length
             )
         ) {
-
             elements.vat.val(
                 calculate_vat(
                     elements.goods.val(),
@@ -118,11 +108,8 @@ $(document).ready(function () {
                 )
             );
             event.stopPropagation();
-
         }
-
         calculate_totals();
-
     });
 
 
@@ -136,7 +123,7 @@ $(document).ready(function () {
         calculate_totals();
     });
 
-    $("td.col-close-icon").on("click", function(){
+    $("td.col-close-icon").on("click", function () {
         calculate_totals();
     });
 
