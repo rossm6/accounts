@@ -980,35 +980,6 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
             self.fields["due"].initial *= self.f2
             self.initial["value"] *= (self.f1 * self.f2)
 
-    def clean_value(self):
-        value = self.cleaned_data.get("value")
-        if value:
-            if self.instance.pk:
-                value *= self.f2
-                # convert the value entered through UI
-                # to the value ready to be validated
-
-                # Explanation -
-                # E.g. a PL refund for 120.00 is posted and matched to a PL invoice for -120.00
-                # which was already posted.
-
-                # The invoice is being edited.  So in the UI the refund shows as matched with -
-                # total = 120
-                # paid = 120
-                # value = 120
-
-                # But the match record in the DB joining these two transactions has value = -120.00
-                # because value is the amount which pays the matched_to transaction which is in this
-                # case is the negative invoice.
-
-                # So the form input is 120.00 but the server must validate with a value between 0 and
-                # -120.00.
-            else:
-                pass
-                # as mentioned in __init__
-                # for new matches we just take the value as given
-        return value
-
     def clean(self):
         # The purpose of this clean is to check that each match is valid
         # But we can only do the check if the matched_to transaction in the relationship IS NOT the
@@ -1045,7 +1016,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         # can map any two transactions we can with certainly determine whether the value to match is valid or not.
         # To be clear - header here is NOT the transaction created / edited by the header form.
         # header.due is therefore fixed.
-        if header and value:
+        if header:
             # however value is the user input
             # sometimes this needs the sign changing
             # i.e. with negative trans
@@ -1055,14 +1026,13 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
             # so value should be -120.00
             # we don't want to change value in the form
             # because if form errors we need to render form again
-
             if header.total > 0:
                 if _value < 0:
                     self.add_error(
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + initial_value}"
+                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
                             ),
                             code="invalid-match"
                         )
@@ -1072,7 +1042,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + initial_value}"
+                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
                             ),
                             code="invalid-match"
                         )
@@ -1083,7 +1053,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + initial_value}"
+                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
                             ),
                             code="invalid-match"
                         )
@@ -1093,12 +1063,11 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + initial_value}"
+                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
                             ),
                             code="invalid-match"
                         )
                     )
-
             would_be_due = header.due + (initial_value - _value)
             if header.total > 0:
                 if would_be_due < 0:
@@ -1143,9 +1112,6 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         instance = super().save(commit=False)
         if instance.matched_to_id != self.tran_being_created_or_edited.pk:
             instance.matched_by = self.tran_being_created_or_edited
-        if not instance.pk:
-            instance.value *= self.f2
-            # f1 must be 1 for creation so don't multiply by f1
         if commit:
             instance.save()
         return instance
@@ -1233,6 +1199,7 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
         for form in self.forms:
             initial_value = form.initial_value or 0
             value = form.instance.value * form.f2
+            form.instance.value = value
             diff = value - initial_value
             total_matching_value += value
             if not form.instance.matched_by_id or self.tran_being_created_or_edited.pk == form.instance.matched_by_id:
