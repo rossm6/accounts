@@ -210,6 +210,6 @@ read_only_match.include_empty_form = False
 # returns form class
 CreditorForm = aged_matching_report_factory(
     Supplier,
-    reverse_lazy("purchases:create_on_the_fly"),
+    reverse_lazy("contacts:create_supplier"),
     reverse_lazy("purchases:load_suppliers")
 )

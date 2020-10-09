@@ -189,6 +189,6 @@ read_only_match.include_empty_form = False
 # returns form class
 DebtorForm = aged_matching_report_factory(
     Customer,
-    reverse_lazy("sales:create_on_the_fly"),
+    reverse_lazy("contacts:create_customer"),
     reverse_lazy("sales:load_customers")
 )
