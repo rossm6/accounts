@@ -1026,6 +1026,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
             # so value should be -120.00
             # we don't want to change value in the form
             # because if form errors we need to render form again
+
             if header.total > 0:
                 if _value < 0:
                     self.add_error(

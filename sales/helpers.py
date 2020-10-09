@@ -1094,7 +1094,7 @@ def create_receipts(customer, ref_prefix, n, value=100):
             paid=0,
             due=-1 * value,
             date=date,
-            type="sr",
+            type="sp",
             period=PERIOD
         )
         payments.append(p)
@@ -1225,7 +1225,7 @@ def create_refund_with_nom_entries(header, control_nominal, bank_nominal):
     header["due"] *= -1
     header["paid"] *= -1
     # done this way because i created other function first
-    return create_payment_with_nom_entries(header, control_nominal, bank_nominal)
+    return create_receipt_with_nom_entries(header, control_nominal, bank_nominal)
 
 
 def create_credit_note_with_nom_entries(header, lines, vat_nominal, control_nominal):
