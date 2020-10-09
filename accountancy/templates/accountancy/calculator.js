@@ -1,6 +1,8 @@
 $(document).ready(function () {
 
-    var negative_transaction_types = "{{ negative_transaction_types }}";
+    var negative_transaction_types = "\"{{ negative_transaction_types|safe }}\"";
+    console.log(negative_transaction_types);
+    negative_transaction_types = JSON.parse(negative_transaction_types);
 
     function calculate_vat(goods, vat_rate) {
         if (goods && vat_rate) {
@@ -63,7 +65,16 @@ $(document).ready(function () {
             var elem = $(tr).find(":input").filter(function (index) {
                 return this.name.match(/match-\d+-value/);
             });
-            var match_value = (+elem.val() || 0) * 100;
+            var tran_type = $(tr).find(":input").filter(function (index) {
+                return this.name.match(/match-\d+-type/);
+            });
+            var match_value = (+elem.val() || 0);
+            if(negative_transaction_types.indexOf(tran_type.val()) != -1){
+                match_value *= -1; // as values stored in db as negatives are shown as positives in UI
+                // we need to flip sign.  Only true for negative transaction types like credit notes and payments.
+            }
+            var match_value = -1 * (match_value * 100); // flip sign to get match value which is proportion of
+            // transaction being viewed or edited.
             matched_total = matched_total + match_value;
         });
         new_matches.each(function (index, tr) {

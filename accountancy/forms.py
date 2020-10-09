@@ -58,7 +58,6 @@ class BaseAjaxForm(forms.ModelForm):
             self.fields[field].empty_label = fields[field].get(
                 "empty_label", None)
 
-
 class BaseTransactionMixin:
 
     """

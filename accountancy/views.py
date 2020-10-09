@@ -1708,6 +1708,7 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
     def get_form_template(self):
         return self.form_template
 
+from utils.helpers import non_negative_zero_decimal
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):
 
@@ -1723,6 +1724,7 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
         queryset = self.get_queryset()[int(start): int(start) + int(length)]
         data = []
         for obj in queryset:
+            is_positive_tran = -1 if obj.is_negative_type() else 1
             data.append(
                 {
                     "type": {
@@ -1730,9 +1732,9 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
                         "value": obj.type
                     },
                     "ref": obj.ref,
-                    "total": obj.total,
-                    "paid": obj.paid,
-                    "due": obj.due,
+                    "total": non_negative_zero_decimal(obj.total * is_positive_tran),
+                    "paid": non_negative_zero_decimal(obj.paid * is_positive_tran),
+                    "due": non_negative_zero_decimal(obj.due * is_positive_tran),
                     "DT_RowData": {
                         "pk": obj.pk,
                         "fields": {
@@ -1745,16 +1747,16 @@ class LoadMatchingTransactions(jQueryDataTable, ListView):
                                 'order': obj.ref
                             },
                             "total": {
-                                'value': obj.total,
-                                'order': obj.total
+                                'value': non_negative_zero_decimal(obj.total * is_positive_tran),
+                                'order': non_negative_zero_decimal(obj.total * is_positive_tran)
                             },
                             "paid": {
-                                'value': obj.paid,
-                                'order': obj.paid
+                                'value': non_negative_zero_decimal(obj.paid * is_positive_tran),
+                                'order': non_negative_zero_decimal(obj.paid * is_positive_tran)
                             },
                             "due": {
-                                'value': obj.due,
-                                'order': obj.due
+                                'value': non_negative_zero_decimal(obj.due * is_positive_tran),
+                                'order': non_negative_zero_decimal(obj.due * is_positive_tran)
                             },
                             "matched_to": {
                                 'value': obj.pk,

@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 from functools import reduce
 from itertools import groupby
 
@@ -12,6 +13,15 @@ from simple_history.utils import (get_change_reason_from_object,
                                   get_history_manager_for_model)
 
 DELETED_HISTORY_TYPE = "-"
+
+
+def non_negative_zero_decimal(decimal):
+    """
+    Avoids negative zero
+    """
+    if decimal == Decimal(0.00):
+        return Decimal(0.00)
+    return decimal
 
 
 def get_action(history_type):

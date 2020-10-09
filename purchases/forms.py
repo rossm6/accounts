@@ -113,7 +113,7 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
         iterator=RootAndLeavesModelChoiceIterator,
         widget=forms.Select(
             attrs={"data-url": reverse_lazy("nominals:load_nominals")}
-        )
+        ),
     )
     vat_code = ModelChoiceFieldChooseIterator(
         iterator=ModelChoiceIteratorWithFields,
@@ -124,7 +124,7 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
                 # i.e. add the rate value to the option as data-rate
                 "data-attrs": ["rate"]
             }
-        )
+        ),
     )
 
     class Meta:
