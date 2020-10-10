@@ -555,6 +555,10 @@ class TransactionHeader(DecimalBaseModel, Audit):
         if self.type in self.debits:
             return True
 
+    def requires_analysis(self):
+        if self.type in [ t[0] for t in self.analysis_required]:
+            return True
+
     def will_have_nominal_transactions(self):
         return self.type in [t[0] for t in self.analysis_required]
 

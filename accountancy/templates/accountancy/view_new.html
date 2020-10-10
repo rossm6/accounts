@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
+    <style>
+        .data-grid {
+            background-gradient: none;
+            background: none;
+        }
+    </style>
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+
+    <div class="cont">
+        <div>
+            <div class="d-flex justify-content-center">
+                <div>
+                    <div class="border data-grid bg-white position-relative">
+                        <div class="invisible">
+                            <div data-audit-aspect-section="header">
+                                <div class="d-flex bg-white d-flex justify-content-between p-3">
+                                    <div class="text-secondary font-weight-bold small">Awaiting Payment</div>
+                                    <div>
+                                        {% block module_actions %}
+                                        {% endblock module_actions %}
+                                        {% include 'accountancy/crud_operations.html' with module=module transaction=header.pk %}                                   
+                                    </div>
+                                </div>
+                                <div class="w-100 bg-light p-3 d-flex justify-content-between small">
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            <p class="font-weight-bold text-nowrap">From</p>
+                                            <div class="text-nowrap">{{ header.supplier }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <p class="font-weight-bold text-nowrap">Date</p>
+                                            <div class="text-nowrap">{{ header.date }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <p class="font-weight-bold text-nowrap">Due Date</p>
+                                            <div class="text-nowrap">{{ header.due_date }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <p class="font-weight-bold text-nowrap">From</p>
+                                            <div class="text-nowrap">{{ header.ref }}</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="font-weight-bold text-nowrap">Total</p>
+                                        <div>{{ header.total }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lines bg-light p-3" data-audit-aspect-section="line">
+                                <table class="line table">
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Goods</th>
+                                            <th class="{% if not header.requires_analysis %} d-none {% endif %}">Nominal</th>
+                                            <th class="{% if not header.requires_analysis %} d-none {% endif %}">Vat Code</th>
+                                            <th>Vat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-bordered bg-white">
+                                        {% for line in lines %}
+                                            <tr>
+                                                <td>{{ line.description }}</td>
+                                                <td>{{ line.goods }}</td>
+                                                <td class="{% if not header.requires_analysis %} d-none {% endif %}">{{ line.nominal }}</td>
+                                                <td class="{% if not header.requires_analysis %} d-none {% endif %}">{{ line.vat_code }}</td>
+                                                <td>{{ line.vat }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% block totals %}
+                            {% endblock totals %}
+                            {% block matching %}
+                            {% endblock matching %}
+                        </div>
+                        <div class="spinner-border color-b-1 loading-icon" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+{% block js %}
+    {% block extra_js %}
+    {% load static %}
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
+    <script>
+        $(document).ready(function(){
+            {% include 'accountancy/existing_matched_transactions.js' %}
+        });
+    </script>
+    {% endblock extra_js %}
+    {% block module_js %}
+    {% endblock module_js %}
+{% endblock js %}
