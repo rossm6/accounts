@@ -353,7 +353,7 @@ class TableHelper(object):
     def create_tbody(self, tr_class=""):
         field_columns = self.create_thead_or_tbody(
             Td,
-            PlainField,
+            PlainFieldErrors,
             Draggable(),
             Delete(),
             "Td"

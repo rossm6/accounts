@@ -58,6 +58,24 @@ class BaseAjaxForm(forms.ModelForm):
             self.fields[field].empty_label = fields[field].get(
                 "empty_label", None)
 
+    def full_clean(self):
+        """
+        Override the choices so that only the chosen is included
+        """
+        super().full_clean() # clean all of self.data and populate self._errors and self.cleaned_data
+        if hasattr(self, "cleaned_data"):
+            ajax_fields = self.Meta.ajax_fields
+            for field in ajax_fields:
+                if chosen := self.cleaned_data.get(field):
+                    iterator = self.fields[field].iterator
+                    if isinstance(iterator, type):
+                        iterator = iterator(self.fields[field])
+                        self.fields[field].iterator = iterator
+                    choice_for_ui = self.fields[field].iterator.choice(chosen) # e.g. (value, label)
+                    self.fields[field].choices = [choice_for_ui]
+                else:
+                    self.fields[field].choices = [ (None, (self.fields[field].empty_label or "")) ]
+
 class BaseTransactionMixin:
 
     """
@@ -757,12 +775,6 @@ class SaleAndPurchaseLineForm(BroughtForwardLineForm):
             delete=True,
             css_classes=line_css_classes,
             column_layout_object_css_classes=self.column_layout_object_css_classes,
-            field_layout_overrides={
-                'Td': {
-                    'description': PlainFieldErrors,
-                    'nominal': PlainFieldErrors,
-                }
-            }
         ).render()
 
 

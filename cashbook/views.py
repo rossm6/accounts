@@ -22,17 +22,12 @@ class CreateTransaction(CreateCashBookTransaction):
         "model": CashBookHeader,
         "form": CashBookHeaderForm,
         "prefix": "header",
-        "override_choices": ["cash_book"],
         "initial": {"total": 0},
     }
     line = {
         "model": CashBookLine,
         "formset": enter_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     create_on_the_fly = {
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
@@ -44,11 +39,7 @@ class CreateTransaction(CreateCashBookTransaction):
     nominal_transaction_model = NominalTransaction
     cash_book_transaction_model = CashBookTransaction
     module = "CB"
-
-    # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
-    def get_header_form_type(self):
-        t = self.request.GET.get("t", "cp")
-        return t
+    default_type = "cp"
 
 
 class EditTransaction(EditCashBookTransaction):
@@ -56,17 +47,12 @@ class EditTransaction(EditCashBookTransaction):
         "model": CashBookHeader,
         "form": CashBookHeaderForm,
         "prefix": "header",
-        "override_choices": ["cash_book"],
         "initial": {"total": 0},
     }
     line = {
         "model": CashBookLine,
         "formset": enter_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     create_on_the_fly = {
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
@@ -85,16 +71,11 @@ class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
         "model": CashBookHeader,
         "form": ReadOnlyCashBookHeaderForm,
         "prefix": "header",
-        "override_choices": ["cash_book"],
     }
     line = {
         "model": CashBookLine,
         "formset": read_only_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     void_form_action = reverse_lazy("cashbook:void")
     void_form = BaseVoidTransactionForm
@@ -116,6 +97,7 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     success_url = reverse_lazy("cashbook:transaction_enquiry")
     module = 'CB'
     cash_book_transaction_model = CashBookTransaction
+
 
 class TransactionEnquiry(NominalTransList):
     model = CashBookHeader

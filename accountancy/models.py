@@ -404,7 +404,7 @@ class ControlAccountPaymentTransactionMixin:
             return nom_tran_cls.objects.audited_bulk_create(nom_trans)
 
     def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
-        nom_trans = nom_tran_cls.objects.filter(
+        nom_trans = nom_tran_cls.objects.filter(module=self.module,
             header=self.header_obj.pk).order_by("line")
         try:
             control_nominal_name = kwargs.get('control_nominal_name')

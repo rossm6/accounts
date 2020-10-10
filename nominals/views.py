@@ -38,10 +38,7 @@ class CreateTransaction(BaseCreateTransaction):
         "model": NominalLine,
         "formset": enter_lines,
         "prefix": "line",
-        "override_choices": ["nominal"],  # VAT would not work at the moment
         "can_order": False
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     create_on_the_fly = {
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
@@ -52,11 +49,7 @@ class CreateTransaction(BaseCreateTransaction):
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
     module = "NL"
-
-    def get_header_form_type(self):
-        t = self.request.GET.get("t", "nj")
-        return t
-
+    default_type = "nj"
 
 class EditTransaction(BaseEditTransaction):
     header = {
@@ -68,9 +61,6 @@ class EditTransaction(BaseEditTransaction):
         "model": NominalLine,
         "formset": enter_lines,
         "prefix": "line",
-        "override_choices": ["nominal"],  # VAT would not work at the moment
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
         "can_order": False
     }
     create_on_the_fly = {
@@ -83,7 +73,6 @@ class EditTransaction(BaseEditTransaction):
     nominal_transaction_model = NominalTransaction
     module = "NL"
 
-
 class ViewTransaction(BaseViewTransaction):
     header = {
         "model": NominalHeader,
@@ -94,10 +83,6 @@ class ViewTransaction(BaseViewTransaction):
         "model": NominalLine,
         "formset": read_only_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     void_form_action = reverse_lazy("nominals:void")
     void_form = BaseVoidTransactionForm

@@ -42,18 +42,12 @@ class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
         "model": SaleHeader,
         "form": SaleHeaderForm,
         "prefix": "header",
-        "override_choices": ["customer"],
         "initial": {"total": 0},
-
     }
     line = {
         "model": SaleLine,
         "formset": enter_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     match = {
         "model": SaleMatching,
@@ -72,11 +66,7 @@ class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
     module = "SL"
     control_nominal_name = SALES_CONTROL_ACCOUNT
     cash_book_transaction_model = CashBookTransaction
-
-    # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
-    def get_header_form_type(self):
-        t = self.request.GET.get("t", "si")
-        return t
+    default_type = "si"
 
 
 class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
@@ -84,16 +74,11 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
         "model": SaleHeader,
         "form": SaleHeaderForm,
         "prefix": "header",
-        "override_choices": ["customer"],
     }
     line = {
         "model": SaleLine,
         "formset": enter_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     match = {
         "model": SaleMatching,
@@ -125,10 +110,6 @@ class ViewTransaction(CustomerMixin, ViewTransactionOnLedgerOtherThanNominal):
         "model": SaleLine,
         "formset": read_only_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["item", "nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     match = {
         "model": SaleMatching,

@@ -584,28 +584,9 @@ class RESTBaseTransactionMixin:
                 if form.non_field_errors():
                     self.non_field_errors = True
 
-        if self.line_formset:
-            if override_choices := self.line.get('override_choices'):
-                for form in self.line_formset:
-                    for choice in override_choices:
-                        field = form.fields[choice]
-                        if chosen := form.cleaned_data.get(choice):
-                            field.widget.choices = [(chosen.pk, str(chosen))]
-                        else:
-                            field.widget.choices = []
-
     def header_is_invalid(self):
         if self.header_form.non_field_errors():
             self.non_field_errors = True
-
-        if override_choices := self.header.get('override_choices'):
-            form = self.header_form
-            for choice in override_choices:
-                field = form.fields[choice]
-                if chosen := form.cleaned_data.get(choice):
-                    field.widget.choices = [(chosen.pk, str(chosen))]
-                else:
-                    field.widget.choices = []
 
     def invalid_forms(self):
         self.header_is_invalid()
@@ -743,6 +724,13 @@ class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMi
 
 class RESTBaseCreateTransactionMixin:
 
+    def get_default_type(self):
+        return self.default_type
+
+    def get_header_form_type(self):
+        t = self.request.GET.get("t", self.get_default_type())
+        return t
+
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
             "line_cls": self.get_line_model(),
@@ -793,6 +781,7 @@ class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["create"] = True  # some javascript templates depend on this
+        context["header_type"] = self.get_header_form_type()
         return context
 
     def matching_is_valid(self):
@@ -1020,7 +1009,9 @@ class RESTBaseEditTransactionMixin:
         )
         if self.requires_analysis(self.header_form):
             existing_nom_trans = self.get_nominal_transaction_model(
-            ).objects.filter(header=self.header_obj.pk)
+            ).objects.filter(
+                module=self.get_module(),
+                header=self.header_obj.pk)
             self.create_or_update_related_transactions(
                 new_lines=new_lines,
                 updated_lines=lines_to_update,

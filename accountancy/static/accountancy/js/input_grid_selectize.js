@@ -29,83 +29,83 @@
     // vat selectize
     function vat(select_menu) {
         var $select = $(select_menu);
-        // var load_url = $select.attr("data-url");
-        // return $select.selectize({
-        //     onInitialize: function () {
-        //         // html5 data attributes are wiped.  This is a workaround.
-        //         var s = this;
-        //         this.revertSettings.$children.each(function () {
-        //             $.extend(s.options[this.value], $(this).data());
-        //         });
+        var load_url = $select.attr("data-url");
+        return $select.selectize({
+            onInitialize: function () {
+                // html5 data attributes are wiped.  This is a workaround.
+                var s = this;
+                this.revertSettings.$children.each(function () {
+                    $.extend(s.options[this.value], $(this).data());
+                });
 
-        //         // the calculator for the input grid needs to know the rate associated
-        //         // with the chosen vat code.  So it can easily grab the rate i just add
-        //         // the rate as data-rate to the select element itself every time it changes.
-        //         // This does the same when the page loads.
-        //         var selected_value = this.items[0];
-        //         if (selected_value) {
-        //             var selected_option = this.options[selected_value];
-        //             if (selected_option) {
-        //                 $select.attr("data-rate", selected_option["rate"]);
-        //             }
-        //         }
-        //     },
-        //     create: function (input, callback) {
-        //         var self = this;
-        //         var selectize_callback_adapter = function (data) {
-        //             if (data.success) {
-        //                 callback(data.new_object);
-        //             } else {
-        //                 callback({});
-        //             }
-        //         }
-        //         // so it isn't garbage collected
-        //         modal = new ModalForm({
-        //             modal: $("#new-vat_code"),
-        //             callback: selectize_callback_adapter,
-        //         })
-        //     },
-        //     openOnFocus: true,
-        //     valueField: 'id',
-        //     labelField: 'code',
-        //     searchField: 'code', // if this is not properly defined it can cause the dropdown to not open on searching
-        //     dropdownParent: 'body', // this is so the dropdown is visible if the select menu is inside an insufficiently sized parent element
-        //     render: {
-        //         option: function (item, escape) {
-        //             var label = item.code;
-        //             var rate = item.rate;
-        //             return '<div class="p-1" data-rate="' + rate + '">' + escape(label) + '</div>';
-        //         }
-        //     },
-        //     load: function (query, callback) {
-        //         $.ajax({
-        //             url: load_url,
-        //             type: "GET",
-        //             dataType: 'json',
-        //             data: {
-        //                 q: query,
-        //                 page_limit: 10
-        //             },
-        //             error: function (qXHR, textStatus, errorThrown) {
-        //                 console.log("Error occured");
-        //                 console.log("Logging...");
-        //                 console.log("qXHR", qXHR);
-        //                 console.log("textStatus", textStatus);
-        //                 console.log("errorThrown", errorThrown);
-        //                 console.log("Logging complete");
-        //             },
-        //             success: function (res, textStatus, jqXHR) {
-        //                 callback(res.data);
-        //             }
-        //         });
-        //     },
-        //     onChange: function (value) {
-        //         var self = this;
-        //         var option = this.getOption(value);
-        //         var rate = option.attr("data-rate");
-        //         $select.attr("data-rate", rate);
-        //     }
-        // });
+                // the calculator for the input grid needs to know the rate associated
+                // with the chosen vat code.  So it can easily grab the rate i just add
+                // the rate as data-rate to the select element itself every time it changes.
+                // This does the same when the page loads.
+                var selected_value = this.items[0];
+                if (selected_value) {
+                    var selected_option = this.options[selected_value];
+                    if (selected_option) {
+                        $select.attr("data-rate", selected_option["rate"]);
+                    }
+                }
+            },
+            create: function (input, callback) {
+                var self = this;
+                var selectize_callback_adapter = function (data) {
+                    if (data.success) {
+                        callback(data.new_object);
+                    } else {
+                        callback({});
+                    }
+                }
+                // so it isn't garbage collected
+                modal = new ModalForm({
+                    modal: $("#new-vat_code"),
+                    callback: selectize_callback_adapter,
+                })
+            },
+            openOnFocus: true,
+            valueField: 'id',
+            labelField: 'code',
+            searchField: 'code', // if this is not properly defined it can cause the dropdown to not open on searching
+            dropdownParent: 'body', // this is so the dropdown is visible if the select menu is inside an insufficiently sized parent element
+            render: {
+                option: function (item, escape) {
+                    var label = item.code;
+                    var rate = item.rate;
+                    return '<div class="p-1" data-rate="' + rate + '">' + escape(label) + '</div>';
+                }
+            },
+            load: function (query, callback) {
+                $.ajax({
+                    url: load_url,
+                    type: "GET",
+                    dataType: 'json',
+                    data: {
+                        q: query,
+                        page_limit: 10
+                    },
+                    error: function (qXHR, textStatus, errorThrown) {
+                        console.log("Error occured");
+                        console.log("Logging...");
+                        console.log("qXHR", qXHR);
+                        console.log("textStatus", textStatus);
+                        console.log("errorThrown", errorThrown);
+                        console.log("Logging complete");
+                    },
+                    success: function (res, textStatus, jqXHR) {
+                        callback(res.data);
+                    }
+                });
+            },
+            onChange: function (value) {
+                var self = this;
+                var option = this.getOption(value);
+                var rate = option.attr("data-rate");
+                $select.attr("data-rate", rate);
+            }
+        });
     }
 
 

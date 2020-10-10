@@ -58,18 +58,12 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
         "prefix": "header",
-        "override_choices": ["supplier"],
         "initial": {"total": 0},
-
     }
     line = {
         "model": PurchaseLine,
         "formset": enter_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal", ]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     match = {
         "model": PurchaseMatching,
@@ -88,28 +82,18 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
     module = "PL"
     control_nominal_name = "Purchase Ledger Control"
     cash_book_transaction_model = CashBookTransaction
-
-    # CONSIDER ADDING A DEFAULT TRANSACTION TYPE
-    def get_header_form_type(self):
-        t = self.request.GET.get("t", "pi")
-        return t
-
+    default_type = "pi"
 
 class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
         "prefix": "header",
-        "override_choices": ["supplier"],
     }
     line = {
         "model": PurchaseLine,
         "formset": enter_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     match = {
         "model": PurchaseMatching,
@@ -135,16 +119,11 @@ class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
         "model": PurchaseHeader,
         "form": ReadOnlyPurchaseHeaderForm,
         "prefix": "header",
-        "override_choices": ["supplier"],
     }
     line = {
         "model": PurchaseLine,
         "formset": read_only_lines,
         "prefix": "line",
-        # VAT would not work at the moment
-        "override_choices": ["item", "nominal"]
-        # because VAT requires (value, label, [ model field attrs ])
-        # but VAT codes will never be that numerous
     }
     match = {
         "model": PurchaseMatching,

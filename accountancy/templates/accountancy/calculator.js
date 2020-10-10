@@ -1,7 +1,8 @@
 $(document).ready(function () {
 
+    var header_transaction_pk = "{{ header_to_edit.pk }}";
+    var header_transaction_type = "{{ header_type }}" || "{{ header_to_edit.type }}";
     var negative_transaction_types = "\"{{ negative_transaction_types|safe }}\"";
-    console.log(negative_transaction_types);
     negative_transaction_types = JSON.parse(negative_transaction_types);
 
     function calculate_vat(goods, vat_rate) {
@@ -73,16 +74,32 @@ $(document).ready(function () {
                 match_value *= -1; // as values stored in db as negatives are shown as positives in UI
                 // we need to flip sign.  Only true for negative transaction types like credit notes and payments.
             }
-            var match_value = -1 * (match_value * 100); // flip sign to get match value which is proportion of
-            // transaction being viewed or edited.
+            var matched_by = $(tr).find(":input").filter(function (index) {
+                return this.name.match(/match-\d+-matched_by/);
+            });
+            match_value *= -1
+            match_value = (match_value * 100);
             matched_total = matched_total + match_value;
         });
         new_matches.each(function (index, tr) {
             var elem = $(tr).find(":input").filter(function (index) {
                 return this.name.match(/match-\d+-value/);
             });
-            matched_total = matched_total + ((+elem.val() || 0) * 100);
+            var tran_type = $(tr).find(":input").filter(function (index) {
+                return this.name.match(/match-\d+-type/);
+            });
+            var match_value = (+elem.val() || 0);
+            if(negative_transaction_types.indexOf(tran_type.val()) != -1){
+                match_value *= -1; // as values stored in db as negatives are shown as positives in UI
+                // we need to flip sign.  Only true for negative transaction types like credit notes and payments.
+            }
+            match_value *= -1;
+            match_value *= 100;
+            matched_total = matched_total + match_value;          
         });
+        if(negative_transaction_types.indexOf(header_transaction_type) != -1){
+            matched_total *= -1
+        }
         matched_total = matched_total / 100;
         var due = total - matched_total;
         goods = goods.toFixed(2);

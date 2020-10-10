@@ -131,7 +131,6 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
                 pass
         return (value, label, tmp)
 
-
 class ModelChoiceFieldChooseIterator(ModelChoiceField):
     def __init__(self, *args, **kwargs):
         iterator = kwargs.pop("iterator")
