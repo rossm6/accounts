@@ -621,6 +621,12 @@ class BaseTransactionLineForm(forms.ModelForm):
                 code="zero-value-line"
             )
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            instance.save()
+        return instance
+
 
 class BaseLineFormset(BaseTransactionModelFormSet):
 
@@ -952,6 +958,8 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
 
             # matched_to is a field rendered on the client because it is for the user to pick (in some situations)
             # but matched_by, although a field, can always be determined server side so we override the POST data to do so
+
+            # MATCHED_TO AND MATCHED_BY SHOULD BOTH BE UNCHANGEABLE SO WE SHOULD DO THE SAME TO MATCHED_TO ALSO
             if self.data:
                 self.data = self.data.copy()
                 # we are editing a transaction in the system

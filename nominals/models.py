@@ -1,4 +1,3 @@
-from utils.helpers import bulk_delete_with_history
 from itertools import groupby
 
 from django.conf import settings
@@ -6,11 +5,12 @@ from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
 from simple_history import register
 
-from accountancy.models import (DecimalBaseModel, MultiLedgerTransactions,
-                                TransactionHeader, TransactionLine)
+from accountancy.models import (MultiLedgerTransactions, TransactionHeader,
+                                TransactionLine)
 from cashbook.models import CashBookHeader
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
+from utils.helpers import bulk_delete_with_history
 from vat.models import Vat
 
 
@@ -203,7 +203,8 @@ class Journal(NominalTransaction):
         return nom_trans
 
 
-class NominalHeader(TransactionHeader):
+
+class ModuleTransactionBase:
     analysis_required = [
         ('nj', 'Journal')
     ]
@@ -214,9 +215,12 @@ class NominalHeader(TransactionHeader):
     negatives = []
     credits = []
     debits = ['nj']
+
+
+class NominalHeader(ModuleTransactionBase, TransactionHeader):
     type = models.CharField(
         max_length=2,
-        choices=analysis_required
+        choices=ModuleTransactionBase.analysis_required
     )
 
     def get_type_transaction(self):
@@ -243,7 +247,7 @@ register(NominalHeader)
 #         )
 
 
-class NominalLine(TransactionLine):
+class NominalLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     vat_code = models.ForeignKey(
@@ -252,6 +256,11 @@ class NominalLine(TransactionLine):
         'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_good_line")
     vat_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_vat_line")
+    type = models.CharField(
+        max_length=3,
+        choices=NominalHeader.analysis_required
+        # see note on parent class for more info
+    )
 
     @classmethod
     def fields_to_update(cls):
@@ -261,7 +270,8 @@ class NominalLine(TransactionLine):
             'goods',
             'vat',
             "nominal",
-            "vat_code",           
+            "vat_code",
+            "type"
         ]
 
 register(NominalLine)

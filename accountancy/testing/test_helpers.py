@@ -3,7 +3,6 @@ from datetime import date
 from django.test import TestCase
 
 from accountancy.helpers import AuditTransaction, Period
-from accountancy.testing.helpers import two_dp
 from cashbook.models import CashBook
 from nominals.models import Nominal
 from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
@@ -29,14 +28,14 @@ class AuditTransactionTest(TestCase):
         h = PurchaseHeader.objects.create(
             type="pp", # payment
             date=date.today(),
-            goods=two_dp(120),
-            vat=two_dp(0),
-            total=two_dp(120),
+            goods=120,
+            vat=0,
+            total=120,
             ref="123",
             cash_book=cash_book,
             supplier=supplier,
-            paid=two_dp(0),
-            due=two_dp(0),
+            paid=0,
+            due=0,
             period="202006"
         )
         self.assertEqual(
@@ -45,6 +44,7 @@ class AuditTransactionTest(TestCase):
         )
         h.ref = "1234" # update the header
         h.save()
+        h.refresh_from_db()
         self.assertEqual(
             len(PurchaseHeader.history.all()),
             2
@@ -224,16 +224,17 @@ class AuditTransactionTest(TestCase):
         h = PurchaseHeader.objects.create(
             type="pi", # payment
             date=date.today(),
-            goods=two_dp(100),
-            vat=two_dp(20),
-            total=two_dp(120),
+            goods=100,
+            vat=20,
+            total=120,
             ref="123",
             cash_book=cash_book,
             supplier=supplier,
-            paid=two_dp(0),
-            due=two_dp(0),
+            paid=0,
+            due=0,
             period="202006"
         )
+
         nominal = Nominal.objects.create(
             name="something",
             parent=None
@@ -245,8 +246,8 @@ class AuditTransactionTest(TestCase):
         )
         l = PurchaseLine.objects.create(
             nominal=nominal,
-            goods=two_dp(100),
-            vat=two_dp(20),
+            goods=100,
+            vat=20,
             vat_code=vat_code,
             description="123",
             line_no=1,
@@ -258,8 +259,10 @@ class AuditTransactionTest(TestCase):
         )
         h.ref = "1234" # update the header
         h.save()
+        h.refresh_from_db()
         l.description = "12345"
         l.save()
+        l.refresh_from_db()
         self.assertEqual(
             len(PurchaseHeader.history.all()),
             2
@@ -540,27 +543,27 @@ class AuditTransactionTest(TestCase):
         to_match_against = PurchaseHeader.objects.create(
             type="pi", # payment
             date=date.today(),
-            goods=two_dp(-100),
-            vat=two_dp(-20),
-            total=two_dp(-120),
+            goods=-100,
+            vat=-20,
+            total=-120,
             ref="123",
             cash_book=cash_book,
             supplier=supplier,
-            paid=two_dp(0),
-            due=two_dp(0),
+            paid=0,
+            due=0,
             period="202006"            
         )
         h = PurchaseHeader.objects.create(
             type="pi", # payment
             date=date.today(),
-            goods=two_dp(100),
-            vat=two_dp(20),
-            total=two_dp(120),
+            goods=100,
+            vat=20,
+            total=120,
             ref="123",
             cash_book=cash_book,
             supplier=supplier,
-            paid=two_dp(0),
-            due=two_dp(0),
+            paid=0,
+            due=0,
             period="202006"
         )
         nominal = Nominal.objects.create(
@@ -574,8 +577,8 @@ class AuditTransactionTest(TestCase):
         )
         l = PurchaseLine.objects.create(
             nominal=nominal,
-            goods=two_dp(100),
-            vat=two_dp(20),
+            goods=100,
+            vat=20,
             vat_code=vat_code,
             description="123",
             line_no=1,
@@ -585,7 +588,7 @@ class AuditTransactionTest(TestCase):
             matched_by=h,
             matched_to=to_match_against,
             period="202006",
-            value=two_dp(-100)
+            value=-100
         )
         self.assertEqual(
             len(PurchaseHeader.history.all()),
@@ -597,10 +600,15 @@ class AuditTransactionTest(TestCase):
         )
         h.ref = "1234" # update the header
         h.save()
+        h.refresh_from_db()
+
         l.description = "12345"
         l.save()
-        match.value = two_dp(-120)
+        l.refresh_from_db()
+
+        match.value = -120
         match.save()
+        match.refresh_from_db()
 
         audit_transaction = AuditTransaction(h, PurchaseHeader, PurchaseLine, PurchaseMatching)    
         self.assertEqual(

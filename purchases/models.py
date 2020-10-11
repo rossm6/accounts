@@ -65,7 +65,7 @@ class BroughtForwardRefund(PurchaseTransaction):
     pass
 
 
-class PurchaseHeader(TransactionHeader):
+class ModuleTransactionBase:
     # FIX ME - rename to "no_nominal_required"
     no_analysis_required = [
         ('pbi', 'Brought Forward Invoice'),
@@ -122,15 +122,17 @@ class PurchaseHeader(TransactionHeader):
         'pp',
         'pr'
     ]
+    type_choices = no_analysis_required + analysis_required
+
+class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
-    type_choices = no_analysis_required + analysis_required
     cash_book = models.ForeignKey(
         'cashbook.CashBook', on_delete=models.CASCADE, null=True, blank=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=type_choices
+        choices=ModuleTransactionBase.type_choices
     )
     matched_to = models.ManyToManyField(
         'self', through='PurchaseMatching', symmetrical=False)
@@ -155,7 +157,7 @@ class PurchaseHeader(TransactionHeader):
 
 register(PurchaseHeader)
 
-class PurchaseLine(TransactionLine):
+class PurchaseLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
@@ -167,6 +169,11 @@ class PurchaseLine(TransactionLine):
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="purchase_vat_line")
     total_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="purchase_total_line")
+    type = models.CharField(
+        max_length=3,
+        choices=PurchaseHeader.type_choices
+        # see note on parent class for more info
+    )
 
     # It does not make sense that a line would exist without a nominal transaction but the purchase line is created
     # before the nominal transaction so it must do the create without the id for the nominal transaction
@@ -182,7 +189,8 @@ class PurchaseLine(TransactionLine):
             "goods",
             "vat",
             "nominal",
-            "vat_code"            
+            "vat_code",
+            "type"        
         ]
 
 register(PurchaseLine)
@@ -202,7 +210,16 @@ class PurchaseMatching(MatchedHeaders):
         on_delete=models.CASCADE,
         related_name="matched_to_these"
     )
-
+    matched_by_type = models.CharField(
+        max_length=3,
+        choices=PurchaseHeader.type_choices
+        # see note on parent class for more info
+    )
+    matched_to_type = models.CharField(
+        max_length=3,
+        choices=PurchaseHeader.type_choices
+        # see note on parent class for more info
+    )
     # So we can do for two trans, t1 and t2
     # t1.matched_to_these.all()
     # t2.matched_by_these.all()

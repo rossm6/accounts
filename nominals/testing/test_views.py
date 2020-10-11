@@ -865,7 +865,7 @@ class CreateJournal(TestCase):
         self.assertContains(
             response,
             '<li class="py-1">Debits and credits must total zero.  Total debits entered i.e. '
-            'positives values entered is 120, and total credits entered i.e. negative values entered, is -60.  This gives a non-zero total of 60</li>',
+            'positives values entered is 120.00, and total credits entered i.e. negative values entered, is -60.00.  This gives a non-zero total of 60.00</li>',
             html=True
         )
 

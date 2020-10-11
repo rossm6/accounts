@@ -757,6 +757,7 @@ class RESTBaseCreateTransactionMixin:
             if form.empty_permitted and form.has_changed():
                 line = form.save(commit=False)
                 line.header = self.header_obj
+                line.type = self.header_obj.type
                 line.line_no = line_no
                 lines.append(line)
                 line_no = line_no + 1
@@ -792,6 +793,8 @@ class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
         for form in self.match_formset:
             if form.empty_permitted and form.has_changed():
                 match = form.save(commit=False)
+                match.matched_by_type = match.matched_by.type
+                match.matched_to_type = match.matched_to.type
                 if match.value != 0:
                     matches.append(match)
         if matches:
@@ -983,17 +986,18 @@ class RESTBaseEditTransactionMixin:
                 lines_to_be_created_or_updated_only.append(form)
             elif not form.empty_permitted and form.instance not in self.lines_to_delete:
                 lines_to_be_created_or_updated_only.append(form)
-
         line_no = 1
         lines_to_update = []
         for form in lines_to_be_created_or_updated_only:
             if form.empty_permitted and form.has_changed():
                 form.instance.header = self.header_obj
                 form.instance.line_no = line_no
+                form.instance.type = self.header_obj.type
                 line_no = line_no + 1
             elif not form.empty_permitted:
                 if form.instance.is_non_zero():
                     form.instance.line_no = line_no
+                    form.instance.type = self.header_obj.type
                     line_no = line_no + 1
                     lines_to_update.append(form.instance)
                 else:
@@ -1048,11 +1052,17 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
         if not hasattr(self, 'header_has_been_saved'):
             self.header_obj.save()
         self.match_formset.save(commit=False)
-        new_matches = filter(
-            lambda o: True if o.value else False, self.match_formset.new_objects)
-        self.get_match_model().objects.audited_bulk_create(new_matches)
+        new_matches = [ match for match in self.match_formset.new_objects if match.value ]
         changed_objects = [obj for obj,
                            _tuple in self.match_formset.changed_objects]
+        for match in new_matches + changed_objects:
+            if match.matched_by_id == self.header_obj.pk:
+                match.matched_by_type = self.header_obj.type # if change this will not be in match.matched_by
+                match.matched_to_type = match.matched_to.type
+            else:
+                match.matched_by_type = match.matched_by.type   
+                match.matched_to_type = self.header_obj.type # if change this will not be in match.matched_to             
+        self.get_match_model().objects.audited_bulk_create(new_matches)
         # exclude zeros from update
         to_update = filter(
             lambda o: True if o.value else False, changed_objects)
@@ -1061,7 +1071,7 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
             lambda o: True if not o.value else False, changed_objects)
         self.get_match_model().objects.audited_bulk_update(
             to_update,
-            ['value']
+            ['value', 'matched_by_type', 'matched_to_type']
         )
         bulk_delete_with_history(
             to_delete,

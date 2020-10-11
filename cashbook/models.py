@@ -44,7 +44,7 @@ class BroughtForwardRefund(CashBookTransaction):
     pass
 
 
-class CashBookHeader(TransactionHeader):
+class ModuleTransactionBase:
     no_analysis_required = [
         ('cbp', 'Brought Forward Payment'),
         ('cbr', 'Brought Forward Receipt'),
@@ -82,13 +82,15 @@ class CashBookHeader(TransactionHeader):
         'cbr',
         'cr'
     ]
+    type_choices = no_analysis_required + analysis_required
+
+class CashBookHeader(ModuleTransactionBase, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
-    type_choices = no_analysis_required + analysis_required
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=type_choices
+        choices=ModuleTransactionBase.type_choices
     )
     # payee to add
 
@@ -122,7 +124,7 @@ register(CashBookHeader)
 #         )
 
 
-class CashBookLine(TransactionLine):
+class CashBookLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(CashBookHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
@@ -134,6 +136,11 @@ class CashBookLine(TransactionLine):
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_vat_line")
     total_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_total_line")
+    type = models.CharField(
+        max_length=3,
+        choices=CashBookHeader.type_choices
+        # see note on parent class for more info
+    )
 
     class Meta:
         ordering = ['line_no']
@@ -146,8 +153,10 @@ class CashBookLine(TransactionLine):
             "goods",
             "vat",
             "nominal",
-            "vat_code"            
+            "vat_code",
+            "type"
         ]
+
 
 register(CashBookLine)
 
@@ -175,7 +184,8 @@ class CashBookTransaction(MultiLedgerTransactions):
             "ref",
             "period",
             "date",
-            "type"            
+            "type"
         ]
+
 
 register(CashBookTransaction)

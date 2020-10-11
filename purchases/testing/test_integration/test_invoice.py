@@ -842,7 +842,7 @@ class CreateInvoice(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">You are trying to match a total value of 20.'
+            '<li class="py-1">You are trying to match a total value of 20.00.'
             '  Because you are entering a zero value transaction the total amount to match must be zero also.</li>',
             html=True
         )
@@ -1241,7 +1241,7 @@ class CreateInvoice(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400.00</li>',
             html=True
         )
 
@@ -1295,7 +1295,7 @@ class CreateInvoice(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
 
@@ -1780,7 +1780,7 @@ class CreateInvoice(TestCase):
         )
         self.assertContains(
             response,
-			'<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+			'<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
 
@@ -1835,7 +1835,7 @@ class CreateInvoice(TestCase):
         )
         self.assertContains(
             response,
-			'<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+			'<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
 
@@ -3941,7 +3941,7 @@ class CreateInvoiceNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400.00</li>',
             html=True
         )
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -4015,7 +4015,7 @@ class CreateInvoiceNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400.00</li>',
             html=True
         )
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -5362,7 +5362,7 @@ class CreateInvoiceNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -5437,7 +5437,7 @@ class CreateInvoiceNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -6995,7 +6995,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1080</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1080.00</li>',
             html=True
         )
 
@@ -7922,7 +7922,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2100</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2100.00</li>',
             html=True
         )
 
@@ -8074,7 +8074,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1320</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1320.00</li>',
             html=True
         )
 
@@ -8857,7 +8857,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1080</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1080.00</li>',
             html=True
         )
 
@@ -9013,7 +9013,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1140</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1140.00</li>',
             html=True
         )
 
@@ -9924,7 +9924,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2100</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2100.00</li>',
             html=True
         )
 
@@ -10095,7 +10095,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1320</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1320.00</li>',
             html=True
         )
 
@@ -10974,7 +10974,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1080</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1080.00</li>',
             html=True
         )
 
@@ -11146,7 +11146,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1140</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1140.00</li>',
             html=True
         )
 
@@ -12233,7 +12233,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1140</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1140.00</li>',
             html=True
         )
 

@@ -608,7 +608,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400.00</li>',
             html=True
         )
         headers = SaleHeader.objects.all().order_by("pk")
@@ -679,7 +679,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400.00</li>',
             html=True
         )
         headers = SaleHeader.objects.all().order_by("pk")
@@ -1323,7 +1323,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
         headers = SaleHeader.objects.all().order_by("pk")
@@ -1391,7 +1391,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
         headers = SaleHeader.objects.all().order_by("pk")

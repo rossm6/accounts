@@ -98,7 +98,7 @@ class ViewInvoice(TestCase):
         )
 
         self.assertEqual(
-            response.context["main_header"],
+            response.context["header"],
             header
         )
 
@@ -154,6 +154,6 @@ class ViewBroughtForwardInvoice(TestCase):
         )
 
         self.assertEqual(
-            response.context["main_header"],
+            response.context["header"],
             header
         )

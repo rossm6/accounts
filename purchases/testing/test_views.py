@@ -92,8 +92,6 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
     return PurchaseHeader.objects.bulk_create(headers)    
 
 
-
-
 class GeneralTransactionTests(TestCase):
 
     @classmethod

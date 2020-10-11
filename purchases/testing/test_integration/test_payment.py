@@ -371,7 +371,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-			'<li class="py-1">You are trying to match a total value of 20. '
+			'<li class="py-1">You are trying to match a total value of 20.00. '
             "Because you are entering a zero value transaction the total amount to match must be zero also.</li>",
             html=True
         )
@@ -672,7 +672,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
 
@@ -720,7 +720,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -100</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -100.00</li>',
             html=True
         )
 
@@ -988,7 +988,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400.00</li>',
             html=True
         )
 
@@ -1036,7 +1036,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 100</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 100.00</li>',
             html=True
         )
 
@@ -1546,7 +1546,7 @@ class CreatePaymentNominalEntries(TestCase):
         data.update(matching_data)
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
-        headers = PurchaseHeader.objects.all()
+        headers = PurchaseHeader.objects.all().order_by("-pk")
         self.assertEqual(len(headers), 3)
         header = headers[0]
         self.assertEqual(
@@ -1589,7 +1589,7 @@ class CreatePaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             matches[0].matched_to,
-            headers[1]
+            headers[2]
         )
         self.assertEqual(
             matches[0].value,
@@ -1601,7 +1601,7 @@ class CreatePaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             matches[1].matched_to,
-            headers[2]
+            headers[1]
         )
         self.assertEqual(
             matches[1].value,
@@ -2244,7 +2244,7 @@ class CreatePaymentNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120.00</li>',
             html=True
         )
 
@@ -2322,7 +2322,7 @@ class CreatePaymentNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -120.00</li>',
             html=True
         )
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -3032,7 +3032,7 @@ class CreatePaymentNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120.00</li>',
             html=True
         )
 
@@ -3111,7 +3111,7 @@ class CreatePaymentNominalEntries(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 120.00</li>',
             html=True
         )
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -3725,7 +3725,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -500</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -500.00</li>',
             html=True
         )
 
@@ -4016,7 +4016,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1500</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1500.00</li>',
             html=True
         )
 
@@ -4312,7 +4312,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -800</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -800.00</li>',
             html=True
         )
 
@@ -4675,7 +4675,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2000</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2000.00</li>',
             html=True
         )
 
@@ -5032,7 +5032,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -800</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -800.00</li>',
             html=True
         )
 
@@ -5791,7 +5791,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -900</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -900.00</li>',
             html=True
         )
 
@@ -6018,7 +6018,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1000</li>',
+            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -1000.00</li>',
             html=True
         )
 

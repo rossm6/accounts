@@ -106,7 +106,6 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
     It has to be done during the instantiation of the field it seems.
 
     Also, the widget seems it cannot be defined in the Meta class
-
     """
     nominal = ModelChoiceFieldChooseIterator(
         queryset=Nominal.objects.none(),

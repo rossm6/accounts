@@ -1,6 +1,6 @@
+from datetime import date
 from decimal import Decimal
 from itertools import groupby
-from datetime import date
 
 from django.conf import settings
 from django.db import models
@@ -8,6 +8,7 @@ from django.db.models import Q
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 
+from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
 from accountancy.signals import audit_post_delete
 from utils.helpers import (DELETED_HISTORY_TYPE, bulk_delete_with_history,
                            create_historical_records,
@@ -407,7 +408,7 @@ class ControlAccountPaymentTransactionMixin:
 
     def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         nom_trans = nom_tran_cls.objects.filter(module=self.module,
-            header=self.header_obj.pk).order_by("line")
+                                                header=self.header_obj.pk).order_by("line")
         try:
             control_nominal_name = kwargs.get('control_nominal_name')
             control_nominal = nom_cls.objects.get(
@@ -447,31 +448,18 @@ class ControlAccountPaymentTransactionMixin:
             return
 
 
-class DecimalBaseModel(models.Model):
+class UIDecimalField(models.DecimalField):
+    def contribute_to_class(self, cls, name):
+        super().contribute_to_class(cls, name)
+        setattr(cls, self.name, DecimalDescriptor(self.name))
+        setattr(cls, f"ui_{self.name}", UIDecimalDescriptor(self.name))
 
-    """
-    The purpose of this class is simply to make sure the decimal zero is
-    saved instead of null to the database.  At first i had 0.00 as the
-    default value set against each field on the model but i don't like
-    this showing as the initial value in the creation form.
 
-    REMEMBER - clean is called as part of the full_clean process which
-    itself it not called during save()
-    """
+class TransactionBase:
+    def is_negative_type(self):
+        return self.type in self.negatives
 
-    class Meta:
-        abstract = True
-
-    def clean(self):
-        fields = self._meta.get_fields()
-        for field in fields:
-            if field.__class__ is models.fields.DecimalField:
-                field_name = field.name
-                field_value = getattr(self, field_name)
-                if field_value == None:
-                    setattr(self, field_name, Decimal(0.00))
-
-class TransactionHeader(DecimalBaseModel, Audit):
+class TransactionHeader(TransactionBase, models.Model, Audit):
     """
 
     Base transaction which can be sub classed.
@@ -488,37 +476,37 @@ class TransactionHeader(DecimalBaseModel, Audit):
         ("v", "void"),
     ]
     ref = models.CharField(max_length=20)
-    goods = models.DecimalField(
+    goods = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
         null=True
     )
-    discount = models.DecimalField(
+    discount = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
         null=True
     )
-    vat = models.DecimalField(
+    vat = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
         null=True
     )
-    total = models.DecimalField(
+    total = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
         null=True
     )
-    paid = models.DecimalField(
+    paid = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
         null=True
     )
-    due = models.DecimalField(
+    due = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
@@ -552,7 +540,7 @@ class TransactionHeader(DecimalBaseModel, Audit):
         return self.ui_field_value(self, "paid")
 
     def ui_due(self):
-        return self.ui_field_value(self, "due")    
+        return self.ui_field_value(self, "due")
 
     def ui_status(self):
         if self.type == "nj":
@@ -574,9 +562,6 @@ class TransactionHeader(DecimalBaseModel, Audit):
     def is_void(self):
         return self.status == "v"
 
-    def is_negative_type(self):
-        return self.type in self.negatives
-
     def is_positive_type(self):
         return self.type in self.positives
 
@@ -592,15 +577,15 @@ class TransactionHeader(DecimalBaseModel, Audit):
             return True
 
     def requires_analysis(self):
-        if self.type in [ t[0] for t in self.analysis_required]:
+        if self.type in [t[0] for t in self.analysis_required]:
             return True
 
     def will_have_nominal_transactions(self):
         return self.type in [t[0] for t in self.analysis_required]
 
     def requires_lines(self):
-        if self.type in [ t[0] for t in self.lines_required]:
-            return True        
+        if self.type in [t[0] for t in self.lines_required]:
+            return True
 
     @classmethod
     def get_types_requiring_analysis(cls):
@@ -627,21 +612,24 @@ class TransactionHeader(DecimalBaseModel, Audit):
         return cls.credits
 
 
-class TransactionLine(DecimalBaseModel, Audit):
+class TransactionLine(TransactionBase, models.Model, Audit):
     line_no = models.IntegerField()
     description = models.CharField(max_length=100)
-    goods = models.DecimalField(
+    goods = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
         null=True
     )
-    vat = models.DecimalField(
+    vat = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
         null=True
     )
+    # type field must be added to the subclass which has same choices as type field on header
+    # this field is needed for UI presentation.  Without it we need to always remember to select_related
+    # header for each line query which isn't ideal, or may be even, possible on occasion.
 
     class Meta:
         abstract = True
@@ -688,6 +676,7 @@ class TransactionLine(DecimalBaseModel, Audit):
     def ui_vat(self):
         return self.ui_field_value(self, "vat")
 
+
 class MatchedHeaders(models.Model, Audit):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
@@ -695,7 +684,7 @@ class MatchedHeaders(models.Model, Audit):
     # transaction_1 = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="first_transaction")
     # transaction_2 = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="second_transaction")
     created = models.DateField(auto_now_add=True)
-    value = models.DecimalField(
+    value = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
@@ -703,6 +692,9 @@ class MatchedHeaders(models.Model, Audit):
     )
     # example 202001, 202002.  This way we can sort easily.
     period = models.CharField(max_length=6)
+    # type field must be added to the subclass which has same choices as type field on header
+    # this field is needed for UI presentation.  Without it we need to always remember to select_related
+    # header for each line query which isn't ideal, or may be even, possible on occasion.
 
     class Meta:
         abstract = True
@@ -755,7 +747,7 @@ class MatchedHeaders(models.Model, Audit):
         return [header for header in headers if header.due != 0]
 
 
-class MultiLedgerTransactions(DecimalBaseModel, Audit):
+class MultiLedgerTransactions(models.Model, Audit):
     module = models.CharField(max_length=3)  # e.g. 'PL' for purchase ledger
     # we don't bother with ForeignKeys to the header and line models
     # because this would require generic foreign keys which means extra overhead
@@ -766,7 +758,7 @@ class MultiLedgerTransactions(DecimalBaseModel, Audit):
     # if a line transaction is created e.g. Purchase or Nominal Line, this will just be the primary key of the line record
     line = models.PositiveIntegerField()
     # but sometimes there won't be any lines e.g. a payment.  So the line will have to be set manually
-    value = models.DecimalField(
+    value = UIDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,

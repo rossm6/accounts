@@ -14,7 +14,6 @@ from simple_history.utils import (get_change_reason_from_object,
 
 DELETED_HISTORY_TYPE = "-"
 
-
 def non_negative_zero_decimal(decimal):
     """
     Avoids negative zero
