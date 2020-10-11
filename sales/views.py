@@ -8,8 +8,8 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
                                LoadMatchingTransactions,
-                               SalesAndPurchasesTransList,
-                               ViewTransactionOnLedgerOtherThanNominal)
+                               SaleAndPurchaseViewTransaction,
+                               SalesAndPurchasesTransList)
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
@@ -99,34 +99,16 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
     cash_book_transaction_model = CashBookTransaction
 
 
-class ViewTransaction(CustomerMixin, ViewTransactionOnLedgerOtherThanNominal):
-    header = {
-        "model": SaleHeader,
-        "form": ReadOnlySaleHeaderForm,
-        "prefix": "header",
-        "override_choices": ["customer"],
-    }
-    line = {
-        "model": SaleLine,
-        "formset": read_only_lines,
-        "prefix": "line",
-    }
-    match = {
-        "model": SaleMatching,
-        "formset": read_only_match,
-        "prefix": "match"
-    }
+class ViewTransaction(SaleAndPurchaseViewTransaction):
+    model = SaleHeader
+    line_model = SaleLine
+    match_model = SaleMatching
+    nominal_transaction_model = NominalTransaction
+    module = 'SL'
     void_form_action = reverse_lazy("sales:void")
     void_form = BaseVoidTransactionForm
     template_name = "sales/view.html"
-    nominal_transaction_model = NominalTransaction
-    module = 'SL'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["edit_view_name"] = "sales:edit"
-        return context
-
+    edit_view_name = "sales:edit"
 
 class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = SaleHeader

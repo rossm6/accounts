@@ -10,21 +10,21 @@ from django.http import (Http404, HttpResponse, HttpResponseBadRequest,
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import DetailView, ListView
+from django.views.generic import ListView
 from querystring_parser import parser
 
 from accountancy.exceptions import FormNotValid
 from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
 from accountancy.helpers import AuditTransaction
-from accountancy.views import (AgeMatchingReportMixin, BaseViewTransaction,
+from accountancy.views import (AgeMatchingReportMixin,
                                BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
                                LoadMatchingTransactions,
+                               SaleAndPurchaseViewTransaction,
                                SalesAndPurchasesTransList,
-                               ViewTransactionOnLedgerOtherThanNominal,
                                jQueryDataTable)
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
@@ -84,6 +84,7 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
     cash_book_transaction_model = CashBookTransaction
     default_type = "pi"
 
+
 class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
@@ -114,36 +115,7 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     cash_book_transaction_model = CashBookTransaction
 
 
-class ViewTransaction(SupplierMixin, ViewTransactionOnLedgerOtherThanNominal):
-    header = {
-        "model": PurchaseHeader,
-        "form": ReadOnlyPurchaseHeaderForm,
-        "prefix": "header",
-    }
-    line = {
-        "model": PurchaseLine,
-        "formset": read_only_lines,
-        "prefix": "line",
-    }
-    match = {
-        "model": PurchaseMatching,
-        "formset": read_only_match,
-        "prefix": "match"
-    }
-    void_form_action = reverse_lazy("purchases:void")
-    void_form = BaseVoidTransactionForm
-    template_name = "purchases/view.html"
-    nominal_transaction_model = NominalTransaction
-    module = 'PL'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["edit_view_name"] = "purchases:edit"
-        return context
-
-
-
-class ViewTransactionNew(DetailView):
+class ViewTransaction(SaleAndPurchaseViewTransaction):
     model = PurchaseHeader
     line_model = PurchaseLine
     match_model = PurchaseMatching
@@ -151,53 +123,8 @@ class ViewTransactionNew(DetailView):
     module = 'PL'
     void_form_action = reverse_lazy("purchases:void")
     void_form = BaseVoidTransactionForm
-    template_name = "purchases/view_new.html"
-    context_object_name = "header"
-
-    def get_header_model(self):
-        return self.model
-
-    def get_line_model(self):
-        return self.line_model
-
-    def get_match_model(self):
-        return self.match_model
-
-    def get_nominal_transaction_model(self):
-        return self.nominal_transaction_model
-
-    def get_module(self):
-        return self.module
-
-    def get_void_form_kwargs(self, header):
-        return {
-            "prefix":"void",
-            "initial": {"id": header.pk}            
-        }
-
-    def get_void_form(self, header=None):
-        return self.void_form(
-            self.get_header_model(),
-            self.get_void_form_action(),
-            **self.get_void_form_kwargs(header=header)
-        )
-
-    def get_void_form_action(self):
-        return self.void_form_action
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        header = context["header"]
-        context["lines"] = lines = self.get_line_model().objects.filter(header=header)
-        matches = self.get_match_model().objects.filter(
-            Q(matched_by=header) | Q(matched_to=header)
-        )
-        nom_trans = self.get_nominal_transaction_model().objects.filter(module=self.get_module(), header=header.pk)
-        context["void_form"] = self.get_void_form(header=header)
-        context["module"] = self.get_module()
-        context["edit_view_name"] = "purchases:edit"
-        return context        
-
+    template_name = "purchases/view.html"
+    edit_view_name = "purchases:edit"
 
 class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = PurchaseHeader

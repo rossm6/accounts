@@ -2,14 +2,13 @@ from django.urls import path
 
 from .views import (AgeCreditorsReport, CreateTransaction, EditTransaction,
                     LoadPurchaseMatchingTransactions, LoadSuppliers,
-                    TransactionEnquiry, ViewTransaction, VoidTransaction, ViewTransactionNew)
+                    TransactionEnquiry, VoidTransaction, ViewTransaction)
 
 app_name = "purchases"
 urlpatterns = [
     path("create", CreateTransaction.as_view(), name="create"),
     path("edit/<int:pk>", EditTransaction.as_view(), name="edit"),
     path("view/<int:pk>", ViewTransaction.as_view(), name="view"),
-    path("view_new/<int:pk>", ViewTransactionNew.as_view(), name="view_new"),
     path("void", VoidTransaction.as_view(), name="void"),
     path("creditors_report", AgeCreditorsReport.as_view(), name="creditors_report"),
     path("load_matching_transactions", LoadPurchaseMatchingTransactions.as_view(),

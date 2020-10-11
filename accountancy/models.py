@@ -1,5 +1,6 @@
 from decimal import Decimal
 from itertools import groupby
+from datetime import date
 
 from django.conf import settings
 from django.db import models
@@ -9,7 +10,8 @@ from simple_history.utils import (bulk_create_with_history,
 
 from accountancy.signals import audit_post_delete
 from utils.helpers import (DELETED_HISTORY_TYPE, bulk_delete_with_history,
-                           create_historical_records)
+                           create_historical_records,
+                           non_negative_zero_decimal)
 
 
 class Contact(models.Model):
@@ -469,7 +471,6 @@ class DecimalBaseModel(models.Model):
                 if field_value == None:
                     setattr(self, field_name, Decimal(0.00))
 
-
 class TransactionHeader(DecimalBaseModel, Audit):
     """
 
@@ -535,6 +536,41 @@ class TransactionHeader(DecimalBaseModel, Audit):
 
     objects = AuditQuerySet.as_manager()
 
+    @staticmethod
+    def ui_field_value(instance, field):
+        value = getattr(instance, field)
+        if instance.is_negative_type():
+            ui_value = value * -1
+        else:
+            ui_value = value
+        return non_negative_zero_decimal(ui_value)
+
+    def ui_total(self):
+        return self.ui_field_value(self, "total")
+
+    def ui_paid(self):
+        return self.ui_field_value(self, "paid")
+
+    def ui_due(self):
+        return self.ui_field_value(self, "due")    
+
+    def ui_status(self):
+        if self.type == "nj":
+            return ""
+        if self.status == "c":
+            if self.total == self.paid:
+                return "fully matched"
+            else:
+                if self.due_date:
+                    if self.due_date >= date.today():
+                        return "outstanding"
+                    else:
+                        return "overdue"
+                else:
+                    return "not matched"
+        elif self.is_void():
+            return "Void"
+
     def is_void(self):
         return self.status == "v"
 
@@ -561,6 +597,10 @@ class TransactionHeader(DecimalBaseModel, Audit):
 
     def will_have_nominal_transactions(self):
         return self.type in [t[0] for t in self.analysis_required]
+
+    def requires_lines(self):
+        if self.type in [ t[0] for t in self.lines_required]:
+            return True        
 
     @classmethod
     def get_types_requiring_analysis(cls):
@@ -622,6 +662,31 @@ class TransactionLine(DecimalBaseModel, Audit):
         else:
             return False
 
+    @staticmethod
+    def ui_field_value(instance, field):
+        """
+        WARNING - this will hit the db each time it called
+        if the line instance passed does not have the header
+        already in memory.
+
+        The calling code needs to select_related header
+        therefore.
+        """
+        value = getattr(instance, field)
+        if instance.header.is_negative_type():
+            ui_value = value * -1
+        else:
+            ui_value = value
+        return non_negative_zero_decimal(ui_value)
+
+    def ui_total(self):
+        return self.ui_field_value(self, "total")
+
+    def ui_goods(self):
+        return self.ui_field_value(self, "goods")
+
+    def ui_vat(self):
+        return self.ui_field_value(self, "vat")
 
 class MatchedHeaders(models.Model, Audit):
     """
@@ -643,6 +708,21 @@ class MatchedHeaders(models.Model, Audit):
         abstract = True
 
     objects = AuditQuerySet.as_manager()
+
+    @staticmethod
+    def ui_match_value(transaction_header, match_value):
+        """
+        If the transaction_header is the matched_by in the match record,
+        then match_value is the value of the value field in the same
+        match record.  Else if matched_to is the transaction header
+        in the same match record, then the match_value is the value of
+        the value field in the match record multiplied by -1.
+        """
+        if transaction_header.is_negative_type():
+            value = match_value * -1
+        else:
+            value = match_value
+        return non_negative_zero_decimal(value)
 
     @classmethod
     def get_not_fully_matched_at_period(cls, headers, period):

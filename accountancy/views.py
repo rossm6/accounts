@@ -15,7 +15,7 @@ from django.http import (Http404, HttpResponse, HttpResponseForbidden,
 from django.shortcuts import get_object_or_404, render, reverse
 from django.template.context_processors import csrf
 from django.template.loader import render_to_string
-from django.views.generic import ListView, View
+from django.views.generic import DetailView, ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from mptt.utils import get_cached_trees
 from querystring_parser import parser
@@ -24,7 +24,7 @@ from accountancy.exceptions import FormNotValid
 from accountancy.helpers import (AuditTransaction, JSONBlankDate, Period,
                                  sort_multiple)
 from nominals.models import Nominal
-from utils.helpers import bulk_delete_with_history
+from utils.helpers import bulk_delete_with_history, non_negative_zero_decimal
 
 
 def format_dates(objects, date_keys, format):
@@ -901,12 +901,12 @@ class CreatePurchaseOrSalesTransaction(MatchingMixin, CreateCashBookEntriesMixin
 class RESTIndividualTransactionForHeaderMixin:
     def get_header_form_kwargs(self):
         kwargs = super().get_header_form_kwargs()
-        if not hasattr(self, 'header_to_edit'):
+        if not hasattr(self, 'main_header'):
             raise AttributeError(
-                f"{self.__class__.__name__} has no 'header_to_edit' attribute.  Did you override "
+                f"{self.__class__.__name__} has no 'main_header' attribute.  Did you override "
                 "setup() and forget to class super()?"
             )
-        kwargs["instance"] = self.header_to_edit
+        kwargs["instance"] = self.main_header
         return kwargs
 
 
@@ -915,23 +915,23 @@ class RESTIndividualTransactionMixin:
     def get_line_formset_kwargs(self, header=None):
         kwargs = super().get_line_formset_kwargs(header)
         if not header:
-            kwargs["header"] = self.header_to_edit
+            kwargs["header"] = self.main_header
         return kwargs
 
     def get_line_formset_queryset(self):
-        return self.get_line_model().objects.filter(header=self.header_to_edit)
+        return self.get_line_model().objects.filter(header=self.main_header)
 
     def get_match_formset_queryset(self):
         return (
             self.get_match_model()
             .objects
-            .filter(Q(matched_by=self.header_to_edit) | Q(matched_to=self.header_to_edit))
+            .filter(Q(matched_by=self.main_header) | Q(matched_to=self.main_header))
             .select_related('matched_by')
             .select_related('matched_to')
         )
 
     def get_match_formset(self, header=None):
-        header = self.header_to_edit
+        header = self.main_header
         return super().get_match_formset(header)
 
 
@@ -941,12 +941,12 @@ class IndividualTransactionMixin:
         super().setup(request, *args, **kwargs)
         pk = kwargs.get('pk')
         header = get_object_or_404(self.get_header_model(), pk=pk)
-        self.header_to_edit = header
+        self.main_header = header
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["header_to_edit"] = self.header_to_edit
-        context["edit"] = self.header_to_edit.pk
+        context["main_header"] = self.main_header
+        context["edit"] = self.main_header.pk
         return context
 
 
@@ -966,7 +966,7 @@ class RESTBaseEditTransactionMixin:
         )
 
     def dispatch(self, request, *args, **kwargs):
-        if self.header_to_edit.is_void():
+        if self.main_header.is_void():
             return HttpResponseForbidden("Void transactions cannot be edited")
         return super().dispatch(request, *args, **kwargs)
 
@@ -1027,7 +1027,7 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
                           BaseTransaction):
 
     def get_audit(self):
-        header = self.header_to_edit
+        header = self.main_header
         audit = AuditTransaction(
             header,
             self.get_header_model(),
@@ -1081,7 +1081,7 @@ class NominalTransactionsMixin:
             self.get_nominal_transaction_model()
                 .objects
                 .select_related("nominal__name")
-                .filter(header=self.header_to_edit.pk)
+                .filter(header=self.main_header.pk)
                 .filter(module=self.get_module())
                 .values("nominal__name")
                 .annotate(total=Sum("value"))
@@ -1121,7 +1121,7 @@ class EditPurchaseOrSalesTransaction(
         BaseEditTransaction):
 
     def get_audit(self):
-        header = self.header_to_edit
+        header = self.main_header
         audit = AuditTransaction(
             header,
             self.get_header_model(),
@@ -1145,40 +1145,96 @@ class EditPurchaseOrSalesTransaction(
         )
 
 
-class BaseViewTransaction(
-        RESTIndividualTransactionForHeaderMixin,
-        RESTIndividualTransactionMixin,
-        IndividualTransactionMixin,
-        BaseTransaction):
+class BaseViewTransaction(DetailView):
+    context_object_name = "header"
+
+    def get_header_model(self):
+        return self.model
+
+    def get_line_model(self):
+        return self.line_model
+
+    def get_module(self):
+        return self.module
+
+    def get_void_form_kwargs(self, header):
+        return {
+            "prefix": "void",
+            "initial": {"id": header.pk}
+        }
+
+    def get_void_form(self, header=None):
+        return self.void_form(
+            self.get_header_model(),
+            self.get_void_form_action(),
+            **self.get_void_form_kwargs(header=header)
+        )
 
     def get_void_form_action(self):
         return self.void_form_action
 
+    def get_edit_view_name(self):
+        return self.edit_view_name
+
     def get_context_data(self, **kwargs):
+        self.main_header = header = self.object
         context = super().get_context_data(**kwargs)
-        context["is_void"] = self.header_to_edit.is_void()
-        context["edit"] = False
-        context["view"] = self.header_to_edit.pk
-        context["void_form"] = self.void_form(
-            self.get_header_model(),
-            self.get_void_form_action(),
-            prefix="void",
-            initial={"id": self.header_to_edit.pk}
-        )
+        context["lines"] = lines = self.get_line_model(
+        ).objects.select_related("header").filter(header=header)
+        context["void_form"] = self.get_void_form(header=header)
+        context["module"] = self.get_module()
+        context["edit_view_name"] = self.get_edit_view_name()
         return context
 
-    def post(self, request, *args, **kwargs):
-        # read only view
-        # what about on the fly payments though ?
-        # like Xero does
-        raise Http404("Read only view.  Use Edit transaction to make changes.")
+
+class NominalViewTransactionMixin(NominalTransactionsMixin):
+    def get_nominal_transaction_model(self):
+        return self.nominal_transaction_model
 
 
-class ViewTransactionOnLedgerOtherThanNominal(NominalTransactionsMixin, BaseViewTransaction):
-    """
-    On all ledgers other than the nominal ledger the user should like to see the nominal transactions
-    for the transaction.  It is pointless on the NL because the lines show this already.
-    """
+class MatchingViewTransactionMixin:
+
+    def get_match_model(self):
+        return self.match_model
+
+    def get_context_data(self, **kwargs):
+        self.main_header = header = self.object
+        context = super().get_context_data(**kwargs)
+        matches = (
+            self.get_match_model()
+            .objects
+            .select_related("matched_by")
+            .select_related("matched_to")
+            .filter(
+                Q(matched_by=header) | Q(matched_to=header)
+            )
+        )
+        match_objs = []
+        for match in matches:
+            if match.matched_by_id == header.pk:
+                match_obj = {
+                    "type": match.matched_to.get_type_display(),
+                    "ref": match.matched_to.ref,
+                    "total": match.matched_to.ui_total,
+                    "paid": match.matched_to.ui_paid,
+                    "due": match.matched_to.ui_due,
+                    "value": match.ui_match_value(match.matched_to, match.value)
+                }
+            else:
+                match_obj = {
+                    "type": match.matched_by.get_type_display(),
+                    "ref": match.matched_by.ref,
+                    "total": match.matched_by.ui_total,
+                    "paid": match.matched_by.ui_paid,
+                    "due": match.matched_by.ui_due,
+                    "value": match.ui_match_value(match.matched_to, -1 * match.value)
+                }
+            match_objs.append(match_obj)
+        context["matches"] = match_objs
+        return context
+
+
+class SaleAndPurchaseViewTransaction(NominalViewTransactionMixin, MatchingMixin, BaseViewTransaction):
     pass
 
 
@@ -1699,7 +1755,6 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
     def get_form_template(self):
         return self.form_template
 
-from utils.helpers import non_negative_zero_decimal
 
 class LoadMatchingTransactions(jQueryDataTable, ListView):
 

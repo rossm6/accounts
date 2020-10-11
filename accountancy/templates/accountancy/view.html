@@ -1,32 +1,129 @@
-{% extends 'accountancy/grid.html' %}
+{% extends 'base.html' %}
 
-{% block action %}
-<div class="d-flex justify-content-between align-items-center bg-white py-1 mb-4">
-    <h2 class="h6 m-0 font-weight-bold">Awaiting Payment</h2>
-    <div class="d-flex">
-        {% block module_actions %}
-        {% endblock module_actions %}
-        <div class="ml-3">
-            <div class="dropdown">
-                <button class="btn btn-sm bg-primary text-white dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Options
-                </button>
-                {% include 'accountancy/crud_operations.html' with module=module transaction=view %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
+    <style>
+        .data-grid {
+            background-gradient: none;
+            background: none;
+        }
+    </style>
+    {% block extra_head %}
+    {% endblock extra_head %}
+{% endblock head %}
+ 
+{% block content %}
+
+    <div class="cont">
+        <div>
+            <div class="d-flex justify-content-center">
+                <div>
+                    <div class="border data-grid bg-white position-relative">
+                        <div class="invisible">
+                            <div data-audit-aspect-section="header">
+                                <div class="d-flex bg-white d-flex justify-content-between p-3">
+                                    <div class="text-secondary font-weight-bold small text-capitalize {% if header.ui_status == "overdue" %} text-danger {% endif %}">
+                                        {{ header.ui_status }}
+                                    </div>
+                                    <div class="d-flex">
+                                        {% block module_actions %}
+                                        {% endblock module_actions %}
+                                        <div class="ml-3">
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm bg-primary text-white dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    Options
+                                                </button>
+                                                {% include 'accountancy/crud_operations.html' with module=module transaction=header.pk %}
+                                            </div>
+                                        </div>                                 
+                                    </div>
+                                </div>
+                                <div class="w-100 bg-light p-3 d-flex justify-content-between small">
+                                    {% block header_tran %}
+                                    {% endblock header_tran %}
+                                    <div>
+                                        <p class="font-weight-bold text-nowrap">Total</p>
+                                        <div>{{ header.ui_total }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if header.requires_lines %}
+                            <div class="lines bg-light p-3" data-audit-aspect-section="line">
+                                <table class="line table">
+                                    <thead>
+                                        <tr>
+                                            <th>Description</th>
+                                            <th>Goods</th>
+                                            <th class="{% if not header.requires_analysis %} d-none {% endif %}">Nominal</th>
+                                            <th class="{% if not header.requires_analysis %} d-none {% endif %}">Vat Code</th>
+                                            <th>Vat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-bordered bg-white">
+                                        {% for line in lines %}
+                                            <tr>
+                                                <td>{{ line.description }}</td>
+                                                <td>{{ line.ui_goods }}</td>
+                                                <td class="{% if not header.requires_analysis %} d-none {% endif %}">{{ line.nominal }}</td>
+                                                <td class="{% if not header.requires_analysis %} d-none {% endif %}">{{ line.vat_code }}</td>
+                                                <td>{{ line.ui_vat }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+                            <div class="py-2 bg-light">
+                                {% block totals %}
+                                {% endblock totals %}
+                            </div>
+                            {% block nominal_transactions %}
+                            {% endblock nominal_transactions %}
+                        </div>
+                        <div class="spinner-border color-b-1 loading-icon" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                    {% block matching %}
+                    {% endblock matching %}
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock action %}
 
-{% block extra_js %}
-{% load static %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
-<script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
-<script>
-    $(document).ready(function(){
-        {% include 'accountancy/existing_matched_transactions.js' %}
-    });
-</script>
-{% endblock extra_js %}
+{% endblock content %}
+
+{% block js %}
+    {% block extra_js %}
+    {% load static %}
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
+    <script>
+        $(document).ready(function(){
+            var existing_matched_transactions_table = $("table.existing_matched_transactions").DataTable({
+                dom: "t",
+                bPaginate: false,
+                columnDefs: [
+                    { className: "dt-center", "targets": "_all" }
+                ],
+                scrollY: "200px",
+                scrollCollapse: true,
+                paging: false,
+                language: {
+                    emptyTable: "This transaction isn't matched to anything yet"
+                }
+            });            
+        });
+    </script>
+    {% endblock extra_js %}
+    {% block module_js %}
+    {% endblock module_js %}
+{% endblock js %}

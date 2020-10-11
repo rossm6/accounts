@@ -27,6 +27,7 @@ from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
                     enter_lines, read_only_lines)
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
+
 class CreateTransaction(BaseCreateTransaction):
     header = {
         "model": NominalHeader,
@@ -51,6 +52,7 @@ class CreateTransaction(BaseCreateTransaction):
     module = "NL"
     default_type = "nj"
 
+
 class EditTransaction(BaseEditTransaction):
     header = {
         "model": NominalHeader,
@@ -73,27 +75,15 @@ class EditTransaction(BaseEditTransaction):
     nominal_transaction_model = NominalTransaction
     module = "NL"
 
+
 class ViewTransaction(BaseViewTransaction):
-    header = {
-        "model": NominalHeader,
-        "form": ReadOnlyNominalHeaderForm,
-        "prefix": "header",
-    }
-    line = {
-        "model": NominalLine,
-        "formset": read_only_lines,
-        "prefix": "line",
-    }
+    model = NominalHeader
+    line_model = NominalLine
+    module = 'NL'
     void_form_action = reverse_lazy("nominals:void")
     void_form = BaseVoidTransactionForm
     template_name = "nominals/view.html"
-    module = 'NL'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["edit_view_name"] = "nominals:edit"
-        return context
-
+    edit_view_name = "nominals:edit"
 
 class TransactionEnquiry(NominalTransList):
     model = NominalTransaction

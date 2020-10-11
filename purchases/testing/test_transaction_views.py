@@ -103,7 +103,7 @@ class ViewInvoice(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )
 
@@ -159,7 +159,7 @@ class ViewBroughtForwardInvoice(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )
 
@@ -232,7 +232,7 @@ class ViewCreditNote(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )
 
@@ -294,7 +294,7 @@ class ViewBroughtForwardCreditNote(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )
 
@@ -359,7 +359,7 @@ class ViewPayment(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )
 
@@ -418,7 +418,7 @@ class ViewBroughtForwardPayment(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )
 
@@ -486,7 +486,7 @@ class ViewRefund(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )
 
@@ -551,6 +551,6 @@ class ViewBroughtForwardRefund(TestCase):
         )
 
         self.assertEqual(
-            response.context["header_to_edit"],
+            response.context["main_header"],
             header
         )

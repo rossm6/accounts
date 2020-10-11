@@ -4,10 +4,11 @@ from django.urls import reverse_lazy
 
 from accountancy.forms import (BaseVoidTransactionForm,
                                CashBookTransactionSearchForm)
-from accountancy.views import (BaseVoidTransaction, CreateCashBookTransaction,
+from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
+                               CreateCashBookTransaction,
                                DeleteCashBookTransMixin,
                                EditCashBookTransaction, NominalTransList,
-                               ViewTransactionOnLedgerOtherThanNominal)
+                               NominalViewTransactionMixin)
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
@@ -66,27 +67,15 @@ class EditTransaction(EditCashBookTransaction):
     module = "CB"
 
 
-class ViewTransaction(ViewTransactionOnLedgerOtherThanNominal):
-    header = {
-        "model": CashBookHeader,
-        "form": ReadOnlyCashBookHeaderForm,
-        "prefix": "header",
-    }
-    line = {
-        "model": CashBookLine,
-        "formset": read_only_lines,
-        "prefix": "line",
-    }
+class ViewTransaction(NominalViewTransactionMixin, BaseViewTransaction):
+    model = CashBookHeader
+    line_model = CashBookLine
+    nominal_transaction_model = NominalTransaction
+    module = 'CB'
     void_form_action = reverse_lazy("cashbook:void")
     void_form = BaseVoidTransactionForm
     template_name = "cashbook/view.html"
-    nominal_transaction_model = NominalTransaction
-    module = 'CB'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["edit_view_name"] = "cashbook:edit"
-        return context
+    edit_view_name = "cashbook:edit"
 
 
 class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):

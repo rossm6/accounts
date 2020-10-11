@@ -1,7 +1,7 @@
 $(document).ready(function () {
 
-    var header_transaction_pk = "{{ header_to_edit.pk }}";
-    var header_transaction_type = "{{ header_type }}" || "{{ header_to_edit.type }}";
+    var header_transaction_pk = "{{ main_header.pk }}";
+    var header_transaction_type = "{{ header_type }}" || "{{ main_header.type }}";
     var negative_transaction_types = "\"{{ negative_transaction_types|safe }}\"";
     negative_transaction_types = JSON.parse(negative_transaction_types);
 
