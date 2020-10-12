@@ -12,10 +12,6 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm,
                                BaseTransactionLineForm, BaseTransactionMixin,
                                BaseTransactionModelFormSet,
-                               ReadOnlyBaseTransactionHeaderForm,
-                               ReadOnlySaleAndPurchaseHeaderFormMixin,
-                               ReadOnlySaleAndPurchaseLineFormMixin,
-                               ReadOnlySaleAndPurchaseMatchingFormMixin,
                                SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineForm,
                                SaleAndPurchaseLineFormset,
@@ -94,10 +90,6 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
                 pk=self.instance.supplier_id)
 
 
-class ReadOnlyPurchaseHeaderForm(ReadOnlySaleAndPurchaseHeaderFormMixin, ReadOnlyBaseTransactionHeaderForm, PurchaseHeaderForm):
-    pass
-
-
 class PurchaseLineForm(SaleAndPurchaseLineForm):
     """
     WARNING, WHEN YOU COME TO REFACTOR THE CODE - 
@@ -148,11 +140,6 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
             }
         }
 
-
-class ReadOnlyPurchaseLineForm(ReadOnlySaleAndPurchaseLineFormMixin, PurchaseLineForm):
-    pass
-
-
 enter_lines = forms.modelformset_factory(
     PurchaseLine,
     form=PurchaseLineForm,
@@ -164,21 +151,6 @@ enter_lines = forms.modelformset_factory(
 
 enter_lines.include_empty_form = True
 
-read_only_lines = forms.modelformset_factory(
-    PurchaseLine,
-    form=ReadOnlyPurchaseLineForm,
-    formset=SaleAndPurchaseLineFormset,
-    extra=0,
-    can_order=True,
-    can_delete=True  # both these keep the django crispy form template happy
-    # there are of no actual use for the user
-)
-
-read_only_lines.include_empty_form = True
-
-# SHOULD NOT INHERIT FROM BASETRANSACTIONMIXIN BECAUSE WE WANT TO SEE CREDITS WITH A MINUS SIGN
-
-
 class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
     type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
@@ -186,11 +158,6 @@ class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
 
     class Meta(SaleAndPurchaseMatchingForm.Meta):
         model = PurchaseMatching
-
-
-class ReadOnlyPurchaseMatchingForm(ReadOnlySaleAndPurchaseMatchingFormMixin, PurchaseMatchingForm):
-    pass
-
 
 match = forms.modelformset_factory(
     PurchaseMatching,
@@ -200,15 +167,6 @@ match = forms.modelformset_factory(
 )
 
 match.include_empty_form = False
-
-read_only_match = forms.modelformset_factory(
-    PurchaseMatching,
-    form=ReadOnlyPurchaseMatchingForm,
-    extra=0,
-    formset=SaleAndPurchaseMatchingFormset
-)
-
-read_only_match.include_empty_form = False
 
 # returns form class
 CreditorForm = aged_matching_report_factory(

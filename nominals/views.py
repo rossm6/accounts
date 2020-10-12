@@ -22,9 +22,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
 from nominals.forms import TrialBalanceForm
 from vat.forms import VatForm
 
-from .forms import (NominalForm, NominalHeaderForm, NominalLineForm,
-                    ReadOnlyNominalHeaderForm, ReadOnlyNominalLineForm,
-                    enter_lines, read_only_lines)
+from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
 

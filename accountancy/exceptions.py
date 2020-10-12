@@ -1,2 +1,0 @@
-class FormNotValid(Exception):
-    pass

@@ -29,24 +29,6 @@ class CashBookHeaderForm(BaseTransactionHeaderForm):
         super().__init__(*args, **kwargs)
         self.helper = create_cashbook_header_helper()
 
-
-class ReadOnlyCashBookHeaderForm(CashBookHeaderForm):
-    date = forms.DateField()  # so datepicker is not used
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].disabled = True
-        self.fields["type"].widget = forms.TextInput(
-            attrs={"class": "w-100 input"}
-        )
-        self.fields["cash_book"].widget = forms.TextInput(
-            attrs={"class": "w-100 input"}
-        )
-        self.helper = create_cashbook_header_helper(read_only=True)
-        self.initial["type"] = self.instance.get_type_display()
-
-
 line_css_classes = {
     "Td": {
         "description": "can_highlight h-100 w-100 border-0",
@@ -95,36 +77,6 @@ class CashBookLineForm(BaseCashBookLineForm):
             }
         }
 
-
-class ReadOnlyCashBookLineForm(CashBookLineForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].disabled = True
-        self.helpers = TableHelper(
-            self._meta.fields,
-            order=False,
-            delete=False,
-            css_classes={
-                "Td": {
-                    "description": "input-disabled text-left",
-                    "nominal": "input-disabled text-left",
-                    "goods": "input-disabled text-left",
-                    "vat_code": "input-disabled text-left",
-                    "vat": "input-disabled text-left"
-                }
-            },
-            field_layout_overrides={
-                'Td': {
-                    'description': PlainFieldErrors,
-                    'nominal': PlainFieldErrors,
-                    'amount': PlainFieldErrors
-                }
-            },
-        ).render()
-
-
-
 class CashBookLineFormset(SaleAndPurchaseLineFormset):
     def clean(self):
         super().clean()
@@ -149,15 +101,3 @@ enter_lines = forms.modelformset_factory(
 )
 
 enter_lines.include_empty_form = True
-
-read_only_lines = forms.modelformset_factory(
-    CashBookLine,
-    form=ReadOnlyCashBookLineForm,
-    formset=CashBookLineFormset,
-    extra=0,
-    can_order=True,
-    can_delete=True  # both these keep the django crispy form template happy
-    # there are of no actual use for the user
-)
-
-read_only_lines.include_empty_form = True

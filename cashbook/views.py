@@ -13,8 +13,7 @@ from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
 
-from .forms import (CashBookHeaderForm, CashBookLineForm,
-                    ReadOnlyCashBookHeaderForm, enter_lines, read_only_lines)
+from .forms import CashBookHeaderForm, CashBookLineForm, enter_lines
 from .models import CashBookHeader, CashBookLine, CashBookTransaction
 
 

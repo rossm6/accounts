@@ -138,37 +138,8 @@ class ModelChoiceFieldChooseIterator(ModelChoiceField):
         self.iterator = iterator
 
 
-class AjaxModelChoiceField(ModelChoiceField):
-    def __init__(self, *args, **kwargs):
-        queryset = kwargs["get_queryset"]
-        querysets = {}
-        querysets["get_queryset"] = kwargs.pop("get_queryset")
-        querysets["load_queryset"] = kwargs.pop("load_queryset")
-        querysets["post_queryset"] = kwargs.pop("post_queryset")
-        querysets["inst_queryset"] = kwargs.pop("inst_queryset")
-        if iterator := kwargs.get("iterator"):
-            kwargs.pop("iterator")
-        searchable_fields = kwargs.pop("searchable_fields")
-        super().__init__(queryset, *args, **kwargs)
-        for queryset in querysets:
-            setattr(self, queryset, querysets[queryset])
-        self.searchable_fields = searchable_fields
-        if iterator:
-            self.iterator = iterator
-
-
-# FIX ME - remove this class and add the iterator manually to AjaxRoortAndLeavesModelChoiceField
-class RootAndLeavesModelChoiceField:
-    def __init__(self, *args, **kwargs):
-        self.iterator = RootAndLeavesModelChoiceIterator
-
-
+# Use the ModelChoiceFieldChooseIterato class instead and then remove this
 class RootAndChildrenModelChoiceField(ModelChoiceField):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.iterator = RootAndChildrenModelChoiceIterator
-
-
-class AjaxRootAndLeavesModelChoiceField(AjaxModelChoiceField, RootAndLeavesModelChoiceField):
-    pass

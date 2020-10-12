@@ -13,19 +13,16 @@ from django.utils import timezone
 from django.views.generic import ListView
 from querystring_parser import parser
 
-from accountancy.exceptions import FormNotValid
 from accountancy.forms import (BaseVoidTransactionForm,
                                SalesAndPurchaseTransactionSearchForm)
 from accountancy.helpers import AuditTransaction
-from accountancy.views import (AgeMatchingReportMixin,
-                               BaseVoidTransaction,
+from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction, LoadContacts,
                                LoadMatchingTransactions,
                                SaleAndPurchaseViewTransaction,
-                               SalesAndPurchasesTransList,
-                               jQueryDataTable)
+                               SalesAndPurchasesTransList, jQueryDataTable)
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
@@ -34,8 +31,7 @@ from vat.forms import VatForm
 from vat.models import Vat
 
 from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
-                    ReadOnlyPurchaseHeaderForm, enter_lines, match,
-                    read_only_lines, read_only_match)
+                    enter_lines, match)
 from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 

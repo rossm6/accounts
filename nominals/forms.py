@@ -10,8 +10,7 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm,
-                               BaseTransactionLineForm,
-                               ReadOnlyBaseTransactionHeaderForm)
+                               BaseTransactionLineForm)
 from accountancy.helpers import Period, delay_reverse_lazy
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  PlainFieldErrors, TableHelper,
@@ -79,21 +78,6 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
         self.fields["total"].help_text = "<span class='d-block'>The total value of the debit side of the journal<span class='d-block'>i.e. the total of the positive values</span></span>"
         self.helper = create_journal_header_helper()
 
-
-class ReadOnlyNominalHeaderForm(NominalHeaderForm):
-    date = forms.DateField()  # so datepicker is not used
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].disabled = True
-        self.fields["type"].widget = forms.TextInput(
-            attrs={"class": "w-100 input"}
-        )
-        self.helper = create_journal_header_helper(read_only=True)
-        self.initial["type"] = self.instance.get_type_display()
-
-
 # A lot of this is common to the other modules so should be factored out
 
 line_css_classes = {
@@ -105,7 +89,6 @@ line_css_classes = {
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }
-
 
 class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
     nominal = ModelChoiceFieldChooseIterator(
@@ -157,34 +140,6 @@ class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
                 }
             }
         ).render()
-
-
-class ReadOnlyNominalLineForm(NominalLineForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].disabled = True
-        self.helpers = TableHelper(
-            NominalLineForm.Meta.fields,
-            order=False,
-            delete=False,
-            css_classes={
-                "Td": {
-                    "description": "input-disabled text-left",
-                    "nominal": "input-disabled text-left",
-                    "goods": "input-disabled text-left",
-                    "vat_code": "input-disabled text-left",
-                    "vat": "input-disabled text-left"
-                }
-            },
-            field_layout_overrides={
-                'Td': {
-                    'description': PlainFieldErrors,
-                    'nominal': PlainFieldErrors,
-                }
-            }
-        ).render()
-
 
 class NominalLineFormset(BaseLineFormset):
 
@@ -251,18 +206,6 @@ enter_lines = forms.modelformset_factory(
 )
 
 enter_lines.include_empty_form = True
-
-read_only_lines = forms.modelformset_factory(
-    NominalLine,
-    form=ReadOnlyNominalLineForm,
-    formset=NominalLineFormset,
-    extra=0,
-    can_order=False,
-    can_delete=False
-)
-
-read_only_lines.include_empty_form = True
-
 
 class TrialBalanceForm(forms.Form):
     from_period = forms.CharField(max_length=6)

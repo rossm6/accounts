@@ -15,9 +15,8 @@ from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
 
-from .forms import (DebtorForm, ModalCustomerForm, ReadOnlySaleHeaderForm,
-                    SaleHeaderForm, SaleLineForm, enter_lines, match,
-                    read_only_lines, read_only_match)
+from .forms import (DebtorForm, ModalCustomerForm, SaleHeaderForm,
+                    SaleLineForm, enter_lines, match)
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"

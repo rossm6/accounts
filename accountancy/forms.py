@@ -62,7 +62,7 @@ class BaseAjaxForm(forms.ModelForm):
         """
         Override the choices so that only the chosen is included
         """
-        super().full_clean() # clean all of self.data and populate self._errors and self.cleaned_data
+        super().full_clean()  # clean all of self.data and populate self._errors and self.cleaned_data
         if hasattr(self, "cleaned_data"):
             ajax_fields = self.Meta.ajax_fields
             for field in ajax_fields:
@@ -71,10 +71,13 @@ class BaseAjaxForm(forms.ModelForm):
                     if isinstance(iterator, type):
                         iterator = iterator(self.fields[field])
                         self.fields[field].iterator = iterator
-                    choice_for_ui = self.fields[field].iterator.choice(chosen) # e.g. (value, label)
+                    choice_for_ui = self.fields[field].iterator.choice(
+                        chosen)  # e.g. (value, label)
                     self.fields[field].choices = [choice_for_ui]
                 else:
-                    self.fields[field].choices = [ (None, (self.fields[field].empty_label or "")) ]
+                    self.fields[field].choices = [
+                        (None, (self.fields[field].empty_label or ""))]
+
 
 class BaseTransactionMixin:
 
@@ -547,57 +550,6 @@ class SaleAndPurchaseHeaderFormMixin:
         )
 
 
-class ReadOnlyBaseTransactionHeaderForm(BaseTransactionHeaderForm):
-    """
-    Remove the datepicker widget since it is not needed in read only view.
-    """
-    date = forms.DateField()
-    due_date = forms.DateField()
-
-
-class ReadOnlySaleAndPurchaseHeaderFormMixin:
-    def __init__(self, *args, **kwargs):
-        contact_model_name = kwargs.get("contact_model_name")
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].disabled = True
-        self.fields["type"].widget = forms.TextInput(
-            attrs={"class": "w-100 input"})
-
-        self.fields[contact_model_name].widget = forms.TextInput()
-        contact_queryset = self.fields[contact_model_name].queryset
-
-        self.initial[contact_model_name] = str(
-            contact_queryset[0]
-        )
-        _type = self.initial["type"]
-
-        if _type in self._meta.model.payment_type:
-            if _type in self._meta.model.get_types_requiring_analysis():
-                payment_form = True
-                payment_brought_forward_form = False
-                self.fields["cash_book"].widget = forms.TextInput()
-                cash_book = self.fields["cash_book"].queryset[0]
-                self.initial["cash_book"] = str(cash_book)
-            else:
-                payment_form = False
-                payment_brought_forward_form = True
-        else:
-            payment_brought_forward_form = False
-            payment_form = False
-
-        self.helper = create_transaction_header_helper(
-            {
-                'contact': contact_model_name,
-            },
-            payment_form=payment_form,
-            payment_brought_forward_form=payment_brought_forward_form,
-            read_only=True
-        )
-        # must do this afterwards
-        self.initial["type"] = self.instance.get_type_display()
-
-
 class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
     def get_ordering_widget(self):
@@ -784,36 +736,6 @@ class SaleAndPurchaseLineForm(BroughtForwardLineForm):
         ).render()
 
 
-class ReadOnlySaleAndPurchaseLineFormMixin:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].disabled = True
-        self.helpers = TableHelper(
-            self._meta.fields,
-            order=False,
-            delete=False,
-            css_classes={
-                "Td": {
-                    "item": "input-disabled text-left",
-                    "description": "input-disabled text-left",
-                    "nominal": "input-disabled text-left",
-                    "goods": "input-disabled text-left",
-                    "vat_code": "input-disabled text-left",
-                    "vat": "input-disabled text-left"
-                }
-            },
-            field_layout_overrides={
-                'Td': {
-                    'item': PlainFieldErrors,
-                    'description': PlainFieldErrors,
-                    'nominal': PlainFieldErrors,
-                    'amount': PlainFieldErrors
-                }
-            },
-        ).render()
-
-
 class SaleAndPurchaseMatchingForm(forms.ModelForm):
     """
 
@@ -939,14 +861,14 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                 self.initial_value = self.matched_to_initial
                 f1 = 1
 
-            self.f1 = f1 # needed for method `change_values_for_UI`
+            self.f1 = f1  # needed for method `change_values_for_UI`
 
             if matched_header.is_negative_type():
                 f2 = -1
             else:
                 f2 = 1
 
-            self.f2 = f2 # needed for method `change_values_for_UI`
+            self.f2 = f2  # needed for method `change_values_for_UI`
 
             self.fields["type"].initial = matched_header.type
             self.fields["ref"].initial = matched_header.ref
@@ -1023,7 +945,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                     # We still need to check the value is acceptable
         else:
             return  # header_form must have failed so do not bother checking anything further
-        
+
         if header.is_negative_type():
             self.f2 = -1
             _value = value * self.f2
@@ -1135,39 +1057,6 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
-
-
-class ReadOnlySaleAndPurchaseMatchingFormMixin:
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].disabled = True
-
-        self.helpers = TableHelper(
-            ('type', 'ref', 'total', 'paid', 'due',) +
-            self._meta.fields,
-            css_classes={
-                "Td": {
-                    "type": "input-disabled",
-                    "ref": "input-disabled",
-                    "total": "input-disabled",
-                    "paid": "input-disabled",
-                    "due": "input-disabled",
-                    "value": "input-disabled"
-                }
-            },
-            field_layout_overrides={
-                'Td': {
-                    'type': DataTableTdField,
-                    'ref': DataTableTdField,
-                    'total': DataTableTdField,
-                    'paid': DataTableTdField,
-                    'due': DataTableTdField,
-                    'value': DataTableTdField,
-                }
-            }
-        ).render()
 
 
 class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):

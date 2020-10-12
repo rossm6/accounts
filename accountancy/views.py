@@ -20,7 +20,6 @@ from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from mptt.utils import get_cached_trees
 from querystring_parser import parser
 
-from accountancy.exceptions import FormNotValid
 from accountancy.helpers import (AuditTransaction, JSONBlankDate, Period,
                                  sort_multiple)
 from nominals.models import Nominal
@@ -40,7 +39,6 @@ def format_dates(objects, date_keys, format):
                 except AttributeError:
                     pass
 
-
 def get_search_vectors(searchable_fields):
     search_vectors = [
         SearchVector(field)
@@ -59,105 +57,6 @@ def get_trig_vectors_for_different_inputs(fields_and_inputs):
         for field, _input in fields_and_inputs
     ]
     return functools.reduce(lambda a, b: a + b, trig_vectors)
-
-
-def input_dropdown_widget_validate_choice_factory(form):
-    """
-
-    Given a form which contains input dropdown widgets
-    this will return a view which can be called via ajax
-    to validate a choice selected in the widget.
-
-    """
-
-    def validate(request):
-        data = {}
-        data["success"] = False
-        if field := request.GET.get("field"):
-            if value := request.GET.get("value"):
-                form_field = form.fields[field]
-                if instance := form_field.post_queryset.filter(pk=value):
-                    instance = instance[0]
-                    data["success"] = True
-                    data["value"] = instance.pk
-                    data["label"] = str(instance)
-                    return JsonResponse(data)
-                else:
-                    return JsonResponse(data)
-            else:
-                return JsonResponse(data)
-        else:
-            return JsonResponse(data)
-
-    return validate
-
-
-def input_dropdown_widget_load_options_factory(form, paginate_by):
-    """
-    Forms, or formsets, which have multiple
-    input dropdown widgets, need a single view
-    to call view AJAX for populating the dropdown
-    menu either via new search or scroll.
-
-    This functions takes a form and returns
-    such a view.
-
-    This will take care of only showing the empty label
-    if it is the first page which is requested.  The client
-    has the responsibility of filtering through the dom elements
-    returned though.  At least one thing which will want to be
-    left out for page numbers greater than 1 is the New Item
-    link.
-    """
-
-    def load(request):
-        if field := request.GET.get("field"):
-            try:
-                queryset = form.fields[field].load_queryset
-            except AttributeError:
-                raise Http404("Load Queryset not found")
-            except KeyError:
-                raise Http404("No such field found")
-            if search := request.GET.get("search"):
-                try:
-                    searchable_fields = form.fields[field].searchable_fields
-                except AttributeError:
-                    raise Http404("No searchfields found for searching")
-                queryset = (
-                    queryset.annotate(
-                        search=get_search_vectors(searchable_fields)
-                    )
-                    .filter(search=search)
-                )
-            paginator = Paginator(queryset, paginate_by)
-            page_number = request.GET.get('page', 1)
-            try:
-                page_obj = paginator.page(page_number)
-            except PageNotAnInteger:
-                page_obj = paginator.page(1)
-            except EmptyPage:
-                page_obj = paginator.page(1)
-                page_obj.object_list = queryset.none()
-                page_obj.has_other_pages = False
-            form_field = deepcopy(form.fields[field])
-            widget = form_field.widget
-            if int(page_number) > 1:
-                form_field.empty_label = None
-            iterator = form_field.iterator
-            form_field.queryset = page_obj.object_list
-            widget.choices = iterator(form_field)
-            field_value = request.GET.get("value", "")
-            # the widget will add a data-selected attribute
-            # to the option which has value matching this field_value
-            return render(
-                request,
-                widget.template_name,
-                widget.get_context(str(field), field_value, widget.attrs)
-            )
-        else:
-            raise Http404("No field specified")
-
-    return load
 
 
 class jQueryDataTable:
@@ -1246,59 +1145,6 @@ class MatchingViewTransactionMixin:
 
 class SaleAndPurchaseViewTransaction(NominalViewTransactionMixin, MatchingMixin, BaseViewTransaction):
     pass
-
-
-def create_on_the_fly(**forms):
-    """
-    Rather than have a multiple views for all the different
-    objects which can be created on the fly we have one
-    """
-
-    def view(request):
-        if request.is_ajax() and request.method == "POST":
-            form_name = request.POST.get("form")
-            if form_name in forms:
-                prefix = forms[form_name].get("prefix")
-                form = forms[form_name]["form"](
-                    data=request.POST, prefix=prefix)
-                success = False
-                if form.is_valid():
-                    success = True
-                    inst = form.save()
-                    if 'serializer' in forms[form_name]:
-                        result = forms[form_name]["serializer"](inst)
-                    else:
-                        result = {
-                            'id': inst.id,
-                            'text': str(inst)
-                        }
-                    data = {
-                        'success': success,
-                        'result': result
-                    }
-                    return JsonResponse(
-                        data=data
-                    )
-                else:
-                    ctx = {}
-                    ctx.update(csrf(request))
-                    form_html = render_crispy_form(form, context=ctx)
-                    data = {
-                        'success': success,
-                        'result': {
-                            'form_html': form_html
-                        }
-                    }
-                    return JsonResponse(
-                        data=data,
-                        safe=False
-                    )
-            else:
-                raise Http404("Form not found")
-        else:
-            raise Http404()
-
-    return view
 
 
 class BaseVoidTransaction(View):
