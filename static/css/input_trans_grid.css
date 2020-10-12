@@ -21,7 +21,7 @@ table td {
 }
 
 .ui-sortable-helper {
-    display: table;
+    display: table !important;
 }
 
 div.field_errors_wrapper {

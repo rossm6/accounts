@@ -43,30 +43,6 @@ select {
     border: 1px solid #048fc2 !important;
 }
 
-.input-dropdown-widget-dropdown {
-    display: none;
-    margin-left: -1px;
-    margin-top: 1px;
-    width: 250px;
-    height: 400px;
-    overflow-y: scroll;
-    list-style: none;
-    background-color: white;
-    z-index: 10000000;
-    padding: 0px;
-}
-
-.input-dropdown-widget-dropdown>li {
-    padding: 0.5em;
-    border: 1px solid transparent;
-}
-
-.input-dropdown-widget-dropdown>li:hover {
-    background-color: #e6f5fa;
-    border: 1px dotted #a3bae9;
-    cursor: pointer;
-}
-
 .color-b-1 {
     color: #048fc2
 }
@@ -104,13 +80,6 @@ select {
 .selectize-input {
     line-height: 12px !important;
     padding: 4px 4px !important;
-}
-
-.selectize-dropdown,
-.selectize-dropdown-content {
-    /* z-index: 1000000 !important; */
-    /* must exceed selectize-control in case dropdown is over another
-    selectize widget */
 }
 
 /* this is for the messages pop up */
@@ -199,13 +168,12 @@ td>input {
 /* standard widths for these standard columns in a data input table */
 
 .col-close-icon {
-    width: 20px;
+    width: 36px;
 }
 
 .col-draggable-icon {
     width: 20px;
 }
-
 
 div.has_errors {
     position: relative;
@@ -333,11 +301,18 @@ table.nominal_transactions {
     border: 2px solid #b8bdc3;
 }
 
+select.input-grid-selectize-unfocussed::-ms-expand {
+    display: none;
+}
+select.input-grid-selectize-unfocussed::-ms-value {
+    background: none;
+}
+
 .input-grid-selectize-unfocussed {
     height: 100%;
     width: 100%;
     border: 0;
-    background-color: white;
+    background-color: white !important;
     /* below will remove the arrow from the select menu */
     -webkit-appearance: none;
     -moz-appearance: none;

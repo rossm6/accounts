@@ -13,14 +13,6 @@
         this.reorder();
     };
 
-    // calling code example
-    // var grid = Grid(opts);
-    // $(".delete_button").on("click", function(event){
-    //     grid.delete_line();
-    //     event.stopPropagation();
-    // });
-
-
     Grid.prototype.reorder = function () {
         if (!this.order_lines) {
             console.log("WARNING: you have ordering diabled!");
@@ -123,6 +115,16 @@
             handle: ".col-draggable-icon",
             update: function (event, ui) {
                 grid.reorder();
+            },
+            helper: function(e, ui){
+                // without this helper the table width is the sum of
+                // the content width per each column
+                // Setting the width per row does not work so must
+                // be done for each th and td element instead
+                ui.parents("table").find("th, td").each(function(){
+                    $(this).width($(this).width());
+                });
+                return ui;
             }
         });
         grid.get_table().find("tbody").disableSelection();

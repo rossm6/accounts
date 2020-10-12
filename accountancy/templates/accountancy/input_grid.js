@@ -29,27 +29,21 @@ $(document).ready(function () {
         });
     }
     
-    $("div.lines :input")
-    .filter(function(index){
-        return this.name.match(/^line-\d+-nominal$/);
-    })
-    .focus(function(){
+    $(document).on("mousedown", "div.lines :input[data-selectize-type='nominal']", function(e){
+        e.preventDefault();
         if(!$(this).hasClass("selectized")){
             var s = input_grid_selectize.nominal(this);
             selectized_menus[this.name] = s;
         }
-    });
-
-    $("div.lines :input")
-    .filter(function(index){
-        return this.name.match(/^line-\d+-vat_code$/);
     })
-    .focus(function(){
+
+    $(document).on("mousedown", "div.lines :input[data-selectize-type='vat']", function(e){
+        e.preventDefault();
         if(!$(this).hasClass("selectized")){
             var s = input_grid_selectize.vat(this);
             selectized_menus[this.name] = s;
         }
-    });
+    })
 
     function two_decimal_places(n_str) {
         if (n_str) {
@@ -58,18 +52,11 @@ $(document).ready(function () {
     }
 
     main_grid.add_callback = function (new_line) {
-        new_line.find("td.col-close-icon").on("click", function () {
-            main_grid.delete_line($(this));
-        });
-        new_line.on("change", "input[type=number]", function () {
-            var n = two_decimal_places($(this).val());
-            $(this).val(n);
-        });
+        return;
     };
 
     $(".add-lines").on("click", function (event) {
         main_grid.add_line();
-        event.stopPropagation();
     });
 
     $(".add-multiple-lines").on("click", function (event) {
@@ -79,12 +66,11 @@ $(document).ready(function () {
             lines = +lines;
             main_grid.add_many_lines(lines);
         }
-        event.stopPropagation();
     });
 
     {% if edit %}
 
-    $("td.col-close-icon").on("click", function (event) {
+    $(document).on("click", "td.col-close-icon",function (event) {
         var $this = $(this);
         var $tr = $(this).parents("tr");
         var val = $tr.find("input.delete-line").get(0).checked;
@@ -120,7 +106,7 @@ $(document).ready(function () {
 
     {% else %}
 
-    $("td.col-close-icon").on("click", function (event) {
+    $(document).on("click", "td.col-close-icon", function (event) {
         main_grid.delete_line($(this));
         destory_selectized_menus($(this).parents("tr").eq(0));
         event.stopPropagation();
@@ -132,7 +118,7 @@ $(document).ready(function () {
         $("table.line td").find("*").removeClass("data-input-focus-border");
     });
 
-    $("table.line td").on("click focusin", function (event) {
+    $(document).on("click focusin", "table.line td" ,function (event) {
         $("td").find("*").not($(this)).removeClass("data-input-focus-border");
         if ($(this).find(":input").hasClass("can_highlight")) {
             $(this).find(":input.can_highlight").addClass("data-input-focus-border");
@@ -148,7 +134,7 @@ $(document).ready(function () {
         $(this).val(n);
     });
 
-    $("input[type=number]").on("change", function () {
+    $(document).on("change", "input[type=number]", function () {
         var n = two_decimal_places($(this).val());
         $(this).val(n);
     });
