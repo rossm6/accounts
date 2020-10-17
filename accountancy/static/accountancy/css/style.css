@@ -363,3 +363,20 @@ select.input-grid-selectize-unfocussed::-ms-value {
 .selectize-control.single.input-grid-selectize-unfocussed input {
     top: 5px;
 }
+
+.selectize-dropdown {
+    z-index: 20000 !important;
+    /* 
+        must be greater than the z-index of a Bootstrap 4 modal window 
+        this problem came to light with the new cashbook modal window;
+        the nominal dropdown was not showing.
+    */
+}
+
+.modal:nth-of-type(even) {
+    z-index: 1051 !important;
+}
+
+.modal-backdrop.show:nth-of-type(even) {
+    z-index: 1049 !important;
+}

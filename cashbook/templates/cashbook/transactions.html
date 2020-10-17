@@ -27,8 +27,21 @@
     </div>
 {% endblock content %}
 
+{% block modal_forms %}
+    {% include 'accountancy/nominal_modal.html' %}
+    {% include 'accountancy/cashbook_modal.html' %}
+{% endblock modal_forms %}
+
 {% block js %}
     {% load static %}
+    <script src="{% static 'accountancy/js/input_grid_selectize.js' %}"></script>
+    <script src="{% static 'accountancy/js/cashbook_selectize.js' %}"></script>
     <script src="{% static 'cashbook/js/transaction_search_form.js' %}"></script>
     {% include 'accountancy/transactions_js.html' %}
+    <script>
+        $(document).ready(function(){
+            $("select[name='nominal-parent']").selectize(); // for the new nominal modal form
+            input_grid_selectize.nominal("select[name='cashbook-nominal']"); // for the new cash book modal form
+        });
+    </script>
 {% endblock js %}

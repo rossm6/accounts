@@ -30,6 +30,7 @@
     function vat(select_menu) {
         var $select = $(select_menu);
         var load_url = $select.attr("data-load-url");
+        var modal;
         return $select.selectize({
             onInitialize: function () {
                 // html5 data attributes are wiped.  This is a workaround.
@@ -136,10 +137,12 @@
         // Similarly, with ordering of options, it seems you must specify the $score order for it to work
         var $select = $(select_menu);
         var load_url = $select.attr("data-load-url");
+        var modal;
         return $select.selectize({
             create: function (input, callback) {
                 var self = this;
                 var selectize_callback_adapter = function (data) {
+                    console.log(data);
                     if (data.success) {
                         group_options(self, [data.new_object]);
                         callback(data.new_object);
@@ -187,6 +190,7 @@
                         console.log("Logging complete");
                     },
                     success: function (res, textStatus, jqXHR) {
+                        console.log(res);
                         group_options(self, res.data);
                         callback(res.data);
                     },

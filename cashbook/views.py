@@ -1,14 +1,18 @@
 from django.conf import settings
 from django.db.models import Sum
+from django.http import JsonResponse
 from django.urls import reverse_lazy
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from accountancy.forms import BaseVoidTransactionForm
 from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
+                               CashBookAndNominalTransList,
                                CreateCashBookTransaction,
                                DeleteCashBookTransMixin,
-                               EditCashBookTransaction, CashBookAndNominalTransList,
+                               EditCashBookTransaction,
                                NominalViewTransactionMixin)
-from cashbook.forms import CashBookTransactionSearchForm
+from cashbook.forms import CashBookForm, CashBookTransactionSearchForm
+from cashbook.models import CashBook
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
@@ -107,6 +111,13 @@ class TransactionEnquiry(CashBookAndNominalTransList):
     template_name = "cashbook/transactions.html"
     row_identifier = "header"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["cashbook_form"] = CashBookForm(action=reverse_lazy(
+            "cashbook:cashbook_create"), prefix="cashbook")
+        context["nominal_form"] = NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal")
+        return context
+
     def get_transaction_url(self, **kwargs):
         row = kwargs.pop("row")
         module = row.get("module")
@@ -132,3 +143,66 @@ class TransactionEnquiry(CashBookAndNominalTransList):
             .annotate(total=Sum("value"))
             .order_by(*self.order_by())
         )
+
+
+class CreateAndEditMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["nominal_form"] = NominalForm(action=reverse_lazy(
+            "nominals:nominal_create"), prefix="nominal")
+        return context
+
+
+class CashBookCreate(CreateAndEditMixin, CreateView):
+    model = CashBook
+    form_class = CashBookForm
+    # till we have a cash book list
+    success_url = reverse_lazy("cashbook:transaction_enquiry")
+    template_name = "cashbook/cashbook_create_and_edit.html"
+    prefix = "cashbook"
+
+    def form_valid(self, form):
+        redirect_response = super().form_valid(form)
+        if self.request.is_ajax():
+            data = {}
+            new_cashbook = self.object
+            data["new_object"] = {
+                "id": new_cashbook.pk,
+                "name": new_cashbook.name
+            }
+            data["success"] = True
+            return JsonResponse(data=data)
+        return redirect_response
+
+    def render_to_response(self, context, **response_kwargs):
+        # form is not valid
+        if self.request.is_ajax():
+            ctx = {}
+            ctx.update(csrf(self.request))
+            form = context["form"]
+            form_html = render_crispy_form(form, context=ctx)
+            data = {
+                "form_html": form_html,
+                "success": False
+            }
+            return JsonResponse(data=data)
+        return super().render_to_response(context, **response_kwargs)
+
+
+class CashBookList(ListView):
+    model = CashBook
+    template_name = "cashbook/cashbook_list.html"
+    context_object_name = "cashbooks"
+
+
+class CashBookDetail(DetailView):
+    model = CashBook
+    template_name = "cashbook/cashbook_detail.html"
+
+
+class CashBookEdit(CreateAndEditMixin, UpdateView):
+    model = CashBook
+    form_class = CashBookForm
+    template_name = "cashbook/cashbook_create_and_edit.html"
+    success_url = reverse_lazy("cashbook:cashbook_list")
+    prefix = "cashbook"

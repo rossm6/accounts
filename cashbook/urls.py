@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import (CreateTransaction, EditTransaction, TransactionEnquiry,
-                    ViewTransaction, VoidTransaction)
+                    ViewTransaction, VoidTransaction, CashBookCreate, CashBookDetail, CashBookEdit, CashBookList)
 
 app_name = "cashbook"
 urlpatterns = [
@@ -10,4 +10,10 @@ urlpatterns = [
     path("view/<int:pk>", ViewTransaction.as_view(), name="view"),
     path("void", VoidTransaction.as_view(), name="void"),
     path("transactions", TransactionEnquiry.as_view(), name="transaction_enquiry"),
+
+    path("cashbook_create", CashBookCreate.as_view(), name="cashbook_create"),
+    path("cashbook_list", CashBookList.as_view(), name="cashbook_list"),
+    path("cashbook_detail/<int:pk>",
+         CashBookDetail.as_view(), name="cashbook_detail"),
+    path("cashbook_edit/<int:pk>", CashBookEdit.as_view(), name="cashbook_edit"),
 ]

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="cont">
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-center">
+                <div class="w-75">
+                    <div class="border rounded p-4 mt-5">
+                        <div class="d-flex justify-content-between">
+                            <h1 class="h4 font-weight-bold">Cashbook List</h1>
+                            <div>
+                                <a class="btn btn-sm btn-success" href="{% url 'cashbook:cashbook_create' %}">Create</a>
+                            </div>
+                        </div>
+                        <table class="mt-4 table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-bordered">
+                                {% for cashbook in cashbooks %}
+                                    <tr class="pointer" data-href="{% url 'cashbook:cashbook_detail' pk=cashbook.pk %}">
+                                        <td>{{ cashbook.name }}</td>
+                                        <td>{{ cashbook.nominal }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block js %}
+<script>
+    $(document).ready(function(){
+
+        $("tbody tr").on("click", function(){
+            var href = $(this).attr("data-href");
+            window.location.href = href;
+        });
+        
+    });
+</script>
+{% endblock js %}

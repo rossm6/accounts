@@ -355,3 +355,4 @@ class NominalEdit(UpdateView):
     form_class = NominalForm
     template_name = "nominals/nominal_create_and_edit.html"
     success_url = reverse_lazy("nominals:nominals_list")
+    prefix = "nominal"

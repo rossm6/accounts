@@ -1,3 +1,5 @@
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import HTML, Layout
 from django import forms
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -6,14 +8,14 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceField,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxForm, BaseCashBookLineForm,
-                               BaseTransactionHeaderForm,
+from accountancy.forms import (BaseAjaxForm, BaseAjaxFormMixin,
+                               BaseCashBookLineForm, BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
                                BaseTransactionSearchForm,
                                SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineFormset)
-from accountancy.layouts import (PlainFieldErrors, TableHelper,
-                                 create_cashbook_header_helper,
+from accountancy.layouts import (Div, LabelAndFieldAndErrors, PlainFieldErrors,
+                                 TableHelper, create_cashbook_header_helper,
                                  create_transaction_enquiry_layout)
 from accountancy.widgets import SelectWithDataAttr
 from cashbook.models import CashBook
@@ -21,6 +23,61 @@ from nominals.models import Nominal
 from vat.models import Vat
 
 from .models import CashBookHeader, CashBookLine
+
+
+class CashBookForm(BaseAjaxFormMixin, forms.ModelForm):
+    nominal = ModelChoiceFieldChooseIterator(
+        queryset=Nominal.objects.none(),
+        iterator=RootAndLeavesModelChoiceIterator,
+        widget=forms.Select(
+            attrs={"data-load-url": reverse_lazy("nominals:load_nominals")}
+        )
+    )
+
+    class Meta:
+        model = CashBook
+        fields = ('name', 'nominal')
+        ajax_fields = {
+            "nominal": {
+                "querysets": {
+                    "load": Nominal.objects.all().prefetch_related("children"),
+                    "post": Nominal.objects.filter(children__isnull=True)
+                },
+            }
+        }
+
+    def __init__(self, *args, **kwargs):
+        if 'action' in kwargs:
+            action = kwargs.pop("action")
+        else:
+            action = ''
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = True
+        self.helper.form_action = action
+        self.helper.attrs = {
+            "data-form": "cashbook"
+        }
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    LabelAndFieldAndErrors('name', css_class="w-100 input"),
+                    css_class="mt-2"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        'nominal',),
+                    css_class="mt-2"
+                ),
+                css_class="modal-body"
+            ),
+            Div(
+                HTML(
+                    '<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
+                HTML('<button type="submit" class="btn btn-sm btn-success">Save</button>'),
+                css_class="modal-footer"
+            )
+        )
 
 
 class CashBookHeaderForm(BaseTransactionHeaderForm):
@@ -107,6 +164,7 @@ enter_lines = forms.modelformset_factory(
 )
 
 enter_lines.include_empty_form = True
+
 
 class CashBookTransactionSearchForm(BaseTransactionSearchForm):
     cashbook = forms.ModelChoiceField(
