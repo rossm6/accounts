@@ -151,7 +151,6 @@ class jQueryDataTable:
 
 class SalesAndPurchaseSearchMixin:
     def apply_advanced_search(self, cleaned_data):
-        contact = cleaned_data.get("contact")
         reference = cleaned_data.get("reference")
         total = cleaned_data.get("total")
         period = cleaned_data.get("period")
@@ -160,7 +159,7 @@ class SalesAndPurchaseSearchMixin:
         end_date = cleaned_data.get("end_date")
         queryset = self.get_queryset()
 
-        if contact or reference:
+        if reference:
             queryset = (
                 queryset.annotate(
                     similarity=(
@@ -194,14 +193,14 @@ class SalesAndPurchaseSearchMixin:
 
 class NominalSearchMixin:
     def apply_advanced_search(self, cleaned_data):
-        nominal = cleaned_data.get("nominal")
         reference = cleaned_data.get("reference")
         total = cleaned_data.get("total")
         period = cleaned_data.get("period")
-        date = cleaned_data.get("date")
+        start_date = cleaned_data.get("start_date")
+        end_date = cleaned_data.get("end_date")
         queryset = self.get_queryset()
 
-        if nominal or reference:
+        if reference:
             queryset = (
                 queryset.annotate(
                     similarity=(
@@ -216,8 +215,10 @@ class NominalSearchMixin:
             queryset = queryset.filter(total=total)
         if period:
             queryset = queryset.filter(period=period)
-        if date:
-            queryset = queryset.filter(date=date)
+        if start_date:
+            queryset = queryset.filter(date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(date__lte=end_date)
         return queryset
 
 
@@ -235,15 +236,15 @@ class BaseTransactionsList(jQueryDataTable, ListView):
     def apply_advanced_search(self, cleaned_data):
         raise NotImplementedError
 
-    def get_form_kwargs(self):
-        kwargs = {
-            "data": self.request.GET,
-        }
-        return kwargs
+    def get_form_kwargs(self, **kwargs):
+        form_kwargs = {}
+        if kwargs.get("pass_data"):
+            form_kwargs.update({"data": self.request.GET})
+        return form_kwargs
 
-    def get_search_form(self):
+    def get_search_form(self, **kwargs):
         return self.advanced_search_form_class(
-            **self.get_form_kwargs()
+            **self.get_form_kwargs(**kwargs)
         )
 
     def get_context_data(self, **kwargs):
@@ -251,7 +252,7 @@ class BaseTransactionsList(jQueryDataTable, ListView):
         context_data["columns"] = [field[0] for field in self.fields]
         context_data["column_labels"] = [field[1] for field in self.fields]
         if self.request.is_ajax() and self.request.method == "GET" and self.request.GET.get('use_adv_search'):
-            form = self.get_search_form()
+            form = self.get_search_form(pass_data=True)
             # form = AdvancedTransactionSearchForm(data=self.request.GET)
             # This form was not validating despite a valid datetime being entered on the client
             # The problem was jquery.serialize encodes
@@ -265,9 +266,15 @@ class BaseTransactionsList(jQueryDataTable, ListView):
                 queryset = self.get_queryset()
                 self.exclude_from_queryset(queryset)
         else:
-            context_data["form"] = self.get_search_form()
+            form = self.get_search_form()
             queryset = self.get_queryset()
             self.exclude_from_queryset(queryset)
+
+        # rather than render the form in in the template
+        ctx = {}
+        ctx.update(csrf(self.request))
+        context_data["form"] = render_crispy_form(form, context=ctx)
+
         start = self.request.GET.get("start", 0)
         paginate_by = self.request.GET.get("length", 25)
         p = Paginator(queryset, paginate_by)
@@ -306,8 +313,9 @@ class BaseTransactionsList(jQueryDataTable, ListView):
                 "draw": int(self.request.GET.get('draw'), 0),
                 "recordsTotal": context["paginator_obj"].count,
                 "recordsFiltered": context["paginator_obj"].count,
-                "data": context["data"]
+                "data": context["data"],
             }
+            data["form"] = context["form"]
             return JsonResponse(data)
         return super().render_to_response(context, **response_kwargs)
 
@@ -317,13 +325,8 @@ class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsLi
     def exclude_from_queryset(self, queryset):
         return queryset.exclude(status="v")
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["contact_name"] = self.contact_name
-        return kwargs
 
-
-class NominalTransList(NominalSearchMixin, BaseTransactionsList):
+class CashBookAndNominalTransList(NominalSearchMixin, BaseTransactionsList):
     pass
 
 

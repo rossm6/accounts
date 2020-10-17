@@ -8,8 +8,8 @@ from tempus_dominus.widgets import DatePicker
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
-                               BaseTransactionHeaderForm,
+from accountancy.forms import (BaseAjaxForm, BaseAjaxFormMixin,
+                               BaseLineFormset, BaseTransactionHeaderForm,
                                BaseTransactionLineForm, BaseTransactionMixin,
                                BaseTransactionModelFormSet,
                                SaleAndPurchaseHeaderFormMixin,
@@ -17,10 +17,12 @@ from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                SaleAndPurchaseLineFormset,
                                SaleAndPurchaseMatchingForm,
                                SaleAndPurchaseMatchingFormset,
+                               SalesAndPurchaseTransactionSearchForm,
                                aged_matching_report_factory)
 from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  Hidden, LabelAndFieldAndErrors,
                                  PlainFieldErrors, TableHelper,
+                                 create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
 from contacts.forms import BaseContactForm, ModalContactForm
@@ -58,6 +60,7 @@ class SupplierForm(BaseContactForm):
         super().__init__(*args, **kwargs)
         self.helper.form_action = action
 
+
 class ModalSupplierForm(ModalContactForm, SupplierForm):
     pass
 
@@ -76,6 +79,8 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
                     "data-creation-url": reverse_lazy("contacts:create_supplier"),
                     "data-load-url": reverse_lazy("purchases:load_suppliers"),
                     "data-contact-field": True
+                    # i think the last two are the only needed
+                    # attributes.  NEED TO CHECK.
                 }
             )
         }
@@ -104,7 +109,7 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
         iterator=RootAndLeavesModelChoiceIterator,
         widget=forms.Select(
             attrs={
-                "data-url": reverse_lazy("nominals:load_nominals"),
+                "data-load-url": reverse_lazy("nominals:load_nominals"),
                 "data-selectize-type": 'nominal'
             }
         ),
@@ -114,7 +119,7 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
         queryset=Vat.objects.all(),
         widget=SelectWithDataAttr(
             attrs={
-                "data-url": reverse_lazy("vat:load_vat_codes"),
+                "data-load-url": reverse_lazy("vat:load_vat_codes"),
                 # i.e. add the rate value to the option as data-rate
                 "data-attrs": ["rate"],
                 "data-selectize-type": 'vat'
@@ -140,6 +145,7 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
             }
         }
 
+
 enter_lines = forms.modelformset_factory(
     PurchaseLine,
     form=PurchaseLineForm,
@@ -151,6 +157,7 @@ enter_lines = forms.modelformset_factory(
 
 enter_lines.include_empty_form = True
 
+
 class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
     type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
@@ -158,6 +165,7 @@ class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
 
     class Meta(SaleAndPurchaseMatchingForm.Meta):
         model = PurchaseMatching
+
 
 match = forms.modelformset_factory(
     PurchaseMatching,
@@ -174,3 +182,31 @@ CreditorForm = aged_matching_report_factory(
     reverse_lazy("contacts:create_supplier"),
     reverse_lazy("purchases:load_suppliers")
 )
+
+
+class PurchaseTransactionSearchForm(BaseAjaxFormMixin, SalesAndPurchaseTransactionSearchForm):
+    """
+    This is not a model form.  The Meta attribute is only for the Ajax
+    form implementation.
+    """
+    supplier = forms.ModelChoiceField(
+        queryset=Supplier.objects.all(),
+        widget=forms.Select(
+            attrs={
+                "data-load-url": reverse_lazy("purchases:load_suppliers"),
+                "data-selectize-type": 'contact'
+            }
+        ),
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper.layout = create_transaction_enquiry_layout(
+            "supplier", search_within=True)
+
+    class Meta:
+        # not a model form
+        ajax_fields = {
+            "supplier": {}  # need to change the base ajax form so it can just accept a list of fields
+        }

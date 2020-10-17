@@ -20,7 +20,7 @@
             </div>
         </div>
         <div class="lower d-flex justify-content-center">
-            <div class="w-100 trans-table-cont">
+            <div class="container">
                 {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
             </div>
         </div>
@@ -28,5 +28,7 @@
 {% endblock content %}
 
 {% block js %}
+    {% load static %}
+    <script src="{% static 'cashbook/js/transaction_search_form.js' %}"></script>
     {% include 'accountancy/transactions_js.html' %}
 {% endblock js %}

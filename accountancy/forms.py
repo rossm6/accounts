@@ -10,8 +10,77 @@ from .layouts import (AdvSearchField, DataTableTdField, Draggable, Label,
                       create_transaction_header_helper)
 
 
-class BaseAjaxForm(forms.ModelForm):
+class BaseAjaxFormMixin:
+    """
 
+    AJAX is obviously recommended if the total choices is very high for any field
+    in a form.
+
+    This class just sets the different querysets needed depending on whether
+    the form is new, for an instance, or data is being posted.  In addition
+    it always also sets the queryset to be used by remote AJAX calls.
+
+    It only supports foreign key model choices at the moment ...
+
+    WARNING - The iterator cannot be set at this stage after form initialisation.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        fields = self.Meta.ajax_fields
+        for field in fields:
+            field_model = self.fields[field].queryset.model
+            querysets = {
+                "get": field_model.objects.none(),
+                "load": field_model.objects.all(),
+                "post": field_model.objects.all(),
+                "instance": lambda pk: field_model.objects.filter(pk=pk),
+            }
+            querysets.update(
+                fields[field].get("querysets", {})
+            )
+            if self.data:
+                queryset = querysets["post"]
+            elif hasattr(self.Meta, "model") and self.instance.pk:
+                # then it is a model form
+                pk_field_name = field + "_id"  # THIS WILL DO FOR NOW BUT THIS ISN'T ALWAYS THE CASE
+                # 'to_field' could have different name other than "id"
+                queryset = querysets["instance"](
+                    getattr(self.instance, pk_field_name))
+            else:
+                queryset = querysets["get"]
+            self.fields[field].queryset = queryset
+            self.fields[field].load_queryset = querysets["load"]
+            # We need this to validate inputs for the input dropdown widget
+            self.fields[field].post_queryset = querysets["post"]
+            if searchable_fields := fields[field].get('searchable_fields'):
+                self.fields[field].searchable_fields = searchable_fields
+            self.fields[field].empty_label = fields[field].get(
+                "empty_label", None)
+
+    def full_clean(self):
+        """
+        Override the choices so that only the chosen is included
+        """
+        super().full_clean()  # clean all of self.data and populate self._errors and self.cleaned_data
+        if hasattr(self, "cleaned_data"):
+            ajax_fields = self.Meta.ajax_fields
+            for field in ajax_fields:
+                if chosen := self.cleaned_data.get(field):
+                    iterator = self.fields[field].iterator
+                    if isinstance(iterator, type):
+                        iterator = iterator(self.fields[field])
+                        self.fields[field].iterator = iterator
+                    choice_for_ui = self.fields[field].iterator.choice(
+                        chosen)  # e.g. (value, label)
+                    self.fields[field].choices = [choice_for_ui]
+                else:
+                    self.fields[field].choices = [
+                        (None, (self.fields[field].empty_label or ""))]
+
+
+class BaseAjaxForm(forms.ModelForm):
     """
 
     AJAX is obviously recommended if the total choices is very high for any field
@@ -41,7 +110,9 @@ class BaseAjaxForm(forms.ModelForm):
                 "post": field_model.objects.all(),
                 "instance": lambda pk: field_model.objects.filter(pk=pk),
             }
-            querysets.update(fields[field].get("querysets", {}))
+            querysets.update(
+                fields[field].get("querysets", {})
+            )
             if self.data:
                 queryset = querysets["post"]
             elif self.instance.pk:
@@ -53,6 +124,7 @@ class BaseAjaxForm(forms.ModelForm):
             self.fields[field].load_queryset = querysets["load"]
             # We need this to validate inputs for the input dropdown widget
             self.fields[field].post_queryset = querysets["post"]
+            # DO WE NEED SEARCHABLE FIELDS?
             if searchable_fields := fields[field].get('searchable_fields'):
                 self.fields[field].searchable_fields = searchable_fields
             self.fields[field].empty_label = fields[field].get(
@@ -111,13 +183,7 @@ class BaseTransactionMixin:
                         self.initial[field] = -1 * tmp
 
 
-class SalesAndPurchaseTransactionSearchForm(forms.Form):
-
-    contact = forms.CharField(
-        label='',
-        max_length=100,
-        required=False
-    )
+class BaseTransactionSearchForm(forms.Form):
     reference = forms.CharField(
         label='Reference',
         max_length=100,
@@ -132,13 +198,6 @@ class SalesAndPurchaseTransactionSearchForm(forms.Form):
         label='Period',
         max_length=100,
         required=False
-    )
-    search_within = forms.ChoiceField(
-        choices=(
-            ('any', 'Any'),
-            ('tran', 'Transaction date'),
-            ('due', 'Due Date')
-        )
     )
     start_date = forms.DateField(
         widget=DatePicker(
@@ -167,304 +226,27 @@ class SalesAndPurchaseTransactionSearchForm(forms.Form):
         required=False
     )
     include_voided = forms.BooleanField(
-        label="Include Voided Transactions", initial=False)
+        label="Include Voided Transactions", initial=False, required=False)
     # used in BaseTransactionList view
-    use_adv_search = forms.BooleanField(initial=False)
+    use_adv_search = forms.BooleanField(initial=False, required=False)
     # w/o this adv search is not applied
 
     def __init__(self, *args, **kwargs):
-        contact_name = kwargs.pop("contact_name", "contact")
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_method = "GET"
-        self.helper.form_tag = False
-        self.helper.form_show_errors = False
         self.helper.include_media = False
 
-        self.fields["contact"].label = contact_name.capitalize()
 
-        self.helper.layout = Layout(
-            Div(
-                Div(
-                    Div(
-                        AdvSearchField(
-                            'contact',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'reference',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-5"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'total',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    css_class="row"
-                ),
-                Div(
-                    Div(
-                        AdvSearchField(
-                            'period',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'search_within',
-                            css_class="w-100",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'start_date',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'end_date',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    css_class="row"
-                ),
-                Field('use_adv_search', type="hidden"),
-                AdvSearchField('include_voided'),
-            ),
-            HTML(
-                '<div class="d-flex align-items-center justify-content-end my-4">'
-                '<button class="btn button-secondary search-btn">Search</button>'
-                '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
-                '</div>'
-            ),
+class SalesAndPurchaseTransactionSearchForm(BaseTransactionSearchForm):
+    # subclass must define a contact model choice field
+    search_within = forms.ChoiceField(
+        choices=(
+            ('any', 'Any'),
+            ('tran', 'Transaction date'),
+            ('due', 'Due Date')
         )
-
-    def clean_start_date(self):
-        start_date = self.cleaned_data["start_date"]
-        return start_date
-
-
-class NominalTransactionSearchForm(forms.Form):
-
-    nominal = forms.CharField(
-        label='Nominal',
-        max_length=100,
-        required=False
     )
-    reference = forms.CharField(
-        label='Reference',
-        max_length=100,
-        required=False
-    )
-    total = forms.DecimalField(
-        label='Total',
-        required=False
-    )
-
-    period = forms.CharField(
-        label='Period',
-        max_length=100,
-        required=False
-    )
-    date = forms.DateField(
-        widget=DatePicker(
-            options={
-                "useCurrent": True,
-                "collapse": True,
-            },
-            attrs={
-                "icon_toggle": True,
-                "input_group": False
-            }
-        ),
-        required=False
-    )
-    include_voided = forms.BooleanField(label="Include Voided Transactions")
-    use_adv_search = forms.BooleanField()  # used in BaseTransactionList view
-    # w/o this adv search is not applied
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_method = "GET"
-        self.helper.form_tag = False
-        self.helper.form_show_errors = False
-        self.helper.include_media = False  # I decide where the js goes
-        self.helper.layout = Layout(
-            Div(
-                Div(
-                    Div(
-                        AdvSearchField(
-                            'nominal',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'reference',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-5"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'total',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    css_class="row"
-                ),
-                Div(
-                    Div(
-                        AdvSearchField(
-                            'period',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'date',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    css_class="row"
-                ),
-                AdvSearchField('include_voided'),
-                Field('use_adv_search', type="hidden"),
-            ),
-            HTML(
-                '<div class="d-flex align-items-center justify-content-end my-4">'
-                '<button class="btn button-secondary search-btn">Search</button>'
-                '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
-                '</div>'
-            ),
-        )
-
-    def clean_date(self):
-        date = self.cleaned_data["date"]
-        return date
-
-
-class CashBookTransactionSearchForm(forms.Form):
-
-    cash_book = forms.CharField(
-        label='Cash Book',
-        max_length=100,
-        required=False
-    )
-    reference = forms.CharField(
-        label='Reference',
-        max_length=100,
-        required=False
-    )
-    total = forms.DecimalField(
-        label='Total',
-        required=False
-    )
-
-    period = forms.CharField(
-        label='Period',
-        max_length=100,
-        required=False
-    )
-    date = forms.DateField(
-        widget=DatePicker(
-            options={
-                "useCurrent": True,
-                "collapse": True,
-            },
-            attrs={
-                "icon_toggle": True,
-                "input_group": False
-            }
-        ),
-        required=False
-    )
-    include_voided = forms.BooleanField(label="Include Voided Transactions")
-    use_adv_search = forms.BooleanField()  # used in BaseTransactionList view
-    # w/o this adv search is not applied
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_method = "GET"
-        self.helper.form_tag = False
-        self.helper.form_show_errors = False
-        self.helper.include_media = False  # I decide where the js goes
-        self.helper.layout = Layout(
-            Div(
-                Div(
-                    Div(
-                        AdvSearchField(
-                            'cash_book',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'reference',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-5"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'total',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    css_class="row"
-                ),
-                Div(
-                    Div(
-                        AdvSearchField(
-                            'period',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    Div(
-                        AdvSearchField(
-                            'date',
-                            css_class="w-100 input",
-                        ),
-                        css_class="col-2"
-                    ),
-                    css_class="row"
-                ),
-                AdvSearchField('include_voided'),
-                Field('use_adv_search', type="hidden"),
-            ),
-            HTML(
-                '<div class="d-flex align-items-center justify-content-end my-4">'
-                '<button class="btn button-secondary search-btn">Search</button>'
-                '<span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>'
-                '</div>'
-            ),
-        )
-
-    def clean_date(self):
-        date = self.cleaned_data["date"]
-        return date
-
 
 class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 

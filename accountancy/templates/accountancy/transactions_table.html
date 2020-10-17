@@ -2,34 +2,33 @@
     <div class="d-none mb-3 adv-search-form border p-2 rounded">
         <div class="clearfix">
             <div class="mb-2 float-right">
-                <button type="button" class="close close-sm" aria-label="Close">
+                <button type="button" class="close" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
         </div>
-        <form>
-            {% csrf_token %}
-            {% load crispy_forms_tags %}
-            {% crispy form %}
-        </form>
+        <div class="table_form_wrapper">
+        </div>
+        <div class="d-flex align-items-center justify-content-end my-4">
+            <button class="btn btn-primary search-btn">Search</button>
+            <span class="small ml-2 clear-btn">or <a href="#">Clear</a></span>
+        </div>
     </div>
 
-    <form method="POST" class="table_form">
-        {% comment %} 'action' attribute for form is decided by JS in transactions_table.html {% endcomment %}
-        {% csrf_token %}
-        <table id="example" class="display" style="width:100%">
-            <thead>
-                <tr>
-                    <th class="text-center">
-                        <input type="checkbox" name="select_all" value="1" id="example-select-all" class="align-middle">
-                    </th>
-                    {% for column_label in column_labels %}
-                        <th>{{ column_label }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </form>
+
+    <table id="example" class="table display" style="width:100%">
+        <thead>
+            <tr>
+                <th class="text-center">
+                    <input type="checkbox" name="select_all" value="1" id="example-select-all" class="align-middle">
+                </th>
+                {% for column_label in column_labels %}
+                    <th>{{ column_label }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    
 </div>

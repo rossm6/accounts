@@ -7,7 +7,7 @@
     // Search button - triggers the advanced search form to show
     $.fn.dataTable.ext.buttons.show_search_form = {
         text: 'Search',
-        className: 'btn button search-btn-trigger f-s-100',
+        className: 'btn btn-primary bt-sm search-btn-trigger f-s-100',
         action: function (e, dt, node, config) {
             $(".adv-search-form").toggleClass("d-none");
             node.hide();

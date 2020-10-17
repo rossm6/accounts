@@ -2,13 +2,13 @@ from django.conf import settings
 from django.db.models import Sum
 from django.urls import reverse_lazy
 
-from accountancy.forms import (BaseVoidTransactionForm,
-                               CashBookTransactionSearchForm)
+from accountancy.forms import BaseVoidTransactionForm
 from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
                                CreateCashBookTransaction,
                                DeleteCashBookTransMixin,
-                               EditCashBookTransaction, NominalTransList,
+                               EditCashBookTransaction, CashBookAndNominalTransList,
                                NominalViewTransactionMixin)
+from cashbook.forms import CashBookTransactionSearchForm
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
@@ -87,7 +87,7 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     cash_book_transaction_model = CashBookTransaction
 
 
-class TransactionEnquiry(NominalTransList):
+class TransactionEnquiry(CashBookAndNominalTransList):
     model = CashBookHeader
     fields = [
         ("module", "Module"),
@@ -99,7 +99,6 @@ class TransactionEnquiry(NominalTransList):
         ("total", "Total"),
     ]
     form_field_to_searchable_model_field = {
-        "cash_book": "cash_book__name",
         "reference": "ref"
     }
     datetime_fields = ["created", ]
@@ -115,6 +114,12 @@ class TransactionEnquiry(NominalTransList):
         modules = settings.ACCOUNTANCY_MODULES
         module_name = modules[module]
         return reverse_lazy(module_name + ":view", kwargs={"pk": header})
+
+    def apply_advanced_search(self, cleaned_data):
+        queryset = super().apply_advanced_search(cleaned_data)
+        if cashbook := cleaned_data.get("cashbook"):
+            queryset = queryset.filter(cashbook=cashbook)
+        return queryset
 
     def get_queryset(self):
         return (

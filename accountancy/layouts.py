@@ -3,6 +3,7 @@ from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 
 # do we need to import Hidden ??
 
+
 class Delete(Div):
     template = "accounts/layout/delete.html"
 
@@ -53,6 +54,84 @@ class LabelAndFieldAndErrors(Field):
 
 class AdvSearchField(Field):
     template = "accounts/layout/adv_search_field.html"
+
+
+def create_transaction_enquiry_layout(main_choice, search_within=False):
+
+    second_row = [
+        Div(
+            LabelAndFieldAndErrors(
+                'period',
+                css_class="w-100 input",
+            ),
+            css_class="col-2"
+        )
+    ]
+
+    if search_within:
+        second_row += [
+            Div(
+                LabelAndFieldAndErrors(
+                    'search_within',
+                    css_class="",
+                ),
+                css_class="col-2"
+            )
+        ]
+
+    second_row += [
+        Div(
+            LabelAndFieldAndErrors(
+                'start_date',
+                css_class="w-100 input",
+            ),
+            css_class="col-2"
+        ),
+        Div(
+            LabelAndFieldAndErrors(
+                'end_date',
+                css_class="w-100 input",
+            ),
+            css_class="col-2"
+        )
+    ]
+
+    return Layout(
+        Div(
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        main_choice,
+                    ),
+                    css_class="col"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        'reference',
+                        css_class="w-100 input",
+                    ),
+                    css_class="col-5"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        'total',
+                        css_class="w-100 input",
+                    ),
+                    css_class="col-2"
+                ),
+                css_class="row"
+            ),
+            Div(
+                *second_row,
+                css_class = "row mt-3"
+            ),
+            Field('use_adv_search', type="hidden"),
+            Div(
+                LabelAndFieldAndErrors('include_voided'),
+                css_class="mt-3"
+            )
+        ),
+    )
 
 
 def create_transaction_header_helper(generic_to_fields_map, payment_form=False, payment_brought_forward_form=False, read_only=False):
@@ -200,9 +279,7 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
     return StandardHeaderHelper()
 
 
-
 def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False):
-
     """
 
     This will returns the standard header help for transaction forms
@@ -265,9 +342,6 @@ def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False):
             )
 
     return StandardHeaderHelper()
-
-
-
 
 
 class TableHelper(object):

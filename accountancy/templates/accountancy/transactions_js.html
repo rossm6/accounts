@@ -1,14 +1,15 @@
 {% load static %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
 <script src="https://cdn.datatables.net/plug-ins/1.10.21/pagination/select.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.26.0/moment.min.js" integrity="sha256-5oApc/wMda1ntIEK4qoWJ4YItnV4fBHMwywunj8gPqc=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.0.0-alpha14/js/tempusdominus-bootstrap-4.min.js"></script>
 <script src="{% static 'js/selectize.min.js' %}"></script>
 <script src="{% static 'accountancy/js/datatable_extensions.js' %}"></script>
+<script src="{% static 'js/modal_form.js' %}"></script>
+<script src="{% static 'accountancy/js/contact_selectize.js' %}"></script>
 <script>
 $(document).ready(function () {
-
 
     $(".adv-search-form .close").on("click", function () {
         $(".adv-search-form").toggleClass("d-none");
@@ -18,13 +19,13 @@ $(document).ready(function () {
     // Advanced Search Form
     // The Button defined at the top of the page will show this form
 
-    $(".adv-search-form .clear-btn").on("click", function () {
+    $(document).on("click", ".adv-search-form .clear-btn", function () {
         $(".adv-search-form form").get(0).reset();
         $("#id_use_adv_search").val("");
         table.ajax.reload();
     });
 
-    $(".adv-search-form .search-btn").on("click", function (event) {
+    $(document).on("click", ".adv-search-form .search-btn", function (event) {
         $("#id_use_adv_search").val("yes"); // any value will do
         // before the ajax request is sent we change this to the default value ''
         // the server then checks this to see whether advanced search should be applied
@@ -44,7 +45,6 @@ $(document).ready(function () {
 
     $(".datepicker").removeClass("form-control");
     $(".datetimepicker").removeClass("form-control");
-
 
     // when a table row is clicked to all this
     function row_click_event () {
@@ -66,11 +66,13 @@ $(document).ready(function () {
         $("table tbody tr").on("click", row_click_event);
     }
 
+    var form_wrapper = $("div.table_form_wrapper");
+
+    transaction_search_form_init(); // a ledger specific js module
+
     // jQuery Datatable initialisation
     var table = $('#example')
         .on('init.dt', function (e, settings, json) {
-            dataTable_extensions.add_result_count_to_select_pagination_widget(settings);
-            dataTable_extensions.add_alt_pagination_events(settings);
             add_row_event();
         })
         .DataTable({
@@ -79,7 +81,7 @@ $(document).ready(function () {
                     'data': null,
                     'searchable': false,
                     'orderable': false,
-                    'className': 'dt-body-center',
+                    'className': 'text-center',
                     'render': function (data, type, full, meta) {
                         return '<input type="checkbox" name="transaction" value="' + $("<div/>").text(data.id).html() + '" class="row-checkbox align-middle">';
                     }
@@ -92,7 +94,7 @@ $(document).ready(function () {
                 {% endfor %}
 
             ],
-            dom: "<'top d-flex justify-content-between'<'left'><'right'>>t<'bottom p-2 d-flex align-items-center justify-content-between'<'d-flex bottom-left'<'p-wrapper d-flex align-items-center mr-5'p<'ml-1 result_set_count'>>l><'bottom-right'P>>",
+            dom: "<'top d-flex justify-content-between'<'left'l><'right'>>t<'bottom p-2 d-flex align-items-center justify-content-between'ip>",
             language: {
                 sLengthMenu: "Showing _MENU_ items per page",
                 emptyTable: "No transactions found"
@@ -101,52 +103,55 @@ $(document).ready(function () {
                 [ 1, 'asc' ]
             ],
             serverSide: true,
-            ajax: {
-                url: "", // same as 'this' url
-                data: function (d) {
-                    // I was using jQuery.serialize but this encodes the url
-                    // Because jQuery datatables does also we get double encoding
-                    var fields = $(".adv-search-form").find("form").find(":input");
-                    for(var i = 0; i < fields.length; i++){
-                        var field = $(fields[i]);
-                        var name = field.attr("name");
-                        var value = field.val();
-                        if(field.attr("type") == "checkbox"){
-                            if(field.get(0).checked){
-                                d[name] = value;
-                            }
-                        }
-                        else{
-                            d[name] = value;
+            ajax: function(data, callback, settings){
+                // I was using jQuery.serialize but this encodes the url
+                // Because jQuery datatables does also we get double encoding
+                var fields = $(".adv-search-form").find("form").find(":input");
+                for(var i = 0; i < fields.length; i++){
+                    var field = $(fields[i]);
+                    var name = field.attr("name");
+                    var value = field.val();
+                    if(field.attr("type") == "checkbox"){
+                        if(field.get(0).checked){
+                            data[name] = value;
                         }
                     }
+                    else{
+                        data[name] = value;
+                    }
                 }
-            },
-            sPaginationType: "listbox", // https://datatables.net/plug-ins/pagination/#listbox
-            // https://stackoverflow.com/questions/13137953/dropdown-pagination-in-jquery-datatables,
-            drawCallback: function () {
-                $(".dataTables_paginate.paging_listbox").addClass("p-0");
+                $.ajax({
+                    url:"",
+                    type: "GET",
+                    data: data,
+                    success: function(data, textStatus, jqXHR){
+                        if(data.success){
+                            callback(data.data);
+                        }
+                        else{
+                            callback(data);
+                        }
+                        form_wrapper.empty().append($(data.form));
+                        transaction_search_form_init();
+                    },
+                    complete: function(jqXHR, textStatus){
+                        if(textStatus != "success"){
+                            console.log("Failed to get data for report");
+                            console.log("logging...");
+                            console.log(jqXHR);
+                            console.log(textStatus);
+                            console.log("end report logging");
+                            alert("There was an error, please try again later.");
+                        }
+                    }
+                });                              
             }
         });
 
 
     table.on('draw', function (e, settings) {
-        dataTable_extensions.add_result_count_to_select_pagination_widget(settings);
-        var p = $("div.pagination-numbers-ui-wrapper").parent();
-        p.empty();
-        var altPagination = new $.fn.dataTable.AltPagination(settings);
-        p.append($(altPagination));
-        dataTable_extensions.add_alt_pagination_events(settings);
         add_row_event();
     });
-
-
-    //new $.fn.dataTable.Buttons( table, {
-        //name: 'batch_payment',
-        //buttons: [
-            //'batch_payment'
-        //]
-    //} );
 
 
     new $.fn.dataTable.Buttons( table, {
@@ -202,9 +207,4 @@ $(document).ready(function () {
     });
 
 });
-</script>
-<script>
-    $(document).ready(function(){
-        $("select[name='search_within']").selectize();
-    });
 </script>

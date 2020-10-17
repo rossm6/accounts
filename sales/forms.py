@@ -6,15 +6,17 @@ from django.urls import reverse_lazy
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseTransactionHeaderForm,
+from accountancy.forms import (BaseAjaxFormMixin, BaseTransactionHeaderForm,
                                SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineForm,
                                SaleAndPurchaseLineFormset,
                                SaleAndPurchaseMatchingForm,
                                SaleAndPurchaseMatchingFormset,
+                               SalesAndPurchaseTransactionSearchForm,
                                aged_matching_report_factory)
 from accountancy.helpers import input_dropdown_widget_attrs_config
-from accountancy.layouts import Div, LabelAndFieldAndErrors
+from accountancy.layouts import (Div, LabelAndFieldAndErrors,
+                                 create_transaction_enquiry_layout)
 from accountancy.widgets import SelectWithDataAttr
 from contacts.forms import BaseContactForm, ModalContactForm
 from nominals.models import Nominal
@@ -71,12 +73,13 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
             self.fields["customer"].queryset = Customer.objects.filter(
                 pk=self.instance.customer_id)
 
+
 class SaleLineForm(SaleAndPurchaseLineForm):
     nominal = ModelChoiceFieldChooseIterator(
         queryset=Nominal.objects.none(),
         iterator=RootAndLeavesModelChoiceIterator,
         widget=forms.Select(
-            attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+            attrs={"data-load-url": reverse_lazy("nominals:load_nominals")}
         )
     )
     vat_code = ModelChoiceFieldChooseIterator(
@@ -84,7 +87,7 @@ class SaleLineForm(SaleAndPurchaseLineForm):
         queryset=Vat.objects.all(),
         widget=SelectWithDataAttr(
             attrs={
-                "data-url": reverse_lazy("vat:load_vat_codes"),
+                "data-load-url": reverse_lazy("vat:load_vat_codes"),
                 # i.e. add the rate value to the option as data-rate
                 "data-attrs": ["rate"]
             }
@@ -109,6 +112,7 @@ class SaleLineForm(SaleAndPurchaseLineForm):
             }
         }
 
+
 enter_lines = forms.modelformset_factory(
     SaleLine,
     form=SaleLineForm,
@@ -120,6 +124,7 @@ enter_lines = forms.modelformset_factory(
 
 enter_lines.include_empty_form = True
 
+
 class SaleMatchingForm(SaleAndPurchaseMatchingForm):
     type = forms.ChoiceField(choices=SaleHeader.type_choices, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
@@ -127,6 +132,7 @@ class SaleMatchingForm(SaleAndPurchaseMatchingForm):
 
     class Meta(SaleAndPurchaseMatchingForm.Meta):
         model = SaleMatching
+
 
 match = forms.modelformset_factory(
     SaleMatching,
@@ -143,3 +149,31 @@ DebtorForm = aged_matching_report_factory(
     reverse_lazy("contacts:create_customer"),
     reverse_lazy("sales:load_customers")
 )
+
+
+class SaleTransactionSearchForm(BaseAjaxFormMixin, SalesAndPurchaseTransactionSearchForm):
+    """
+    This is not a model form.  The Meta attribute is only for the Ajax
+    form implementation.
+    """
+    customer = forms.ModelChoiceField(
+        queryset=Customer.objects.all(),
+        widget=forms.Select(
+            attrs={
+                "data-load-url": reverse_lazy("sales:load_customers"),
+                "data-selectize-type": 'contact'
+            }
+        ),
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper.layout = create_transaction_enquiry_layout(
+            "customer", search_within=True)
+
+    class Meta:
+        # not a model form
+        ajax_fields = {
+            "customer": {}  # need to change the base ajax form so it can just accept a list of fields
+        }

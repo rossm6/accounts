@@ -13,8 +13,7 @@ from django.utils import timezone
 from django.views.generic import ListView
 from querystring_parser import parser
 
-from accountancy.forms import (BaseVoidTransactionForm,
-                               SalesAndPurchaseTransactionSearchForm)
+from accountancy.forms import BaseVoidTransactionForm
 from accountancy.helpers import AuditTransaction
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
@@ -26,7 +25,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
-from purchases.forms import ModalSupplierForm
+from purchases.forms import ModalSupplierForm, PurchaseTransactionSearchForm
 from vat.forms import VatForm
 from vat.models import Vat
 
@@ -122,6 +121,7 @@ class ViewTransaction(SaleAndPurchaseViewTransaction):
     template_name = "purchases/view.html"
     edit_view_name = "purchases:edit"
 
+
 class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
@@ -156,14 +156,18 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
         ("due", "Due"),
     ]
     form_field_to_searchable_model_field = {
-        "contact": "supplier__name",
         "reference": "ref"
     }
     datetime_fields = ["date", "due_date"]
     datetime_format = '%d %b %Y'
-    advanced_search_form_class = SalesAndPurchaseTransactionSearchForm
+    advanced_search_form_class = PurchaseTransactionSearchForm
     contact_name = "supplier"
     template_name = "purchases/transactions.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["contact_form"] = ModalSupplierForm(action=reverse_lazy("contacts:create_supplier"), prefix="supplier")
+        return context
 
     def get_transaction_url(self, **kwargs):
         row = kwargs.pop("row")
@@ -181,6 +185,12 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
             )
             .order_by(*self.order_by())
         )
+
+    def apply_advanced_search(self, cleaned_data):
+        queryset = super().apply_advanced_search(cleaned_data)
+        if supplier := cleaned_data.get("supplier"):
+            queryset = queryset.filter(supplier=supplier)
+        return queryset
 
     def get_querysets(self):
         group = self.request.GET.get("group", 'a')

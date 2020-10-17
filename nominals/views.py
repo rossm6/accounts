@@ -13,13 +13,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from mptt.utils import get_cached_trees
 
-from accountancy.forms import (BaseVoidTransactionForm,
-                               NominalTransactionSearchForm)
+from accountancy.forms import BaseVoidTransactionForm
 from accountancy.helpers import FY
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
-                               NominalTransList)
-from nominals.forms import TrialBalanceForm
+                               CashBookAndNominalTransList)
+from nominals.forms import NominalTransactionSearchForm, TrialBalanceForm
 from vat.forms import VatForm
 
 from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
@@ -83,7 +82,8 @@ class ViewTransaction(BaseViewTransaction):
     template_name = "nominals/view.html"
     edit_view_name = "nominals:edit"
 
-class TransactionEnquiry(NominalTransList):
+
+class TransactionEnquiry(CashBookAndNominalTransList):
     model = NominalTransaction
     # ORDER OF FIELDS HERE IS IMPORTANT FOR GROUPING THE SQL QUERY
     # ATM -
@@ -98,7 +98,6 @@ class TransactionEnquiry(NominalTransList):
         ("total", "Total"),
     ]
     form_field_to_searchable_model_field = {
-        "nominal": "nominal__name",
         "reference": "ref"
     }
     datetime_fields = ["created", ]
@@ -107,6 +106,11 @@ class TransactionEnquiry(NominalTransList):
     template_name = "nominals/transactions.html"
     row_identifier = "header"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["nominal_form"] = NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal")
+        return context
+
     def get_transaction_url(self, **kwargs):
         row = kwargs.pop("row")
         module = row.get("module")
@@ -114,6 +118,12 @@ class TransactionEnquiry(NominalTransList):
         modules = settings.ACCOUNTANCY_MODULES
         module_name = modules[module]
         return reverse_lazy(module_name + ":view", kwargs={"pk": header})
+
+    def apply_advanced_search(self, cleaned_data):
+        queryset = super().apply_advanced_search(cleaned_data)
+        if nominal := cleaned_data.get("nominal"):
+            queryset = queryset.filter(nominal=nominal)
+        return queryset
 
     def get_queryset(self):
         return (

@@ -15,8 +15,6 @@
     return function init(opts) {
 
         var select_identifier = opts.select_identifier;
-        var creation_url = opts.creation_url;
-        var form_field = opts.form_field;
         var load_url = opts.load_url;
 
         return $(select_identifier).selectize({

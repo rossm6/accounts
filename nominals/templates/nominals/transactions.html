@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% load crispy_forms_tags %}
+
 {% block head %}
     {% include 'accountancy/transactions_css.html' %}
 {% endblock head %}
@@ -17,13 +19,26 @@
             </div>
         </div>
         <div class="lower d-flex justify-content-center">
-            <div class="w-100 trans-table-cont">
+            <div class="container">
                 {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
             </div>
         </div>
     </div>
 {% endblock content %}
 
+{% block modal_forms %}
+    {% include 'accountancy/nominal_modal.html' %}
+{% endblock modal_forms %}
+
 {% block js %}
+    {% load static %}
+    <script src="{% static 'accountancy/js/input_grid_selectize.js' %}"></script>
+    <script src="{% static 'nominals/js/transaction_search_form.js' %}"></script>
     {% include 'accountancy/transactions_js.html' %}
+    <script>
+        {% comment %} for the modal window {% endcomment %}
+        $(document).ready(function(){
+            $("select[name='nominal-parent']").selectize();
+        });
+    </script>
 {% endblock js %}

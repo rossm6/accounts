@@ -10,11 +10,13 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm,
-                               BaseTransactionLineForm)
+                               BaseTransactionLineForm,
+                               BaseTransactionSearchForm)
 from accountancy.helpers import Period, delay_reverse_lazy
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  PlainFieldErrors, TableHelper,
                                  create_journal_header_helper,
+                                 create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
 from vat.models import Vat
@@ -80,6 +82,7 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
 
 # A lot of this is common to the other modules so should be factored out
 
+
 line_css_classes = {
     "Td": {
         "description": "can_highlight h-100 w-100 border-0",
@@ -90,12 +93,13 @@ line_css_classes = {
     }
 }
 
+
 class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
     nominal = ModelChoiceFieldChooseIterator(
         queryset=Nominal.objects.none(),
         iterator=RootAndLeavesModelChoiceIterator,
         widget=forms.Select(
-            attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+            attrs={"data-load-url": reverse_lazy("nominals:load_nominals")}
         )
     )
     vat_code = ModelChoiceFieldChooseIterator(
@@ -103,7 +107,7 @@ class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
         queryset=Vat.objects.all(),
         widget=SelectWithDataAttr(
             attrs={
-                "data-url": reverse_lazy("vat:load_vat_codes"),
+                "data-load-url": reverse_lazy("vat:load_vat_codes"),
                 # i.e. add the rate value to the option as data-rate
                 "data-attrs": ["rate"]
             }
@@ -140,6 +144,7 @@ class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
                 }
             }
         ).render()
+
 
 class NominalLineFormset(BaseLineFormset):
 
@@ -207,6 +212,7 @@ enter_lines = forms.modelformset_factory(
 
 enter_lines.include_empty_form = True
 
+
 class TrialBalanceForm(forms.Form):
     from_period = forms.CharField(max_length=6)
     to_period = forms.CharField(max_length=6)
@@ -253,3 +259,36 @@ class TrialBalanceForm(forms.Form):
                 )
 
         return cleaned_data
+
+from accountancy.forms import BaseAjaxFormMixin
+
+class NominalTransactionSearchForm(BaseAjaxFormMixin, BaseTransactionSearchForm):
+    """
+    This is not a model form.  The Meta attribute is only for the Ajax
+    form implementation.
+    """
+    nominal = forms.ModelChoiceField(
+        queryset=Nominal.objects.all(),
+        widget=forms.Select(
+            attrs={
+                "data-load-url": reverse_lazy("nominals:load_nominals"),
+                "data-selectize-type": 'nominal'
+            }
+        ),
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper.layout = create_transaction_enquiry_layout("nominal")
+
+    class Meta:
+        # not a model form
+        ajax_fields = {
+            "nominal": {
+                "querysets": {
+                    "load": Nominal.objects.all().prefetch_related("children"),
+                    "post": Nominal.objects.filter(children__isnull=True)
+                },
+            }
+        }

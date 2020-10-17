@@ -91,6 +91,11 @@ select {
 }
 
 table.dataTable td {
+    vertical-align: middle !important;
+    /* bootstrap aligns at the top */
+}
+
+div.dataTables_info {
     padding: 0 !important;
 }
 

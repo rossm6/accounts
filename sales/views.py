@@ -1,8 +1,7 @@
 from django.urls import reverse_lazy
 from django.utils import timezone
 
-from accountancy.forms import (BaseVoidTransactionForm,
-                               SalesAndPurchaseTransactionSearchForm)
+from accountancy.forms import BaseVoidTransactionForm
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
@@ -13,6 +12,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
 from cashbook.models import CashBookTransaction
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
+from sales.forms import SaleTransactionSearchForm
 from vat.forms import VatForm
 
 from .forms import (DebtorForm, ModalCustomerForm, SaleHeaderForm,
@@ -143,14 +143,18 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
         ("due", "Due"),
     ]
     form_field_to_searchable_model_field = {
-        "contact": "customer__name",
         "reference": "ref"
     }
     datetime_fields = ["date", "due_date"]
     datetime_format = '%d %b %Y'
-    advanced_search_form_class = SalesAndPurchaseTransactionSearchForm
+    advanced_search_form_class = SaleTransactionSearchForm
     contact_name = "customer"
     template_name = "sales/transactions.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["contact_form"] = ModalCustomerForm(action=reverse_lazy("contacts:create_customer"), prefix="customer")
+        return context
 
     def get_transaction_url(self, **kwargs):
         row = kwargs.pop("row")
@@ -168,6 +172,12 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
             )
             .order_by(*self.order_by())
         )
+
+    def apply_advanced_search(self, cleaned_data):
+        queryset = super().apply_advanced_search(cleaned_data)
+        if customer := cleaned_data.get("customer"):
+            queryset = queryset.filter(customer=customer)
+        return queryset
 
     def get_querysets(self):
         group = self.request.GET.get("group", 'a')

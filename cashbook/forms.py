@@ -9,11 +9,14 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
 from accountancy.forms import (BaseAjaxForm, BaseCashBookLineForm,
                                BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
+                               BaseTransactionSearchForm,
                                SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineFormset)
 from accountancy.layouts import (PlainFieldErrors, TableHelper,
-                                 create_cashbook_header_helper)
+                                 create_cashbook_header_helper,
+                                 create_transaction_enquiry_layout)
 from accountancy.widgets import SelectWithDataAttr
+from cashbook.models import CashBook
 from nominals.models import Nominal
 from vat.models import Vat
 
@@ -28,6 +31,7 @@ class CashBookHeaderForm(BaseTransactionHeaderForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = create_cashbook_header_helper()
+
 
 line_css_classes = {
     "Td": {
@@ -45,7 +49,7 @@ class CashBookLineForm(BaseCashBookLineForm):
         queryset=Nominal.objects.none(),
         iterator=RootAndLeavesModelChoiceIterator,
         widget=forms.Select(
-            attrs={"data-url": reverse_lazy("nominals:load_nominals")}
+            attrs={"data-load-url": reverse_lazy("nominals:load_nominals")}
         )
     )
     vat_code = ModelChoiceFieldChooseIterator(
@@ -53,12 +57,13 @@ class CashBookLineForm(BaseCashBookLineForm):
         queryset=Vat.objects.all(),
         widget=SelectWithDataAttr(
             attrs={
-                "data-url": reverse_lazy("vat:load_vat_codes"),
+                "data-load-url": reverse_lazy("vat:load_vat_codes"),
                 # i.e. add the rate value to the option as data-rate
                 "data-attrs": ["rate"]
             }
         )
     )
+
     class Meta:
         model = CashBookLine
         # WHY DO WE INCLUDE THE ID?
@@ -76,6 +81,7 @@ class CashBookLineForm(BaseCashBookLineForm):
                 "searchable_fields": ('code', 'rate',),
             }
         }
+
 
 class CashBookLineFormset(SaleAndPurchaseLineFormset):
     def clean(self):
@@ -101,3 +107,13 @@ enter_lines = forms.modelformset_factory(
 )
 
 enter_lines.include_empty_form = True
+
+class CashBookTransactionSearchForm(BaseTransactionSearchForm):
+    cashbook = forms.ModelChoiceField(
+        queryset=CashBook.objects.all(),
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper.layout = create_transaction_enquiry_layout("cashbook")

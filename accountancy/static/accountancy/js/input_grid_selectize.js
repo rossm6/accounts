@@ -29,7 +29,7 @@
     // vat selectize
     function vat(select_menu) {
         var $select = $(select_menu);
-        var load_url = $select.attr("data-url");
+        var load_url = $select.attr("data-load-url");
         return $select.selectize({
             onInitialize: function () {
                 // html5 data attributes are wiped.  This is a workaround.
@@ -135,8 +135,7 @@
 
         // Similarly, with ordering of options, it seems you must specify the $score order for it to work
         var $select = $(select_menu);
-        var load_url = $select.attr("data-url");
-        var modal;
+        var load_url = $select.attr("data-load-url");
         return $select.selectize({
             create: function (input, callback) {
                 var self = this;
