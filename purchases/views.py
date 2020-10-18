@@ -27,7 +27,7 @@ from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from purchases.forms import ModalSupplierForm, PurchaseTransactionSearchForm
 from vat.forms import VatForm
-from vat.models import Vat
+from vat.models import Vat, VatTransaction
 
 from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
                     enter_lines, match)
@@ -74,6 +74,7 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
     success_url = reverse_lazy("purchases:transaction_enquiry")
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
+    vat_transaction_model = VatTransaction
     module = "PL"
     control_nominal_name = "Purchase Ledger Control"
     cash_book_transaction_model = CashBookTransaction
@@ -108,6 +109,7 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     module = "PL"
     control_nominal_name = "Purchase Ledger Control"
     cash_book_transaction_model = CashBookTransaction
+    vat_transaction_model = VatTransaction
 
 
 class ViewTransaction(SaleAndPurchaseViewTransaction):
@@ -131,6 +133,7 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     success_url = reverse_lazy("purchases:transaction_enquiry")
     module = 'PL'
     cash_book_transaction_model = CashBookTransaction
+    vat_transaction_model = VatTransaction
 
 
 class LoadPurchaseMatchingTransactions(LoadMatchingTransactions):
@@ -166,7 +169,8 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalSupplierForm(action=reverse_lazy("contacts:create_supplier"), prefix="supplier")
+        context["contact_form"] = ModalSupplierForm(
+            action=reverse_lazy("contacts:create_supplier"), prefix="supplier")
         return context
 
     def get_transaction_url(self, **kwargs):

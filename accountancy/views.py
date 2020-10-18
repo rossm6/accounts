@@ -335,15 +335,19 @@ class RESTBaseTransactionMixin:
     def get_nominal_model(self):
         return self.nominal_model
 
+    def get_vat_transaction_model(self):
+        return self.vat_transaction_model
+
     def get_nominal_transaction_model(self):
         return self.nominal_transaction_model
 
     def create_or_update_related_transactions(self, **kwargs):
         self.create_or_update_nominal_transactions(**kwargs)
+        self.create_or_update_vat_transactions(**kwargs)
 
     def get_transaction_type_object(self):
         if hasattr(self, "transaction_type_object"):
-            return self.tranaction_type_object
+            return self.transaction_type_object
         else:
             self.transaction_type_object = self.header_obj.get_type_transaction()
             return self.transaction_type_object
@@ -648,6 +652,16 @@ class RESTBaseCreateTransactionMixin:
             **kwargs
         )
 
+    def create_or_update_vat_transactions(self, **kwargs):
+        kwargs.update({
+            "line_cls": self.get_line_model(),
+        })
+        transaction_type_object = self.get_transaction_type_object()
+        self.vat_trans = transaction_type_object.create_vat_transactions(
+            self.get_vat_transaction_model(),
+            **kwargs
+        )
+
     def lines_are_valid(self):
         line_no = 1
         lines = []
@@ -724,18 +738,7 @@ class CreateCashBookEntriesMixin:
 
 
 class CreateCashBookTransaction(CreateCashBookEntriesMixin, BaseCreateTransaction):
-    def create_or_update_nominal_transactions(self, **kwargs):
-        kwargs.update({
-            "line_cls": self.get_line_model(),
-            "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
-        })
-        transaction_type_object = self.get_transaction_type_object()
-        # e.g. Payment, Refund
-        transaction_type_object.create_nominal_transactions(
-            self.get_nominal_model(),
-            self.get_nominal_transaction_model(),
-            **kwargs
-        )
+    pass
 
 
 class MatchingMixin:
@@ -801,7 +804,6 @@ class CreatePurchaseOrSalesTransaction(MatchingMixin, CreateCashBookEntriesMixin
             self.get_nominal_transaction_model(),
             **kwargs
         )
-
 
 class RESTIndividualTransactionForHeaderMixin:
     def get_header_form_kwargs(self):
@@ -870,6 +872,16 @@ class RESTBaseEditTransactionMixin:
             **kwargs
         )
 
+    def create_or_update_vat_transactions(self, **kwargs):
+        kwargs.update({
+            "line_cls": self.get_line_model(),
+        })
+        transaction_type_object = self.get_transaction_type_object()
+        self.vat_trans = transaction_type_object.edit_vat_transactions(
+            self.get_vat_transaction_model(),
+            **kwargs
+        )
+
     def dispatch(self, request, *args, **kwargs):
         if self.main_header.is_void():
             return HttpResponseForbidden("Void transactions cannot be edited")
@@ -918,11 +930,13 @@ class RESTBaseEditTransactionMixin:
             ).objects.filter(
                 module=self.get_module(),
                 header=self.header_obj.pk)
+            existing_vat_trans = self.get_vat_transaction_model().objects.filter(module=self.get_module(), header=self.header_obj.pk)
             self.create_or_update_related_transactions(
                 new_lines=new_lines,
                 updated_lines=lines_to_update,
                 deleted_lines=self.line_formset.deleted_objects,
-                existing_nom_trans=existing_nom_trans
+                existing_nom_trans=existing_nom_trans,
+                existing_vat_trans=existing_vat_trans
             )
 
 
@@ -1012,18 +1026,7 @@ class EditCashBookEntriesMixin(CreateCashBookEntriesMixin):
 
 
 class EditCashBookTransaction(EditCashBookEntriesMixin, NominalTransactionsMixin, BaseEditTransaction):
-    def create_or_update_nominal_transactions(self, **kwargs):
-        kwargs.update({
-            "line_cls": self.get_line_model(),
-            "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
-        })
-        # e.g. Invoice, CreditNote etc
-        transaction_type_object = self.get_transaction_type_object()
-        transaction_type_object.edit_nominal_transactions(
-            self.get_nominal_model(),
-            self.get_nominal_transaction_model(),
-            **kwargs
-        )
+    pass
 
 
 class EditPurchaseOrSalesTransaction(

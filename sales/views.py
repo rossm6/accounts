@@ -21,6 +21,7 @@ from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
 
+from vat.models import VatTransaction
 
 class CustomerMixin:
 
@@ -66,6 +67,7 @@ class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
     control_nominal_name = SALES_CONTROL_ACCOUNT
     cash_book_transaction_model = CashBookTransaction
     default_type = "si"
+    vat_transaction_model = VatTransaction
 
 
 class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
@@ -96,7 +98,7 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
     module = "SL"
     control_nominal_name = SALES_CONTROL_ACCOUNT
     cash_book_transaction_model = CashBookTransaction
-
+    vat_transaction_model = VatTransaction
 
 class ViewTransaction(SaleAndPurchaseViewTransaction):
     model = SaleHeader
@@ -118,7 +120,7 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     success_url = reverse_lazy("sales:transaction_enquiry")
     module = 'SL'
     cash_book_transaction_model = CashBookTransaction
-
+    vat_transaction_model = VatTransaction
 
 class LoadSaleMatchingTransactions(LoadMatchingTransactions):
     header_model = SaleHeader

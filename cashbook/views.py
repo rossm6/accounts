@@ -16,6 +16,7 @@ from cashbook.models import CashBook
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from vat.forms import VatForm
+from vat.models import VatTransaction
 
 from .forms import CashBookHeaderForm, CashBookLineForm, enter_lines
 from .models import CashBookHeader, CashBookLine, CashBookTransaction
@@ -42,6 +43,7 @@ class CreateTransaction(CreateCashBookTransaction):
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
     cash_book_transaction_model = CashBookTransaction
+    vat_transaction_model = VatTransaction
     module = "CB"
     default_type = "cp"
 
@@ -67,6 +69,7 @@ class EditTransaction(EditCashBookTransaction):
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
     cash_book_transaction_model = CashBookTransaction
+    vat_transaction_model = VatTransaction
     module = "CB"
 
 
@@ -89,7 +92,7 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     success_url = reverse_lazy("cashbook:transaction_enquiry")
     module = 'CB'
     cash_book_transaction_model = CashBookTransaction
-
+    vat_transaction_model = VatTransaction
 
 class TransactionEnquiry(CashBookAndNominalTransList):
     model = CashBookHeader

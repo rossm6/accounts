@@ -8,7 +8,7 @@ from accountancy.models import (Audit, CashBookEntryMixin, Contact,
                                 ControlAccountInvoiceTransactionMixin,
                                 ControlAccountPaymentTransactionMixin,
                                 MatchedHeaders, Transaction, TransactionHeader,
-                                TransactionLine)
+                                TransactionLine, VatTransactionMixin)
 from accountancy.signals import audit_post_delete
 from utils.helpers import \
     disconnect_simple_history_receiver_for_post_delete_signal
@@ -29,13 +29,13 @@ class SalesTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.module = "SL"
-
+        self.vat_type = "o" # output vat
 
 class BroughtForwardInvoice(SalesTransaction):
     pass
 
 
-class Invoice(ControlAccountInvoiceTransactionMixin, SalesTransaction):
+class Invoice(VatTransactionMixin, ControlAccountInvoiceTransactionMixin, SalesTransaction):
     pass
 
 
@@ -169,6 +169,8 @@ class SaleLine(ModuleTransactionBase, TransactionLine):
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="sale_vat_line")
     total_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="sale_total_line")
+    vat_transaction = models.ForeignKey(
+        'vat.VatTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="sale_line_vat_transaction")
     type = models.CharField(
         max_length=3,
         choices=SaleHeader.type_choices

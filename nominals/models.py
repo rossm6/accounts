@@ -6,7 +6,8 @@ from mptt.models import MPTTModel, TreeForeignKey
 from simple_history import register
 
 from accountancy.models import (MultiLedgerTransactions, TransactionHeader,
-                                TransactionLine)
+                                TransactionLine, UIDecimalField,
+                                VatTransactionMixin)
 from cashbook.models import CashBookHeader
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -30,6 +31,7 @@ class NominalTransaction:
     def __init__(self, *args, **kwargs):
         self.header_obj = kwargs.get("header")
         self.module = "NL"
+        self.vat_type = "o" # this needs to come from the form eventually so user can shoose input or output
 
     def create_nominal_transactions(self, *args, **kwargs):
         return
@@ -38,7 +40,11 @@ class NominalTransaction:
         return
 
 
-class Journal(NominalTransaction):
+"""
+We are repeating ourselves here.  Need to use inheritance.
+"""
+
+class Journal(VatTransactionMixin, NominalTransaction):
     def _create_nominal_transactions_for_line(self, nom_tran_cls, line, vat_nominal):
         trans = []
         if line.goods != 0:
@@ -203,7 +209,6 @@ class Journal(NominalTransaction):
         return nom_trans
 
 
-
 class ModuleTransactionBase:
     analysis_required = [
         ('nj', 'Journal')
@@ -256,6 +261,8 @@ class NominalLine(ModuleTransactionBase, TransactionLine):
         'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_good_line")
     vat_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, on_delete=models.SET_NULL, related_name="nominal_vat_line")
+    vat_transaction = models.ForeignKey(
+        'vat.VatTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="nominal_line_vat_transaction")
     type = models.CharField(
         max_length=3,
         choices=NominalHeader.analysis_required
@@ -273,6 +280,7 @@ class NominalLine(ModuleTransactionBase, TransactionLine):
             "vat_code",
             "type"
         ]
+
 
 register(NominalLine)
 
@@ -295,9 +303,6 @@ register(NominalLine)
 #         )
 
 
-
-
-
 class NominalTransaction(MultiLedgerTransactions):
     all_module_types = (
         PurchaseHeader.analysis_required +
@@ -307,6 +312,12 @@ class NominalTransaction(MultiLedgerTransactions):
     )
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
+    value = UIDecimalField(
+        decimal_places=2,
+        max_digits=10,
+        blank=True,
+        null=True
+    )
 
     class Meta:
         constraints = [
@@ -322,7 +333,8 @@ class NominalTransaction(MultiLedgerTransactions):
             "ref",
             "period",
             "date",
-            "type"            
+            "type"
         ]
+
 
 register(NominalTransaction)

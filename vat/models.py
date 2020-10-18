@@ -27,7 +27,6 @@ class ModuleTypes:
         for tran_type in all_module_types:
             yield tran_type
 
-
 class VatTransaction(MultiLedgerTransactions):
     vat_types = [
         ("i", "Input"),
@@ -35,6 +34,22 @@ class VatTransaction(MultiLedgerTransactions):
     ]
     tran_type = models.CharField(max_length=10, choices=ModuleTypes())
     vat_type = models.CharField(max_length=2, choices=vat_types)
+    vat_code = models.ForeignKey(Vat, on_delete=models.SET_NULL, null=True)
+    vat_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=10,
+        default=0
+    )
+    goods = models.DecimalField(
+        decimal_places=2,
+        max_digits=10,
+        default=0
+    )
+    vat = models.DecimalField(
+        decimal_places=2,
+        max_digits=10,
+        default=0
+    )
 
     class Meta:
         constraints = [
@@ -45,10 +60,15 @@ class VatTransaction(MultiLedgerTransactions):
     @classmethod
     def fields_to_update(cls):
         return [
-            "value",
             "ref",
             "period",
             "date",
             "tran_type",
-            "vat_type"            
+            "vat_type",
+            "vat_code",
+            "vat_rate",
+            "goods",
+            "vat"
         ]
+
+register(VatTransaction)

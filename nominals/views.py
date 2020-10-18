@@ -24,6 +24,7 @@ from vat.forms import VatForm
 from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
+from vat.models import VatTransaction
 
 class CreateTransaction(BaseCreateTransaction):
     header = {
@@ -46,6 +47,7 @@ class CreateTransaction(BaseCreateTransaction):
     success_url = reverse_lazy("nominals:transaction_enquiry")
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
+    vat_transaction_model = VatTransaction
     module = "NL"
     default_type = "nj"
 
@@ -70,6 +72,7 @@ class EditTransaction(BaseEditTransaction):
     success_url = reverse_lazy("nominals:transaction_enquiry")
     nominal_model = Nominal
     nominal_transaction_model = NominalTransaction
+    vat_transaction_model = VatTransaction
     module = "NL"
 
 
@@ -145,7 +148,7 @@ class VoidTransaction(BaseVoidTransaction):
     form = BaseVoidTransactionForm
     success_url = reverse_lazy("nominals:transaction_enquiry")
     module = 'NL'
-
+    vat_transaction_model = VatTransaction
 
 class TrialBalance(ListView):
     template_name = "nominals/trial_balance.html"

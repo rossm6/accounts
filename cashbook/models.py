@@ -3,7 +3,8 @@ from simple_history import register
 
 from accountancy.models import (CashBookPaymentTransactionMixin,
                                 MultiLedgerTransactions, Transaction,
-                                TransactionHeader, TransactionLine)
+                                TransactionHeader, TransactionLine,
+                                UIDecimalField, VatTransactionMixin)
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
 from vat.models import Vat
@@ -26,9 +27,9 @@ class CashBookTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.module = "CB"
+        self.vat_type = "o" # Again, like the Nominal, this needs to be chosen by the user in the form
 
-
-class Payment(CashBookPaymentTransactionMixin, CashBookTransaction):
+class Payment(VatTransactionMixin, CashBookPaymentTransactionMixin, CashBookTransaction):
     pass
 
 
@@ -84,6 +85,7 @@ class ModuleTransactionBase:
     ]
     type_choices = no_analysis_required + analysis_required
 
+
 class CashBookHeader(ModuleTransactionBase, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
@@ -136,6 +138,8 @@ class CashBookLine(ModuleTransactionBase, TransactionLine):
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_vat_line")
     total_nominal_transaction = models.ForeignKey(
         'nominals.NominalTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_total_line")
+    vat_transaction = models.ForeignKey(
+        'vat.VatTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_line_vat_transaction")
     type = models.CharField(
         max_length=3,
         choices=CashBookHeader.type_choices
@@ -170,6 +174,12 @@ all_module_types = (
 class CashBookTransaction(MultiLedgerTransactions):
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
+    value = UIDecimalField(
+        decimal_places=2,
+        max_digits=10,
+        blank=True,
+        null=True
+    )
 
     class Meta:
         constraints = [

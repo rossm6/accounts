@@ -61,7 +61,13 @@ class Transaction:
     def create_nominal_transactions(self, *args, **kwargs):
         return
 
+    def create_vat_transactions(self, *args, **kwargs):
+        return
+
     def edit_nominal_transactions(self, *args, **kwargs):
+        return
+
+    def edit_vat_transactions(self, *args, **kwargs):
         return
 
     def create_cash_book_entry(self, *args, **kwargs):
@@ -69,6 +75,117 @@ class Transaction:
 
     def edit_cash_book_entry(self, *args, **kwargs):
         return
+
+
+class VatTransactionMixin:
+    """
+    Like the nominal transactions, create a vat transaction per line.
+    In Vat transaction enquiry, group by - module, header, vat_code
+    """
+
+    def _create_vat_transaction_for_line(self, line, vat_tran_cls):
+        if line.vat_code:
+            # by virtue of choosing a vat code you want it on the vat return
+            # so leaving vat_code blank is the same as choosing N / A
+            return vat_tran_cls(
+                module=self.module,
+                header=self.header_obj.pk,
+                line=line.pk,
+                goods=line.goods,
+                vat=line.vat,
+                ref=self.header_obj.ref,
+                period=self.header_obj.period,
+                date=self.header_obj.date,
+                tran_type=self.header_obj.type,
+                vat_type=self.vat_type,
+                vat_code=line.vat_code,
+                vat_rate=line.vat_code.rate,
+                field="v"
+            )
+
+    def create_vat_transactions(self, vat_tran_cls, **kwargs):
+        vat_transactions = []
+        if lines := kwargs.get('lines'):
+            lines = sorted(lines, key=lambda l: l.pk)
+        for line in lines:
+            if (vat_transaction := self._create_vat_transaction_for_line(
+                line, vat_tran_cls
+            )):
+                vat_transactions.append(vat_transaction)
+        if vat_transactions:
+            vat_transactions = vat_tran_cls.objects.bulk_create(
+                vat_transactions)
+            vat_transactions = sorted(
+                vat_transactions, key=lambda n: n.line)
+            line_pk_map = {line.pk: line for line in lines}
+            for vat_tran in vat_transactions:
+                # one to one relationship
+                line = line_pk_map[vat_tran.line]
+                line.vat_transaction = vat_tran
+            line_cls = kwargs.get('line_cls')
+            # not all the lines will necessarily have vat transactions but just update all of them anyway
+            line_cls.objects.audited_bulk_update(lines, ['vat_transaction'])
+
+    def _edit_vat_transaction_for_line(self, vat_tran, line):
+        if line.vat_code:
+            vat.goods = line.goods
+            vat.vat = line.vat
+            vat.ref = self.header_obj.ref
+            vat.period = self.header_obj.period
+            vat.date = self.header_obj.date
+            vat.vat_code = line.vat_code
+            vat.vat_rate = line.vat_code.rate
+            return [vat_tran], []
+        return [], [vat_tran]
+
+    def edit_vat_transactions(self, vat_tran_cls, **kwargs):
+        vat_trans_to_update = []
+        vat_trans_to_delete = []
+
+        existing_vat_trans = kwargs.get('existing_vat_trans')
+        existing_vat_trans = sorted(existing_vat_trans, key=lambda n: n.line)
+
+        if new_lines := kwargs.get("new_lines"):
+            sorted(new_lines, key=lambda l: l.pk)
+        if updated_lines := kwargs.get("updated_lines"):
+            sorted(updated_lines, key=lambda l: l.pk)
+        if deleted_lines := kwargs.get("deleted_lines"):
+            sorted(deleted_lines, key=lambda l: l.pk)
+
+        if updated_lines:
+            lines_to_update = [line.pk for line in updated_lines]
+            vat_trans_to_update = [
+                tran for tran in existing_vat_trans if tran.line in lines_to_update]
+            vat_trans_to_update = sorted(
+                vat_trans_to_update, key=lambda n: n.line)
+            line_pk_map = {line.pk: line for line in updated_lines}
+            for vat_tran in vat_trans_to_update:
+                # one to one relationship
+                line = line_pk_map[vat_tran.line]
+                to_update, to_delete = self._edit_vat_transactions_for_line(
+                    vat_tran, line)
+                if to_delete:
+                    vat_trans_to_delete += to_delete
+
+        vat_trans_to_update = [
+            tran for tran in vat_trans_to_update if tran not in vat_trans_to_delete]
+
+        if deleted_lines:
+            lines_to_delete = [line.pk for line in deleted_lines]
+            vat_trans_to_delete += [
+                tran for tran in existing_vat_trans if tran.line in lines_to_delete]
+            vat_trans_to_delete = sorted(
+                vat_trans_to_delete, key=lambda n: n.line)
+
+        line_cls = kwargs.get('line_cls')
+        # bulk_creates in this method
+        self.create_vat_transactions(
+            vat_tran_cls,
+            line_cls=line_cls,
+            lines=new_lines,
+        )
+        vat_tran_cls.objects.audited_bulk_line_update(vat_trans_to_update)
+        vat_tran_cls.objects.filter(pk__in=[ tran.pk for tran in vat_trans_to_delete ]).delete() # do not audit this deletion
 
 
 class ControlAccountInvoiceTransactionMixin:
@@ -166,7 +283,6 @@ class ControlAccountInvoiceTransactionMixin:
                 nominal_transactions, key=lambda n: n.line)
 
             def line_key(n): return n.line
-            nominal_transactions = sorted(nominal_transactions, key=line_key)
             for line, (key, line_nominal_trans) in zip(lines, groupby(nominal_transactions, line_key)):
                 nom_tran_map = {
                     tran.field: tran for tran in list(line_nominal_trans)}
@@ -280,6 +396,8 @@ class ControlAccountInvoiceTransactionMixin:
 
         if deleted_lines:
             lines_to_delete = [line.pk for line in deleted_lines]
+            # this is a BUG.  What if nom_trans_delete is non empty already?  You're overriding it here
+            # Need an integreation test for this.  Fix when unit testing.
             nom_trans_to_delete = [
                 tran for tran in existing_nom_trans if tran.line in lines_to_delete]
             nom_trans_to_delete = sorted(
@@ -759,12 +877,6 @@ class MultiLedgerTransactions(models.Model, Audit):
     # if a line transaction is created e.g. Purchase or Nominal Line, this will just be the primary key of the line record
     line = models.PositiveIntegerField()
     # but sometimes there won't be any lines e.g. a payment.  So the line will have to be set manually
-    value = UIDecimalField(
-        decimal_places=2,
-        max_digits=10,
-        blank=True,
-        null=True
-    )
     ref = models.CharField(max_length=100)  # CHECK LENGTH
     period = models.CharField(max_length=6)
     date = models.DateField()
