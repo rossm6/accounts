@@ -2,9 +2,10 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from accountancy.helpers import sort_multiple
 from cashbook.models import CashBookTransaction
 from nominals.models import NominalTransaction
-from accountancy.helpers import sort_multiple
+from vat.models import VatTransaction
 
 from .models import PurchaseHeader, PurchaseLine, Supplier
 
@@ -363,3 +364,31 @@ def create_credit_note_with_nom_entries(header, lines, vat_nominal, control_nomi
     lines[0]["goods"] = -1 * lines[0]["goods"]
     lines[0]["vat"] = -1 * lines[0]["vat"]
     return create_invoice_with_nom_entries(header, lines, vat_nominal, control_nominal)
+
+
+def create_vat_transactions(header, lines):
+    vat_trans = []
+    for line in lines:
+        vat_trans.append(
+            VatTransaction(
+                header=header.pk,
+                line=line.pk,
+                module="PL",
+                ref=header.ref,
+                period=header.period,
+                date=header.date,
+                field="v",
+                tran_type=header.type,
+                vat_type="i",
+                vat_code=line.vat_code,
+                vat_rate=line.vat_code.rate,
+                goods=line.goods,
+                vat=line.vat
+            )
+        )
+    vat_trans = VatTransaction.objects.bulk_create(vat_trans)
+    vat_trans = sort_multiple(vat_trans, *[ (lambda v : v.line, False) ])
+    lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+    for i, line in enumerate(lines):
+        line.vat_transaction = vat_trans[i]
+    PurchaseLine.objects.bulk_update(lines, ["vat_transaction"])

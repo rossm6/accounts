@@ -128,13 +128,13 @@ class VatTransactionMixin:
 
     def _edit_vat_transaction_for_line(self, vat_tran, line):
         if line.vat_code:
-            vat.goods = line.goods
-            vat.vat = line.vat
-            vat.ref = self.header_obj.ref
-            vat.period = self.header_obj.period
-            vat.date = self.header_obj.date
-            vat.vat_code = line.vat_code
-            vat.vat_rate = line.vat_code.rate
+            vat_tran.goods = line.goods
+            vat_tran.vat = line.vat
+            vat_tran.ref = self.header_obj.ref
+            vat_tran.period = self.header_obj.period
+            vat_tran.date = self.header_obj.date
+            vat_tran.vat_code = line.vat_code
+            vat_tran.vat_rate = line.vat_code.rate
             return [vat_tran], []
         return [], [vat_tran]
 
@@ -162,7 +162,7 @@ class VatTransactionMixin:
             for vat_tran in vat_trans_to_update:
                 # one to one relationship
                 line = line_pk_map[vat_tran.line]
-                to_update, to_delete = self._edit_vat_transactions_for_line(
+                to_update, to_delete = self._edit_vat_transaction_for_line(
                     vat_tran, line)
                 if to_delete:
                     vat_trans_to_delete += to_delete
