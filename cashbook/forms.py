@@ -106,7 +106,10 @@ class CashBookLineForm(BaseCashBookLineForm):
         queryset=Nominal.objects.none(),
         iterator=RootAndLeavesModelChoiceIterator,
         widget=forms.Select(
-            attrs={"data-load-url": reverse_lazy("nominals:load_nominals")}
+            attrs={
+                "data-load-url": reverse_lazy("nominals:load_nominals"),
+                "data-selectize-type": 'nominal'
+            }
         )
     )
     vat_code = ModelChoiceFieldChooseIterator(
@@ -116,7 +119,8 @@ class CashBookLineForm(BaseCashBookLineForm):
             attrs={
                 "data-load-url": reverse_lazy("vat:load_vat_codes"),
                 # i.e. add the rate value to the option as data-rate
-                "data-attrs": ["rate"]
+                "data-attrs": ["rate"],
+                "data-selectize-type": 'vat'
             }
         )
     )
