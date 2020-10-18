@@ -459,6 +459,7 @@ class TransactionBase:
     def is_negative_type(self):
         return self.type in self.negatives
 
+
 class TransactionHeader(TransactionBase, models.Model, Audit):
     """
 

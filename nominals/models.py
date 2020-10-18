@@ -295,15 +295,16 @@ register(NominalLine)
 #         )
 
 
-all_module_types = (
-    PurchaseHeader.analysis_required +
-    NominalHeader.analysis_required +
-    SaleHeader.analysis_required +
-    CashBookHeader.analysis_required
-)
+
 
 
 class NominalTransaction(MultiLedgerTransactions):
+    all_module_types = (
+        PurchaseHeader.analysis_required +
+        NominalHeader.analysis_required +
+        SaleHeader.analysis_required +
+        CashBookHeader.analysis_required
+    )
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
 
