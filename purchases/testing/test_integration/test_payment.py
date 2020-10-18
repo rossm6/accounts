@@ -18,7 +18,7 @@ from purchases.helpers import (create_credit_note_with_lines,
                                create_payments, create_refund_with_nom_entries)
 from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
                               Supplier)
-from vat.models import Vat
+from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
@@ -197,6 +197,10 @@ class CreatePayment(TestCase):
             header.due,
             header.total
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_payment_with_negative_input_is_saved_as_positive(self):
@@ -245,6 +249,10 @@ class CreatePayment(TestCase):
         self.assertEqual(
             header.due,
             header.total
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
         )
 
     # CORRECT USAGE
@@ -316,6 +324,10 @@ class CreatePayment(TestCase):
                 match.value,
                 matched_to_header_before_update.due
             )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_header_total_is_zero_and_matching_transactions_do_not_equal_zero(self):
@@ -375,7 +387,10 @@ class CreatePayment(TestCase):
             "Because you are entering a zero value transaction the total amount to match must be zero also.</li>",
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USUAGE
     def test_header_total_is_zero_and_with_no_matching_transactions(self):
@@ -411,7 +426,10 @@ class CreatePayment(TestCase):
             "  This isn't allowed because it is pointless.</li>",
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE -- BUT THIS MEANS THE TOTAL OF THE LINES IS USED FOR THE HEADER
     # SO THIS IS NOT A ZERO VALUE MATCHING TRANSACTION
@@ -465,6 +483,10 @@ class CreatePayment(TestCase):
         lines = PurchaseLine.objects.all()
         self.assertEqual(
             len(lines),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -548,6 +570,10 @@ class CreatePayment(TestCase):
                 match.value,
                 100
             )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_equal_to_total(self):
@@ -628,6 +654,10 @@ class CreatePayment(TestCase):
                 match.value,
                 100
             )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_above_the_total(self):
@@ -675,7 +705,10 @@ class CreatePayment(TestCase):
             '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -2400.00</li>',
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT - Cannot match header to matching transactions with same sign
     def test_header_total_is_non_zero_and_with_matching_transactions_have_same_sign_as_new_header(self):
@@ -723,7 +756,10 @@ class CreatePayment(TestCase):
             '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and -100.00</li>',
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     """
     As with the invoice tests we now test the non-zero total tests but this time entering negatives
@@ -782,6 +818,10 @@ class CreatePayment(TestCase):
         lines = PurchaseLine.objects.all()
         self.assertEqual(
             len(lines),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -865,6 +905,10 @@ class CreatePayment(TestCase):
                 match.value,
                 -100
             )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_equal_to_total_NEGATIVE(self):
@@ -944,6 +988,10 @@ class CreatePayment(TestCase):
                 match.value,
                 -100
             )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_above_the_total_NEGATIVE(self):
@@ -991,7 +1039,10 @@ class CreatePayment(TestCase):
             '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 2400.00</li>',
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT - Cannot match header to matching transactions with same sign
     def test_header_total_is_non_zero_and_with_matching_transactions_which_have_same_sign_as_new_header_NEGATIVE(self):
@@ -1039,7 +1090,10 @@ class CreatePayment(TestCase):
             '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 100.00</li>',
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 
     """
@@ -1110,7 +1164,10 @@ class CreatePayment(TestCase):
             '<li class="py-1">Value must be between 0 and -100.00</li>',
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 
     def test_illegal_matching_situation_2(self):
@@ -1514,7 +1571,10 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_payment(self):
@@ -1616,6 +1676,10 @@ class CreatePaymentNominalEntries(TestCase):
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -1802,7 +1866,10 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     """
 
@@ -2015,7 +2082,10 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
@@ -2211,7 +2281,10 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_high(self):
@@ -2284,12 +2357,16 @@ class CreatePaymentNominalEntries(TestCase):
             len(matches),
             0        
         )
-
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # INCORRECT USAGE
     def test_match_value_too_low(self):
@@ -2367,6 +2444,11 @@ class CreatePaymentNominalEntries(TestCase):
             len(cash_book_trans),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
@@ -2594,6 +2676,11 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     """
     Test matching for negative payments
@@ -2804,7 +2891,10 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
@@ -2999,7 +3089,10 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
@@ -3078,7 +3171,10 @@ class CreatePaymentNominalEntries(TestCase):
             len(cash_book_trans),
             0
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
@@ -3154,6 +3250,10 @@ class CreatePaymentNominalEntries(TestCase):
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -3383,7 +3483,10 @@ class CreatePaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 """
 EDIT
@@ -6412,6 +6515,10 @@ class EditPaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
@@ -6671,6 +6778,11 @@ class EditPaymentNominalEntries(TestCase):
             len(cash_book_trans),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
@@ -6925,6 +7037,11 @@ class EditPaymentNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
@@ -7115,6 +7232,11 @@ class EditPaymentNominalEntries(TestCase):
             len(cash_book_trans),
             3
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
@@ -7304,4 +7426,8 @@ class EditPaymentNominalEntries(TestCase):
         self.assertEqual(
             len(cash_book_trans),
             3
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
         )

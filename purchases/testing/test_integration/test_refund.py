@@ -18,7 +18,7 @@ from purchases.helpers import (create_credit_note_with_lines,
                                create_payments, create_refund_with_nom_entries)
 from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
                               Supplier)
-from vat.models import Vat
+from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
@@ -338,6 +338,11 @@ class CreateRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # CORRECT USAGE
     def test_zero_payment(self):
@@ -441,6 +446,11 @@ class CreateRefundNominalEntries(TestCase):
             len(cash_book_trans),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # CORRECT USAGE
     def test_negative_payment(self):
@@ -622,6 +632,10 @@ class CreateRefundNominalEntries(TestCase):
         self.assertEqual(
             cash_book_trans[0].type,
             header.type
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
         )
 
     """
@@ -834,6 +848,10 @@ class CreateRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
@@ -1029,6 +1047,10 @@ class CreateRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_high(self):
@@ -1106,6 +1128,10 @@ class CreateRefundNominalEntries(TestCase):
             len(cash_book_trans),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_low(self):
@@ -1180,6 +1206,10 @@ class CreateRefundNominalEntries(TestCase):
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -1409,6 +1439,10 @@ class CreateRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     """
     Test matching for negative payments
@@ -1618,6 +1652,10 @@ class CreateRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
@@ -1811,6 +1849,10 @@ class CreateRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
@@ -1888,6 +1930,10 @@ class CreateRefundNominalEntries(TestCase):
             len(cash_book_trans),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
@@ -1962,6 +2008,10 @@ class CreateRefundNominalEntries(TestCase):
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -2190,7 +2240,10 @@ class CreateRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 
 class EditRefundNominalEntries(TestCase):
@@ -2586,6 +2639,10 @@ class EditRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
@@ -2845,6 +2902,10 @@ class EditRefundNominalEntries(TestCase):
             len(cash_book_trans),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
@@ -3099,6 +3160,10 @@ class EditRefundNominalEntries(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
@@ -3279,6 +3344,10 @@ class EditRefundNominalEntries(TestCase):
             response.status_code,
             200
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
@@ -3458,7 +3527,10 @@ class EditRefundNominalEntries(TestCase):
             response.status_code,
             200
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 class EditRefund(TestCase):
 

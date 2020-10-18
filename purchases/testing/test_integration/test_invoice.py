@@ -13287,7 +13287,6 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -13460,7 +13459,6 @@ class EditInvoiceNominalEntries(TestCase):
             20
         )
         vat_transactions = list(vat_transactions)
-
         lines = list(lines)
 
         unedited_lines = list(lines)[:-1]
@@ -13747,7 +13745,6 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -14302,7 +14299,6 @@ class EditInvoiceNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 0)
         self.assertEqual(edited_line.nominal, self.nominal)
@@ -15528,7 +15524,6 @@ class EditInvoiceNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
