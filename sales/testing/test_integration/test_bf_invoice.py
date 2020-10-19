@@ -16,7 +16,7 @@ from sales.helpers import (create_credit_note_with_lines,
                            create_lines, create_receipt_with_nom_entries,
                            create_receipts, create_refund_with_nom_entries)
 from sales.models import Customer, SaleHeader, SaleLine, SaleMatching
-from vat.models import Vat
+from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
@@ -217,6 +217,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
                 None
             )
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_zero_brought_forward_invoice_with_no_analysis_but_matching_tran(self):
@@ -283,6 +287,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         lines = SaleLine.objects.all()
         self.assertEqual(len(lines), 0)
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_zero_brought_forward_invoice_with_zero_value_line(self):
@@ -315,6 +323,11 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             response,
             '<li class="py-1">Goods and Vat cannot both be zero.</li>',
             html=True
+        )
+
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
         )
 
     """
@@ -453,6 +466,11 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             -2400
         )
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
     # CORRECT USAGE
     def test_selecting_a_transaction_to_match_but_for_zero_value(self):
 
@@ -573,6 +591,11 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             0
         )
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
     # INCORRECT USAGE
     # For an invoice of 2400 the match value must be between 0 and -2400 
     def test_match_total_greater_than_zero(self):
@@ -644,6 +667,11 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             0
         )
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
     # INCORRECT USAGE
     # Try and match -2400.01 to an invoice for 2400
     def test_match_total_less_than_invoice_total(self):
@@ -712,6 +740,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             0
         )
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     # We've already tested we can match the whole amount and matching 0 does not count
@@ -847,6 +879,11 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             -1200
         )
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
     """
     Test negative invoices now.  I've not repeated all the tests
     that were done for positives.  We shouldn't need to.
@@ -942,6 +979,11 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
                 None
             )
 
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
     # CORRECT USAGE
     def test_negative_invoice_without_matching_with_total(self):
 
@@ -1034,6 +1076,11 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
                 line.total_nominal_transaction,
                 None
             )
+
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     """
     Test matching negative invoices now
@@ -1170,6 +1217,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             matches[0].value,
             2400
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_selecting_a_transaction_to_match_but_for_zero_value_against_negative_invoice_NEGATIVE(self):
@@ -1287,6 +1338,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             len(matches),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     # For an invoice of 2400 the match value must be between 0 and -2400 
@@ -1355,6 +1410,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             len(matches),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     # Try and match -2400.01 to an invoice for 2400
@@ -1421,6 +1480,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         matches = SaleMatching.objects.all()
         self.assertEqual(
             len(matches),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -1554,7 +1617,10 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             matches[0].value,
             1200
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 
 class EditBroughtForwardInvoiceNominalEntries(TestCase):
@@ -1784,6 +1850,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             len(matches),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     # Add another line this time
@@ -1964,6 +2034,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         matches = SaleMatching.objects.all()
         self.assertEqual(
             len(matches),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -2175,7 +2249,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             len(matches),
             0
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     # Same as above except we now blank out vat and not goods
@@ -2381,6 +2458,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             len(matches),
             0
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     # Zero out the goods and the vat
@@ -2506,7 +2587,11 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             '<li class="py-1">Goods and Vat cannot both be zero.</li>',
             html=True
         )
-   
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
 
     # CORRECT USAGE
     # SIMPLY MARK A LINE AS DELETED
@@ -2687,6 +2772,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         matches = SaleMatching.objects.all()
         self.assertEqual(
             len(matches),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )
 
@@ -2871,6 +2960,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             matches[1].value,
             -100
         )  
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # CORRECT USAGE
     def test_change_zero_brought_forward_invoice_to_a_non_zero_invoice(self):
@@ -3088,6 +3181,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         self.assertEqual(
             matches[1].value,
             -100
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
         )
 
 
@@ -3315,6 +3412,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             response.status_code,
             200
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 
     # INCORRECT USAGE
@@ -3541,7 +3642,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             response.status_code,
             200
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     # Add another line this time but mark it as deleted
@@ -3718,5 +3822,9 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         matches = SaleMatching.objects.all()
         self.assertEqual(
             len(matches),
+            0
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
             0
         )

@@ -205,7 +205,9 @@ class ViewCreditNote(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {

@@ -2525,19 +2525,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
 
     # CORRECT USAGE
@@ -3396,37 +3435,115 @@ class CreateInvoiceNominalEntries(TestCase):
         vat_transactions = vat_transactions_orig[:10]
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
         lines = lines_orig[10:]
         vat_transactions = vat_transactions_orig[10:]
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
 
     # CORRECT USAGE
@@ -3869,19 +3986,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # CORRECT USAGE
     def test_selecting_a_transaction_to_match_but_for_zero_value(self):
@@ -4161,19 +4317,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # INCORRECT USAGE
     # For an invoice of 2400 the match value must be between 0 and -2400 
@@ -4625,19 +4820,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     """
     Test negative invoices now.  I've not repeated all the tests
@@ -4893,19 +5127,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # CORRECT USAGE
     def test_negative_invoice_without_matching_with_total(self):
@@ -5156,19 +5429,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     """
     Test matching negative invoices now
@@ -5461,19 +5773,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # CORRECT USAGE
     def test_selecting_a_transaction_to_match_but_for_zero_value_against_negative_invoice_NEGATIVE(self):
@@ -6198,19 +6549,58 @@ class CreateInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
 """
 EDIT
@@ -13226,7 +13616,9 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
@@ -13310,19 +13702,68 @@ class EditInvoiceNominalEntries(TestCase):
             )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         goods_nom_trans = nom_trans[::3]
         vat_nom_trans = nom_trans[1::3]
@@ -13628,21 +14069,58 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
         self.assertEqual(
             header.goods,
@@ -13667,11 +14145,12 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -13718,19 +14197,68 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
@@ -13993,19 +14521,58 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
         self.assertEqual(
             header.goods,
@@ -14033,11 +14600,12 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -14084,19 +14652,68 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
@@ -14421,19 +15038,58 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
             self.assertEqual(
                 header.goods,
@@ -14458,11 +15114,12 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -14542,19 +15199,68 @@ class EditInvoiceNominalEntries(TestCase):
             )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         goods_nom_trans = nom_trans[::3]
         vat_nom_trans = nom_trans[1::3]
@@ -14847,19 +15553,58 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
         self.assertEqual(
             header.goods,
@@ -14885,7 +15630,9 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
@@ -14967,19 +15714,68 @@ class EditInvoiceNominalEntries(TestCase):
             )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         goods_nom_trans = nom_trans[::3]
         vat_nom_trans = nom_trans[1::3]
@@ -15097,11 +15893,12 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -15181,19 +15978,68 @@ class EditInvoiceNominalEntries(TestCase):
             )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         goods_nom_trans = nom_trans[::3]
         vat_nom_trans = nom_trans[1::3]
@@ -15427,19 +16273,58 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
         self.assertEqual(
             header.goods,
@@ -15464,11 +16349,12 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -15547,19 +16433,68 @@ class EditInvoiceNominalEntries(TestCase):
             )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         goods_nom_trans = nom_trans[::3]
         vat_nom_trans = nom_trans[1::3]
@@ -16024,19 +16959,58 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
         self.assertEqual(
             header.goods,
@@ -17001,11 +17975,12 @@ class EditInvoiceNominalEntries(TestCase):
                 "due_date": self.due_date,
                 "total": 2400,
                 "paid": 0,
-                "due": 2400
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -17086,19 +18061,68 @@ class EditInvoiceNominalEntries(TestCase):
             )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )
 
         goods_nom_trans = nom_trans[::3]
         vat_nom_trans = nom_trans[1::3]
@@ -17327,19 +18351,58 @@ class EditInvoiceNominalEntries(TestCase):
         )
 
         for i, vat_tran in enumerate(vat_transactions):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
         self.assertEqual(
             header.goods,

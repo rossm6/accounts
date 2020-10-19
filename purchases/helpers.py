@@ -359,6 +359,8 @@ def create_credit_note_with_nom_entries(header, lines, vat_nominal, control_nomi
     header["total"] = -1 * header["total"]
     header["due"] = -1 * header["due"]
     header["paid"] = -1 * header["paid"]
+    header["goods"] = -1 * header["goods"]
+    header["vat"] = -1 * header["vat"]
     # lines is assumed to be of form [ {} ] * N
     # thus each object is in fact the same object in memory
     lines[0]["goods"] = -1 * lines[0]["goods"]
