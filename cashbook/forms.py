@@ -83,7 +83,7 @@ class CashBookForm(BaseAjaxFormMixin, forms.ModelForm):
 class CashBookHeaderForm(BaseTransactionHeaderForm):
     class Meta:
         model = CashBookHeader
-        fields = ('ref', 'date', 'total', 'type', 'period', 'cash_book')
+        fields = ('ref', 'date', 'total', 'type', 'period', 'cash_book', 'vat_type')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

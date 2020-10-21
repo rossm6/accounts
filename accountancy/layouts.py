@@ -123,7 +123,7 @@ def create_transaction_enquiry_layout(main_choice, search_within=False):
             ),
             Div(
                 *second_row,
-                css_class = "row mt-3"
+                css_class="row mt-3"
             ),
             Field('use_adv_search', type="hidden"),
             Div(
@@ -321,19 +321,23 @@ def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False):
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
                                     "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2"
+                                css_class="col mr-2"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
                                     "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relative"
+                                css_class="col position-relative"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
                                     "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relative"
+                                css_class="col position-relative"
                             ),
-                            css_class="d-flex justify-content-between"
+                            Div(
+                                LabelAndFieldAndErrors("vat_type"),
+                                css_class="col position-relative"
+                            ),
+                            css_class="form-row"
                         ),
                         Div(
                             LabelAndFieldAndErrors(generic_to_fields_map.get(

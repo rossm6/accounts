@@ -33,4 +33,12 @@
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
     <script src="{% static 'accountancy/js/audit.js' %}"></script>
     <script src="{% static 'accountancy/js/audit_transaction.js' %}"></script>
+    <script>
+        $(document).ready(function(){
+            $("select[name='header-vat_type']").selectize({
+                "allowEmptyOption": true,
+                "copyClassesToDropdown": false
+            });
+        });
+    </script>
 {% endblock extra_js %}

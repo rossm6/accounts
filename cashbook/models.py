@@ -27,7 +27,6 @@ class CashBookTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.module = "CB"
-        self.vat_type = "o" # Again, like the Nominal, this needs to be chosen by the user in the form
 
 class Payment(VatTransactionMixin, CashBookPaymentTransactionMixin, CashBookTransaction):
     pass
@@ -89,10 +88,20 @@ class ModuleTransactionBase:
 class CashBookHeader(ModuleTransactionBase, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
+    vat_types = [
+        ("i", "Input"),
+        ("o", "Output")
+    ]
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
         choices=ModuleTransactionBase.type_choices
+    )
+    vat_type = models.CharField(
+        max_length=2,
+        choices=vat_types,
+        null=True,
+        blank=True
     )
     # payee to add
 
