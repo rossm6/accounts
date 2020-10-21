@@ -252,19 +252,23 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
                                     "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2"
+                                css_class="col mr-2"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
                                     "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relative"
+                                css_class="col position-relative"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
                                     "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 input"),
-                                css_class="form-group mr-2 position-relative"
+                                css_class="col position-relative"
                             ),
-                            css_class="d-flex justify-content-between"
+                            Div(
+                                LabelAndFieldAndErrors("vat_type"),
+                                css_class="col position-relative"
+                            ),
+                            css_class="form-row"
                         ),
                         Div(
                             LabelAndFieldAndErrors(generic_to_fields_map.get(
@@ -272,7 +276,7 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
                             css_class="form-group"
                         ),
                         css_class="mb-4 d-flex justify-content-between"
-                    ),
+                    )
                 )
             )
 

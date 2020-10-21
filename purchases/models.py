@@ -31,7 +31,7 @@ class PurchaseTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.module = "PL"
-        self.vat_type = "i"
+        self._vat_type = "i"
 
 class BroughtForwardInvoice(PurchaseTransaction):
     pass

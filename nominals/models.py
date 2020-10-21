@@ -5,9 +5,9 @@ from django.db import models
 from mptt.models import MPTTModel, TreeForeignKey
 from simple_history import register
 
-from accountancy.models import (MultiLedgerTransactions, TransactionHeader,
-                                TransactionLine, UIDecimalField,
-                                VatTransactionMixin)
+from accountancy.models import (MultiLedgerTransactions, Transaction,
+                                TransactionHeader, TransactionLine,
+                                UIDecimalField, VatTransactionMixin)
 from cashbook.models import CashBookHeader
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -27,11 +27,10 @@ class Nominal(MPTTModel):
 register(Nominal)
 
 
-class NominalTransaction:
+class NominalTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         self.header_obj = kwargs.get("header")
         self.module = "NL"
-        self.vat_type = "o" # this needs to come from the form eventually so user can shoose input or output
 
     def create_nominal_transactions(self, *args, **kwargs):
         return
@@ -43,6 +42,7 @@ class NominalTransaction:
 """
 We are repeating ourselves here.  Need to use inheritance.
 """
+
 
 class Journal(VatTransactionMixin, NominalTransaction):
     def _create_nominal_transactions_for_line(self, nom_tran_cls, line, vat_nominal):
@@ -223,9 +223,19 @@ class ModuleTransactionBase:
 
 
 class NominalHeader(ModuleTransactionBase, TransactionHeader):
+    vat_types = [
+        ("i", "Input"),
+        ("o", "Output")
+    ]
     type = models.CharField(
         max_length=2,
         choices=ModuleTransactionBase.analysis_required
+    )
+    vat_type = models.CharField(
+        max_length=2,
+        choices=vat_types,
+        null=True,
+        blank=True
     )
 
     def get_type_transaction(self):

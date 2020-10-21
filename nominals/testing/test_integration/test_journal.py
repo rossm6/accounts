@@ -1,19 +1,19 @@
-from json import loads
-
 from datetime import datetime, timedelta
 from itertools import chain
+from json import loads
 
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
-from accountancy.testing.helpers import create_formset_data, create_header
-from nominals.models import Nominal
 from accountancy.helpers import sort_multiple
-from vat.models import Vat
-
-from ..models import NominalHeader, NominalLine, NominalTransaction
-from .helpers import create_nominal_journal, create_nominal_journal_without_nom_trans
+from accountancy.testing.helpers import create_formset_data, create_header
+from nominals.helpers import (create_nominal_journal,
+                              create_nominal_journal_without_nom_trans,
+                              create_vat_transactions)
+from nominals.models import (Nominal, NominalHeader, NominalLine,
+                             NominalTransaction)
+from vat.models import Vat, VatTransaction
 
 """
 These tests just check that the nominal module uses the accountancy general classes correctly.
@@ -23,7 +23,8 @@ The testing of these general classes is done in the purchase ledger.
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 MATCHING_FORM_PREFIX = "match"
-PERIOD = '202007' # the calendar month i made the change !
+PERIOD = '202007'  # the calendar month i made the change !
+
 
 class CreateJournal(TestCase):
 
@@ -33,24 +34,32 @@ class CreateJournal(TestCase):
         cls.factory = RequestFactory()
         cls.ref = "test journal"
         cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime('%Y-%m-%d')
 
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
-        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
-        cls.bank_nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-        cls.debtors_nominal = Nominal.objects.create(parent=current_assets, name="Trade Debtors")
+        current_assets = Nominal.objects.create(
+            parent=assets, name="Current Assets")
+        cls.bank_nominal = Nominal.objects.create(
+            parent=current_assets, name="Bank Account")
+        cls.debtors_nominal = Nominal.objects.create(
+            parent=current_assets, name="Trade Debtors")
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
-        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
-        cls.vat_nominal = Nominal.objects.create(parent=current_assets, name="Vat")
+        current_liabilities = Nominal.objects.create(
+            parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(
+            parent=current_assets, name="Vat")
 
-        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+        cls.vat_code = Vat.objects.create(
+            code="1", name="standard rate", rate=20)
         cls.url = reverse("nominals:create")
 
     # CORRECT USAGE
     # Can request create journal view t=nj GET parameter
+
     def test_get_request_with_query_parameter(self):
         response = self.client.get(self.url + "?t=nj")
         self.assertEqual(response.status_code, 200)
@@ -58,8 +67,8 @@ class CreateJournal(TestCase):
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
-                '<option value="">---------</option>'
-                '<option value="nj" selected="selected">Journal</option>'
+            '<option value="">---------</option>'
+            '<option value="nj" selected="selected">Journal</option>'
             '</select>',
             html=True
         )
@@ -73,8 +82,8 @@ class CreateJournal(TestCase):
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
-                '<option value="">---------</option>'
-                '<option value="nj" selected="selected">Journal</option>'
+            '<option value="">---------</option>'
+            '<option value="nj" selected="selected">Journal</option>'
             '</select>',
             html=True
         )
@@ -86,11 +95,12 @@ class CreateJournal(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": 120,
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120,
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -147,10 +157,19 @@ class CreateJournal(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         lines = NominalLine.objects.all()
         nominal_transactions = NominalTransaction.objects.all()
+        vat_transactions = VatTransaction.objects.all().order_by("line")
         self.assertEqual(
             len(lines),
+            2
+        )
+        self.assertEqual(
+            len(vat_transactions),
             2
         )
         debit = lines[0]
@@ -184,6 +203,10 @@ class CreateJournal(TestCase):
             debit.vat_nominal_transaction,
             nominal_transactions[1]
         )
+        self.assertEqual(
+            debit.vat_transaction,
+            vat_transactions[0]
+        )
         # CREDIT
         self.assertEqual(
             credit.description,
@@ -212,6 +235,10 @@ class CreateJournal(TestCase):
         self.assertEqual(
             credit.vat_nominal_transaction,
             nominal_transactions[3]
+        )
+        self.assertEqual(
+            credit.vat_transaction,
+            vat_transactions[1]
         )
         self.assertEqual(
             len(nominal_transactions),
@@ -350,18 +377,74 @@ class CreateJournal(TestCase):
             "v"
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
     # CORRECT USAGE
     # Each line contains goods only
+
     def test_create_journal_with_goods_only_and_not_vat(self):
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": 120,
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120,
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -418,8 +501,13 @@ class CreateJournal(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         lines = NominalLine.objects.all()
         nominal_transactions = NominalTransaction.objects.all()
+        vat_transactions = VatTransaction.objects.all().order_by("line")
         self.assertEqual(
             len(lines),
             2
@@ -455,6 +543,10 @@ class CreateJournal(TestCase):
             debit.vat_nominal_transaction,
             None
         )
+        self.assertEqual(
+            debit.vat_transaction,
+            vat_transactions[0]
+        )
         # CREDIT
         self.assertEqual(
             credit.description,
@@ -483,6 +575,10 @@ class CreateJournal(TestCase):
         self.assertEqual(
             credit.vat_nominal_transaction,
             None
+        )
+        self.assertEqual(
+            credit.vat_transaction,
+            vat_transactions[1]
         )
         self.assertEqual(
             len(nominal_transactions),
@@ -554,7 +650,63 @@ class CreateJournal(TestCase):
             nominal_transactions[1].field,
             "g"
         )
-
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # CORRECT USAGE
     # Each line contains goods only
@@ -563,11 +715,12 @@ class CreateJournal(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": 120,
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120,
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -624,8 +777,13 @@ class CreateJournal(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         lines = NominalLine.objects.all()
         nominal_transactions = NominalTransaction.objects.all()
+        vat_transactions = VatTransaction.objects.all()
         self.assertEqual(
             len(lines),
             2
@@ -661,6 +819,10 @@ class CreateJournal(TestCase):
             debit.vat_nominal_transaction,
             nominal_transactions[0]
         )
+        self.assertEqual(
+            debit.vat_transaction,
+            vat_transactions[0]
+        )
         # CREDIT
         self.assertEqual(
             credit.description,
@@ -689,6 +851,10 @@ class CreateJournal(TestCase):
         self.assertEqual(
             credit.vat_nominal_transaction,
             nominal_transactions[1]
+        )
+        self.assertEqual(
+            credit.vat_transaction,
+            vat_transactions[1]
         )
         self.assertEqual(
             len(nominal_transactions),
@@ -761,18 +927,77 @@ class CreateJournal(TestCase):
             "v"
         )
 
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # INCORRECT USAGE
+
     def test_create_journal_without_total(self):
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": '',
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": '',
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -814,6 +1039,10 @@ class CreateJournal(TestCase):
             '<li class="py-1">No total entered.  This should be the total value of the debit side of the journal i.e. the total of the positive values</li>',
             html=True
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_create_journal_where_debits_do_not_equal_total_entered(self):
@@ -821,11 +1050,12 @@ class CreateJournal(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": 120,
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120,
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -868,6 +1098,10 @@ class CreateJournal(TestCase):
             'positives values entered is 120.00, and total credits entered i.e. negative values entered, is -60.00.  This gives a non-zero total of 60.00</li>',
             html=True
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_create_journal_without_header_total_and_no_analysis(self):
@@ -875,11 +1109,12 @@ class CreateJournal(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": '',
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": '',
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -903,6 +1138,10 @@ class CreateJournal(TestCase):
             '<li class="py-1">No total entered.  This should be the total value of the debit side of the journal i.e. the total of the positive values</li>',
             html=True
         )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_create_journal_with_header_total_and_no_analysis(self):
@@ -910,11 +1149,12 @@ class CreateJournal(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": 120,
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": 120,
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -938,7 +1178,10 @@ class CreateJournal(TestCase):
             '<li class="py-1">The total of the debits does not equal the total you entered.</li>',
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
     # INCORRECT USAGE
     def test_create_journal_with_header_which_is_credit_total(self):
@@ -946,11 +1189,12 @@ class CreateJournal(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": "nj",
-            "ref": self.ref,
-            "date": self.date,
-            "total": -120,
-            "period": PERIOD
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": -120,
+                "period": PERIOD,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -974,7 +1218,10 @@ class CreateJournal(TestCase):
             '<li class="py-1">The total of the debits does not equal the total you entered.</li>',
             html=True
         )
-
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
 
 
 class EditJournal(TestCase):
@@ -984,32 +1231,40 @@ class EditJournal(TestCase):
 
         cls.ref = "test journal"
         cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime('%Y-%m-%d')
 
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
-        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
-        cls.bank_nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-        cls.debtors_nominal = Nominal.objects.create(parent=current_assets, name="Trade Debtors")
+        current_assets = Nominal.objects.create(
+            parent=assets, name="Current Assets")
+        cls.bank_nominal = Nominal.objects.create(
+            parent=current_assets, name="Bank Account")
+        cls.debtors_nominal = Nominal.objects.create(
+            parent=current_assets, name="Trade Debtors")
 
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
-        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
-        cls.vat_nominal = Nominal.objects.create(parent=current_assets, name="Vat")
+        current_liabilities = Nominal.objects.create(
+            parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(
+            parent=current_assets, name="Vat")
 
-        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+        cls.vat_code = Vat.objects.create(
+            code="1", name="standard rate", rate=20)
 
     # CORRECT USAGE
     # Can request create journal view t=nj GET parameter
     def test_get_request_with_query_parameter(self):
 
-        header, line, nominal_transactions = create_nominal_journal({
+        header, lines, nominal_transactions = create_nominal_journal({
             "header": {
                 "type": "nj",
                 "ref": "test journal",
                 "period": PERIOD,
                 "date": timezone.now(),
-                "total": 120
+                "total": 120,
+                "vat_type": "o"
             },
             "lines": [
                 {
@@ -1030,9 +1285,8 @@ class EditJournal(TestCase):
                 }
             ],
         },
-        self.vat_nominal
+            self.vat_nominal
         )
-
 
         header = NominalHeader.objects.all()
         self.assertEqual(
@@ -1052,7 +1306,19 @@ class EditJournal(TestCase):
             header.period,
             PERIOD
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         lines = NominalLine.objects.all()
+
+        create_vat_transactions(header, lines)
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
+
         self.assertEqual(
             len(lines),
             2
@@ -1076,7 +1342,8 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        )        
+        )
+
         self.assertEqual(
             lines[1].description,
             "line 2"
@@ -1170,7 +1437,6 @@ class EditJournal(TestCase):
             header.type
         )
 
-
         # CREDITS
 
         self.assertEqual(
@@ -1246,8 +1512,8 @@ class EditJournal(TestCase):
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
-                '<option value="">---------</option>'
-                '<option value="nj" selected="selected">Journal</option>'
+            '<option value="">---------</option>'
+            '<option value="nj" selected="selected">Journal</option>'
             '</select>',
             html=True
         )
@@ -1262,7 +1528,8 @@ class EditJournal(TestCase):
                 "ref": "test journal",
                 "period": PERIOD,
                 "date": timezone.now(),
-                "total": 120
+                "total": 120,
+                "vat_type": "o"
             },
             "lines": [
                 {
@@ -1283,7 +1550,7 @@ class EditJournal(TestCase):
                 }
             ],
         },
-        self.vat_nominal
+            self.vat_nominal
         )
 
         header = NominalHeader.objects.all()
@@ -1308,10 +1575,18 @@ class EditJournal(TestCase):
             header.total,
             120
         )
-
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         # NOM LINES
-
         lines = NominalLine.objects.all()
+        create_vat_transactions(header, lines)
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
         nominal_transactions = NominalTransaction.objects.all()
         self.assertEqual(
             len(lines),
@@ -1336,7 +1611,7 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             nominal_transactions[0]
@@ -1344,7 +1619,11 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             nominal_transactions[1]
-        )  
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -1373,11 +1652,13 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[1].vat_nominal_transaction,
             nominal_transactions[3]
-        ) 
-
+        )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
+        )
 
         # DEBIT NOM TRANS
-
         self.assertEqual(
             len(nominal_transactions),
             4
@@ -1516,15 +1797,70 @@ class EditJournal(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": header.type,
-            "ref": header.ref,
-            "date": header.date,
-            "total": 60,
-            "period": header.period
+                "type": header.type,
+                "ref": header.ref,
+                "date": header.date,
+                "total": 60,
+                "period": header.period,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -1580,9 +1916,16 @@ class EditJournal(TestCase):
             header.total,
             60
         )
-
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         # NOM LINES
-
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
         lines = NominalLine.objects.all()
         nominal_transactions = NominalTransaction.objects.all()
         self.assertEqual(
@@ -1608,7 +1951,7 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             10
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             nominal_transactions[0]
@@ -1616,8 +1959,11 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             nominal_transactions[1]
-        )  
-
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
         self.assertEqual(
             lines[1].description,
             "line 2"
@@ -1645,9 +1991,11 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[1].vat_nominal_transaction,
             nominal_transactions[3]
-        ) 
-
-
+        )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
+        )
         # DEBIT NOM TRANS
 
         self.assertEqual(
@@ -1788,17 +2136,71 @@ class EditJournal(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # CORRECT USAGE
-    def test_edit_journal_by_adding_two_new_lines(self):
 
+    def test_edit_journal_by_adding_two_new_lines(self):
         header, line, nominal_transactions = create_nominal_journal({
             "header": {
                 "type": "nj",
                 "ref": "test journal",
                 "period": PERIOD,
                 "date": timezone.now(),
-                "total": 120
+                "total": 120,
+                "vat_type": "o"
             },
             "lines": [
                 {
@@ -1819,9 +2221,8 @@ class EditJournal(TestCase):
                 }
             ],
         },
-        self.vat_nominal
+            self.vat_nominal
         )
-
         header = NominalHeader.objects.all()
         self.assertEqual(
             len(header),
@@ -1844,10 +2245,18 @@ class EditJournal(TestCase):
             header.total,
             120
         )
-
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         # NOM LINES
-
         lines = NominalLine.objects.all()
+        create_vat_transactions(header, lines)
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
         nominal_transactions = NominalTransaction.objects.all()
         self.assertEqual(
             len(lines),
@@ -1872,7 +2281,7 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             nominal_transactions[0]
@@ -1880,8 +2289,11 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             nominal_transactions[1]
-        )  
-
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
         self.assertEqual(
             lines[1].description,
             "line 2"
@@ -1909,11 +2321,12 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[1].vat_nominal_transaction,
             nominal_transactions[3]
-        ) 
-
-
+        )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
+        )
         # DEBIT NOM TRANS
-
         self.assertEqual(
             len(nominal_transactions),
             4
@@ -2056,11 +2469,12 @@ class EditJournal(TestCase):
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": header.type,
-            "ref": header.ref,
-            "date": header.date,
-            "total": 240,
-            "period": header.period
+                "type": header.type,
+                "ref": header.ref,
+                "date": header.date,
+                "total": 240,
+                "period": header.period,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -2137,16 +2551,22 @@ class EditJournal(TestCase):
             header.total,
             240
         )
-
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
         # NOM LINES
-
+        vat_transactions = VatTransaction.objects.all().order_by("line")
+        self.assertEqual(
+            len(vat_transactions),
+            4
+        )
         lines = NominalLine.objects.all().order_by("pk")
         nominal_transactions = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             4
         )
-
         self.assertEqual(
             lines[0].description,
             "line 1"
@@ -2166,7 +2586,7 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             nominal_transactions[0]
@@ -2174,8 +2594,11 @@ class EditJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             nominal_transactions[1]
-        )  
-
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
         self.assertEqual(
             lines[1].description,
             "line 2"
@@ -2204,69 +2627,77 @@ class EditJournal(TestCase):
             lines[1].vat_nominal_transaction,
             nominal_transactions[3]
         )
-
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
+        )
         # NEW LINES
-
         self.assertEqual(
-            lines[0].description,
+            lines[2].description,
             "line 1"
         )
         self.assertEqual(
-            lines[0].goods,
+            lines[2].goods,
             100
         )
         self.assertEqual(
-            lines[0].nominal,
+            lines[2].nominal,
             self.bank_nominal
         )
         self.assertEqual(
-            lines[0].vat_code,
+            lines[2].vat_code,
             self.vat_code
         )
         self.assertEqual(
-            lines[0].vat,
+            lines[2].vat,
             20
-        ) 
-        self.assertEqual(
-            lines[0].goods_nominal_transaction,
-            nominal_transactions[0]
         )
         self.assertEqual(
-            lines[0].vat_nominal_transaction,
-            nominal_transactions[1]
-        )  
+            lines[2].goods_nominal_transaction,
+            nominal_transactions[4]
+        )
+        self.assertEqual(
+            lines[2].vat_nominal_transaction,
+            nominal_transactions[5]
+        )
+        self.assertEqual(
+            lines[2].vat_transaction,
+            vat_transactions[2]
+        )
 
         self.assertEqual(
-            lines[1].description,
+            lines[3].description,
             "line 2"
         )
         self.assertEqual(
-            lines[1].goods,
+            lines[3].goods,
             -100
         )
         self.assertEqual(
-            lines[1].nominal,
+            lines[3].nominal,
             self.debtors_nominal
         )
         self.assertEqual(
-            lines[1].vat_code,
+            lines[3].vat_code,
             self.vat_code
         )
         self.assertEqual(
-            lines[1].vat,
+            lines[3].vat,
             -20
         )
         self.assertEqual(
-            lines[1].goods_nominal_transaction,
-            nominal_transactions[2]
+            lines[3].goods_nominal_transaction,
+            nominal_transactions[6]
         )
         self.assertEqual(
-            lines[1].vat_nominal_transaction,
-            nominal_transactions[3]
-        ) 
-
+            lines[3].vat_nominal_transaction,
+            nominal_transactions[7]
+        )
+        self.assertEqual(
+            lines[3].vat_transaction,
+            vat_transactions[3]
+        )
         # DEBIT NOM TRANS
-
         self.assertEqual(
             len(nominal_transactions),
             8
@@ -2458,7 +2889,6 @@ class EditJournal(TestCase):
             "g"
         )
 
-
         self.assertEqual(
             nominal_transactions[3].module,
             "NL"
@@ -2562,9 +2992,63 @@ class EditJournal(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # INCORRECT USAGE
     # START OFF WITH FOUR LINES AND THEN ZERO OUT BOTTOM TWO
+
     def test_edit_journal_by_zeroing_out_bottom_two_lines(self):
 
         header, line, nominal_transactions = create_nominal_journal({
@@ -2573,7 +3057,8 @@ class EditJournal(TestCase):
                 "ref": "test journal",
                 "period": PERIOD,
                 "date": timezone.now(),
-                "total": 240
+                "total": 240,
+                "vat_type": "o"
             },
             "lines": [
                 {
@@ -2610,7 +3095,7 @@ class EditJournal(TestCase):
                 }
             ],
         },
-        self.vat_nominal
+            self.vat_nominal
         )
 
         header = NominalHeader.objects.all()
@@ -2635,17 +3120,27 @@ class EditJournal(TestCase):
             header.total,
             240
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         # NOM LINES
-
         lines = NominalLine.objects.all().order_by("pk")
+        create_vat_transactions(header, lines)
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            4
+        )
         nominal_transactions = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             4
         )
-
-        debit_nom_trans = list(nominal_transactions[:2]) + list(nominal_transactions[4:6])
+        debit_nom_trans = list(
+            nominal_transactions[:2]) + list(nominal_transactions[4:6])
+        debit_vat_trans = [vat_transactions[0], vat_transactions[2]]
         debit_lines = lines[::2]
         for i, line in enumerate(debit_lines):
             self.assertEqual(
@@ -2667,7 +3162,7 @@ class EditJournal(TestCase):
             self.assertEqual(
                 line.vat,
                 20
-            ) 
+            )
             self.assertEqual(
                 line.goods_nominal_transaction,
                 debit_nom_trans[(2 * i) + 0]
@@ -2676,8 +3171,14 @@ class EditJournal(TestCase):
                 line.vat_nominal_transaction,
                 debit_nom_trans[(2 * i) + 1]
             )
+            self.assertEqual(
+                line.vat_transaction,
+                debit_vat_trans[i]
+            )
 
-        credit_nom_trans = list(nominal_transactions[2:4]) + list(nominal_transactions[6:])
+        credit_nom_trans = list(
+            nominal_transactions[2:4]) + list(nominal_transactions[6:])
+        credit_vat_trans = [vat_transactions[1], vat_transactions[3]]
         credit_lines = lines[1::2]
         for i, line in enumerate(credit_lines):
             self.assertEqual(
@@ -2699,7 +3200,7 @@ class EditJournal(TestCase):
             self.assertEqual(
                 line.vat,
                 -20
-            ) 
+            )
             self.assertEqual(
                 line.goods_nominal_transaction,
                 credit_nom_trans[(2 * i) + 0]
@@ -2708,16 +3209,21 @@ class EditJournal(TestCase):
                 line.vat_nominal_transaction,
                 credit_nom_trans[(2 * i) + 1]
             )
+            self.assertEqual(
+                line.vat_transaction,
+                credit_vat_trans[i]
+            )
 
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": header.type,
-            "ref": header.ref,
-            "date": header.date,
-            "total": 240,
-            "period": header.period
+                "type": header.type,
+                "ref": header.ref,
+                "date": header.date,
+                "total": 240,
+                "period": header.period,
+                "vat_type": header.vat_type
             }
         )
         data.update(header_data)
@@ -2774,18 +3280,17 @@ class EditJournal(TestCase):
             html=True
         )
 
-
     # CORRECT USAGE
     # START OFF WITH FOUR LINES AND THEN MARK BOTTOM TWO AS DELETED
     def test_edit_journal_by_deleting_bottom_two_lines(self):
-
         header, line, nominal_transactions = create_nominal_journal({
             "header": {
                 "type": "nj",
                 "ref": "test journal",
                 "period": PERIOD,
                 "date": timezone.now(),
-                "total": 120
+                "total": 120,
+                "vat_type": "o"
             },
             "lines": [
                 {
@@ -2822,7 +3327,7 @@ class EditJournal(TestCase):
                 }
             ],
         },
-        self.vat_nominal
+            self.vat_nominal
         )
 
         header = NominalHeader.objects.all()
@@ -2847,17 +3352,83 @@ class EditJournal(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         # NOM LINES
-
         lines = NominalLine.objects.all().order_by("pk")
+        create_vat_transactions(header, lines)
+        vat_transactions = VatTransaction.objects.all()
+
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            len(vat_transactions),
+            4
+        )
         nominal_transactions = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             4
         )
 
-        debit_nom_trans = list(nominal_transactions[:2]) + list(nominal_transactions[4:6])
+        debit_nom_trans = list(
+            nominal_transactions[:2]) + list(nominal_transactions[4:6])
+        debit_vat_trans = [ vat_transactions[0], vat_transactions[2] ]
         debit_lines = lines[::2]
         for i, line in enumerate(debit_lines):
             self.assertEqual(
@@ -2879,7 +3450,7 @@ class EditJournal(TestCase):
             self.assertEqual(
                 line.vat,
                 20
-            ) 
+            )
             self.assertEqual(
                 line.goods_nominal_transaction,
                 debit_nom_trans[(2 * i) + 0]
@@ -2888,8 +3459,14 @@ class EditJournal(TestCase):
                 line.vat_nominal_transaction,
                 debit_nom_trans[(2 * i) + 1]
             )
+            self.assertEqual(
+                line.vat_transaction,
+                debit_vat_trans[i]
+            )
 
-        credit_nom_trans = list(nominal_transactions[2:4]) + list(nominal_transactions[6:])
+        credit_nom_trans = list(
+            nominal_transactions[2:4]) + list(nominal_transactions[6:])
+        credit_vat_trans = [ vat_transactions[1], vat_transactions[3] ]
         credit_lines = lines[1::2]
         for i, line in enumerate(credit_lines):
             self.assertEqual(
@@ -2911,7 +3488,7 @@ class EditJournal(TestCase):
             self.assertEqual(
                 line.vat,
                 -20
-            ) 
+            )
             self.assertEqual(
                 line.goods_nominal_transaction,
                 credit_nom_trans[(2 * i) + 0]
@@ -2920,16 +3497,21 @@ class EditJournal(TestCase):
                 line.vat_nominal_transaction,
                 credit_nom_trans[(2 * i) + 1]
             )
+            self.assertEqual(
+                line.vat_transaction,
+                credit_vat_trans[i]
+            )
 
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
-            "type": header.type,
-            "ref": header.ref,
-            "date": header.date,
-            "total": 120,
-            "period": header.period
+                "type": header.type,
+                "ref": header.ref,
+                "date": header.date,
+                "total": 120,
+                "period": header.period,
+                "vat_type": header.vat_type
             }
         )
         data.update(header_data)
@@ -2984,7 +3566,6 @@ class EditJournal(TestCase):
         self.assertEqual(response.status_code, 302)
 
         # POST EDIT ...
-
         header = NominalHeader.objects.all()
         self.assertEqual(
             len(header),
@@ -3007,9 +3588,18 @@ class EditJournal(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         # NOM LINES
         lines = NominalLine.objects.all().order_by("pk")
+        vat_transactions = VatTransaction.objects.all().order_by("line")
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
         nominal_transactions = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
@@ -3042,7 +3632,7 @@ class EditJournal(TestCase):
         self.assertEqual(
             debit_line.vat,
             20
-        ) 
+        )
         self.assertEqual(
             debit_line.goods_nominal_transaction,
             debit_nom_trans[0]
@@ -3050,6 +3640,10 @@ class EditJournal(TestCase):
         self.assertEqual(
             debit_line.vat_nominal_transaction,
             debit_nom_trans[1]
+        )
+        self.assertEqual(
+            debit_line.vat_transaction,
+            vat_transactions[0]
         )
 
         credit_nom_trans = nominal_transactions[2:]
@@ -3073,7 +3667,7 @@ class EditJournal(TestCase):
         self.assertEqual(
             credit_line.vat,
             -20
-        ) 
+        )
         self.assertEqual(
             credit_line.goods_nominal_transaction,
             credit_nom_trans[0]
@@ -3082,11 +3676,69 @@ class EditJournal(TestCase):
             credit_line.vat_nominal_transaction,
             credit_nom_trans[1]
         )
+        self.assertEqual(
+            credit_line.vat_transaction,
+            vat_transactions[1]
+        )
 
         total = 0
         for tran in nominal_transactions:
             total = total + tran.value
         self.assertEqual(total, 0)
+
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "NL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
 
 
@@ -3097,23 +3749,30 @@ class VoidJournal(TestCase):
 
         cls.ref = "test journal"
         cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime('%Y-%m-%d')
 
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
-        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
-        cls.bank_nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-        cls.debtors_nominal = Nominal.objects.create(parent=current_assets, name="Trade Debtors")
+        current_assets = Nominal.objects.create(
+            parent=assets, name="Current Assets")
+        cls.bank_nominal = Nominal.objects.create(
+            parent=current_assets, name="Bank Account")
+        cls.debtors_nominal = Nominal.objects.create(
+            parent=current_assets, name="Trade Debtors")
 
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
-        current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
-        cls.vat_nominal = Nominal.objects.create(parent=current_assets, name="Vat")
+        current_liabilities = Nominal.objects.create(
+            parent=liabilities, name="Current Liabilities")
+        cls.vat_nominal = Nominal.objects.create(
+            parent=current_assets, name="Vat")
 
-        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
+        cls.vat_code = Vat.objects.create(
+            code="1", name="standard rate", rate=20)
 
     # INCORRECT USAGE
+
     def test_void_journal_already_voided(self):
 
         header, line = create_nominal_journal_without_nom_trans({
@@ -3123,7 +3782,8 @@ class VoidJournal(TestCase):
                 "period": PERIOD,
                 "date": timezone.now(),
                 "total": 120,
-                "status": "v"
+                "status": "v",
+                "vat_type": "o"
             },
             "lines": [
                 {
@@ -3171,7 +3831,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             header.status,
             'v'
-        )    
+        )
 
         # NOM LINES
 
@@ -3204,7 +3864,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             None
@@ -3212,7 +3872,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             None
-        )  
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -3241,7 +3901,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[1].vat_nominal_transaction,
             None
-        ) 
+        )
 
         data = {}
         data["void-id"] = header.id
@@ -3313,7 +3973,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             None
@@ -3321,7 +3981,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             None
-        )  
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -3350,12 +4010,11 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[1].vat_nominal_transaction,
             None
-        ) 
-
-
+        )
 
     # CORRECT USAGE
     # JUST HALF THE GOODS AND VAT
+
     def test_void_journal(self):
 
         header, line, nominal_transactions = create_nominal_journal({
@@ -3364,7 +4023,8 @@ class VoidJournal(TestCase):
                 "ref": "test journal",
                 "period": PERIOD,
                 "date": timezone.now(),
-                "total": 120
+                "total": 120,
+                "vat_type": "o"
             },
             "lines": [
                 {
@@ -3385,7 +4045,7 @@ class VoidJournal(TestCase):
                 }
             ],
         },
-        self.vat_nominal
+            self.vat_nominal
         )
 
         header = NominalHeader.objects.all()
@@ -3442,7 +4102,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             nominal_transactions[0]
@@ -3450,7 +4110,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             nominal_transactions[1]
-        )  
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -3479,8 +4139,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[1].vat_nominal_transaction,
             nominal_transactions[3]
-        ) 
-
+        )
 
         # DEBIT NOM TRANS
 
@@ -3638,7 +4297,6 @@ class VoidJournal(TestCase):
             reverse("nominals:transaction_enquiry")
         )
 
-
         # POST VOID
 
         header = NominalHeader.objects.all()
@@ -3668,7 +4326,6 @@ class VoidJournal(TestCase):
             'v'
         )
 
-
         # NOM LINES
 
         lines = NominalLine.objects.all()
@@ -3695,7 +4352,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
-        ) 
+        )
         self.assertEqual(
             lines[0].goods_nominal_transaction,
             None
@@ -3703,7 +4360,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             None
-        )  
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -3732,7 +4389,7 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[1].vat_nominal_transaction,
             None
-        ) 
+        )
 
         self.assertEqual(
             len(NominalTransaction.objects.all()),

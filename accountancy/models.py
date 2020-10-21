@@ -58,6 +58,12 @@ class Transaction:
     def __init__(self, *args, **kwargs):
         self.header_obj = kwargs.get("header")
 
+    @property
+    def vat_type(self):
+        if hasattr(self.header_obj, "vat_type"):
+            return self.header_obj.vat_type
+        return self._vat_type
+
     def create_nominal_transactions(self, *args, **kwargs):
         return
 

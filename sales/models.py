@@ -29,7 +29,7 @@ class SalesTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.module = "SL"
-        self.vat_type = "o" # output vat
+        self._vat_type = "o" # output vat
 
 class BroughtForwardInvoice(SalesTransaction):
     pass

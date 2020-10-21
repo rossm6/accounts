@@ -386,19 +386,58 @@ class CreateInvoice(TestCase):
             line_no = line_no + 1
 
         for i, vat_tran in enumerate(vat_trans):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     # CORRECT USAGE
     def test_entering_blank_lines(self):
@@ -505,19 +544,58 @@ class CreateInvoice(TestCase):
             )
 
         for i, vat_tran in enumerate(vat_trans):
-            vat_tran.header = header.pk
-            vat_tran.line = lines[i].pk
-            vat_tran.module = "PL"
-            vat_tran.ref = header.ref
-            vat_tran.period = header.period
-            vat_tran.date = header.date
-            vat_tran.field = "v"
-            vat_tran.tran_type = header.type
-            vat_tran.vat_type = "i"
-            vat_tran.vat_code = lines[i].vat_code
-            vat_tran.vat_rate = lines[i].vat_code.rate    
-            vat_tran.goods = lines[i].goods
-            vat_tran.vat = lines[i].vat    
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "PL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "i"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )    
 
 
     # INCORRECT USAGE

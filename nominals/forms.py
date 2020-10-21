@@ -73,7 +73,7 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
 
     class Meta:
         model = NominalHeader
-        fields = ('ref', 'date', 'total', 'type', 'period')
+        fields = ('ref', 'date', 'total', 'type', 'period', 'vat_type')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -14,4 +14,12 @@
 {% block extra_js %}
     {% include 'accountancy/grid_js.html' with header_form=header_form %}
     <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
+    <script>
+        $(document).ready(function(){
+            $("select[name='header-vat_type']").selectize({
+                "allowEmptyOption": true,
+                "copyClassesToDropdown": false
+            });
+        });
+    </script>
 {% endblock extra_js %}
