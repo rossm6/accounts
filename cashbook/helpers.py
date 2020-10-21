@@ -1,5 +1,8 @@
 from accountancy.helpers import sort_multiple
+from cashbook.models import CashBookLine
 from nominals.models import NominalTransaction
+from vat.models import VatTransaction
+
 
 def create_lines(line_cls, header, lines):
     # DO WE NEED THIS?
@@ -86,3 +89,31 @@ def create_cash_book_trans(cash_book_tran_cls, header):
         cash_book=header.cash_book,
         type=header.type
     )
+
+
+def create_vat_transactions(header, lines):
+    vat_trans = []
+    for line in lines:
+        vat_trans.append(
+            VatTransaction(
+                header=header.pk,
+                line=line.pk,
+                module="CB",
+                ref=header.ref,
+                period=header.period,
+                date=header.date,
+                field="v",
+                tran_type=header.type,
+                vat_type=header.vat_type,
+                vat_code=line.vat_code,
+                vat_rate=line.vat_code.rate,
+                goods=line.goods,
+                vat=line.vat
+            )
+        )
+    vat_trans = VatTransaction.objects.bulk_create(vat_trans)
+    vat_trans = sort_multiple(vat_trans, *[(lambda v: v.line, False)])
+    lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
+    for i, line in enumerate(lines):
+        line.vat_transaction = vat_trans[i]
+    CashBookLine.objects.bulk_update(lines, ["vat_transaction"])
