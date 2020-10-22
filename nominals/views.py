@@ -3,6 +3,7 @@ from json import loads
 
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
@@ -20,13 +21,13 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                CashBookAndNominalTransList)
 from nominals.forms import NominalTransactionSearchForm, TrialBalanceForm
 from vat.forms import VatForm
+from vat.models import VatTransaction
 
 from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
-from vat.models import VatTransaction
 
-class CreateTransaction(BaseCreateTransaction):
+class CreateTransaction(LoginRequiredMixin, BaseCreateTransaction):
     header = {
         "model": NominalHeader,
         "form": NominalHeaderForm,
@@ -52,7 +53,7 @@ class CreateTransaction(BaseCreateTransaction):
     default_type = "nj"
 
 
-class EditTransaction(BaseEditTransaction):
+class EditTransaction(LoginRequiredMixin, BaseEditTransaction):
     header = {
         "model": NominalHeader,
         "form": NominalHeaderForm,
@@ -76,7 +77,7 @@ class EditTransaction(BaseEditTransaction):
     module = "NL"
 
 
-class ViewTransaction(BaseViewTransaction):
+class ViewTransaction(LoginRequiredMixin, BaseViewTransaction):
     model = NominalHeader
     line_model = NominalLine
     module = 'NL'
@@ -86,7 +87,7 @@ class ViewTransaction(BaseViewTransaction):
     edit_view_name = "nominals:edit"
 
 
-class TransactionEnquiry(CashBookAndNominalTransList):
+class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     model = NominalTransaction
     # ORDER OF FIELDS HERE IS IMPORTANT FOR GROUPING THE SQL QUERY
     # ATM -
@@ -111,7 +112,8 @@ class TransactionEnquiry(CashBookAndNominalTransList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["nominal_form"] = NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal")
+        context["nominal_form"] = NominalForm(action=reverse_lazy(
+            "nominals:nominal_create"), prefix="nominal")
         return context
 
     def get_transaction_url(self, **kwargs):
@@ -141,7 +143,7 @@ class TransactionEnquiry(CashBookAndNominalTransList):
         )
 
 
-class VoidTransaction(BaseVoidTransaction):
+class VoidTransaction(LoginRequiredMixin, BaseVoidTransaction):
     header_model = NominalHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
@@ -150,7 +152,8 @@ class VoidTransaction(BaseVoidTransaction):
     module = 'NL'
     vat_transaction_model = VatTransaction
 
-class TrialBalance(ListView):
+
+class TrialBalance(LoginRequiredMixin, ListView):
     template_name = "nominals/trial_balance.html"
     columns = [
         'Nominal',
@@ -251,7 +254,7 @@ class TrialBalance(ListView):
         return context
 
 
-class LoadNominal(ListView):
+class LoadNominal(LoginRequiredMixin, ListView):
     paginate_by = 50
     model = Nominal
 
@@ -304,7 +307,7 @@ class LoadNominal(ListView):
         return JsonResponse(data)
 
 
-class NominalCreate(CreateView):
+class NominalCreate(LoginRequiredMixin, CreateView):
     model = Nominal
     form_class = NominalForm
     success_url = reverse_lazy("nominals:nominals_list")
@@ -342,18 +345,18 @@ class NominalCreate(CreateView):
         return super().render_to_response(context, **response_kwargs)
 
 
-class NominalList(ListView):
+class NominalList(LoginRequiredMixin, ListView):
     model = Nominal
     template_name = "nominals/nominal_list.html"
     context_object_name = "nominals"
 
 
-class NominalDetail(DetailView):
+class NominalDetail(LoginRequiredMixin, DetailView):
     model = Nominal
     template_name = "nominals/nominal_detail.html"
 
 
-class NominalEdit(UpdateView):
+class NominalEdit(LoginRequiredMixin, UpdateView):
     model = Nominal
     form_class = NominalForm
     template_name = "nominals/nominal_create_and_edit.html"

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.urls import reverse_lazy
@@ -22,7 +23,7 @@ from .forms import CashBookHeaderForm, CashBookLineForm, enter_lines
 from .models import CashBookHeader, CashBookLine, CashBookTransaction
 
 
-class CreateTransaction(CreateCashBookTransaction):
+class CreateTransaction(LoginRequiredMixin, CreateCashBookTransaction):
     header = {
         "model": CashBookHeader,
         "form": CashBookHeaderForm,
@@ -48,7 +49,7 @@ class CreateTransaction(CreateCashBookTransaction):
     default_type = "cp"
 
 
-class EditTransaction(EditCashBookTransaction):
+class EditTransaction(LoginRequiredMixin, EditCashBookTransaction):
     header = {
         "model": CashBookHeader,
         "form": CashBookHeaderForm,
@@ -73,7 +74,7 @@ class EditTransaction(EditCashBookTransaction):
     module = "CB"
 
 
-class ViewTransaction(NominalViewTransactionMixin, BaseViewTransaction):
+class ViewTransaction(LoginRequiredMixin, NominalViewTransactionMixin, BaseViewTransaction):
     model = CashBookHeader
     line_model = CashBookLine
     nominal_transaction_model = NominalTransaction
@@ -84,7 +85,7 @@ class ViewTransaction(NominalViewTransactionMixin, BaseViewTransaction):
     edit_view_name = "cashbook:edit"
 
 
-class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = CashBookHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
@@ -94,7 +95,8 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     cash_book_transaction_model = CashBookTransaction
     vat_transaction_model = VatTransaction
 
-class TransactionEnquiry(CashBookAndNominalTransList):
+
+class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     model = CashBookHeader
     fields = [
         ("module", "Module"),
@@ -118,7 +120,8 @@ class TransactionEnquiry(CashBookAndNominalTransList):
         context = super().get_context_data(**kwargs)
         context["cashbook_form"] = CashBookForm(action=reverse_lazy(
             "cashbook:cashbook_create"), prefix="cashbook")
-        context["nominal_form"] = NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal")
+        context["nominal_form"] = NominalForm(action=reverse_lazy(
+            "nominals:nominal_create"), prefix="nominal")
         return context
 
     def get_transaction_url(self, **kwargs):
@@ -156,7 +159,7 @@ class CreateAndEditMixin:
         return context
 
 
-class CashBookCreate(CreateAndEditMixin, CreateView):
+class CashBookCreate(LoginRequiredMixin, CreateAndEditMixin, CreateView):
     model = CashBook
     form_class = CashBookForm
     # till we have a cash book list
@@ -192,18 +195,18 @@ class CashBookCreate(CreateAndEditMixin, CreateView):
         return super().render_to_response(context, **response_kwargs)
 
 
-class CashBookList(ListView):
+class CashBookList(LoginRequiredMixin, ListView):
     model = CashBook
     template_name = "cashbook/cashbook_list.html"
     context_object_name = "cashbooks"
 
 
-class CashBookDetail(DetailView):
+class CashBookDetail(LoginRequiredMixin, DetailView):
     model = CashBook
     template_name = "cashbook/cashbook_detail.html"
 
 
-class CashBookEdit(CreateAndEditMixin, UpdateView):
+class CashBookEdit(LoginRequiredMixin, CreateAndEditMixin, UpdateView):
     model = CashBook
     form_class = CashBookForm
     template_name = "cashbook/cashbook_create_and_edit.html"

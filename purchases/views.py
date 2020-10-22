@@ -3,6 +3,7 @@ from functools import reduce
 from itertools import chain
 
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Q, Sum
 from django.http import (Http404, HttpResponse, HttpResponseBadRequest,
@@ -48,7 +49,7 @@ class SupplierMixin:
         return kwargs
 
 
-class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
+class CreateTransaction(LoginRequiredMixin, SupplierMixin, CreatePurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
@@ -81,7 +82,7 @@ class CreateTransaction(SupplierMixin, CreatePurchaseOrSalesTransaction):
     default_type = "pi"
 
 
-class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
+class EditTransaction(LoginRequiredMixin, SupplierMixin, EditPurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
@@ -112,7 +113,7 @@ class EditTransaction(SupplierMixin, EditPurchaseOrSalesTransaction):
     vat_transaction_model = VatTransaction
 
 
-class ViewTransaction(SaleAndPurchaseViewTransaction):
+class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     model = PurchaseHeader
     line_model = PurchaseLine
     match_model = PurchaseMatching
@@ -124,7 +125,7 @@ class ViewTransaction(SaleAndPurchaseViewTransaction):
     edit_view_name = "purchases:edit"
 
 
-class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
     nominal_transaction_model = NominalTransaction
@@ -136,17 +137,17 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     vat_transaction_model = VatTransaction
 
 
-class LoadPurchaseMatchingTransactions(LoadMatchingTransactions):
+class LoadPurchaseMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
     contact_name = "supplier"
 
 
-class LoadSuppliers(LoadContacts):
+class LoadSuppliers(LoginRequiredMixin, LoadContacts):
     model = Supplier
 
 
-class TransactionEnquiry(SalesAndPurchasesTransList):
+class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = PurchaseHeader
     fields = [
         ("supplier__name", "Supplier"),
@@ -215,7 +216,7 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
             return self.paid_queryset
 
 
-class AgeCreditorsReport(AgeMatchingReportMixin):
+class AgeCreditorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
     model = PurchaseHeader
     matching_model = PurchaseMatching
     filter_form = CreditorForm

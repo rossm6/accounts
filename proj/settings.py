@@ -192,7 +192,7 @@ USE_L10N = True
 USE_TZ = True
 
 
-LOGIN_URL = '/users/sigin'
+LOGIN_URL = '/users/signin'
 LOGIN_REDIRECT_URL = '/users/profile'
 LOGOUT_REDIRECT_URL = '/users/signin'
 

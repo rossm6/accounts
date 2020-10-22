@@ -1,6 +1,7 @@
 from itertools import chain
 
 from crispy_forms.utils import render_crispy_form
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
 from django.template.context_processors import csrf
@@ -19,7 +20,7 @@ from sales.models import Customer
 from utils.helpers import get_all_historical_changes
 
 
-class ContactListView(jQueryDataTable, TemplateResponseMixin, View):
+class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin, View):
     customer_model = Customer
     supplier_model = Supplier
     template_name = "contacts/contact_list.html"
@@ -189,7 +190,7 @@ class ContactCreateMixin:
         return super().render_to_response(context, **response_kwargs)
 
 
-class CreateCustomer(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
+class CreateCustomer(LoginRequiredMixin, ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     model = Customer
     form_class = CustomerForm
     ajax_form_class = ModalCustomerForm
@@ -199,7 +200,7 @@ class CreateCustomer(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     title = "Create Customer"
 
 
-class CreateSupplier(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
+class CreateSupplier(LoginRequiredMixin, ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     model = Supplier
     form_class = SupplierForm
     ajax_form_class = ModalSupplierForm
@@ -209,7 +210,7 @@ class CreateSupplier(ContactCreateMixin, CreateAndUpdateMixin, CreateView):
     success_url = reverse_lazy("contacts:contact_list")
 
 
-class CustomerDetail(DetailView):
+class CustomerDetail(LoginRequiredMixin, DetailView):
     model = Customer
     template_name = "contacts/contact_detail.html"
     context_object_name = "contact"
@@ -235,7 +236,7 @@ class SupplierDetail(CustomerDetail):
     edit_url_name = "edit_supplier"
 
 
-class CustomerUpdate(CreateAndUpdateMixin, UpdateView):
+class CustomerUpdate(LoginRequiredMixin, CreateAndUpdateMixin, UpdateView):
     model = Customer
     form_class = CustomerForm
     template_name = "contacts/contact_create_and_edit.html"

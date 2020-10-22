@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import (LoginView, PasswordResetConfirmView,
                                        PasswordResetView)
@@ -26,7 +27,7 @@ class SignIn(LoginView):
     form_class = SignInForm
 
 
-class Profile(UpdateView):
+class Profile(LoginRequiredMixin, UpdateView):
     model = User
     form_class = UserProfileForm
     template_name = "registration/profile.html"

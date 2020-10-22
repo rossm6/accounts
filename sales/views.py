@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.utils import timezone
 
@@ -14,6 +15,7 @@ from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from sales.forms import SaleTransactionSearchForm
 from vat.forms import VatForm
+from vat.models import VatTransaction
 
 from .forms import (DebtorForm, ModalCustomerForm, SaleHeaderForm,
                     SaleLineForm, enter_lines, match)
@@ -21,7 +23,6 @@ from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
 
-from vat.models import VatTransaction
 
 class CustomerMixin:
 
@@ -37,7 +38,7 @@ class CustomerMixin:
         return kwargs
 
 
-class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
+class CreateTransaction(LoginRequiredMixin, CustomerMixin, CreatePurchaseOrSalesTransaction):
     header = {
         "model": SaleHeader,
         "form": SaleHeaderForm,
@@ -70,7 +71,7 @@ class CreateTransaction(CustomerMixin, CreatePurchaseOrSalesTransaction):
     vat_transaction_model = VatTransaction
 
 
-class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
+class EditTransaction(LoginRequiredMixin, CustomerMixin, EditPurchaseOrSalesTransaction):
     header = {
         "model": SaleHeader,
         "form": SaleHeaderForm,
@@ -100,7 +101,8 @@ class EditTransaction(CustomerMixin, EditPurchaseOrSalesTransaction):
     cash_book_transaction_model = CashBookTransaction
     vat_transaction_model = VatTransaction
 
-class ViewTransaction(SaleAndPurchaseViewTransaction):
+
+class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     model = SaleHeader
     line_model = SaleLine
     match_model = SaleMatching
@@ -111,7 +113,8 @@ class ViewTransaction(SaleAndPurchaseViewTransaction):
     template_name = "sales/view.html"
     edit_view_name = "sales:edit"
 
-class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
+
+class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = SaleHeader
     matching_model = SaleMatching
     nominal_transaction_model = NominalTransaction
@@ -122,17 +125,18 @@ class VoidTransaction(DeleteCashBookTransMixin, BaseVoidTransaction):
     cash_book_transaction_model = CashBookTransaction
     vat_transaction_model = VatTransaction
 
-class LoadSaleMatchingTransactions(LoadMatchingTransactions):
+
+class LoadSaleMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions):
     header_model = SaleHeader
     matching_model = SaleMatching
     contact_name = "customer"
 
 
-class LoadCustomers(LoadContacts):
+class LoadCustomers(LoginRequiredMixin, LoadContacts):
     model = Customer
 
 
-class TransactionEnquiry(SalesAndPurchasesTransList):
+class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = SaleHeader
     fields = [
         ("customer__name", "Customer"),
@@ -155,7 +159,8 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalCustomerForm(action=reverse_lazy("contacts:create_customer"), prefix="customer")
+        context["contact_form"] = ModalCustomerForm(
+            action=reverse_lazy("contacts:create_customer"), prefix="customer")
         return context
 
     def get_transaction_url(self, **kwargs):
@@ -200,7 +205,7 @@ class TransactionEnquiry(SalesAndPurchasesTransList):
             return self.paid_queryset
 
 
-class AgeDebtorsReport(AgeMatchingReportMixin):
+class AgeDebtorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
     model = SaleHeader
     matching_model = SaleMatching
     filter_form = DebtorForm

@@ -1,4 +1,5 @@
 from crispy_forms.utils import render_crispy_form
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.postgres.search import TrigramSimilarity
 from django.http import JsonResponse
 from django.template.context_processors import csrf
@@ -9,7 +10,7 @@ from vat.forms import VatForm
 from vat.models import Vat
 
 
-class LoadVatCodes(ListView):
+class LoadVatCodes(LoginRequiredMixin, ListView):
     paginate_by = 50
     model = Vat
 
@@ -38,18 +39,18 @@ class LoadVatCodes(ListView):
         return JsonResponse(data)
 
 
-class VatList(ListView):
+class VatList(LoginRequiredMixin, ListView):
     model = Vat
     template_name = "vat/vat_list.html"
     context_object_name = "vats"
 
 
-class VatDetail(DetailView):
+class VatDetail(LoginRequiredMixin, DetailView):
     model = Vat
     template_name = "vat/vat_detail.html"
 
 
-class VatUpdate(UpdateView):
+class VatUpdate(LoginRequiredMixin, UpdateView):
     model = Vat
     form_class = VatForm
     template_name = "vat/vat_create_and_edit.html"
@@ -57,7 +58,7 @@ class VatUpdate(UpdateView):
     prefix = "vat"
 
 
-class VatCreate(CreateView):
+class VatCreate(LoginRequiredMixin, CreateView):
     model = Vat
     form_class = VatForm
     template_name = "vat/vat_create_and_edit.html"
