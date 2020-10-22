@@ -10,13 +10,13 @@ from cashbook.helpers import *
 from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
 from nominals.models import Nominal, NominalTransaction
-from vat.models import Vat
+from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = 'header'
 LINE_FORM_PREFIX = 'line'
 
 
-class CreateRefund(TestCase):
+class CreateReceipt(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -51,8 +51,8 @@ class CreateRefund(TestCase):
 
         cls.url = reverse("cashbook:create") + "?t=cr"
 
-    def test_get_request_without_query_params(self):
-        response = self.client.get(self.url)
+    def test_get_request_with_query_params(self):
+        response = self.client.get(reverse("cashbook:create") + "?t=cr")
 
         self.assertEqual(
             response.status_code,
@@ -79,7 +79,8 @@ class CreateRefund(TestCase):
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
-                "total": 120
+                "total": 120,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -122,12 +123,28 @@ class CreateRefund(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            3
+        )
+
         self.assertEqual(
             len(lines),
             1
         )
+
         self.assertEqual(
             lines[0].description,
             self.description
@@ -148,11 +165,21 @@ class CreateRefund(TestCase):
             lines[0].vat,
             20
         )
-
-        nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
-            len(nom_trans),
-            3
+            lines[0].goods_nominal_transaction,
+            nom_trans[0]
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            nom_trans[1]
+        )
+        self.assertEqual(
+            lines[0].total_nominal_transaction,
+            nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -277,7 +304,62 @@ class CreateRefund(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
     # INCORRECT USAGE
+
     def test_create_zero_payment_with_no_lines(self):
         data = {}
         header_data = create_header(
@@ -287,7 +369,8 @@ class CreateRefund(TestCase):
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
-                "total": 0
+                "total": 0,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -313,7 +396,8 @@ class CreateRefund(TestCase):
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
-                "total": 240
+                "total": 240,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -356,12 +440,28 @@ class CreateRefund(TestCase):
             header.total,
             240
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            6
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
+
         self.assertEqual(
             len(lines),
             2
         )
+
         self.assertEqual(
             lines[0].description,
             self.description
@@ -381,6 +481,22 @@ class CreateRefund(TestCase):
         self.assertEqual(
             lines[0].vat,
             20
+        )
+        self.assertEqual(
+            lines[0].goods_nominal_transaction,
+            nom_trans[0]
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            nom_trans[1]
+        )
+        self.assertEqual(
+            lines[0].total_nominal_transaction,
+            nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -403,11 +519,21 @@ class CreateRefund(TestCase):
             lines[1].vat,
             20
         )
-
-        nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
-            len(nom_trans),
-            6
+            lines[1].goods_nominal_transaction,
+            nom_trans[3]
+        )
+        self.assertEqual(
+            lines[1].vat_nominal_transaction,
+            nom_trans[4]
+        )
+        self.assertEqual(
+            lines[1].total_nominal_transaction,
+            nom_trans[5]
+        )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
         )
 
         self.assertEqual(
@@ -619,6 +745,60 @@ class CreateRefund(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
     def test_create_single_line_NEGATIVE(self):
         data = {}
         header_data = create_header(
@@ -628,7 +808,8 @@ class CreateRefund(TestCase):
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
-                "total": -120
+                "total": -120,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -671,12 +852,27 @@ class CreateRefund(TestCase):
             header.total,
             -120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
         self.assertEqual(
             len(lines),
             1
         )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            3
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
+        )
+
         self.assertEqual(
             lines[0].description,
             self.description
@@ -697,11 +893,21 @@ class CreateRefund(TestCase):
             lines[0].vat,
             -20
         )
-
-        nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
-            len(nom_trans),
-            3
+            lines[0].goods_nominal_transaction,
+            nom_trans[0]
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            nom_trans[1]
+        )
+        self.assertEqual(
+            lines[0].total_nominal_transaction,
+            nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -826,6 +1032,60 @@ class CreateRefund(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
     def test_create_with_two_lines_NEGATIVE(self):
         data = {}
         header_data = create_header(
@@ -835,7 +1095,8 @@ class CreateRefund(TestCase):
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
-                "total": -240
+                "total": -240,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -878,12 +1139,27 @@ class CreateRefund(TestCase):
             header.total,
             -240
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            6
+        )
         self.assertEqual(
             len(lines),
             2
         )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
+
         self.assertEqual(
             lines[0].description,
             self.description
@@ -903,6 +1179,22 @@ class CreateRefund(TestCase):
         self.assertEqual(
             lines[0].vat,
             -20
+        )
+        self.assertEqual(
+            lines[0].goods_nominal_transaction,
+            nom_trans[0]
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            nom_trans[1]
+        )
+        self.assertEqual(
+            lines[0].total_nominal_transaction,
+            nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -925,11 +1217,21 @@ class CreateRefund(TestCase):
             lines[1].vat,
             -20
         )
-
-        nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
-            len(nom_trans),
-            6
+            lines[1].goods_nominal_transaction,
+            nom_trans[3]
+        )
+        self.assertEqual(
+            lines[1].vat_nominal_transaction,
+            nom_trans[4]
+        )
+        self.assertEqual(
+            lines[1].total_nominal_transaction,
+            nom_trans[5]
+        )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
         )
 
         self.assertEqual(
@@ -1141,8 +1443,62 @@ class CreateRefund(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
-class EditRefund(TestCase):
+
+class EditReceipt(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -1184,7 +1540,8 @@ class EditRefund(TestCase):
             "date": self.date,
             "total": 120,
             "goods": 100,
-            "vat": 20
+            "vat": 20,
+            "vat_type": "o"
         })
         lines = [
             {
@@ -1199,6 +1556,7 @@ class EditRefund(TestCase):
         nom_trans = create_nom_trans(
             NominalTransaction, CashBookLine, header, lines, self.bank_nominal, self.vat_nominal)
         cash_book_trans = create_cash_book_trans(CashBookTransaction, header)
+        create_vat_transactions(header, lines)
 
         headers = CashBookHeader.objects.all()
         header = headers[0]
@@ -1233,6 +1591,11 @@ class EditRefund(TestCase):
             len(nom_trans),
             3
         )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
+        )
 
         self.assertEqual(
             lines[0].description,
@@ -1265,6 +1628,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -1416,7 +1783,8 @@ class EditRefund(TestCase):
             "date": self.date,
             "total": 120,
             "goods": 100,
-            "vat": 20
+            "vat": 20,
+            "vat_type": "o"
         })
         lines = [
             {
@@ -1431,6 +1799,8 @@ class EditRefund(TestCase):
         nom_trans = create_nom_trans(
             NominalTransaction, CashBookLine, header, lines, self.bank_nominal, self.vat_nominal)
         cash_book_trans = create_cash_book_trans(CashBookTransaction, header)
+
+        create_vat_transactions(header, lines)
 
         headers = CashBookHeader.objects.all()
         header = headers[0]
@@ -1454,6 +1824,10 @@ class EditRefund(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
         self.assertEqual(
@@ -1464,6 +1838,11 @@ class EditRefund(TestCase):
         self.assertEqual(
             len(nom_trans),
             3
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
         )
 
         self.assertEqual(
@@ -1497,6 +1876,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -1629,7 +2012,8 @@ class EditRefund(TestCase):
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
                 "date": header.date,
-                "total": 240
+                "total": 240,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -1676,8 +2060,12 @@ class EditRefund(TestCase):
             header.total,
             240
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
-        lines = CashBookLine.objects.all()
+        lines = CashBookLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             1
@@ -1686,6 +2074,11 @@ class EditRefund(TestCase):
         self.assertEqual(
             len(nom_trans),
             3
+        )
+        vat_transactions = VatTransaction.objects.all().order_by("line")
+        self.assertEqual(
+            len(vat_transactions),
+            1
         )
 
         self.assertEqual(
@@ -1719,6 +2112,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -1843,6 +2240,60 @@ class EditRefund(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
     def test_create_new_line(self):
         header = CashBookHeader.objects.create(**{
             "type": "cr",
@@ -1851,7 +2302,8 @@ class EditRefund(TestCase):
             "date": self.date,
             "total": 120,
             "goods": 100,
-            "vat": 20
+            "vat": 20,
+            "vat_type": "o"
         })
         lines = [
             {
@@ -1866,6 +2318,8 @@ class EditRefund(TestCase):
         nom_trans = create_nom_trans(
             NominalTransaction, CashBookLine, header, lines, self.bank_nominal, self.vat_nominal)
         cash_book_trans = create_cash_book_trans(CashBookTransaction, header)
+
+        create_vat_transactions(header, lines)
 
         headers = CashBookHeader.objects.all()
         header = headers[0]
@@ -1889,6 +2343,10 @@ class EditRefund(TestCase):
             header.total,
             120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
         self.assertEqual(
@@ -1899,6 +2357,11 @@ class EditRefund(TestCase):
         self.assertEqual(
             len(nom_trans),
             3
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
         )
 
         self.assertEqual(
@@ -1932,6 +2395,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -2064,7 +2531,8 @@ class EditRefund(TestCase):
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
                 "date": header.date,
-                "total": 360
+                "total": 360,
+                "vat_type": header.vat_type
             }
         )
         data.update(header_data)
@@ -2131,6 +2599,11 @@ class EditRefund(TestCase):
             len(nom_trans),
             6
         )
+        vat_transactions = VatTransaction.objects.all().order_by("pk")
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
 
         self.assertEqual(
             lines[0].description,
@@ -2164,6 +2637,10 @@ class EditRefund(TestCase):
             lines[0].total_nominal_transaction,
             nom_trans[2]
         )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -2196,6 +2673,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[1].total_nominal_transaction,
             nom_trans[5]
+        )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
         )
 
         self.assertEqual(
@@ -2407,6 +2888,60 @@ class EditRefund(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
     def test_edit_single_line_NEGATIVE(self):
         header = CashBookHeader.objects.create(**{
             "type": "cr",
@@ -2415,7 +2950,8 @@ class EditRefund(TestCase):
             "date": self.date,
             "total": -120,
             "goods": -100,
-            "vat": -20
+            "vat": -20,
+            "vat_type": "o"
         })
         lines = [
             {
@@ -2430,6 +2966,8 @@ class EditRefund(TestCase):
         nom_trans = create_nom_trans(
             NominalTransaction, CashBookLine, header, lines, self.bank_nominal, self.vat_nominal)
         cash_book_trans = create_cash_book_trans(CashBookTransaction, header)
+
+        create_vat_transactions(header, lines)
 
         headers = CashBookHeader.objects.all()
         header = headers[0]
@@ -2453,6 +2991,10 @@ class EditRefund(TestCase):
             header.total,
             -120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
         self.assertEqual(
@@ -2463,6 +3005,11 @@ class EditRefund(TestCase):
         self.assertEqual(
             len(nom_trans),
             3
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
         )
 
         self.assertEqual(
@@ -2496,6 +3043,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -2628,7 +3179,8 @@ class EditRefund(TestCase):
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
                 "date": header.date,
-                "total": -240
+                "total": -240,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -2675,6 +3227,10 @@ class EditRefund(TestCase):
             header.total,
             -240
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
         self.assertEqual(
@@ -2685,6 +3241,11 @@ class EditRefund(TestCase):
         self.assertEqual(
             len(nom_trans),
             3
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
         )
 
         self.assertEqual(
@@ -2718,6 +3279,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -2842,6 +3407,60 @@ class EditRefund(TestCase):
             header.type
         )
 
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
     def test_create_new_line_NEGATIVE(self):
         header = CashBookHeader.objects.create(**{
             "type": "cr",
@@ -2850,7 +3469,8 @@ class EditRefund(TestCase):
             "date": self.date,
             "total": -120,
             "goods": -100,
-            "vat": -20
+            "vat": -20,
+            "vat_type": "o"
         })
         lines = [
             {
@@ -2865,6 +3485,8 @@ class EditRefund(TestCase):
         nom_trans = create_nom_trans(
             NominalTransaction, CashBookLine, header, lines, self.bank_nominal, self.vat_nominal)
         cash_book_trans = create_cash_book_trans(CashBookTransaction, header)
+
+        create_vat_transactions(header, lines)
 
         headers = CashBookHeader.objects.all()
         header = headers[0]
@@ -2888,6 +3510,10 @@ class EditRefund(TestCase):
             header.total,
             -120
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
 
         lines = CashBookLine.objects.all()
         self.assertEqual(
@@ -2898,6 +3524,11 @@ class EditRefund(TestCase):
         self.assertEqual(
             len(nom_trans),
             3
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
         )
 
         self.assertEqual(
@@ -2931,6 +3562,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -3063,7 +3698,8 @@ class EditRefund(TestCase):
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
                 "date": header.date,
-                "total": -360
+                "total": -360,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -3119,6 +3755,11 @@ class EditRefund(TestCase):
             header.total,
             -360
         )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
+
 
         lines = CashBookLine.objects.all().order_by("pk")
         self.assertEqual(
@@ -3129,6 +3770,11 @@ class EditRefund(TestCase):
         self.assertEqual(
             len(nom_trans),
             6
+        )
+        vat_transactions = VatTransaction.objects.all().order_by("line")
+        self.assertEqual(
+            len(vat_transactions),
+            2
         )
 
         self.assertEqual(
@@ -3163,6 +3809,10 @@ class EditRefund(TestCase):
             lines[0].total_nominal_transaction,
             nom_trans[2]
         )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -3195,6 +3845,10 @@ class EditRefund(TestCase):
         self.assertEqual(
             lines[1].total_nominal_transaction,
             nom_trans[5]
+        )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
         )
 
         self.assertEqual(
@@ -3405,6 +4059,60 @@ class EditRefund(TestCase):
             cash_book_trans[0].type,
             header.type
         )
+
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                header.period
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
 
     def test_cannot_edit_to_zero(self):
         header = CashBookHeader.objects.create(**{

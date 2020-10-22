@@ -385,7 +385,8 @@ class CreatePayment(TestCase):
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
-                "total": 0
+                "total": 0,
+                "vat_type": "o"
             }
         )
         data.update(header_data)
@@ -3253,6 +3254,10 @@ class EditPayment(TestCase):
         self.assertEqual(
             header.total,
             240
+        )
+        self.assertEqual(
+            header.vat_type,
+            "o"
         )
 
         lines = CashBookLine.objects.all()
