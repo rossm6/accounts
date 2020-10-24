@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from json import loads
 
-from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase
-from django.utils import timezone
-
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
+from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from nominals.models import Nominal, NominalTransaction
 from purchases.helpers import (create_credit_note_with_lines,
                                create_credit_note_with_nom_entries,
@@ -97,11 +97,13 @@ class CreateBroughtForwardRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.url = reverse("purchases:create")
 
     # CORRECT USAGE
     # Can request create payment view only with t=bp GET parameter
     def test_get_request_with_query_parameter(self):
+        self.client.force_login(self.user)
         response = self.client.get(self.url + "?t=pbr")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
@@ -129,7 +131,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -160,7 +162,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
     # CORRECT USAGE
     # A payment with no matching
     def test_non_zero_payment(self):
-
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -235,7 +237,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_payment(self):
-
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -341,6 +343,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_negative_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -420,6 +423,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_fully_matched_positive_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -537,6 +541,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -642,6 +647,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_high(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -722,6 +728,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_low(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -801,6 +808,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -922,6 +930,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_fully_matched_negative_payment_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1040,6 +1049,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1124,6 +1134,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1204,6 +1215,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1283,6 +1295,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1406,7 +1419,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -1435,7 +1448,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
     # CORRECT USAGE
     # A non-zero payment is reduced
     def test_non_zero_payment(self):
-
+        self.client.force_login(self.user)
         PurchaseHeader.objects.create(**{
             "type": "pbr",
             "supplier": self.supplier,
@@ -1568,7 +1581,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
-
+        self.client.force_login(self.user)
         PurchaseHeader.objects.create(**{
             "type": "pbr",
             "supplier": self.supplier,
@@ -1708,7 +1721,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
-
+        self.client.force_login(self.user)
         PurchaseHeader.objects.create(**{
             "type": "pbr",
             "supplier": self.supplier,
@@ -1841,7 +1854,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
-
+        self.client.force_login(self.user)
 
         # Create a payment for 120.01
         # Create a refund for 120.00
@@ -2021,7 +2034,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
-
+        self.client.force_login(self.user)
         # Create a payment for 120.01
         # Create a refund for 120.00
         # Create a payment for -0.01
@@ -2202,7 +2215,7 @@ class EditBroughtForwardRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.date = datetime.now().strftime('%Y-%m-%d')
@@ -2215,6 +2228,7 @@ class EditBroughtForwardRefund(TestCase):
 
     # CORRECT USAGE
     def test_get_request(self):
+        self.client.force_login(self.user)
         transaction = PurchaseHeader.objects.create(
             type="pbr",
             supplier=self.supplier,

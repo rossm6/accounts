@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from json import loads
 
-from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase
-from django.utils import timezone
-
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
+from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from nominals.models import Nominal, NominalTransaction
 from sales.helpers import (create_credit_note_with_lines,
                            create_credit_note_with_nom_entries,
@@ -103,7 +103,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
@@ -119,6 +119,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
     # Lines can be entered for brought forward transactions
     # But no nominal or vat_code can be selected
     def test_no_nominals_created(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -224,6 +225,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # CORRECT USAGE
     def test_zero_brought_forward_invoice_with_no_analysis_but_matching_tran(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -294,6 +296,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # INCORRECT USAGE
     def test_zero_brought_forward_invoice_with_zero_value_line(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -336,6 +339,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # CORRECT USAGE
     def test_fully_matching_an_invoice(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -473,6 +477,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # CORRECT USAGE
     def test_selecting_a_transaction_to_match_but_for_zero_value(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -599,6 +604,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
     # INCORRECT USAGE
     # For an invoice of 2400 the match value must be between 0 and -2400 
     def test_match_total_greater_than_zero(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -675,6 +681,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
     # INCORRECT USAGE
     # Try and match -2400.01 to an invoice for 2400
     def test_match_total_less_than_invoice_total(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -749,6 +756,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
     # We've already tested we can match the whole amount and matching 0 does not count
     # Now try matching for value in between
     def test_matching_a_value_but_not_whole_amount(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -891,6 +899,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # CORRECT USAGE
     def test_negative_invoice_entered_without_matching(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -986,6 +995,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # CORRECT USAGE
     def test_negative_invoice_without_matching_with_total(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1088,6 +1098,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # CORRECT USAGE
     def test_fully_matching_a_negative_invoice_NEGATIVE(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1224,6 +1235,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
 
     # CORRECT USAGE
     def test_selecting_a_transaction_to_match_but_for_zero_value_against_negative_invoice_NEGATIVE(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1346,6 +1358,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
     # INCORRECT USAGE
     # For an invoice of 2400 the match value must be between 0 and -2400 
     def test_match_total_less_than_zero_NEGATIVE(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1418,6 +1431,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
     # INCORRECT USAGE
     # Try and match -2400.01 to an invoice for 2400
     def test_match_total_less_than_invoice_total_NEGATIVE(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1491,6 +1505,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
     # We've already tested we can match the whole amount and matching 0 does not count
     # Now try matching for value in between
     def test_matching_a_value_but_not_whole_amount_NEGATIVE(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1632,7 +1647,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
@@ -1648,6 +1663,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # CORRECT USAGE
     # Basic edit here in so far as we just change a line value
     def test_no_nominals_created_for_lines_with_goods_and_vat_above_zero(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {
@@ -1858,6 +1874,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # CORRECT USAGE
     # Add another line this time
     def test_no_nominals_created_for_new_line(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {
@@ -2047,6 +2064,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # This should delete the corresponding nominal transaction for goods
     # And obviously change the control account nominal value
     def test_goods_reduced_to_zero_but_vat_non_zero_on_a_line(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {
@@ -2257,6 +2275,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # CORRECT USAGE
     # Same as above except we now blank out vat and not goods
     def test_vat_reduced_to_zero_but_goods_non_zero_on_a_line(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {
@@ -2467,6 +2486,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # Zero out the goods and the vat
     # We expect the line and the three nominal transactions to all be deleted
     def test_goods_and_vat_for_line_reduced_to_zero(self):
+        self.client.force_login(self.user)
  
         header, lines = create_invoice_with_lines(
             {
@@ -2596,6 +2616,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # CORRECT USAGE
     # SIMPLY MARK A LINE AS DELETED
     def test_line_marked_as_deleted_has_line_and_nominals_removed(self):
+        self.client.force_login(self.user)
  
         header, lines = create_invoice_with_lines(
             {
@@ -2782,6 +2803,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # CORRECT USAGE
     # DELETE ALL THE LINES SO IT IS A ZERO INVOICE
     def test_non_zero_brought_forward_invoice_is_changed_to_zero_invoice_by_deleting_all_lines(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {
@@ -2967,6 +2989,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_change_zero_brought_forward_invoice_to_a_non_zero_invoice(self):
+        self.client.force_login(self.user)
 
         header = SaleHeader.objects.create(
             **{
@@ -3190,6 +3213,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+        self.client.force_login(self.user)
 
         # Create a b/f invoice for 120.01 through view first
         # Second create a b/f credit note for 120.00
@@ -3420,6 +3444,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+        self.client.force_login(self.user)
 
         # Create an invoice for 120.01 through view first
         # Second create a credit note for 120.00
@@ -3650,6 +3675,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
     # INCORRECT USAGE
     # Add another line this time but mark it as deleted
     def test_new_line_marked_as_deleted_does_not_count(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {

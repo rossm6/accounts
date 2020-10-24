@@ -27,6 +27,7 @@ class ModuleTypes:
         for tran_type in all_module_types:
             yield tran_type
 
+
 class VatTransaction(MultiLedgerTransactions):
     vat_types = [
         ("i", "Input"),

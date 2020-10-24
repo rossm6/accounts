@@ -2,12 +2,12 @@ from datetime import datetime, timedelta
 from itertools import chain
 from json import loads
 
+from accountancy.helpers import sort_multiple
+from accountancy.testing.helpers import create_formset_data, create_header
+from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
-
-from accountancy.helpers import sort_multiple
-from accountancy.testing.helpers import create_formset_data, create_header
 from nominals.helpers import (create_nominal_journal,
                               create_nominal_journal_without_nom_trans,
                               create_vat_transactions)
@@ -30,7 +30,7 @@ class CreateJournal(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.ref = "test journal"
         cls.date = datetime.now().strftime('%Y-%m-%d')
@@ -61,6 +61,7 @@ class CreateJournal(TestCase):
     # Can request create journal view t=nj GET parameter
 
     def test_get_request_with_query_parameter(self):
+        self.client.force_login(self.user)
         response = self.client.get(self.url + "?t=nj")
         self.assertEqual(response.status_code, 200)
         # This HTML fragment is before the selectize widget does its thing
@@ -76,6 +77,7 @@ class CreateJournal(TestCase):
     # CORRECT USAGE
     # Can request create journal view without GET parameter
     def test_get_request_with_query_parameter(self):
+        self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         # This HTML fragment is before the selectize widget does its thing
@@ -91,6 +93,7 @@ class CreateJournal(TestCase):
     # CORRECT USAGE
     # Each line contains non-zero goods and vat
     def test_create_journal(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -435,6 +438,7 @@ class CreateJournal(TestCase):
     # Each line contains goods only
 
     def test_create_journal_with_goods_only_and_not_vat(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -711,6 +715,7 @@ class CreateJournal(TestCase):
     # CORRECT USAGE
     # Each line contains goods only
     def test_create_journal_with_vat_only_and_no_goods(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -988,6 +993,7 @@ class CreateJournal(TestCase):
     # INCORRECT USAGE
 
     def test_create_journal_without_total(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1046,6 +1052,7 @@ class CreateJournal(TestCase):
 
     # INCORRECT USAGE
     def test_create_journal_where_debits_do_not_equal_total_entered(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1105,6 +1112,7 @@ class CreateJournal(TestCase):
 
     # INCORRECT USAGE
     def test_create_journal_without_header_total_and_no_analysis(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1145,6 +1153,7 @@ class CreateJournal(TestCase):
 
     # INCORRECT USAGE
     def test_create_journal_with_header_total_and_no_analysis(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1185,6 +1194,7 @@ class CreateJournal(TestCase):
 
     # INCORRECT USAGE
     def test_create_journal_with_header_which_is_credit_total(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1228,7 +1238,7 @@ class EditJournal(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.ref = "test journal"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)
@@ -1256,6 +1266,7 @@ class EditJournal(TestCase):
     # CORRECT USAGE
     # Can request create journal view t=nj GET parameter
     def test_get_request_with_query_parameter(self):
+        self.client.force_login(self.user)
 
         header, lines, nominal_transactions = create_nominal_journal({
             "header": {
@@ -1521,6 +1532,7 @@ class EditJournal(TestCase):
     # CORRECT USAGE
     # JUST HALF THE GOODS AND VAT
     def test_edit_journal(self):
+        self.client.force_login(self.user)
 
         header, line, nominal_transactions = create_nominal_journal({
             "header": {
@@ -2193,6 +2205,7 @@ class EditJournal(TestCase):
     # CORRECT USAGE
 
     def test_edit_journal_by_adding_two_new_lines(self):
+        self.client.force_login(self.user)
         header, line, nominal_transactions = create_nominal_journal({
             "header": {
                 "type": "nj",
@@ -3050,6 +3063,7 @@ class EditJournal(TestCase):
     # START OFF WITH FOUR LINES AND THEN ZERO OUT BOTTOM TWO
 
     def test_edit_journal_by_zeroing_out_bottom_two_lines(self):
+        self.client.force_login(self.user)
 
         header, line, nominal_transactions = create_nominal_journal({
             "header": {
@@ -3283,6 +3297,7 @@ class EditJournal(TestCase):
     # CORRECT USAGE
     # START OFF WITH FOUR LINES AND THEN MARK BOTTOM TWO AS DELETED
     def test_edit_journal_by_deleting_bottom_two_lines(self):
+        self.client.force_login(self.user)
         header, line, nominal_transactions = create_nominal_journal({
             "header": {
                 "type": "nj",
@@ -3746,7 +3761,7 @@ class VoidJournal(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.ref = "test journal"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)
@@ -3774,6 +3789,7 @@ class VoidJournal(TestCase):
     # INCORRECT USAGE
 
     def test_void_journal_already_voided(self):
+        self.client.force_login(self.user)
 
         header, line = create_nominal_journal_without_nom_trans({
             "header": {
@@ -4016,6 +4032,7 @@ class VoidJournal(TestCase):
     # JUST HALF THE GOODS AND VAT
 
     def test_void_journal(self):
+        self.client.force_login(self.user)
 
         header, line, nominal_transactions = create_nominal_journal({
             "header": {

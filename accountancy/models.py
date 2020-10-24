@@ -907,4 +907,4 @@ class MultiLedgerTransactions(models.Model, Audit):
                 fields=['module', 'header', 'line', 'field'], name="unique_batch")
         ]
 
-    objects = AuditQuerySet.as_manager()
+    objects = AuditQuerySet.as_manager() # this is a mistake.  These models should be audited

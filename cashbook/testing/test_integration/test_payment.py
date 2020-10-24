@@ -1,14 +1,14 @@
 from datetime import datetime
 from json import loads
 
-from django.shortcuts import reverse
-from django.test import TestCase
-
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.helpers import *
 from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
+from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
+from django.test import TestCase
 from nominals.models import Nominal, NominalTransaction
 from vat.models import Vat, VatTransaction
 
@@ -23,7 +23,7 @@ class CreatePayment(TestCase):
         cls.description = "duh"
         cls.ref = "test"
         cls.date = datetime.now().strftime('%Y-%m-%d')
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -52,6 +52,7 @@ class CreatePayment(TestCase):
         cls.url = reverse("cashbook:create") + "?t=cp"
 
     def test_get_request_without_query_params(self):
+        self.client.force_login(self.user)
         response = self.client.get(reverse("cashbook:create"))
         self.assertEqual(
             response.status_code,
@@ -70,6 +71,7 @@ class CreatePayment(TestCase):
         )
 
     def test_get_request_with_query_param(self):
+        self.client.force_login(self.user)
         response = self.client.get(reverse("cashbook:create") + "?t=cp")
         self.assertEqual(
             response.status_code,
@@ -88,6 +90,7 @@ class CreatePayment(TestCase):
         )
 
     def test_create_single_line_POSITIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -377,6 +380,7 @@ class CreatePayment(TestCase):
 
     # INCORRECT USAGE
     def test_create_zero_payment_with_no_lines(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -404,6 +408,7 @@ class CreatePayment(TestCase):
         )
 
     def test_create_with_two_lines_POSITIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -815,6 +820,7 @@ class CreatePayment(TestCase):
             )
 
     def test_create_single_line_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1103,6 +1109,7 @@ class CreatePayment(TestCase):
 
 
     def test_create_with_two_lines_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1523,7 +1530,7 @@ class EditPayment(TestCase):
         cls.description = "duh"
         cls.ref = "test"
         cls.date = datetime.now().strftime('%Y-%m-%d')
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -1552,6 +1559,7 @@ class EditPayment(TestCase):
         cls.url = reverse("cashbook:create") + "?=cp"
 
     def test_get_request(self):
+        self.client.force_login(self.user)
 
         header = CashBookHeader.objects.create(**{
             "type": "cp",
@@ -1800,6 +1808,7 @@ class EditPayment(TestCase):
         )
 
     def test_edit_single_line_POSITIVE(self):
+        self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
             "cash_book": self.cash_book,
@@ -2320,6 +2329,7 @@ class EditPayment(TestCase):
 
 
     def test_create_new_line(self):
+        self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
             "cash_book": self.cash_book,
@@ -2971,6 +2981,7 @@ class EditPayment(TestCase):
 
 
     def test_edit_single_line_NEGATIVE(self):
+        self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
             "cash_book": self.cash_book,
@@ -3491,6 +3502,7 @@ class EditPayment(TestCase):
 
 
     def test_create_new_line_NEGATIVE(self):
+        self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
             "cash_book": self.cash_book,
@@ -4143,6 +4155,7 @@ class EditPayment(TestCase):
             )
 
     def test_cannot_edit_to_zero(self):
+        self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
             "cash_book": self.cash_book,

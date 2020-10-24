@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 
+from accountancy.helpers import sort_multiple
+from accountancy.testing.helpers import *
+from cashbook.models import CashBook, CashBookTransaction
+from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
-
-from accountancy.testing.helpers import *
-from cashbook.models import CashBook, CashBookTransaction
 from nominals.models import Nominal, NominalTransaction
-from accountancy.helpers import sort_multiple
 from vat.models import Vat
 
 from ..helpers import (create_credit_note_with_lines,
@@ -33,7 +33,7 @@ class ViewInvoice(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -66,6 +66,7 @@ class ViewInvoice(TestCase):
         cls.url = reverse("purchases:create")
 
     def test(self):
+        self.client.force_login(self.user)
 
         header = create_invoice_with_nom_entries(
             {
@@ -112,7 +113,7 @@ class ViewBroughtForwardInvoice(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -125,6 +126,7 @@ class ViewBroughtForwardInvoice(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
     def test(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {
@@ -168,7 +170,7 @@ class ViewCreditNote(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -195,6 +197,7 @@ class ViewCreditNote(TestCase):
         cls.url = reverse("purchases:create")
 
     def test(self):
+        self.client.force_login(self.user)
 
         create_credit_note_with_nom_entries(
             {
@@ -248,7 +251,7 @@ class ViewBroughtForwardCreditNote(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -261,6 +264,7 @@ class ViewBroughtForwardCreditNote(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
     def test(self):
+        self.client.force_login(self.user)
 
         # function will still work for credit notes
         header, lines = create_credit_note_with_lines(
@@ -305,7 +309,7 @@ class ViewPayment(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -332,6 +336,7 @@ class ViewPayment(TestCase):
 
 
     def test(self):
+        self.client.force_login(self.user)
 
         create_payment_with_nom_entries(
             {
@@ -370,7 +375,7 @@ class ViewBroughtForwardPayment(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -394,6 +399,7 @@ class ViewBroughtForwardPayment(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
     def test(self):
+        self.client.force_login(self.user)
 
         PurchaseHeader.objects.create(**{
             "type": "pbp",
@@ -433,7 +439,7 @@ class ViewRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -459,6 +465,7 @@ class ViewRefund(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
     def test(self):
+        self.client.force_login(self.user)
 
         create_refund_with_nom_entries(
             {
@@ -501,7 +508,7 @@ class ViewBroughtForwardRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -527,6 +534,7 @@ class ViewBroughtForwardRefund(TestCase):
         cls.url = reverse("purchases:create")
 
     def test(self):
+        self.client.force_login(self.user)
 
         PurchaseHeader.objects.create(**{
             "type": "pbr",

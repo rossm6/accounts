@@ -1165,6 +1165,9 @@ class BaseVoidTransaction(View):
     def get_nominal_transaction_model(self):
         return self.nominal_transaction_model
 
+    def get_vat_transaction_model(self):
+        return self.vat_transaction_model
+
     def form_is_valid(self):
         self.success = True
         transaction_to_void = self.form.instance
@@ -1206,27 +1209,30 @@ class BaseVoidTransaction(View):
                 matches,
                 matching_model
             )
-
         self.get_header_model().objects.audited_bulk_update(
             headers_to_update,
             ["paid", "due", "status"]
         )
-        # DO WE REALLY THIS?  MORE ELEGANT TO JUST DO WITHOUT
-        if transaction_to_void.will_have_nominal_transactions():
-            nom_trans = (
+        nom_trans = (
+            self.get_nominal_transaction_model()
+            .objects
+            .filter(module=self.get_transaction_module())
+            .filter(header=transaction_to_void.pk)
+        )
+        # the extra sql hit is because
+        # the below method requires the objects we are deleting
+        # so we can't just delete in sql straight away
+        if nom_trans:
+            bulk_delete_with_history(
+                nom_trans,
                 self.get_nominal_transaction_model()
-                .objects
-                .filter(module=self.get_transaction_module())
-                .filter(header=transaction_to_void.pk)
             )
-            # the extra sql hit is because
-            # the below method requires the objects we are deleting
-            # so we can't just delete in sql straight away
-            if nom_trans:
-                bulk_delete_with_history(
-                    nom_trans,
-                    self.get_nominal_transaction_model()
-                )
+        vat_trans = (
+            self.get_vat_transaction_model()
+            .objects
+            .filter(module=self.get_transaction_module())
+            .filter(header=transaction_to_void.pk)
+        )
 
     def form_is_invalid(self):
         self.success = False

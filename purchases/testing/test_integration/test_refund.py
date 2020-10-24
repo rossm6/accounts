@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from json import loads
 
-from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase
-from django.utils import timezone
-
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
+from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from nominals.models import Nominal, NominalTransaction
 from purchases.helpers import (create_credit_note_with_lines,
                                create_credit_note_with_nom_entries,
@@ -98,11 +98,13 @@ class CreateRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.url = reverse("purchases:create")
 
     # CORRECT USAGE
     # Can request create refund view only with t=bp GET parameter
     def test_get_request_with_query_parameter(self):
+        self.client.force_login(self.user)
         response = self.client.get(self.url + "?t=pr")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
@@ -126,37 +128,30 @@ class CreateRefundNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
-
 
     # CORRECT USAGE
     # A payment with no matching
     def test_non_zero_payment(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -346,6 +341,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_payment(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -454,6 +450,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_negative_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -646,6 +643,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_fully_matched_positive_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -855,6 +853,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1054,6 +1053,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_high(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1135,6 +1135,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_low(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1215,6 +1216,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1450,6 +1452,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_fully_matched_negative_payment_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1659,6 +1662,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1856,6 +1860,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1937,6 +1942,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2017,6 +2023,7 @@ class CreateRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2254,37 +2261,30 @@ class EditRefundNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
-
 
     # CORRECT USAGE
     # A non-zero payment is reduced
     def test_non_zero_payment(self):
+        self.client.force_login(self.user)
 
         create_refund_with_nom_entries(
             {
@@ -2646,6 +2646,7 @@ class EditRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
+        self.client.force_login(self.user)
 
         create_refund_with_nom_entries(
             {
@@ -2909,6 +2910,7 @@ class EditRefundNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
+        self.client.force_login(self.user)
 
         create_refund_with_nom_entries(
             {
@@ -3167,6 +3169,7 @@ class EditRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+        self.client.force_login(self.user)
 
 
         # Create a payment for 120.01
@@ -3351,6 +3354,7 @@ class EditRefundNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+        self.client.force_login(self.user)
 
         # Create a payment for 120.01
         # Create a refund for 120.00
@@ -3536,7 +3540,7 @@ class EditRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.date = datetime.now().strftime('%Y-%m-%d')
@@ -3549,6 +3553,7 @@ class EditRefund(TestCase):
 
     # CORRECT USAGE
     def test_get_request(self):
+        self.client.force_login(self.user)
         transaction = PurchaseHeader.objects.create(
             type="pr",
             supplier=self.supplier,

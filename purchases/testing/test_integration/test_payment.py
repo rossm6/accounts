@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from json import loads
 
-from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase
-from django.utils import timezone
-
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
+from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from nominals.models import Nominal, NominalTransaction
 from purchases.helpers import (create_credit_note_with_lines,
                                create_credit_note_with_nom_entries,
@@ -102,30 +102,24 @@ class CreatePayment(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         # Cash book
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         cls.url = reverse("purchases:create")
 
@@ -133,6 +127,7 @@ class CreatePayment(TestCase):
     # CORRECT USAGE
     # Can request create payment view only with t=p GET parameter
     def test_get_request_with_query_parameter(self):
+        self.client.force_login(self.user)
         response = self.client.get(self.url + "?t=pp")
         self.assertEqual(response.status_code, 200)
         self.assertContains(
@@ -153,6 +148,7 @@ class CreatePayment(TestCase):
 
     # CORRECT USAGE
     def test_payment_with_positive_input_is_saved_as_negative(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -204,6 +200,7 @@ class CreatePayment(TestCase):
 
     # CORRECT USAGE
     def test_payment_with_negative_input_is_saved_as_positive(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -260,6 +257,7 @@ class CreatePayment(TestCase):
     # WHICH IS THE WAY TO MATCH OTHER TRANSACTIONS
     # E.G. A PAYMENT AND A NEGATIVE PAYMENT NEED MATCHING
     def test_header_total_is_zero_and_matching_transactions_equal_zero(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -331,6 +329,7 @@ class CreatePayment(TestCase):
 
     # INCORRECT USAGE
     def test_header_total_is_zero_and_matching_transactions_do_not_equal_zero(self):
+        self.client.force_login(self.user)
         
         data = {}
         header_data = create_header(
@@ -394,6 +393,7 @@ class CreatePayment(TestCase):
 
     # INCORRECT USUAGE
     def test_header_total_is_zero_and_with_no_matching_transactions(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -434,6 +434,7 @@ class CreatePayment(TestCase):
     # CORRECT USAGE -- BUT THIS MEANS THE TOTAL OF THE LINES IS USED FOR THE HEADER
     # SO THIS IS NOT A ZERO VALUE MATCHING TRANSACTION
     def test_header_total_is_non_zero_and_no_matching_transactions_selected(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -492,6 +493,7 @@ class CreatePayment(TestCase):
 
     # CORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_less_than_total(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -577,6 +579,7 @@ class CreatePayment(TestCase):
 
     # CORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_equal_to_total(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -661,6 +664,7 @@ class CreatePayment(TestCase):
 
     # INCORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_above_the_total(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -712,6 +716,7 @@ class CreatePayment(TestCase):
 
     # INCORRECT - Cannot match header to matching transactions with same sign
     def test_header_total_is_non_zero_and_with_matching_transactions_have_same_sign_as_new_header(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -769,6 +774,7 @@ class CreatePayment(TestCase):
     # CORRECT USAGE -- BUT THIS MEANS THE TOTAL OF THE LINES IS USED FOR THE HEADER
     # SO THIS IS NOT A ZERO VALUE MATCHING TRANSACTION
     def test_header_total_is_non_zero_and_no_matching_transactions_selected_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -827,6 +833,7 @@ class CreatePayment(TestCase):
 
     # CORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_less_than_total_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -912,6 +919,7 @@ class CreatePayment(TestCase):
 
     # CORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_equal_to_total_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -995,6 +1003,7 @@ class CreatePayment(TestCase):
 
     # INCORRECT USAGE
     def test_header_total_is_non_zero_and_with_matching_transactions_above_the_total_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1046,6 +1055,7 @@ class CreatePayment(TestCase):
 
     # INCORRECT - Cannot match header to matching transactions with same sign
     def test_header_total_is_non_zero_and_with_matching_transactions_which_have_same_sign_as_new_header_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1121,6 +1131,7 @@ class CreatePayment(TestCase):
     """
 
     def test_illegal_matching_situation_1(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1171,6 +1182,7 @@ class CreatePayment(TestCase):
 
 
     def test_illegal_matching_situation_2(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1217,6 +1229,7 @@ class CreatePayment(TestCase):
 
 
     def test_illegal_matching_situation_3(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1262,6 +1275,7 @@ class CreatePayment(TestCase):
 
 
     def test_illegal_matching_situation_4(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1310,6 +1324,7 @@ class CreatePayment(TestCase):
     # INCORRECT USAGE
     # Check header is invalid with matching
     def test_header_invalid_with_matching(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1359,37 +1374,31 @@ class CreatePaymentNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
 
 
     # CORRECT USAGE
     # A payment with no matching
     def test_non_zero_payment(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1578,6 +1587,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_payment(self):
+        self.client.force_login(self.user)
 
         data = {}
         header_data = create_header(
@@ -1685,6 +1695,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_negative_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -1879,6 +1890,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_fully_matched_positive_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2089,6 +2101,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_value_match_positive_payment(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2288,6 +2301,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_high(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2370,6 +2384,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_low(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2452,6 +2467,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2688,6 +2704,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_fully_matched_negative_payment_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -2898,6 +2915,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_value_match_negative_payment_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -3096,6 +3114,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_high_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -3178,6 +3197,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_match_value_too_low_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -3259,6 +3279,7 @@ class CreatePaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_match_ok_and_not_full_match_NEGATIVE(self):
+        self.client.force_login(self.user)
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -3497,27 +3518,24 @@ class EditPayment(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.bank_nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.bank_nominal)
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
     # CORRECT USAGE
     def test_get_request(self):
+        self.client.force_login(self.user)
         transaction = PurchaseHeader.objects.create(
             type="pp",
             supplier=self.supplier,
@@ -3550,6 +3568,7 @@ class EditPayment(TestCase):
     # Based on test_1
     # header is invalid but matching is ok
     def test_header_is_invalid_but_matching_is_ok(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -3650,6 +3669,7 @@ class EditPayment(TestCase):
     # CORRECT USAGE
     # Payment total is increased.  Payment was previously fully matched
     def test_1(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -3741,6 +3761,7 @@ class EditPayment(TestCase):
     # INCORRECT USAGE
     # Payment total is decreased.  Payment was previously fully matched
     def test_2(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -3838,6 +3859,7 @@ class EditPayment(TestCase):
     # Match value of transaction increased
     # Payment still fully matched
     def test_3(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -3929,6 +3951,7 @@ class EditPayment(TestCase):
     # Match value of transaction increased
     # Payment not fully matched now though
     def test_4(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -4028,6 +4051,7 @@ class EditPayment(TestCase):
     # And match first invoice up to 100
     # So now we have 100 + 50 = 150 which is greater than the 110 payment total
     def test_5(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -4129,6 +4153,7 @@ class EditPayment(TestCase):
     # Match value of a transaction is decreased
     # Payment still fully paid
     def test_6(self):
+        self.client.force_login(self.user)
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
         invoices = create_invoices(self.supplier, "invoice", 2, 2000)
@@ -4222,6 +4247,7 @@ class EditPayment(TestCase):
     # Match value is decreased
     # Yet payment is not fully paid now
     def test_7(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -4319,6 +4345,7 @@ class EditPayment(TestCase):
     # The payment is reduced to 80.  And only 150.00 of the payment is now matched
     # This isn't allowed as obviously a 80 + 150 payment cannot pay a 300 invoice
     def test_8(self):
+        self.client.force_login(self.user)
 
         # IN FACT WE WILL JUST MATCH A PAYMENT TO A POSITIVE AND NEGATIVE INVOICE
 
@@ -4430,6 +4457,7 @@ class EditPayment(TestCase):
     # Match value of transaction increased
     # Payment still fully matched
     def test_9(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -4548,6 +4576,7 @@ class EditPayment(TestCase):
     # Match value of transaction increased
     # Payment not fully matched now though
     def test_10(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -4670,6 +4699,7 @@ class EditPayment(TestCase):
     # And match first invoice up to 100
     # So now we have 100 + 50 = 150 which is greater than the 110 payment total
     def test_11(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -4789,6 +4819,7 @@ class EditPayment(TestCase):
     # Match value of a transaction is decreased
     # Payment still fully paid
     def test_12(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -4904,6 +4935,7 @@ class EditPayment(TestCase):
     # Match value is decreased
     # Yet payment is not fully paid now
     def test_13(self):
+        self.client.force_login(self.user)
 
         # SET UP
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5022,6 +5054,7 @@ class EditPayment(TestCase):
     # The payment is reduced to 80.  And only 150.00 of the payment is now matched
     # This isn't allowed as obviously a 80 + 150 payment cannot pay a 300 invoice
     def test_14(self):
+        self.client.force_login(self.user)
 
         # IN FACT WE WILL JUST MATCH A PAYMENT TO A POSITIVE AND NEGATIVE INVOICE
 
@@ -5143,6 +5176,7 @@ class EditPayment(TestCase):
     # WE INCREASE THE MATCH VALUE OF THE MATCH TRANSACTION WHERE THE HEADER BEING EDITED
     # IS THE MATCHED_TO HEADER
     def test_15(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5250,6 +5284,7 @@ class EditPayment(TestCase):
     # WE DECREASE THE MATCH VALUE OF THE MATCH TRANSACTION WHERE THE HEADER BEING EDITED
     # IS THE MATCHED_TO HEADER
     def test_16(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5355,6 +5390,7 @@ class EditPayment(TestCase):
     # IS THE MATCHED_TO HEADER
     # ALSO INCREASE THE HEADER
     def test_17(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5463,6 +5499,7 @@ class EditPayment(TestCase):
     # IS THE MATCHED_TO HEADER
     # AND DECREASE THE HEADER
     def test_18(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5571,6 +5608,7 @@ class EditPayment(TestCase):
     # IS THE MATCHED_TO HEADER
     # AND DECREASE THE HEADER
     def test_19(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5677,6 +5715,7 @@ class EditPayment(TestCase):
     # INCORRECT USAGE
     # Same as test_33 but we just try and match a value wrongly - incorrect sign
     def test_20(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5790,6 +5829,7 @@ class EditPayment(TestCase):
     # match is ok at match record level when taken in isolation
     # but incorrect overall
     def test_21(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -5905,6 +5945,7 @@ class EditPayment(TestCase):
     # INCORRECT USAGE
     # INVALID HEADER
     def test_22(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -6017,6 +6058,7 @@ class EditPayment(TestCase):
     # INCORRECT USAGE
     # INVALID MATCHING
     def test_23(self):
+        self.client.force_login(self.user)
 
         # create the payment
         payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
@@ -6130,37 +6172,30 @@ class EditPaymentNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
-
 
     # CORRECT USAGE
     # A non-zero payment is reduced
     def test_non_zero_payment(self):
+        self.client.force_login(self.user)
 
         create_payment_with_nom_entries(
             {
@@ -6522,6 +6557,7 @@ class EditPaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_non_zero_payment_is_changed_to_zero(self):
+        self.client.force_login(self.user)
 
         create_payment_with_nom_entries(
             {
@@ -6786,6 +6822,7 @@ class EditPaymentNominalEntries(TestCase):
 
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
+        self.client.force_login(self.user)
 
         create_payment_with_nom_entries(
             {
@@ -7045,6 +7082,7 @@ class EditPaymentNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_1(self):
+        self.client.force_login(self.user)
 
         # Create an invoice for 120.01 through view first
         # Second create a credit note for 120.00
@@ -7240,6 +7278,7 @@ class EditPaymentNominalEntries(TestCase):
 
     # INCORRECT USAGE
     def test_new_matched_value_is_ok_for_transaction_being_edited_but_not_for_matched_transaction_2(self):
+        self.client.force_login(self.user)
 
         # Create an invoice for 120.01 through view first
         # Second create a credit note for 120.00

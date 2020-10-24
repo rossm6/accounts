@@ -1,14 +1,14 @@
 from datetime import datetime
 from json import loads
 
-from django.shortcuts import reverse
-from django.test import TestCase
-
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.helpers import *
 from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
+from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
+from django.test import TestCase
 from nominals.models import Nominal, NominalTransaction
 from vat.models import Vat
 
@@ -23,7 +23,7 @@ class VoidTransaction(TestCase):
         cls.description = "duh"
         cls.ref = "test"
         cls.date = datetime.now().strftime('%Y-%m-%d')
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -52,6 +52,7 @@ class VoidTransaction(TestCase):
         cls.url = reverse("cashbook:create") + "?=cp"
 
     def test_void(self):
+        self.client.force_login(self.user)
 
         header = CashBookHeader.objects.create(**{
             "type": "cp",

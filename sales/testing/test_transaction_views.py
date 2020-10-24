@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
 from json import loads
 
+from accountancy.helpers import sort_multiple
+from accountancy.testing.helpers import *
+from cashbook.models import CashBook, CashBookTransaction
+from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
-
-from accountancy.testing.helpers import *
-from cashbook.models import CashBook, CashBookTransaction
 from nominals.models import Nominal, NominalTransaction
-from accountancy.helpers import sort_multiple
 from vat.models import Vat
 
 from ..helpers import (create_credit_note_with_lines,
@@ -17,7 +17,7 @@ from ..helpers import (create_credit_note_with_lines,
                        create_invoice_with_nom_entries, create_invoices,
                        create_lines, create_receipt_with_nom_entries,
                        create_receipts, create_refund_with_nom_entries)
-from ..models import SaleHeader, SaleLine, SaleMatching, Customer
+from ..models import Customer, SaleHeader, SaleLine, SaleMatching
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
@@ -30,7 +30,7 @@ class ViewInvoice(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
@@ -61,6 +61,7 @@ class ViewInvoice(TestCase):
             code="1", name="standard rate", rate=20)
 
     def test(self):
+        self.client.force_login(self.user)
 
         create_invoice_with_nom_entries(
             {
@@ -107,7 +108,7 @@ class ViewBroughtForwardInvoice(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
+        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
@@ -121,6 +122,7 @@ class ViewBroughtForwardInvoice(TestCase):
             code="1", name="standard rate", rate=20)
 
     def test(self):
+        self.client.force_login(self.user)
 
         header, lines = create_invoice_with_lines(
             {
