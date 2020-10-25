@@ -4030,7 +4030,6 @@ class VoidJournal(TestCase):
 
     # CORRECT USAGE
     # JUST HALF THE GOODS AND VAT
-
     def test_void_journal(self):
         self.client.force_login(self.user)
 
@@ -4095,11 +4094,20 @@ class VoidJournal(TestCase):
         # NOM LINES
 
         lines = NominalLine.objects.all()
-        nominal_transactions = NominalTransaction.objects.all()
+
+        create_vat_transactions(header, lines)
+
+        vat_transactions = VatTransaction.objects.all().order_by("pk")
+        self.assertEqual(
+            len(vat_transactions),
+            2
+        )
+        nominal_transactions = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             2
         )
+
         self.assertEqual(
             lines[0].description,
             "line 1"
@@ -4127,6 +4135,10 @@ class VoidJournal(TestCase):
         self.assertEqual(
             lines[0].vat_nominal_transaction,
             nominal_transactions[1]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -4157,9 +4169,12 @@ class VoidJournal(TestCase):
             lines[1].vat_nominal_transaction,
             nominal_transactions[3]
         )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            vat_transactions[1]
+        )
 
         # DEBIT NOM TRANS
-
         self.assertEqual(
             len(nominal_transactions),
             4
@@ -4378,6 +4393,10 @@ class VoidJournal(TestCase):
             lines[0].vat_nominal_transaction,
             None
         )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            None
+        )
 
         self.assertEqual(
             lines[1].description,
@@ -4407,8 +4426,20 @@ class VoidJournal(TestCase):
             lines[1].vat_nominal_transaction,
             None
         )
+        self.assertEqual(
+            lines[1].vat_transaction,
+            None
+        )
 
         self.assertEqual(
             len(NominalTransaction.objects.all()),
+            0
+        )
+
+
+        self.assertEqual(
+            len(
+                VatTransaction.objects.all()
+            ),
             0
         )
