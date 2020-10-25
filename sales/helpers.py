@@ -1022,7 +1022,7 @@ def create_customers(n):
 
     for word in common_words_dictionary:
         customers.append(
-            Customer(name=word, code=str(i))
+            Customer(name=word, code=str(i), customer=True)
         )
         if i > n:
             break

@@ -148,7 +148,7 @@ def create_suppliers(n):
 
     for word in common_words_dictionary:
         suppliers.append(
-            Supplier(name=word, code=str(i))
+            Supplier(name=word, code=str(i), supplier=True)
         )
         if i > n:
             break
