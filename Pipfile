@@ -27,6 +27,8 @@ gunicorn = "*"
 django-anymail = {extras = ["mailgun"],version = "*"}
 django-simple-history = "*"
 more-itertools = "*"
+pylint = "*"
+autopep8 = "*"
 
 [requires]
 python_version = "3.8"

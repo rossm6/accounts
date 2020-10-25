@@ -71,5 +71,3 @@ class VatTransaction(MultiLedgerTransactions):
             "goods",
             "vat"
         ]
-
-register(VatTransaction)

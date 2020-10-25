@@ -1213,21 +1213,14 @@ class BaseVoidTransaction(View):
             headers_to_update,
             ["paid", "due", "status"]
         )
-        nom_trans = (
+        (
             self.get_nominal_transaction_model()
             .objects
             .filter(module=self.get_transaction_module())
             .filter(header=transaction_to_void.pk)
+            .delete()
         )
-        # the extra sql hit is because
-        # the below method requires the objects we are deleting
-        # so we can't just delete in sql straight away
-        if nom_trans:
-            bulk_delete_with_history(
-                nom_trans,
-                self.get_nominal_transaction_model()
-            )
-        vat_trans = (
+        (
             self.get_vat_transaction_model()
             .objects
             .filter(module=self.get_transaction_module())
@@ -1288,19 +1281,13 @@ class DeleteCashBookTransMixin:
     def form_is_valid(self):
         super().form_is_valid()
         transaction_to_void = self.form.instance
-        cash_book_trans = (self.get_cash_book_transaction_model()
-                           .objects
-                           .filter(module=self.get_transaction_module())
-                           .filter(header=transaction_to_void.pk)
-                           )
-        # the extra sql hit is because
-        # the below method requires the objects we are deleting
-        # so we can't just delete in sql straight away
-        if cash_book_trans:
-            bulk_delete_with_history(
-                cash_book_trans,
-                self.get_cash_book_transaction_model()
-            )
+        (   
+            self.get_cash_book_transaction_model()
+            .objects
+            .filter(module=self.get_transaction_module())
+            .filter(header=transaction_to_void.pk)
+            .delete()
+        )
 
 
 class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):

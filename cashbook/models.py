@@ -205,6 +205,3 @@ class CashBookTransaction(MultiLedgerTransactions):
             "date",
             "type"
         ]
-
-
-register(CashBookTransaction)

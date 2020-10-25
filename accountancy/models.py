@@ -27,6 +27,12 @@ class Contact(models.Model):
         abstract = True
 
 
+class NonAuditQuerySet(models.QuerySet):
+
+    def bulk_line_update(self, objs, batch_size=None):
+        return self.bulk_update(objs, self.model.fields_to_update(), batch_size=batch_size)
+
+
 class AuditQuerySet(models.QuerySet):
 
     def audited_bulk_create(self, objs, batch_size=None, ignore_conflicts=False, user=None):
@@ -190,8 +196,8 @@ class VatTransactionMixin:
             line_cls=line_cls,
             lines=new_lines,
         )
-        vat_tran_cls.objects.audited_bulk_line_update(vat_trans_to_update)
-        vat_tran_cls.objects.filter(pk__in=[ tran.pk for tran in vat_trans_to_delete ]).delete() # do not audit this deletion
+        vat_tran_cls.objects.bulk_line_update(vat_trans_to_update)
+        vat_tran_cls.objects.filter(pk__in=[ tran.pk for tran in vat_trans_to_delete ]).delete()
 
 
 class ControlAccountInvoiceTransactionMixin:
@@ -283,7 +289,7 @@ class ControlAccountInvoiceTransactionMixin:
                 line, nom_tran_cls, vat_nominal, control_nominal
             )
         if nominal_transactions:
-            nominal_transactions = nom_tran_cls.objects.audited_bulk_create(
+            nominal_transactions = nom_tran_cls.objects.bulk_create(
                 nominal_transactions)
             nominal_transactions = sorted(
                 nominal_transactions, key=lambda n: n.line)
@@ -420,11 +426,8 @@ class ControlAccountInvoiceTransactionMixin:
             vat_nominal=vat_nominal,
             control_nominal=control_nominal
         )
-        nom_tran_cls.objects.audited_bulk_line_update(nom_trans_to_update)
-        bulk_delete_with_history(
-            nom_trans_to_delete,
-            nom_tran_cls,
-        )
+        nom_tran_cls.objects.bulk_line_update(nom_trans_to_update)
+        nom_tran_cls.objects.filter(pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()
 
 
 class CashBookEntryMixin:
@@ -528,7 +531,7 @@ class ControlAccountPaymentTransactionMixin:
                     field="t"
                 )
             )
-            return nom_tran_cls.objects.audited_bulk_create(nom_trans)
+            return nom_tran_cls.objects.bulk_create(nom_trans)
 
     def edit_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         nom_trans = nom_tran_cls.objects.filter(module=self.module,
@@ -556,13 +559,10 @@ class ControlAccountPaymentTransactionMixin:
             bank_nom_tran.nominal = self.header_obj.cash_book.nominal
             control_nom_tran.value = -1 * f * self.header_obj.total
             control_nom_tran.nominal = control_nominal
-            nom_tran_cls.objects.audited_bulk_update(
+            nom_tran_cls.objects.bulk_update(
                 nom_trans, ["value", "nominal"])
         elif nom_trans and self.header_obj.total == 0:
-            bulk_delete_with_history(
-                nom_trans,
-                nom_tran_cls
-            )
+            nom_tran_cls.objects.filter(pk__in=[tran.pk for tran in nom_trans]).delete()
         elif not nom_trans and nom_trans != 0:
             # create nom trans
             self.create_nominal_transactions(
@@ -872,7 +872,7 @@ class MatchedHeaders(models.Model, Audit):
         return [header for header in headers if header.due != 0]
 
 
-class MultiLedgerTransactions(models.Model, Audit):
+class MultiLedgerTransactions(models.Model):
     module = models.CharField(max_length=3)  # e.g. 'PL' for purchase ledger
     # we don't bother with ForeignKeys to the header and line models
     # because this would require generic foreign keys which means extra overhead
@@ -907,4 +907,4 @@ class MultiLedgerTransactions(models.Model, Audit):
                 fields=['module', 'header', 'line', 'field'], name="unique_batch")
         ]
 
-    objects = AuditQuerySet.as_manager() # this is a mistake.  These models should be audited
+    objects = NonAuditQuerySet.as_manager()

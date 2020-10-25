@@ -131,7 +131,7 @@ class Journal(VatTransactionMixin, NominalTransaction):
                 nom_tran_cls, line, vat_nominal
             )
         if nominal_transactions:
-            nominal_transactions = nom_tran_cls.objects.audited_bulk_create(
+            nominal_transactions = nom_tran_cls.objects.bulk_create(
                 nominal_transactions)
             nominal_transactions = sorted(
                 nominal_transactions, key=lambda n: n.line)
@@ -201,11 +201,8 @@ class Journal(VatTransactionMixin, NominalTransaction):
         )
         nom_trans = (new_nom_trans if new_nom_trans else []) + \
             nom_trans_to_update
-        nom_tran_cls.objects.audited_bulk_line_update(nom_trans_to_update)
-        bulk_delete_with_history(
-            nom_trans_to_delete,
-            nom_tran_cls
-        )
+        nom_tran_cls.objects.bulk_line_update(nom_trans_to_update)
+        nom_tran_cls.objects.filter(pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()
         return nom_trans
 
 
@@ -345,6 +342,3 @@ class NominalTransaction(MultiLedgerTransactions):
             "date",
             "type"
         ]
-
-
-register(NominalTransaction)
