@@ -1225,6 +1225,7 @@ class BaseVoidTransaction(View):
             .objects
             .filter(module=self.get_transaction_module())
             .filter(header=transaction_to_void.pk)
+            .delete()
         )
 
     def form_is_invalid(self):

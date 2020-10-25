@@ -605,16 +605,22 @@ class VoidTransactionsTest(TestCase):
         payment = create_payments(self.supplier, "payment", 1, 600)[0]
         match(invoice, [ (payment, -600) ] )
 
-        headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = PurchaseHeader.objects.all().order_by("pk")
 
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        create_vat_transactions(headers[0], lines)
+
+        vat_transactions = VatTransaction.objects.all()
+
+        self.assertEqual(
+            len(vat_transactions),
+            20
+        )
 
         self.assertEqual(
             len(headers),
@@ -694,7 +700,6 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -711,6 +716,10 @@ class VoidTransactionsTest(TestCase):
             self.assertEqual(
                 line.total_nominal_transaction,
                 nom_trans[ (3 * i) + 2 ]
+            )
+            self.assertEqual(
+                line.vat_transaction,
+                vat_transactions[i]
             )
 
 
@@ -817,18 +826,21 @@ class VoidTransactionsTest(TestCase):
             20
         )
 
-        nom_trans = NominalTransaction.objects.all()
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
             0
         )
 
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            0
+        )
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -846,6 +858,11 @@ class VoidTransactionsTest(TestCase):
                 line.total_nominal_transaction,
                 None
             )
+            self.assertEqual(
+                line.vat_transaction,
+                None
+            )
+
 
         matches = PurchaseMatching.objects.all()
         self.assertEqual(len(matches), 0)
@@ -874,6 +891,7 @@ class VoidTransactionsTest(TestCase):
             payment.status,
             "c"
         )
+
 
 
     def test_voiding_an_invoice_with_matching_where_invoice_is_matched_to(self):
@@ -908,16 +926,21 @@ class VoidTransactionsTest(TestCase):
         payment = create_payments(self.supplier, "payment", 1, 600)[0]
         match(payment, [ (invoice, 600) ] )
 
-        headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = PurchaseHeader.objects.all().order_by("pk")
 
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        create_vat_transactions(headers[0], lines)
+
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            20
+        )
 
         self.assertEqual(
             len(headers),
@@ -1015,7 +1038,10 @@ class VoidTransactionsTest(TestCase):
                 line.total_nominal_transaction,
                 nom_trans[ (3 * i) + 2 ]
             )
-
+            self.assertEqual(
+                line.vat_transaction,
+                vat_transactions[i]
+            )
 
         goods_nom_trans = nom_trans[::3]
         vat_nom_trans = nom_trans[1::3]
@@ -1120,18 +1146,21 @@ class VoidTransactionsTest(TestCase):
             20
         )
 
-        nom_trans = NominalTransaction.objects.all()
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
             0
         )
 
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            0
+        )
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -1147,6 +1176,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 
@@ -1204,16 +1237,13 @@ class VoidTransactionsTest(TestCase):
             ] * 20,
         )
 
-        headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = PurchaseHeader.objects.all().order_by("pk")
 
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
-
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         self.assertEqual(
             len(headers),
@@ -1247,7 +1277,6 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1283,16 +1312,13 @@ class VoidTransactionsTest(TestCase):
             False
         )
 
-        headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = PurchaseHeader.objects.all().order_by("pk")
 
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
-
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         self.assertEqual(
             len(headers),
@@ -1321,12 +1347,17 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            0
+        )
+
         header = headers[0]
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1342,6 +1373,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 
@@ -1378,16 +1413,13 @@ class VoidTransactionsTest(TestCase):
         )
 
 
-        headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = PurchaseHeader.objects.all().order_by("pk")
 
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
-
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         self.assertEqual(
             len(headers),
@@ -1421,7 +1453,6 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1489,18 +1520,22 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            0
+        )
+
         header = headers[0]
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1516,6 +1551,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 
@@ -1556,13 +1595,11 @@ class VoidTransactionsTest(TestCase):
 
         headers = PurchaseHeader.objects.all().order_by("pk")
 
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
-
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         self.assertEqual(
             len(headers),
@@ -1615,7 +1652,6 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1713,6 +1749,12 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            0
+        )
+
         header = headers[0]
         lines = PurchaseLine.objects.all()
         self.assertEqual(
@@ -1724,7 +1766,6 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1740,6 +1781,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 
@@ -1780,13 +1825,11 @@ class VoidTransactionsTest(TestCase):
 
         headers = PurchaseHeader.objects.all().order_by("pk")
 
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
-
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         self.assertEqual(
             len(headers),
@@ -1828,7 +1871,6 @@ class VoidTransactionsTest(TestCase):
             'c'
         )
 
-
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
             len(nom_trans),
@@ -1841,7 +1883,6 @@ class VoidTransactionsTest(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1859,6 +1900,7 @@ class VoidTransactionsTest(TestCase):
                 line.total_nominal_transaction,
                 None
             )
+
 
         matches = PurchaseMatching.objects.all()
         self.assertEqual(
@@ -1941,18 +1983,22 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            0
+        )
+
         header = headers[0]
-        lines = PurchaseLine.objects.all()
+        lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, None)
@@ -1968,6 +2014,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 
@@ -2026,6 +2076,12 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
+        cash_book_trans = CashBookTransaction.objects.all().order_by("pk")
+        self.assertEqual(
+            len(cash_book_trans),
+            0
+        )
+
         header = headers[0]
 
         matches = PurchaseMatching.objects.all()
@@ -2071,6 +2127,12 @@ class VoidTransactionsTest(TestCase):
         nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
+            0
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all().order_by("pk")
+        self.assertEqual(
+            len(cash_book_trans),
             0
         )
 
@@ -2130,6 +2192,12 @@ class VoidTransactionsTest(TestCase):
             2
         )
 
+        cash_book_trans = CashBookTransaction.objects.all().order_by("pk")
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
         header = headers[0]
 
         self.assertEqual(
@@ -2156,6 +2224,19 @@ class VoidTransactionsTest(TestCase):
         self.assertEqual(
             nom_trans[1].field,
             "t"
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -2400
         )
 
         matches = PurchaseMatching.objects.all()
@@ -2204,6 +2285,12 @@ class VoidTransactionsTest(TestCase):
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
             len(nom_trans),
+            0
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
             0
         )
 
@@ -2284,6 +2371,12 @@ class VoidTransactionsTest(TestCase):
             2
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
         header = headers[0]
 
         self.assertEqual(
@@ -2310,6 +2403,20 @@ class VoidTransactionsTest(TestCase):
         self.assertEqual(
             nom_trans[1].field,
             "t"
+        )
+
+
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -2400
         )
 
         matches = PurchaseMatching.objects.all()
@@ -2389,6 +2496,12 @@ class VoidTransactionsTest(TestCase):
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
             len(nom_trans),
+            0
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
             0
         )
 
@@ -2469,6 +2582,12 @@ class VoidTransactionsTest(TestCase):
             2
         )
 
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
         header = headers[0]
 
         self.assertEqual(
@@ -2495,6 +2614,19 @@ class VoidTransactionsTest(TestCase):
         self.assertEqual(
             nom_trans[1].field,
             "t"
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            -2400
         )
 
         matches = PurchaseMatching.objects.all()
@@ -2574,6 +2706,12 @@ class VoidTransactionsTest(TestCase):
         nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
             len(nom_trans),
+            0
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
             0
         )
 
