@@ -1,5 +1,3 @@
-from utils.helpers import \
-    disconnect_simple_history_receiver_for_post_delete_signal
 from datetime import date
 from decimal import Decimal
 from itertools import groupby
