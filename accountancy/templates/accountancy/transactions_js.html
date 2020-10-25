@@ -68,7 +68,13 @@ $(document).ready(function () {
 
     var form_wrapper = $("div.table_form_wrapper");
 
-    transaction_search_form_init(); // a ledger specific js module
+    function call_transaction_search_form_init(){
+        if(window.transaction_search_form_init){
+            transaction_search_form_init(); // a ledger specific js module
+        }
+    }
+
+    call_transaction_search_form_init();
 
     // jQuery Datatable initialisation
     var table = $('#example')
@@ -132,7 +138,7 @@ $(document).ready(function () {
                             callback(data);
                         }
                         form_wrapper.empty().append($(data.form));
-                        transaction_search_form_init();
+                        call_transaction_search_form_init();
                     },
                     complete: function(jqXHR, textStatus){
                         if(textStatus != "success"){

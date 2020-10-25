@@ -223,6 +223,7 @@ class NominalSearchMixin:
 
 
 class BaseTransactionsList(jQueryDataTable, ListView):
+    converters = {}
 
     def get_list_of_search_values_for_model_attributes(self, form_cleaned_data):
         return [
@@ -247,6 +248,25 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             **self.get_form_kwargs(**kwargs)
         )
 
+    def form_valid(self, form):
+        queryset = self.apply_advanced_search(form.cleaned_data)
+        if not form.cleaned_data["include_voided"]:
+            self.exclude_from_queryset(queryset)
+        return queryset
+
+    def form_invalid(self, form):
+        queryset = self.get_queryset()
+        self.exclude_from_queryset(queryset)
+        return queryset
+
+    def convert_object_values(self, row):
+        """
+        row is a model instance dictionary.
+        """
+        for field, converter in self.converters.items():
+            row[field] = converter(row[field])
+        return row
+
     def get_context_data(self, **kwargs):
         context_data = {}
         context_data["columns"] = [field[0] for field in self.fields]
@@ -259,17 +279,13 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             # And on top of this jQuery datatable does also
             # solution on client - do not use jQuery.serialize
             if form.is_valid():
-                queryset = self.apply_advanced_search(form.cleaned_data)
-                if not form.cleaned_data["include_voided"]:
-                    self.exclude_from_queryset(queryset)
+                queryset = self.form_valid(form)
             else:
-                queryset = self.get_queryset()
-                self.exclude_from_queryset(queryset)
+                queryset = self.form_invalid(form)
         else:
             form = self.get_search_form()
             queryset = self.get_queryset()
-            self.exclude_from_queryset(queryset)
-
+            queryset = self.exclude_from_queryset(queryset)
         # rather than render the form in in the template
         ctx = {}
         ctx.update(csrf(self.request))
@@ -302,6 +318,7 @@ class BaseTransactionsList(jQueryDataTable, ListView):
                 "pk": row.get(identifier),
                 "href": self.get_transaction_url(row=row)
             }
+            self.convert_object_values(row)
             rows.append(row)
         format_dates(rows, self.datetime_fields, self.datetime_format)
         context_data["data"] = rows
@@ -324,7 +341,6 @@ class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsLi
 
     def exclude_from_queryset(self, queryset):
         return queryset.exclude(status="v")
-
 
 class CashBookAndNominalTransList(NominalSearchMixin, BaseTransactionsList):
     pass

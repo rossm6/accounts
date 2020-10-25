@@ -130,6 +130,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
             queryset = queryset.filter(nominal=nominal)
         return queryset
 
+    # this should belong to the parent class
     def get_queryset(self):
         return (
             NominalTransaction.objects

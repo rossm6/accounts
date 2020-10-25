@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    {% include 'accountancy/transactions_css.html' %}
+{% endblock head %}
+
+{% block content %}
+    <div class="custom-container">
+        <div class="upper mb-5 border-bottom">
+            <div class="container mt-5">
+                <h1 class="h4 font-weight-bold pb-2">Vat Transactions</h1>
+            </div>
+        </div>
+        <div class="lower d-flex justify-content-center">
+            <div class="container">
+                {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block js %}
+    {% load static %}
+    {% include 'accountancy/transactions_js.html' %}
+{% endblock js %}

@@ -97,7 +97,7 @@ class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTran
 
 
 class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
-    model = CashBookHeader
+    model = CashBookTransaction
     fields = [
         ("module", "Module"),
         ("header", "Internal Ref"),
@@ -138,6 +138,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
             queryset = queryset.filter(cashbook=cashbook)
         return queryset
 
+    # this should belong to the parent class
     def get_queryset(self):
         return (
             CashBookTransaction.objects

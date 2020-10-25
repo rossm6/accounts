@@ -56,9 +56,8 @@ class AdvSearchField(Field):
     template = "accounts/layout/adv_search_field.html"
 
 
-def create_transaction_enquiry_layout(main_choice, search_within=False):
-
-    second_row = [
+def create_transaction_enquiry_time_fields(search_within=False):
+    row = [
         Div(
             LabelAndFieldAndErrors(
                 'period',
@@ -67,9 +66,8 @@ def create_transaction_enquiry_layout(main_choice, search_within=False):
             css_class="col-2"
         )
     ]
-
     if search_within:
-        second_row += [
+        row += [
             Div(
                 LabelAndFieldAndErrors(
                     'search_within',
@@ -78,8 +76,7 @@ def create_transaction_enquiry_layout(main_choice, search_within=False):
                 css_class="col-2"
             )
         ]
-
-    second_row += [
+    row += [
         Div(
             LabelAndFieldAndErrors(
                 'start_date',
@@ -95,7 +92,12 @@ def create_transaction_enquiry_layout(main_choice, search_within=False):
             css_class="col-2"
         )
     ]
+    return row
 
+
+
+def create_transaction_enquiry_layout(main_choice, search_within=False):
+    second_row = create_transaction_enquiry_time_fields(search_within=search_within)
     return Layout(
         Div(
             Div(
