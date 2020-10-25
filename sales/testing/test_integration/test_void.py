@@ -9,15 +9,15 @@ from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 from nominals.models import Nominal, NominalTransaction
-from vat.models import Vat
-
-from ..helpers import (create_credit_note_with_lines,
-                       create_credit_note_with_nom_entries,
-                       create_invoice_with_lines,
-                       create_invoice_with_nom_entries, create_invoices,
-                       create_lines, create_receipt_with_nom_entries,
-                       create_receipts, create_refund_with_nom_entries)
-from ..models import Customer, SaleHeader, SaleLine, SaleMatching
+from sales.helpers import (create_credit_note_with_lines,
+                           create_credit_note_with_nom_entries,
+                           create_invoice_with_lines,
+                           create_invoice_with_nom_entries, create_invoices,
+                           create_lines, create_receipt_with_nom_entries,
+                           create_receipts, create_refund_with_nom_entries,
+                           create_vat_transactions)
+from sales.models import Customer, SaleHeader, SaleLine, SaleMatching
+from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
@@ -326,16 +326,21 @@ class VoidTransactionsTest(TestCase):
             self.sale_control
         )
 
-        headers = SaleHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = SaleHeader.objects.all().order_by("pk")
 
-        lines = SaleLine.objects.all()
+        lines = SaleLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        create_vat_transactions(headers[0], lines)
+
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            20
+        )
 
         self.assertEqual(
             len(headers),
@@ -358,20 +363,17 @@ class VoidTransactionsTest(TestCase):
             'c'
         )
 
-        nom_trans = NominalTransaction.objects.all()
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
             20 + 20 + 20
         )
-
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
 
         header = headers[0]
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -388,6 +390,10 @@ class VoidTransactionsTest(TestCase):
             self.assertEqual(
                 line.total_nominal_transaction,
                 nom_trans[ (3 * i) + 2 ]
+            )
+            self.assertEqual(
+                line.vat_transaction,
+                vat_transactions[i]
             )
 
 
@@ -500,18 +506,21 @@ class VoidTransactionsTest(TestCase):
             20
         )
 
-        nom_trans = NominalTransaction.objects.all()
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
             0
         )
 
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            0
+        )
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -527,6 +536,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 
@@ -566,16 +579,21 @@ class VoidTransactionsTest(TestCase):
         receipt =create_receipts(self.customer, "receipt", 1, 600)[0]
         match(invoice, [ (receipt, -600) ] )
 
-        headers = SaleHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = SaleHeader.objects.all().order_by("pk")
 
-        lines = SaleLine.objects.all()
+        lines = SaleLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        create_vat_transactions(headers[0], lines)
+
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            20
+        )
 
         self.assertEqual(
             len(headers),
@@ -642,20 +660,17 @@ class VoidTransactionsTest(TestCase):
             -600
         )
 
-        nom_trans = NominalTransaction.objects.all()
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
             20 + 20 + 20
         )
-
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
 
         header = headers[0]
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -672,6 +687,10 @@ class VoidTransactionsTest(TestCase):
             self.assertEqual(
                 line.total_nominal_transaction,
                 nom_trans[ (3 * i) + 2 ]
+            )
+            self.assertEqual(
+                line.vat_transaction,
+                vat_transactions[i]
             )
 
 
@@ -784,12 +803,16 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        self.assertEqual(
+            len(
+                VatTransaction.objects.all()
+            ),
+            0
+        )
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -805,6 +828,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 
@@ -869,16 +896,21 @@ class VoidTransactionsTest(TestCase):
         receipt = create_receipts(self.customer, "receipt", 1, 600)[0]
         match(receipt, [ (invoice, 600) ] )
 
-        headers = SaleHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = SaleHeader.objects.all().order_by("pk")
 
-        lines = SaleLine.objects.all()
+        lines = SaleLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        create_vat_transactions(headers[0], lines)
+
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            20
+        )
 
         self.assertEqual(
             len(headers),
@@ -945,20 +977,17 @@ class VoidTransactionsTest(TestCase):
             600
         )
 
-        nom_trans = NominalTransaction.objects.all()
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
             20 + 20 + 20
         )
-
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
 
         header = headers[0]
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -975,6 +1004,10 @@ class VoidTransactionsTest(TestCase):
             self.assertEqual(
                 line.total_nominal_transaction,
                 nom_trans[ (3 * i) + 2 ]
+            )
+            self.assertEqual(
+                line.vat_transaction,
+                vat_transactions[i]
             )
 
 
@@ -1087,12 +1120,16 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        self.assertEqual(
+            len(
+                VatTransaction.objects.all()
+            ),
+            0
+        )
 
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -1108,6 +1145,10 @@ class VoidTransactionsTest(TestCase):
             )
             self.assertEqual(
                 line.total_nominal_transaction,
+                None
+            )
+            self.assertEqual(
+                line.vat_transaction,
                 None
             )
 

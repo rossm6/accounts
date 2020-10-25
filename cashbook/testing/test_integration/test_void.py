@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
 from nominals.models import Nominal, NominalTransaction
-from vat.models import Vat
+from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = 'header'
 LINE_FORM_PREFIX = 'line'
@@ -61,7 +61,8 @@ class VoidTransaction(TestCase):
             "date": self.date,
             "total": -120,
             "goods": -100,
-            "vat": -20
+            "vat": -20,
+            "vat_type": "o"
         })
         lines = [
             {
@@ -76,6 +77,7 @@ class VoidTransaction(TestCase):
         nom_trans = create_nom_trans(
             NominalTransaction, CashBookLine, header, lines, self.bank_nominal, self.vat_nominal)
         cash_book_trans = create_cash_book_trans(CashBookTransaction, header)
+        create_vat_transactions(header, lines)
 
         headers = CashBookHeader.objects.all()
         header = headers[0]
@@ -115,6 +117,12 @@ class VoidTransaction(TestCase):
             3
         )
 
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
+        )
+
         self.assertEqual(
             lines[0].description,
             self.description
@@ -146,6 +154,10 @@ class VoidTransaction(TestCase):
         self.assertEqual(
             lines[0].total_nominal_transaction,
             nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
         )
 
         self.assertEqual(
@@ -352,6 +364,10 @@ class VoidTransaction(TestCase):
             lines[0].total_nominal_transaction,
             None
         )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            None
+        )
 
         ##
 
@@ -364,5 +380,13 @@ class VoidTransaction(TestCase):
         cash_book_trans = CashBookTransaction.objects.all()
         self.assertEqual(
             len(cash_book_trans),
+            0
+        )
+
+
+        self.assertEqual(
+            len(
+                VatTransaction.objects.all()
+            ),
             0
         )
