@@ -168,7 +168,10 @@ def create_historical_records(
         default_user=None,
         default_change_reason="",
         default_date=None):
-    history_manager = get_history_manager_for_model(model)
+    if model._meta.proxy:
+        history_manager = get_history_manager_for_model(model._meta.proxy_for_model)
+    else:
+        history_manager = get_history_manager_for_model(model)
     historical_instances = []
     for instance in objects:
         history_user = getattr(

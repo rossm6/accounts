@@ -1,5 +1,8 @@
+from contacts.models import Contact
 from itertools import chain
 
+from accountancy.views import (get_trig_vectors_for_different_inputs,
+                               jQueryDataTable)
 from crispy_forms.utils import render_crispy_form
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.forms import inlineformset_factory
@@ -9,22 +12,20 @@ from django.urls import reverse_lazy
 from django.views.generic import (CreateView, DeleteView, DetailView,
                                   UpdateView, View)
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
-from querystring_parser import parser
-
-from accountancy.views import (get_trig_vectors_for_different_inputs,
-                               jQueryDataTable)
-from purchases.forms import ModalSupplierForm, SupplierForm
 from purchases.models import Supplier
-from sales.forms import CustomerForm, ModalCustomerForm
+from querystring_parser import parser
 from sales.models import Customer
 from utils.helpers import get_all_historical_changes
+from contacts.forms import ContactForm, ModalContactForm
 
 
 class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin, View):
-    customer_model = Customer
-    supplier_model = Supplier
+    model = Contact
     template_name = "contacts/contact_list.html"
     searchable_fields = ['code', 'name', 'email']
+
+    def get_model(self):
+        return self.model
 
     def get(self, request, *args, **kwargs):
         if request.is_ajax():
@@ -39,7 +40,7 @@ class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin
             elif q_filter == "supplier":
                 recordsTotal = counts["supplier"]
             else:
-                recordsTotal = counts["customer"] + counts["supplier"]
+                recordsTotal = counts["all"]
             data = {
                 "draw": int(self.request.GET.get("draw"), 0),
                 "recordsTotal": recordsTotal,
@@ -65,11 +66,12 @@ class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin
         return queryset
 
     def get_querysets(self):
-        customers = self.customer_model.objects.all()
-        suppliers = self.supplier_model.objects.all()
+        customers = self.get_model().objects.filter(customer=True)
+        suppliers = self.get_model().objects.filter(supplier=True)
         return {
             "customer": customers,
-            "supplier": suppliers
+            "supplier": suppliers,
+            "all": self.get_model().objects.all()
         }
 
     def get_total_counts(self, querysets):
@@ -91,10 +93,7 @@ class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin
             context["contact_filter"] = "all"
         # for the nav bar
         counts = self.get_total_counts(querysets)
-        counts["all"] = sum([counts[c] for c in counts])
         context["counts"] = counts
-        # get the form
-        # to do
         return context
 
     def get_context_for_ajax_request(self, **kwargs):
@@ -110,19 +109,11 @@ class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin
             q = self.apply_search(q)
             contacts = q.order_by(*self.order_by())
         else:
-            # may be the fields common to both models ought to be
-            # in a common sql table
-            # at the moment they are not so we need to order in python
-            querysets["customer"] = self.apply_search(querysets["customer"])
-            querysets["supplier"] = self.apply_search(querysets["supplier"])
-            contacts = list(
-                chain(
-                    *[list(querysets[q]) for q in querysets]
-                )
-            )
-            contacts = self.order_objects(contacts, type="instance")
-        paginator_object, page_object = self.paginate_objects(contacts)
+            q = querysets["all"]
+            q = self.apply_search(q)
+            contacts = q.order_by(*self.order_by())
 
+        paginator_object, page_object = self.paginate_objects(contacts)
         rows = []
         for contact in page_object.object_list:
             o = {
@@ -130,14 +121,9 @@ class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin
                 "name": contact.name,
                 "email": contact.email
             }
-            if contact.__class__.__name__ == "Customer":
-                pk = contact.pk
-                href = reverse_lazy(
-                    "contacts:customer_detail", kwargs={"pk": pk})
-            else:
-                pk = contact.pk
-                href = reverse_lazy(
-                    "contacts:supplier_detail", kwargs={"pk": pk})
+            pk = contact.pk
+            href = reverse_lazy(
+                "contacts:detail", kwargs={"pk": pk})
             o["DT_RowData"] = {
                 "pk": pk,
                 "href": href
@@ -147,7 +133,6 @@ class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin
         context["data"] = rows
         return context
 
-
 class CreateAndUpdateMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -155,7 +140,14 @@ class CreateAndUpdateMixin:
         return context
 
 
-class ContactCreateMixin:
+class CreateContact(LoginRequiredMixin, CreateAndUpdateMixin, CreateView):
+    model = Contact
+    form_class = ContactForm
+    ajax_form_class = ModalContactForm
+    template_name = "contacts/contact_create_and_edit.html"
+    prefix = "contact"
+    success_url = reverse_lazy("contacts:list")
+    title = "Create Contact"
 
     def get_form_class(self):
         if self.request.is_ajax():
@@ -190,40 +182,19 @@ class ContactCreateMixin:
         return super().render_to_response(context, **response_kwargs)
 
 
-class CreateCustomer(LoginRequiredMixin, ContactCreateMixin, CreateAndUpdateMixin, CreateView):
-    model = Customer
-    form_class = CustomerForm
-    ajax_form_class = ModalCustomerForm
-    template_name = "contacts/contact_create_and_edit.html"
-    prefix = "customer"
-    success_url = reverse_lazy("contacts:contact_list")
-    title = "Create Customer"
-
-
-class CreateSupplier(LoginRequiredMixin, ContactCreateMixin, CreateAndUpdateMixin, CreateView):
-    model = Supplier
-    form_class = SupplierForm
-    ajax_form_class = ModalSupplierForm
-    template_name = "contacts/contact_create_and_edit.html"
-    prefix = "supplier"
-    title = "Create Supplier"
-    success_url = reverse_lazy("contacts:contact_list")
-
-
-class CustomerDetail(LoginRequiredMixin, DetailView):
-    model = Customer
+class ContactDetail(LoginRequiredMixin, DetailView):
+    model = Contact
     template_name = "contacts/contact_detail.html"
     context_object_name = "contact"
-    edit_url_name = "edit_customer"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         instance = context["contact"]
-        context["edit_href"] = reverse_lazy("contacts:" + self.edit_url_name, kwargs={
+        context["edit_href"] = reverse_lazy("contacts:edit", kwargs={
                                             "pk": instance.pk})
         audit_records = self.model.history.filter(
             **{
-                Customer._meta.pk.name: instance.pk
+                self.model._meta.pk.name: instance.pk
             }
         ).order_by("pk")
         changes = get_all_historical_changes(audit_records)
@@ -231,20 +202,10 @@ class CustomerDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class SupplierDetail(CustomerDetail):
-    model = Supplier
-    edit_url_name = "edit_supplier"
-
-
-class CustomerUpdate(LoginRequiredMixin, CreateAndUpdateMixin, UpdateView):
-    model = Customer
-    form_class = CustomerForm
+class ContactUpdate(LoginRequiredMixin, CreateAndUpdateMixin, UpdateView):
+    model = Contact
+    form_class = ContactForm
     template_name = "contacts/contact_create_and_edit.html"
     context_object_name = "contact"
-    success_url = reverse_lazy("contacts:contact_list")
+    success_url = reverse_lazy("contacts:list")
     title = "Edit Contact"
-
-
-class SupplierUpdate(CustomerUpdate):
-    model = Supplier
-    form_class = SupplierForm

@@ -1,3 +1,5 @@
+from utils.helpers import \
+    disconnect_simple_history_receiver_for_post_delete_signal
 from datetime import date
 from decimal import Decimal
 from itertools import groupby
@@ -7,24 +9,12 @@ from django.db import models
 from django.db.models import Q
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
-
-from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
-from accountancy.signals import audit_post_delete
 from utils.helpers import (DELETED_HISTORY_TYPE, bulk_delete_with_history,
                            create_historical_records,
                            non_negative_zero_decimal)
 
-
-class Contact(models.Model):
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
-    email = models.EmailField()
-
-    def __str__(self):
-        return self.code
-
-    class Meta:
-        abstract = True
+from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
+from accountancy.signals import audit_post_delete
 
 
 class NonAuditQuerySet(models.QuerySet):
@@ -197,7 +187,8 @@ class VatTransactionMixin:
             lines=new_lines,
         )
         vat_tran_cls.objects.bulk_line_update(vat_trans_to_update)
-        vat_tran_cls.objects.filter(pk__in=[ tran.pk for tran in vat_trans_to_delete ]).delete()
+        vat_tran_cls.objects.filter(
+            pk__in=[tran.pk for tran in vat_trans_to_delete]).delete()
 
 
 class ControlAccountInvoiceTransactionMixin:
@@ -427,7 +418,8 @@ class ControlAccountInvoiceTransactionMixin:
             control_nominal=control_nominal
         )
         nom_tran_cls.objects.bulk_line_update(nom_trans_to_update)
-        nom_tran_cls.objects.filter(pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()
+        nom_tran_cls.objects.filter(
+            pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()
 
 
 class CashBookEntryMixin:
@@ -562,7 +554,8 @@ class ControlAccountPaymentTransactionMixin:
             nom_tran_cls.objects.bulk_update(
                 nom_trans, ["value", "nominal"])
         elif nom_trans and self.header_obj.total == 0:
-            nom_tran_cls.objects.filter(pk__in=[tran.pk for tran in nom_trans]).delete()
+            nom_tran_cls.objects.filter(
+                pk__in=[tran.pk for tran in nom_trans]).delete()
         elif not nom_trans and nom_trans != 0:
             # create nom trans
             self.create_nominal_transactions(

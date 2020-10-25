@@ -1,29 +1,25 @@
 from uuid import uuid4
 
-from django.conf import settings
-from django.db import models
-from django.db.models import Q
-from simple_history import register
-
-from accountancy.models import (Audit, CashBookEntryMixin, Contact,
+from accountancy.models import (Audit, CashBookEntryMixin,
                                 ControlAccountInvoiceTransactionMixin,
                                 ControlAccountPaymentTransactionMixin,
                                 MatchedHeaders, Transaction, TransactionHeader,
                                 TransactionLine, VatTransactionMixin)
-from accountancy.signals import audit_post_delete
-from utils.helpers import \
-    disconnect_simple_history_receiver_for_post_delete_signal
+from contacts.models import Contact
+from django.conf import settings
+from django.db import models
+from django.db.models import Q
+from simple_history import register
 from vat.models import Vat
 
 
-class Supplier(Audit, Contact):
-    pass
-
-
-register(Supplier)
-disconnect_simple_history_receiver_for_post_delete_signal(Supplier)
-audit_post_delete.connect(Supplier.post_delete,
-                          sender=Supplier, dispatch_uid=uuid4())
+class Supplier(Contact):
+    """
+    Do not create or update via the Supplier model because it does
+    not audit records.  Always use the Contact model instead.
+    """
+    class Meta:
+        proxy = True
 
 
 class PurchaseTransaction(Transaction):
@@ -32,6 +28,7 @@ class PurchaseTransaction(Transaction):
         super().__init__(*args, **kwargs)
         self.module = "PL"
         self._vat_type = "i"
+
 
 class BroughtForwardInvoice(PurchaseTransaction):
     pass

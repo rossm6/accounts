@@ -49,7 +49,6 @@
     };
 
     function ModalForm (opts) {
-        alert("modal");
         this.modal = opts.modal;
         this.callback = opts.callback;
         this.form = this.modal.find("form");

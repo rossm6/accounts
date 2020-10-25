@@ -25,7 +25,6 @@ from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
-from contacts.forms import BaseContactForm, ModalContactForm
 from nominals.models import Nominal
 from vat.models import Vat
 
@@ -41,30 +40,6 @@ A note on formsets -
 
 """
 
-
-class SupplierForm(BaseContactForm):
-    """
-    `action` is what reverse_lazy returns.  If you aren't careful,
-    and deviate from below, you will get a circulate import error.
-
-    I don't understand what is going on fully.
-    """
-    class Meta(BaseContactForm.Meta):
-        model = Supplier
-
-    def __init__(self, *args, **kwargs):
-        if (action := kwargs.get("action")) is not None:
-            kwargs.pop("action")
-        else:
-            action = ""
-        super().__init__(*args, **kwargs)
-        self.helper.form_action = action
-
-
-class ModalSupplierForm(ModalContactForm, SupplierForm):
-    pass
-
-
 class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
 
     class Meta:
@@ -76,7 +51,7 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
                 attrs={
                     "data-form": "supplier",
                     "data-form-field": "supplier-code",
-                    "data-creation-url": reverse_lazy("contacts:create_supplier"),
+                    "data-creation-url": reverse_lazy("contacts:create"),
                     "data-load-url": reverse_lazy("purchases:load_suppliers"),
                     "data-contact-field": True
                     # i think the last two are the only needed
@@ -93,6 +68,9 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
         if self.instance.pk:
             self.fields["supplier"].queryset = Supplier.objects.filter(
                 pk=self.instance.supplier_id)
+        # at the moment the user can choose any contact
+        # will filter the queryset to only suppliers when refactoring this
+        # so that it inherits from the BaseAjaxMixinForm
 
 
 class PurchaseLineForm(SaleAndPurchaseLineForm):

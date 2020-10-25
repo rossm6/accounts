@@ -18,30 +18,10 @@ from accountancy.helpers import input_dropdown_widget_attrs_config
 from accountancy.layouts import (Div, LabelAndFieldAndErrors,
                                  create_transaction_enquiry_layout)
 from accountancy.widgets import SelectWithDataAttr
-from contacts.forms import BaseContactForm, ModalContactForm
 from nominals.models import Nominal
 from vat.models import Vat
 
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
-
-
-class CustomerForm(BaseContactForm):
-    class Meta(BaseContactForm.Meta):
-        model = Customer
-
-    def __init__(self, *args, **kwargs):
-        if (action := kwargs.get("action")) is not None:
-            kwargs.pop("action")
-        else:
-            action = ""
-        super().__init__(*args, **kwargs)
-        self.helper.form_action = action
-        # same as the PL form so needs factoring out
-
-
-class ModalCustomerForm(ModalContactForm, CustomerForm):
-    pass
-
 
 class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
 
@@ -54,7 +34,7 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
                 attrs={
                     "data-form": "customer",
                     "data-form-field": "customer-code",
-                    "data-creation-url": reverse_lazy("contacts:create_customer"),
+                    "data-creation-url": reverse_lazy("contacts:create"),
                     "data-load-url": reverse_lazy("sales:load_customers"),
                     "data-contact-field": True
                 }

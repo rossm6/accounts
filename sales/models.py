@@ -1,35 +1,32 @@
 from uuid import uuid4
 
-from django.conf import settings
-from django.db import models
-from simple_history import register
-
-from accountancy.models import (Audit, CashBookEntryMixin, Contact,
+from accountancy.models import (Audit, CashBookEntryMixin,
                                 ControlAccountInvoiceTransactionMixin,
                                 ControlAccountPaymentTransactionMixin,
                                 MatchedHeaders, Transaction, TransactionHeader,
                                 TransactionLine, VatTransactionMixin)
-from accountancy.signals import audit_post_delete
-from utils.helpers import \
-    disconnect_simple_history_receiver_for_post_delete_signal
+from contacts.models import Contact
+from django.conf import settings
+from django.db import models
+from simple_history import register
 from vat.models import Vat
 
 
-class Customer(Audit, Contact):
-    pass
-
-
-register(Customer)
-disconnect_simple_history_receiver_for_post_delete_signal(Customer)
-audit_post_delete.connect(Customer.post_delete,
-                          sender=Customer, dispatch_uid=uuid4())
+class Customer(Contact):
+    """
+    Do not create or update via the Customer model because it does
+    not audit records.  Always use the Contact model instead.
+    """
+    class Meta:
+        proxy = True
 
 
 class SalesTransaction(Transaction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.module = "SL"
-        self._vat_type = "o" # output vat
+        self._vat_type = "o"  # output vat
+
 
 class BroughtForwardInvoice(SalesTransaction):
     pass
@@ -121,6 +118,7 @@ class ModuleTransactionBase:
         'sr'
     ]
     type_choices = no_analysis_required + analysis_required
+
 
 class SaleHeader(ModuleTransactionBase, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the

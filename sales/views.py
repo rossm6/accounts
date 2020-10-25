@@ -16,8 +16,8 @@ from nominals.models import Nominal, NominalTransaction
 from sales.forms import SaleTransactionSearchForm
 from vat.forms import VatForm
 from vat.models import VatTransaction
-
-from .forms import (DebtorForm, ModalCustomerForm, SaleHeaderForm,
+from contacts.forms import ModalContactForm
+from .forms import (DebtorForm, SaleHeaderForm,
                     SaleLineForm, enter_lines, match)
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
@@ -56,7 +56,7 @@ class CreateTransaction(LoginRequiredMixin, CustomerMixin, CreatePurchaseOrSales
         "prefix": "match"
     }
     create_on_the_fly = {
-        "contact_form": ModalCustomerForm(action=reverse_lazy("contacts:create_customer"), prefix="customer"),
+        "contact_form": ModalContactForm(action=reverse_lazy("contacts:create"), prefix="contact", initial={"customer": True}),
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
         "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat")
     }
@@ -88,7 +88,7 @@ class EditTransaction(LoginRequiredMixin, CustomerMixin, EditPurchaseOrSalesTran
         "prefix": "match"
     }
     create_on_the_fly = {
-        "contact_form": ModalCustomerForm(action=reverse_lazy("contacts:create_customer"), prefix="customer"),
+        "contact_form": ModalContactForm(action=reverse_lazy("contacts:create"), prefix="contact"),
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
         "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat")
     }
@@ -131,6 +131,10 @@ class LoadSaleMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions)
     matching_model = SaleMatching
     contact_name = "customer"
 
+    def get_queryset(self):
+        q = super().get_queryset()
+        q.filter(customer=True)
+        return q
 
 class LoadCustomers(LoginRequiredMixin, LoadContacts):
     model = Customer
@@ -159,8 +163,8 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalCustomerForm(
-            action=reverse_lazy("contacts:create_customer"), prefix="customer")
+        context["contact_form"] = ModalContactForm(
+            action=reverse_lazy("contacts:create"), prefix="contact")
         return context
 
     def get_transaction_url(self, **kwargs):

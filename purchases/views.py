@@ -2,18 +2,6 @@ from decimal import Decimal
 from functools import reduce
 from itertools import chain
 
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.postgres.search import TrigramSimilarity
-from django.db.models import Q, Sum
-from django.http import (Http404, HttpResponse, HttpResponseBadRequest,
-                         JsonResponse)
-from django.shortcuts import get_object_or_404, redirect, render, reverse
-from django.urls import reverse_lazy
-from django.utils import timezone
-from django.views.generic import ListView
-from querystring_parser import parser
-
 from accountancy.forms import BaseVoidTransactionForm
 from accountancy.helpers import AuditTransaction
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
@@ -24,11 +12,24 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                SaleAndPurchaseViewTransaction,
                                SalesAndPurchasesTransList, jQueryDataTable)
 from cashbook.models import CashBookTransaction
+from contacts.forms import ModalContactForm
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db.models import Q, Sum
+from django.http import (Http404, HttpResponse, HttpResponseBadRequest,
+                         JsonResponse)
+from django.shortcuts import get_object_or_404, redirect, render, reverse
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import ListView
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
-from purchases.forms import ModalSupplierForm, PurchaseTransactionSearchForm
+from querystring_parser import parser
 from vat.forms import VatForm
 from vat.models import Vat, VatTransaction
+
+from purchases.forms import PurchaseTransactionSearchForm
 
 from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
                     enter_lines, match)
@@ -67,7 +68,7 @@ class CreateTransaction(LoginRequiredMixin, SupplierMixin, CreatePurchaseOrSales
         "prefix": "match"
     }
     create_on_the_fly = {
-        "contact_form": ModalSupplierForm(action=reverse_lazy("contacts:create_supplier"), prefix="supplier"),
+        "contact_form": ModalContactForm(action=reverse_lazy("contacts:create"), prefix="contact", initial={"supplier": True}),
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
         "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat"),
     }
@@ -99,7 +100,7 @@ class EditTransaction(LoginRequiredMixin, SupplierMixin, EditPurchaseOrSalesTran
         "prefix": "match"
     }
     create_on_the_fly = {
-        "contact_form": ModalSupplierForm(action=reverse_lazy("contacts:create_supplier"), prefix="supplier"),
+        "contact_form": ModalContactForm(action=reverse_lazy("contacts:create"), prefix="contact"),
         "nominal_form": NominalForm(action=reverse_lazy("nominals:nominal_create"), prefix="nominal"),
         "vat_form": VatForm(action=reverse_lazy("vat:vat_create"), prefix="vat"),
     }
@@ -146,6 +147,10 @@ class LoadPurchaseMatchingTransactions(LoginRequiredMixin, LoadMatchingTransacti
 class LoadSuppliers(LoginRequiredMixin, LoadContacts):
     model = Supplier
 
+    def get_queryset(self):
+        q = super().get_queryset()
+        q.filter(supplier=True)
+        return q
 
 class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = PurchaseHeader
@@ -170,8 +175,8 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalSupplierForm(
-            action=reverse_lazy("contacts:create_supplier"), prefix="supplier")
+        context["contact_form"] = ModalContactForm(
+            action=reverse_lazy("contacts:create"), prefix="contact")
         return context
 
     def get_transaction_url(self, **kwargs):

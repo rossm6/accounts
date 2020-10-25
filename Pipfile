@@ -29,6 +29,7 @@ django-simple-history = "*"
 more-itertools = "*"
 pylint = "*"
 autopep8 = "*"
+pylint-django = "*"
 
 [requires]
 python_version = "3.8"
