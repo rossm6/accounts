@@ -133,8 +133,7 @@ class LoadSaleMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions)
 
     def get_queryset(self):
         q = super().get_queryset()
-        q.filter(customer=True)
-        return q
+        return q.filter(customer=True)
 
 class LoadCustomers(LoginRequiredMixin, LoadContacts):
     model = Customer

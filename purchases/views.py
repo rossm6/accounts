@@ -149,8 +149,7 @@ class LoadSuppliers(LoginRequiredMixin, LoadContacts):
 
     def get_queryset(self):
         q = super().get_queryset()
-        q.filter(supplier=True)
-        return q
+        return q.filter(supplier=True)
 
 class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = PurchaseHeader
