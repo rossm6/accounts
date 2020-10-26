@@ -1,12 +1,11 @@
-from django.db import models
-from simple_history import register
-
 from accountancy.models import (CashBookPaymentTransactionMixin,
                                 MultiLedgerTransactions, Transaction,
                                 TransactionHeader, TransactionLine,
                                 UIDecimalField, VatTransactionMixin)
+from django.db import models
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
+from simple_history import register
 from vat.models import Vat
 
 
@@ -23,10 +22,8 @@ register(CashBook)
 
 
 class CashBookTransaction(Transaction):
+    module = "CB"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.module = "CB"
 
 class Payment(VatTransactionMixin, CashBookPaymentTransactionMixin, CashBookTransaction):
     pass

@@ -1,9 +1,10 @@
+from accountancy.helpers import (bulk_delete_with_history,
+                                 get_all_historical_changes,
+                                 get_historical_change)
 from contacts.models import Contact
 from django.test import TestCase
 from simple_history.models import HistoricalRecords
-from utils.helpers import (bulk_delete_with_history,
-                           get_all_historical_changes, get_deleted_objects,
-                           get_historical_change)
+from utils.helpers import get_deleted_objects
 
 
 class GetAllHistoricalChangesTest(TestCase):
@@ -243,41 +244,4 @@ class GetAllHistoricalChangesTest(TestCase):
         self.assertEqual(
             len(deleted.keys()),
             0
-        )
-
-
-class SimpleHistoryBulkDelete(TestCase):
-
-    def setUp(self):
-        customers = []
-        for i in range(100):
-            customers.append(
-                Contact(
-                    code=i,
-                    name="contact" + str(i),
-                    email="doris@hotmail.com"
-                )
-            )
-        Contact.objects.bulk_create(customers)
-
-    def test(self):
-        customers = Contact.objects.all()
-        self.assertEqual(
-            len(customers),
-            100
-        )
-        history = Contact.history.all()
-        self.assertEqual(
-            len(history),
-            0
-        )
-        bulk_delete_with_history(customers, Contact)
-        self.assertEqual(
-            len(Contact.objects.all()),
-            0
-        )
-        history = Contact.history.all()
-        self.assertEqual(
-            len(history),
-            100  # a history record for object deleted
         )

@@ -51,7 +51,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         return reverse_lazy(module_name + ":view", kwargs={"pk": header})
 
     def get_queryset(self):
-        return (
+        q = (
             VatTransaction.objects
             .all()
             .values(
@@ -61,6 +61,8 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
             .annotate(Sum("vat"))
             .order_by(*self.order_by())
         )
+        print(q)
+        return q
 
 class LoadVatCodes(LoginRequiredMixin, ListView):
     paginate_by = 50

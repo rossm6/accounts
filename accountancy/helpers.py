@@ -1,12 +1,183 @@
-from datetime import date, timedelta
+import re
+from datetime import date
 from functools import reduce
 from itertools import groupby
 
+from django.contrib.auth import get_user_model
+from django.db import models
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.utils import timezone
+from more_itertools import pairwise
+from simple_history.models import HistoricalRecords
+from simple_history.utils import (get_change_reason_from_object,
+                                  get_history_manager_for_model)
 
-from utils.helpers import get_all_historical_changes
+DELETED_HISTORY_TYPE = "-"
+
+
+def get_action(history_type):
+    if history_type == "+":
+        return "Create"
+    elif history_type == "~":
+        return "Update"
+    elif history_type == "-":
+        return "Delete"
+
+
+def get_historical_change(obj1, obj2, pk_name="id"):
+    audit = {}
+    if not obj1:
+        # then obj2 should be the creation audit log
+        d = obj2.__dict__
+        for field, value in d.items():
+            if not re.search("^history_", field) and not re.search("^_", field):
+                audit[field] = {
+                    "old": "",  # this since is the first audit log
+                    "new": str(value),
+                }
+    else:
+        if obj2.history_type != "-":
+            # i.e. not deleted
+            diff = obj2.diff_against(obj1)
+            if not diff.changes:
+                # simple_history creates an audit log every time
+                # you save.  Of course I also create the records
+                # through bulk_create, bulk_update
+                # So duplicates, or unnecessary even, logs are created
+                # Periodically we ought to remove these from the DB
+                # Regardless, never show them in the UI
+                return None
+            for change in diff.changes:
+                audit[change.field] = {
+                    "old": str(change.old),
+                    "new": str(change.new),
+                }
+        else:
+            # like the audit for creation, only values should show in old column
+            d = obj2.__dict__
+            for field, value in d.items():
+                if not re.search("^history_", field) and not re.search("^_", field):
+                    audit[field] = {
+                        "old": str(value),
+                        "new": ""
+                    }
+
+    audit["meta"] = {
+        "AUDIT_id": obj2.history_id,
+        "AUDIT_action": get_action(obj2.history_type),
+        "AUDIT_user": obj2.history_user_id,
+        "AUDIT_date": obj2.history_date,
+        "object_pk": getattr(obj2, pk_name)
+    }
+
+    return audit
+
+
+def get_all_historical_changes(objects, pk_name="id"):
+    """
+    The `objects` are assumed ordered from oldest to most recent.
+    """
+    changes = []
+    if objects:
+        objects = list(objects)
+        objects.insert(0, None)
+        for obj1, obj2 in pairwise(objects):
+            change = get_historical_change(obj1, obj2, pk_name)
+            if change:
+                # because change could be `None` which points to a duplicate audit log
+                # see the note in `get_historical_change` of this same module
+                changes.append(change)
+
+    user_ids = [change["meta"]["AUDIT_user"]
+                for change in changes if type(change["meta"]["AUDIT_user"]) is int]
+    users = get_user_model().objects.filter(
+        pk__in=[user_id for user_id in user_ids])
+    users_map = {user.pk: user for user in users}
+
+    for change in changes:
+        change["meta"]["AUDIT_user"] = users_map.get(
+            change["meta"]["AUDIT_user"])
+
+    return changes
+
+
+def disconnect_simple_history_receiver_for_post_delete_signal(model):
+    """
+    We don't want the post_delete signal from the `simple_history` package.
+    This function removes it for the given model.
+    """
+    receiver_objects = models.signals.post_delete._live_receivers(model)
+    if receiver_objects:
+        for receiver in receiver_objects:
+            if receiver.__self__.__class__.__name__ == HistoricalRecords.__name__:
+                models.signals.post_delete.disconnect(receiver, sender=model)
+                break
+
+
+def create_historical_records(
+        objects,
+        model,
+        history_type,
+        batch_size=None,
+        default_user=None,
+        default_change_reason="",
+        default_date=None):
+    if model._meta.proxy:
+        history_manager = get_history_manager_for_model(
+            model._meta.proxy_for_model)
+    else:
+        history_manager = get_history_manager_for_model(model)
+    historical_instances = []
+    for instance in objects:
+        history_user = getattr(
+            instance,
+            "_history_user",
+            default_user or history_manager.model.get_default_history_user(
+                instance),
+        )
+        row = history_manager.model(
+            history_date=getattr(
+                instance, "_history_date", default_date or timezone.now()
+            ),
+            history_user=history_user,
+            history_change_reason=get_change_reason_from_object(
+                instance) or default_change_reason,
+            history_type=history_type,
+            **{
+                field.attname: getattr(instance, field.attname)
+                for field in instance._meta.fields
+                if field.name not in history_manager.model._history_excluded_fields
+            }
+        )
+        if hasattr(history_manager.model, "history_relation"):
+            row.history_relation_id = instance.pk
+        historical_instances.append(row)
+
+    return history_manager.bulk_create(
+        historical_instances, batch_size=batch_size
+    )
+
+
+def bulk_delete_with_history(objects, model, batch_size=None, default_user=None, default_change_reason="", default_date=None):
+    """
+    The package `simple_history` does not log what was deleted if the items
+    are deleted in bulk.  This does.
+    """
+
+    model_manager = model._default_manager
+    model_manager.filter(pk__in=[obj.pk for obj in objects]).delete()
+
+    history_type = DELETED_HISTORY_TYPE
+    return create_historical_records(
+        objects,
+        model,
+        history_type,
+        batch_size=batch_size,
+        default_user=default_user,
+        default_change_reason=default_change_reason,
+        default_date=default_date
+    )
 
 
 class AuditTransaction:

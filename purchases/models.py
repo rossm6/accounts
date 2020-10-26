@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from accountancy.models import (Audit, CashBookEntryMixin,
+from accountancy.models import (CashBookEntryMixin,
                                 ControlAccountInvoiceTransactionMixin,
                                 ControlAccountPaymentTransactionMixin,
                                 MatchedHeaders, Transaction, TransactionHeader,
@@ -23,11 +23,8 @@ class Supplier(Contact):
 
 
 class PurchaseTransaction(Transaction):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.module = "PL"
-        self._vat_type = "i"
+    module = "PL"
+    _vat_type = "i"
 
 
 class BroughtForwardInvoice(PurchaseTransaction):

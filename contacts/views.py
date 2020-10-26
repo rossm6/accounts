@@ -1,6 +1,6 @@
-from contacts.models import Contact
 from itertools import chain
 
+from accountancy.helpers import get_all_historical_changes
 from accountancy.views import (get_trig_vectors_for_different_inputs,
                                jQueryDataTable)
 from crispy_forms.utils import render_crispy_form
@@ -15,8 +15,9 @@ from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from purchases.models import Supplier
 from querystring_parser import parser
 from sales.models import Customer
-from utils.helpers import get_all_historical_changes
+
 from contacts.forms import ContactForm, ModalContactForm
+from contacts.models import Contact
 
 
 class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin, View):

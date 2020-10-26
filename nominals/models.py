@@ -1,17 +1,16 @@
 from itertools import groupby
 
-from django.conf import settings
-from django.db import models
-from mptt.models import MPTTModel, TreeForeignKey
-from simple_history import register
-
+from accountancy.helpers import bulk_delete_with_history
 from accountancy.models import (MultiLedgerTransactions, Transaction,
                                 TransactionHeader, TransactionLine,
                                 UIDecimalField, VatTransactionMixin)
 from cashbook.models import CashBookHeader
+from django.conf import settings
+from django.db import models
+from mptt.models import MPTTModel, TreeForeignKey
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
-from utils.helpers import bulk_delete_with_history
+from simple_history import register
 from vat.models import Vat
 
 
@@ -28,9 +27,10 @@ register(Nominal)
 
 
 class NominalTransaction(Transaction):
+    module = "NL"
+
     def __init__(self, *args, **kwargs):
         self.header_obj = kwargs.get("header")
-        self.module = "NL"
 
     def create_nominal_transactions(self, *args, **kwargs):
         return
@@ -201,8 +201,9 @@ class Journal(VatTransactionMixin, NominalTransaction):
         )
         nom_trans = (new_nom_trans if new_nom_trans else []) + \
             nom_trans_to_update
-        nom_tran_cls.objects.bulk_line_update(nom_trans_to_update)
-        nom_tran_cls.objects.filter(pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()
+        nom_tran_cls.objects.bulk_update(nom_trans_to_update)
+        nom_tran_cls.objects.filter(
+            pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()
         return nom_trans
 
 

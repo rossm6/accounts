@@ -219,13 +219,14 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
 DEFAULT_VAT_NOMINAL = "Vat"
 DEFAULT_SYSTEM_SUSPENSE = "System Suspense Account"
 
-# This dictionary is used for NL and CB tran enquiries
+# This dictionary is used for NL and CB and VT tran enquiries
 # so the user can click on a transaction and view it
 ACCOUNTANCY_MODULES = {
     "PL": "purchases",
     "NL": "nominals",
     "SL": "sales",
-    'CB': 'cashbook'
+    'CB': 'cashbook',
+    # no need to include Vat module
 }
 
 

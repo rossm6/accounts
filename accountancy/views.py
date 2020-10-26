@@ -18,12 +18,12 @@ from django.template.loader import render_to_string
 from django.views.generic import DetailView, ListView, View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from mptt.utils import get_cached_trees
+from nominals.models import Nominal
 from querystring_parser import parser
+from utils.helpers import non_negative_zero_decimal
 
 from accountancy.helpers import (AuditTransaction, JSONBlankDate, Period,
-                                 sort_multiple)
-from nominals.models import Nominal
-from utils.helpers import bulk_delete_with_history, non_negative_zero_decimal
+                                 bulk_delete_with_history, sort_multiple)
 
 
 def format_dates(objects, date_keys, format):
@@ -936,7 +936,7 @@ class RESTBaseEditTransactionMixin:
         self.lines_to_update = lines_to_update
         self.new_lines = new_lines = self.get_line_model(
         ).objects.audited_bulk_create(self.line_formset.new_objects)
-        self.get_line_model().objects.audited_bulk_line_update(lines_to_update)
+        self.get_line_model().objects.audited_bulk_update(lines_to_update)
         bulk_delete_with_history(
             self.line_formset.deleted_objects,
             self.get_line_model()

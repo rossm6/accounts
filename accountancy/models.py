@@ -7,50 +7,79 @@ from django.db import models
 from django.db.models import Q
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
-from utils.helpers import (DELETED_HISTORY_TYPE, bulk_delete_with_history,
-                           create_historical_records,
-                           non_negative_zero_decimal)
+from utils.helpers import non_negative_zero_decimal
 
 from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
-from accountancy.signals import audit_post_delete
+from accountancy.helpers import bulk_delete_with_history
+from accountancy.mixins import AuditMixin
 
 
 class NonAuditQuerySet(models.QuerySet):
 
-    def bulk_line_update(self, objs, batch_size=None):
-        return self.bulk_update(objs, self.model.fields_to_update(), batch_size=batch_size)
+    def bulk_update(self, objs, batch_size=None):
+        return super().bulk_update(objs, self.model.fields_to_update(), batch_size=batch_size)
 
 
 class AuditQuerySet(models.QuerySet):
+    """
+
+    Provides wrappers for the bulk audit utilites provides by the simple_history package.
+    Note we cannot include our own utility for deleting and auditing in bulk (at least not as easily)
+    because bulk delete is not like bulk_create and bulk_delete in Django.
+
+        E.g.
+
+            SomeModel.objects.bulk_create([objects])
+
+            SomeModel.objects.bulk_update([objects])
+
+            SomeModel.objects.filter(pk__in=[o.pk for o in objects]).delete()
+
+            # Django purposely provides bulk_delete differently to avoid accidentaly disasters !
+
+    """
 
     def audited_bulk_create(self, objs, batch_size=None, ignore_conflicts=False, user=None):
         return bulk_create_with_history(objs, self.model, batch_size=batch_size, default_user=user)
 
-    def audited_bulk_update(self, objs, fields, batch_size=None, user=None):
+    def audited_bulk_update(self, objs, fields=None, batch_size=None, user=None):
+        if not fields:
+            fields = self.model.fields_to_update()
         return bulk_update_with_history(objs, self.model, fields, batch_size=batch_size, default_user=user)
-
-    def audited_bulk_line_update(self, objs, batch_size=None, user=None):
-        return self.audited_bulk_update(
-            objs,
-            self.model.fields_to_update(),
-            batch_size=batch_size,
-            user=user
-        )
-
-
-class Audit:
-    @classmethod
-    def post_delete(cls, sender, instance, **kwargs):
-        return create_historical_records([instance], instance._meta.model, DELETED_HISTORY_TYPE)
-
-    def delete(self):
-        audit_post_delete.send(sender=self._meta.model, instance=self)
-        super().delete()
 
 
 class Transaction:
+    """
+    This is not a model nor a model mixin.  Rather subclasses should encapsulate the
+    business logic for a particular header based on a flag.
+
+    For example take the PurchaseHeader model.  Like all header models it has a flag which
+    indicates the type of header.  For PurchaseHeader this is either -
+
+        pi  -   Purchase Invoice
+        pc  -   Purchase Credit Note
+        pp  -   Purchase Payment
+        pr  -   Purchase Refund
+
+    Each type of header should have a corresponding Transaction subclass which implements the business logic for
+    this type of header.
+
+    The transaction subclass for PurchaseHeader, type pp, would create nominal transactions one way;
+    the transaction subclass for PurchaseHeader, type pi, would create nominal transactions another way.
+    """
+
+    # cls attributes
+    module = None
+
     def __init__(self, *args, **kwargs):
         self.header_obj = kwargs.get("header")
+        if not self.header_obj:
+            raise ValueError("Transactions must have a header object")
+
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        if cls.module not in settings.ACCOUNTANCY_MODULES.keys():
+            raise ValueError("Transactions must have a module")
 
     @property
     def vat_type(self):
@@ -59,22 +88,22 @@ class Transaction:
         return self._vat_type
 
     def create_nominal_transactions(self, *args, **kwargs):
-        return
+        pass
 
     def create_vat_transactions(self, *args, **kwargs):
-        return
+        pass
 
     def edit_nominal_transactions(self, *args, **kwargs):
-        return
+        pass
 
     def edit_vat_transactions(self, *args, **kwargs):
-        return
+        pass
 
     def create_cash_book_entry(self, *args, **kwargs):
-        return
+        pass
 
     def edit_cash_book_entry(self, *args, **kwargs):
-        return
+        pass
 
 
 class VatTransactionMixin:
@@ -184,7 +213,7 @@ class VatTransactionMixin:
             line_cls=line_cls,
             lines=new_lines,
         )
-        vat_tran_cls.objects.bulk_line_update(vat_trans_to_update)
+        vat_tran_cls.objects.bulk_update(vat_trans_to_update)
         vat_tran_cls.objects.filter(
             pk__in=[tran.pk for tran in vat_trans_to_delete]).delete()
 
@@ -415,7 +444,7 @@ class ControlAccountInvoiceTransactionMixin:
             vat_nominal=vat_nominal,
             control_nominal=control_nominal
         )
-        nom_tran_cls.objects.bulk_line_update(nom_trans_to_update)
+        nom_tran_cls.objects.bulk_update(nom_trans_to_update)
         nom_tran_cls.objects.filter(
             pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()
 
@@ -549,8 +578,7 @@ class ControlAccountPaymentTransactionMixin:
             bank_nom_tran.nominal = self.header_obj.cash_book.nominal
             control_nom_tran.value = -1 * f * self.header_obj.total
             control_nom_tran.nominal = control_nominal
-            nom_tran_cls.objects.bulk_update(
-                nom_trans, ["value", "nominal"])
+            nom_tran_cls.objects.bulk_update(nom_trans)
         elif nom_trans and self.header_obj.total == 0:
             nom_tran_cls.objects.filter(
                 pk__in=[tran.pk for tran in nom_trans]).delete()
@@ -575,7 +603,7 @@ class TransactionBase:
         return self.type in self.negatives
 
 
-class TransactionHeader(TransactionBase, models.Model, Audit):
+class TransactionHeader(TransactionBase, models.Model, AuditMixin):
     """
 
     Base transaction which can be sub classed.
@@ -728,7 +756,7 @@ class TransactionHeader(TransactionBase, models.Model, Audit):
         return cls.credits
 
 
-class TransactionLine(TransactionBase, models.Model, Audit):
+class TransactionLine(TransactionBase, models.Model, AuditMixin):
     line_no = models.IntegerField()
     description = models.CharField(max_length=100)
     goods = UIDecimalField(
@@ -793,7 +821,7 @@ class TransactionLine(TransactionBase, models.Model, Audit):
         return self.ui_field_value(self, "vat")
 
 
-class MatchedHeaders(models.Model, Audit):
+class MatchedHeaders(models.Model, AuditMixin):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
     """
