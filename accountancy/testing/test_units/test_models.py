@@ -47,7 +47,23 @@ class TransactionTest(TestCase):
             pass
 
     def test_vat_type_on_header(self):
-        raise NotImplementedError
+        class Invoice(Transaction):
+            module = "PL"
+        header = mock.Mock()
+        header.vat_type = "i"
+        i = Invoice(header=header)
+        self.assertEqual(
+            i.vat_type,
+            "i"
+        )
 
     def test_vat_type_on_transaction_class(self):
-        raise NotImplementedError
+        class Invoice(Transaction):
+            module = "PL"
+            vat_type = "i"
+        header = mock.Mock()
+        i = Invoice(header=header)
+        self.assertEqual(
+            i.vat_type,
+            "i"
+        )

@@ -1,7 +1,8 @@
-from accountancy.models import (CashBookPaymentTransactionMixin,
-                                MultiLedgerTransactions, Transaction,
+from accountancy.mixins import (CashBookPaymentTransactionMixin,
+                                VatTransactionMixin)
+from accountancy.models import (MultiLedgerTransactions, Transaction,
                                 TransactionHeader, TransactionLine,
-                                UIDecimalField, VatTransactionMixin)
+                                UIDecimalField)
 from django.db import models
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader

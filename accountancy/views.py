@@ -904,6 +904,14 @@ class RESTBaseEditTransactionMixin:
         return super().dispatch(request, *args, **kwargs)
 
     def lines_are_valid(self):
+        """
+        On testing the edition and creation of vat transactions i realised a misnomer.
+        We pass to create_or_update_related_transactions the keyword argument `updated_lines`.  This
+        is misleading.  Even if a line has not changed at all it should still be passed along in this argument list.
+        The reason being best explained by an example.  A user edits an nominal journal from vat_type input to output.
+        Nothing else is changed.  This means only the header changed and none of the lines.  However we will need to
+        make changes now to the vat records at least so that they have vat_type = output now.
+        """
         self.header_obj.save()
         self.header_has_been_saved = True
         self.line_formset.save(commit=False)

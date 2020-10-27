@@ -1,10 +1,11 @@
 from uuid import uuid4
 
-from accountancy.models import (CashBookEntryMixin,
+from accountancy.mixins import (CashBookEntryMixin,
                                 ControlAccountInvoiceTransactionMixin,
                                 ControlAccountPaymentTransactionMixin,
-                                MatchedHeaders, Transaction, TransactionHeader,
-                                TransactionLine, VatTransactionMixin)
+                                VatTransactionMixin)
+from accountancy.models import (MatchedHeaders, Transaction, TransactionHeader,
+                                TransactionLine)
 from contacts.models import Contact
 from django.conf import settings
 from django.db import models
