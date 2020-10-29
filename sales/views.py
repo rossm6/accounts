@@ -216,3 +216,9 @@ class AgeDebtorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
     template_name = "accountancy/aged_matching_report.html"
     contact_range_field_names = ['from_customer', 'to_customer']
     contact_field_name = "customer"
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["contact_form"] = ModalContactForm(action=reverse_lazy("contacts:create"), prefix="contact")
+        return context

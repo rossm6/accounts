@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% load static %}
+{% load crispy_forms_tags %}
 
 {% block head %}
     <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
@@ -46,10 +47,30 @@
 {% endblock content %}
 
 
+{% block modal_forms %}
+    <div class="modal-on-the-fly-forms">
+        <div class="modal fade" id="new-contact" tabindex="-1" role="dialog"  aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title font-weight-bold" id="exampleModalLabel">New Contact</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% crispy contact_form %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock modal_forms %}
+
+
 {% block js %}
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
 <script src="{% static 'js/selectize.min.js' %}"></script>
+<script src="{% static 'js/modal_form.js' %}"></script>
 <script src="{% static 'accountancy/js/contact_selectize.js' %}"></script>
 <script>
 

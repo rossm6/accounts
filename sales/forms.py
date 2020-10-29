@@ -130,7 +130,7 @@ match.include_empty_form = False
 # returns form class
 DebtorForm = aged_matching_report_factory(
     Customer,
-    reverse_lazy("contacts:create_customer"),
+    reverse_lazy("contacts:create"),
     reverse_lazy("sales:load_customers")
 )
 
