@@ -1,10 +1,24 @@
 {% extends 'registration/base.html' %}
 
 {% block content %}
-    <div class="mx-auto">
+    <div class="mx-auto" style="max-width: 350px;">
         {% load crispy_forms_tags %}
+        <h1 class='mb-4 h3 font-weight-bold'>Sign In To Accounts</h1>
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                <div class="row">
+                    <div class="col">
+                        <ul class="small list-unstyled m-0">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         {% crispy form %}
-        <div class="small d-flex justify-content-center">
+        <div class="mt-4 small d-flex justify-content-center">
             <a class="mr-3" href="{% url 'users:signup' %}">Sign Up</a>
             <a class="ml-3" href="{% url 'users:password_reset' %}">Reset Password</a>
         </div>

@@ -51,7 +51,9 @@ $(document).ready(function () {
         var tr = $(this);
         var pk = tr.data("pk");
         var href = tr.data("href");
-        window.location.href = href;
+        if(href){
+            window.location.href = href;
+        }
     }
 
     function row_checkbox_event (event) {

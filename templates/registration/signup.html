@@ -1,7 +1,11 @@
 {% extends 'registration/base.html' %}
 
 {% block content %}
-    {% include 'accountancy/crispy_form_template.html' %}
+    <div class="mx-auto">
+        <div style="max-width: 350px">
+            {% include 'accountancy/crispy_form_template.html' %}
+        </div>
+    </div>
 {% endblock content %}
 
 {% block js %}

@@ -105,6 +105,7 @@ class Transaction:
     def edit_cash_book_entry(self, *args, **kwargs):
         pass
 
+# FINISHED REFACTORING AND TESTING AT THIS POINT ON 27/10/2020
 
 class UIDecimalField(models.DecimalField):
     def contribute_to_class(self, cls, name):

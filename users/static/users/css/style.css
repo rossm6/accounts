@@ -15,7 +15,6 @@ body {
 
 .form-signup,.form-signin {
   width: 100%;
-  max-width: 330px;
   padding: 15px;
   margin: auto;
 }
@@ -43,4 +42,14 @@ body {
   margin-bottom: 10px;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+
+small#hint_id_password1 ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+small#hint_id_password1 ul li {
+    padding: 0.5em;
 }

@@ -43,14 +43,11 @@ class SignInForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.helper.form_class = "form-signup"
+        self.helper.form_class = "form-signup w-100 m-0 p-0"
         self.helper.layout = Layout(
-            HTML(
-                "<h1 class='mb-4 h3 font-weight-bold'>Sign In To Accounts</h1>"
-            ),
             Div(
                 LabelAndFieldAndErrors('username', css_class="form-control"),
-                css_class="mb-3"
+                css_class="w-100 mb-3"
             ),
             Div(
                 LabelAndFieldAndErrors('password', css_class="form-control"),

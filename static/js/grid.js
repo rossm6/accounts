@@ -13,6 +13,27 @@
         this.reorder();
     };
 
+
+    Grid.prototype.get_order = function (row_index, $row) {
+        var order;
+        $row.find(":input:visible").each(function (field_index, field) {
+            var field = $(field);
+            if(field.attr("type") == "checkbox"){
+                if(field.prop("checked")){
+                    order = row_index;
+                    return false; // end the loop
+                }
+            }
+            else{
+                if(field.val()){
+                    order = row_index;
+                    return false; // end the loop
+                }
+            }
+        });
+        return order;
+    };
+
     Grid.prototype.reorder = function () {
         if (!this.order_lines) {
             console.log("WARNING: you have ordering diabled!");
@@ -22,34 +43,14 @@
             .find("tbody")
             .find("tr")
             .not(this.empty_form_identifier)
-            .each(function (index, element) {
-                var element = $(element);
-                var order;
-                element.find(":input:visible").each(function (index, field) {
-                    var field = $(field);
-                    if(field.attr("type") == "checkbox"){
-                        if(field.prop("checked")){
-                            order = index;
-                            return false; // end the loop
-                        }
-                    }
-                    else{
-                        if(field.val()){
-                            order = index;
-                            return false; // end the loop
-                        }
-                    }
-
-                });
-                console.log("order is");
-                console.log(order);
+            .each(function (row_index, row) {
+                var $row = $(row);
+                var order = instance.get_order(row_index, $row);
                 if (order != undefined) {
                     // only order the row if any of the visible fields are not blank
                     // otherwise visibly empty forms will be validated on the server because on the server side
                     // the order input field has a value set
-                    $(element)
-                        .find("input" + instance.order_identifier)
-                        .val(order);
+                    $row.find("input" + instance.order_identifier).val(order);
                 }
             });
     };
@@ -72,11 +73,9 @@
         next_line.find("input").each(function () {
             $(this).val("");
         });
-        if (this.order_lines) {
-            next_line.find("input" + this.order_identifier).val(total_forms);
-        }
         this.get_table().find("tbody").append(next_line);
         this.set_total_forms(total_forms + 1);
+        this.reorder();
         if (this.add_callback) {
             this.add_callback(next_line);
         }
