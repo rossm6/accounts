@@ -137,7 +137,7 @@ enter_lines.include_empty_form = True
 
 
 class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
-    type = forms.ChoiceField(choices=PurchaseHeader.type_choices, widget=forms.Select(
+    type = forms.ChoiceField(choices=PurchaseHeader.types, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
     # readonly not permitted for select element so disable used and on client we enable the element before the form is submitted
 

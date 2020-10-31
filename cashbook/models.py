@@ -74,13 +74,13 @@ class ModuleTransactionBase:
         'cbp',
         'cp'
     ]
-    payment_type = [
+    payment_types = [
         'cbp',
         'cp',
         'cbr',
         'cr'
     ]
-    type_choices = no_analysis_required + analysis_required
+    types = no_analysis_required + analysis_required
 
 
 class CashBookHeader(ModuleTransactionBase, TransactionHeader):
@@ -93,7 +93,7 @@ class CashBookHeader(ModuleTransactionBase, TransactionHeader):
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=ModuleTransactionBase.type_choices
+        choices=ModuleTransactionBase.types
     )
     vat_type = models.CharField(
         max_length=2,
@@ -149,7 +149,7 @@ class CashBookLine(ModuleTransactionBase, TransactionLine):
         'vat.VatTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="cash_book_line_vat_transaction")
     type = models.CharField(
         max_length=3,
-        choices=CashBookHeader.type_choices
+        choices=CashBookHeader.types
         # see note on parent class for more info
     )
 

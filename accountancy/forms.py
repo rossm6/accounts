@@ -155,6 +155,9 @@ class BaseTransactionMixin:
 
     """
 
+    This should change so that is uses the UIDecimalFieldDescriptor.
+    We probably should create a UIDecimalField actually ...
+
     At least this is needed ...
 
         Accountancy forms should give the user the option to enter a positive number
@@ -312,7 +315,7 @@ class SaleAndPurchaseHeaderFormMixin:
         else:
             _type = self.initial.get('type')
 
-        if _type in self._meta.model.payment_type:
+        if _type in self._meta.model.payment_types:
             if _type in self._meta.model.get_types_requiring_analysis():
                 payment_form = True
                 payment_brought_forward_form = False

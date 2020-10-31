@@ -110,13 +110,13 @@ class ModuleTransactionBase:
         'sp',
         'sc'
     ]
-    payment_type = [
+    payment_types = [
         'sbp',
         'sbr',
         'sp',
         'sr'
     ]
-    type_choices = no_analysis_required + analysis_required
+    types = no_analysis_required + analysis_required
 
 
 class SaleHeader(ModuleTransactionBase, TransactionHeader):
@@ -127,7 +127,7 @@ class SaleHeader(ModuleTransactionBase, TransactionHeader):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=ModuleTransactionBase.type_choices
+        choices=ModuleTransactionBase.types
     )
     matched_to = models.ManyToManyField(
         'self', through='SaleMatching', symmetrical=False)
@@ -170,7 +170,7 @@ class SaleLine(ModuleTransactionBase, TransactionLine):
         'vat.VatTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="sale_line_vat_transaction")
     type = models.CharField(
         max_length=3,
-        choices=SaleHeader.type_choices
+        choices=SaleHeader.types
         # see note on parent class for more info
     )
 
@@ -212,12 +212,12 @@ class SaleMatching(MatchedHeaders):
     )
     matched_by_type = models.CharField(
         max_length=3,
-        choices=SaleHeader.type_choices
+        choices=SaleHeader.types
         # see note on parent class for more info
     )
     matched_to_type = models.CharField(
         max_length=3,
-        choices=SaleHeader.type_choices
+        choices=SaleHeader.types
         # see note on parent class for more info
     )
 

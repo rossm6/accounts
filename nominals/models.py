@@ -39,6 +39,7 @@ class Journal(
         NominalTransaction):
     pass
 
+
 class ModuleTransactionBase:
     analysis_required = [
         ('nj', 'Journal')
@@ -50,6 +51,8 @@ class ModuleTransactionBase:
     negatives = []
     credits = []
     debits = ['nj']
+    payment_types = []
+    types = analysis_required
 
 
 class NominalHeader(ModuleTransactionBase, TransactionHeader):
@@ -59,7 +62,7 @@ class NominalHeader(ModuleTransactionBase, TransactionHeader):
     ]
     type = models.CharField(
         max_length=2,
-        choices=ModuleTransactionBase.analysis_required
+        choices=ModuleTransactionBase.types
     )
     vat_type = models.CharField(
         max_length=2,
@@ -105,7 +108,7 @@ class NominalLine(ModuleTransactionBase, TransactionLine):
         'vat.VatTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="nominal_line_vat_transaction")
     type = models.CharField(
         max_length=3,
-        choices=NominalHeader.analysis_required
+        choices=NominalHeader.types
         # see note on parent class for more info
     )
 

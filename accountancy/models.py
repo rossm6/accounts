@@ -105,7 +105,6 @@ class Transaction:
     def edit_cash_book_entry(self, *args, **kwargs):
         pass
 
-# FINISHED REFACTORING AND TESTING AT THIS POINT ON 27/10/2020
 
 class UIDecimalField(models.DecimalField):
     def contribute_to_class(self, cls, name):
@@ -121,15 +120,7 @@ class TransactionBase:
 
 class TransactionHeader(TransactionBase, models.Model, AuditMixin):
     """
-
-    Base transaction which can be sub classed.
-    Subclasses will likely need to include a
-    type property.  And a proxy model for each
-    type which is a proxy of this transaction
-    class.
-
-    Examples below for sales ledger
-
+    Every ledger which allows transactions to be posted must subclass this Abstract Model.
     """
     statuses = [
         ("c", "cleared"),
@@ -178,35 +169,87 @@ class TransactionHeader(TransactionBase, models.Model, AuditMixin):
     # example 202001, 202002.  This way we can sort easily.
     period = models.CharField(max_length=6)
     status = models.CharField(max_length=2, choices=statuses, default="c")
+    created = models.DateTimeField(auto_now_add=True)
+
+    types = None
+    credits = None
+    debits = None
+    positives = None
+    negatives = None
+    analysis_required = None
+    lines_required = None
+    payment_types = None
 
     class Meta:
         abstract = True
 
     objects = AuditQuerySet.as_manager()
 
-    @staticmethod
-    def ui_field_value(instance, field):
-        value = getattr(instance, field)
-        if instance.is_negative_type():
-            ui_value = value * -1
-        else:
-            ui_value = value
-        return non_negative_zero_decimal(ui_value)
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        if cls.types is None:
+            raise ValueError(
+                "Transaction headers must specify transaction types")
+        if cls.credits is None:
+            raise ValueError(
+                "Transaction headers must specify the types which are credits.  If there are none define as an empty list."
+                "  A credit transaction is one where a positive value would mean a negative entry in the nominal")
+        if cls.debits is None:
+            raise ValueError(
+                "Transaction headers must specify the types which are debits.  If there are none define as an empty list."
+                "  A debit transaction is one where a positive value would mean a positive entry in the nominal"
+            )
+        if cls.positives is None:
+            raise ValueError(
+                "Transaction headers must specify the types which should show as positives on account.  If there are none define as an empty list."
+                "  E.g. an invoice is a positive transaction."
+            )
+        if cls.negatives is None:
+            raise ValueError(
+                "Transaction headers must specify the types which should show as negatives on account.  If there are none define as an empty list."
+                "  E.g. a payment is a negative transaction."
+            )
+        if cls.analysis_required is None:
+            raise ValueError(
+                "Transaction headers must specify the types which require nominal analysis by the user.  If there are none define as an empty list."
+                "  E.g. an invoice requires nominal analysis.  A brought invoice invoice does not."
+            )
+        if cls.lines_required is None:
+            raise ValueError(
+                "Transaction headers must specify the types which require lines be shown in the UI.  If there are none define as an empty list."
+                "  E.g. an invoice requires lines.  A payment does not."
+            )
+        if cls.payment_types is None:
+            raise ValueError(
+                "Transaction headers must specify the types which are payment types i.e. will update the cashbook.  If there are none define as an empty list."
+            )
 
     def get_nominal_transaction_factor(self):
+        """
+
+            A nominal cr is a negative value, a nominal debit is a positive value
+
+            E.g. PL invoice for 120.00, goods 100.00 and vat 20.00
+
+                Goods nominal should be updated with 100.00
+
+            E.g. PL credit for 120.00, goods 100.00 and vat 20.00 
+
+                Goods nominal should be updated with -100.00
+
+            E.g. SL invoice for 120.00, goods 100.00 and vat 20.00
+
+                Goods nominal should be updated with 100.00
+
+            E.g. SL credit for 120.00, goods 100.00 and vat 20.00
+
+                Goods nominal should be updated with 100.00
+
+        """
         return (1 if self.is_positive_type() else -1) * (1 if self.is_debit_type() else -1)
 
-    def ui_total(self):
-        return self.ui_field_value(self, "total")
-
-    def ui_paid(self):
-        return self.ui_field_value(self, "paid")
-
-    def ui_due(self):
-        return self.ui_field_value(self, "due")
-
     def ui_status(self):
-        if self.type == "nj":
+        if self.type in ("nj", "cp", "cr", "cbr", "cbp"):
             return ""
         if self.status == "c":
             if self.total == self.paid:
@@ -218,9 +261,9 @@ class TransactionHeader(TransactionBase, models.Model, AuditMixin):
                     else:
                         return "overdue"
                 else:
-                    return "not matched"
+                    return "not fully matched"
         elif self.is_void():
-            return "Void"
+            return "void"
 
     def is_void(self):
         return self.status == "v"
@@ -231,7 +274,7 @@ class TransactionHeader(TransactionBase, models.Model, AuditMixin):
         return False
 
     def is_payment_type(self):
-        return self.type in self.payment_type
+        return self.type in self.payment_types
 
     def is_credit_type(self):
         if self.type in self.credits:
@@ -246,9 +289,6 @@ class TransactionHeader(TransactionBase, models.Model, AuditMixin):
     def requires_analysis(self):
         if self.type in [t[0] for t in self.analysis_required]:
             return True
-
-    def will_have_nominal_transactions(self):
-        return self.type in [t[0] for t in self.analysis_required]
 
     def requires_lines(self):
         if self.type in [t[0] for t in self.lines_required]:
@@ -316,32 +356,6 @@ class TransactionLine(TransactionBase, models.Model, AuditMixin):
             return True
         else:
             return False
-
-    @staticmethod
-    def ui_field_value(instance, field):
-        """
-        WARNING - this will hit the db each time it called
-        if the line instance passed does not have the header
-        already in memory.
-
-        The calling code needs to select_related header
-        therefore.
-        """
-        value = getattr(instance, field)
-        if instance.header.is_negative_type():
-            ui_value = value * -1
-        else:
-            ui_value = value
-        return non_negative_zero_decimal(ui_value)
-
-    def ui_total(self):
-        return self.ui_field_value(self, "total")
-
-    def ui_goods(self):
-        return self.ui_field_value(self, "goods")
-
-    def ui_vat(self):
-        return self.ui_field_value(self, "vat")
 
 
 class MatchedHeaders(models.Model, AuditMixin):

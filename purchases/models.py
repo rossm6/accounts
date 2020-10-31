@@ -111,13 +111,13 @@ class ModuleTransactionBase:
         'pr',
         'pi'
     ]
-    payment_type = [
+    payment_types = [
         'pbp',
         'pbr',
         'pp',
         'pr'
     ]
-    type_choices = no_analysis_required + analysis_required
+    types = no_analysis_required + analysis_required
 
 
 class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
@@ -128,7 +128,7 @@ class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=ModuleTransactionBase.type_choices
+        choices=ModuleTransactionBase.types
     )
     matched_to = models.ManyToManyField(
         'self', through='PurchaseMatching', symmetrical=False)
@@ -171,7 +171,7 @@ class PurchaseLine(ModuleTransactionBase, TransactionLine):
         'vat.VatTransaction', null=True, blank=True, on_delete=models.SET_NULL, related_name="purchase_line_vat_transaction")
     type = models.CharField(
         max_length=3,
-        choices=PurchaseHeader.type_choices
+        choices=PurchaseHeader.types
         # see note on parent class for more info
     )
 
@@ -214,12 +214,12 @@ class PurchaseMatching(MatchedHeaders):
     )
     matched_by_type = models.CharField(
         max_length=3,
-        choices=PurchaseHeader.type_choices
+        choices=PurchaseHeader.types
         # see note on parent class for more info
     )
     matched_to_type = models.CharField(
         max_length=3,
-        choices=PurchaseHeader.type_choices
+        choices=PurchaseHeader.types
         # see note on parent class for more info
     )
     # So we can do for two trans, t1 and t2
