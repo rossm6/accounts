@@ -155,11 +155,10 @@ class NominalTransaction(MultiLedgerTransactions):
     )
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
-    value = UIDecimalField(
+    value = models.DecimalField(
         decimal_places=2,
         max_digits=10,
-        blank=True,
-        null=True
+        default=0
     )
 
     class Meta:

@@ -1,8 +1,7 @@
 from accountancy.mixins import (CashBookPaymentTransactionMixin,
                                 VatTransactionMixin)
 from accountancy.models import (MultiLedgerTransactions, Transaction,
-                                TransactionHeader, TransactionLine,
-                                UIDecimalField)
+                                TransactionHeader, TransactionLine)
 from django.db import models
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -181,11 +180,10 @@ all_module_types = (
 class CashBookTransaction(MultiLedgerTransactions):
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
-    value = UIDecimalField(
+    value = models.DecimalField(
         decimal_places=2,
         max_digits=10,
-        blank=True,
-        null=True
+        default=0
     )
 
     class Meta:

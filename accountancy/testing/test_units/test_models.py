@@ -1,3 +1,6 @@
+from nominals.models import NominalTransaction
+from accountancy.models import TransactionLine
+from purchases.models import PurchaseLine
 from datetime import date, timedelta
 
 import mock
@@ -1165,4 +1168,137 @@ class TransactionHeaderTests(TestCase):
         self.assertEqual(
             str(ctx.exception),
             "Transaction headers must specify the types which are payment types i.e. will update the cashbook.  If there are none define as an empty list."
+        )
+
+    
+class TransactionLineTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.supplier = Supplier.objects.create(code="1", name="1")
+
+    def test_add_nominal_transactions(self):
+        nominal = Nominal(name="nominal")
+        header = PurchaseHeader(
+            type="pi",
+            supplier=self.supplier,
+            ref="1",
+            date=date.today(),
+            period="202007",
+            total=100,
+            paid=90,
+        )
+        line = PurchaseLine(
+            header=header,
+            line_no=1,
+            description="1",
+            type="pi"
+        )
+        g = NominalTransaction(
+            module="PL",
+            header=1,
+            line=1,
+            nominal=nominal,
+            field="g",
+            value=100
+        )
+        v = NominalTransaction(
+            module="PL",
+            header=1,
+            line=1,
+            nominal=nominal,
+            field="v",
+            value=20
+        )
+        t = NominalTransaction(
+            module="PL",
+            header=1,
+            line=1,
+            nominal=nominal,
+            field="t",
+            value=-120
+        )
+        nominal_trans = {
+            "g": g,
+            "v": v,
+            "t": t
+        }
+        line.add_nominal_transactions(nominal_trans)
+        self.assertEqual(
+            line.goods_nominal_transaction,
+            g
+        )
+        self.assertEqual(
+            line.vat_nominal_transaction,
+            v
+        )
+        self.assertEqual(
+            line.total_nominal_transaction,
+            t
+        )
+
+    def test_is_no_zero_when_zero(self):
+        header = PurchaseHeader(
+            type="pi",
+            supplier=self.supplier,
+            ref="1",
+            date=date.today(),
+            period="202007",
+            total=120,
+            paid=0,
+        )
+        line = PurchaseLine(
+            header=header,
+            line_no=1,
+            description="1",
+            type="pi",
+            goods=0,
+            vat=0
+        )
+        self.assertFalse(
+            line.is_non_zero()
+        )
+
+    def test_is_no_zero_when_non_zero_1(self):
+        header = PurchaseHeader(
+            type="pi",
+            supplier=self.supplier,
+            ref="1",
+            date=date.today(),
+            period="202007",
+            total=120,
+            paid=0,
+        )
+        line = PurchaseLine(
+            header=header,
+            line_no=1,
+            description="1",
+            type="pi",
+            goods=100,
+            vat=0
+        )
+        self.assertTrue(
+            line.is_non_zero()
+        )
+
+    def test_is_no_zero_when_non_zero_2(self):
+        header = PurchaseHeader(
+            type="pi",
+            supplier=self.supplier,
+            ref="1",
+            date=date.today(),
+            period="202007",
+            total=120,
+            paid=0,
+        )
+        line = PurchaseLine(
+            header=header,
+            line_no=1,
+            description="1",
+            type="pi",
+            goods=0,
+            vat=20
+        )
+        self.assertTrue(
+            line.is_non_zero()
         )

@@ -14,6 +14,17 @@ from accountancy.helpers import bulk_delete_with_history
 from accountancy.mixins import AuditMixin
 
 
+"""
+
+    Two considerations -
+
+        1. Move the methods on TransactionHeader which relate to transaction type to the TransactionBase model so that TransactionLine has them also
+        2. MatchedHeaders would be improved by having two value fields.  One relating to the matched_by and the other to matched_to.  This should erase the logic
+           in the calling code which checks what the value relates.
+
+"""
+
+
 class NonAuditQuerySet(models.QuerySet):
 
     def bulk_update(self, objs, batch_size=None):
@@ -106,10 +117,28 @@ class Transaction:
         pass
 
 
-class UIDecimalField(models.DecimalField):
+class AccountsDecimalField(models.DecimalField):
+    """
+    I want decimal fields in forms to show as blank by default.
+    But I don't want the DB to save the value as null.
+
+    This field will ensure a decimal of 0 is saved to the DB instead
+    of null.
+    """
+
     def contribute_to_class(self, cls, name):
         super().contribute_to_class(cls, name)
         setattr(cls, self.name, DecimalDescriptor(self.name))
+
+
+class UIDecimalField(AccountsDecimalField):
+    """
+    This field includes a method which flips the sign of the value stored in DB
+    so it looks right in the UI.
+    """
+
+    def contribute_to_class(self, cls, name):
+        super().contribute_to_class(cls, name)
         setattr(cls, f"ui_{self.name}", UIDecimalDescriptor(self.name))
 
 
@@ -335,7 +364,7 @@ class TransactionLine(TransactionBase, models.Model, AuditMixin):
         null=True
     )
     # type field must be added to the subclass which has same choices as type field on header
-    # this field is needed for UI presentation.  Without it we need to always remember to select_related
+    # this field is needed for the UI.  Without it we need to always remember to select_related
     # header for each line query which isn't ideal, or may be even, possible on occasion.
 
     class Meta:
@@ -365,7 +394,7 @@ class MatchedHeaders(models.Model, AuditMixin):
     # transaction_1 = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="first_transaction")
     # transaction_2 = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="second_transaction")
     created = models.DateField(auto_now_add=True)
-    value = UIDecimalField(
+    value = AccountsDecimalField(
         decimal_places=2,
         max_digits=10,
         blank=True,
