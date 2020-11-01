@@ -20,8 +20,6 @@ class DecimalDescriptor:
 
     def __get__(self, instance=None, owner=None):
         value = instance.__dict__.get(self.name)
-        if not value:
-            value = Decimal(0)
         return value.quantize(self.TWO_PLACES)
 
     def __set__(self, instance, value):
@@ -30,8 +28,8 @@ class DecimalDescriptor:
             value = Decimal(value)
         if isinstance(value, Decimal):
             value = value.quantize(self.TWO_PLACES)
-        if value == positve_zero:
-            # avoid negative 0
+        if value is None or value == positve_zero:
+            # avoid negative 0 or None
             value = positve_zero
         instance.__dict__[self.name] = value
 
@@ -54,6 +52,5 @@ class UIDecimalDescriptor(DecimalDescriptor):
     def __set__(self, instance, value):
         super().__set__(instance, value)
         value = instance.__dict__[self.name]
-        if value is not None:
-            if instance.is_negative_type() and value != Decimal(0):
-                instance.__dict__[self.name] = value * -1
+        if instance.is_negative_type() and value != Decimal(0):
+            instance.__dict__[self.name] = value * -1
