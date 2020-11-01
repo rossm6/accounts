@@ -85,8 +85,6 @@ def create_nominals():
         name="Non Current Liabilities", parent=liabilities)
     Nominal.objects.create(name="Loans", parent=non_current_liabilities)
     system_controls = Nominal.objects.create(name="System Controls")
-    opening_balances = Nominal.objects.create(
-        name="Opening Balances", parent=system_controls)
     system_suspenses = Nominal.objects.create(
         name="System Suspenses", parent=system_controls)
     default_system_suspense = Nominal.objects.create(

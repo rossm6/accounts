@@ -9,10 +9,9 @@ from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 from utils.helpers import non_negative_zero_decimal
 
-from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
+from accountancy.fields import AccountsDecimalField, UIDecimalField
 from accountancy.helpers import bulk_delete_with_history
 from accountancy.mixins import AuditMixin
-
 
 """
 
@@ -21,6 +20,8 @@ from accountancy.mixins import AuditMixin
         1. Move the methods on TransactionHeader which relate to transaction type to the TransactionBase model so that TransactionLine has them also
         2. MatchedHeaders would be improved by having two value fields.  One relating to the matched_by and the other to matched_to.  This should erase the logic
            in the calling code which checks what the value relates.
+
+    Also we have not tested AccountsDecimalField
 
 """
 
@@ -115,31 +116,6 @@ class Transaction:
 
     def edit_cash_book_entry(self, *args, **kwargs):
         pass
-
-
-class AccountsDecimalField(models.DecimalField):
-    """
-    I want decimal fields in forms to show as blank by default.
-    But I don't want the DB to save the value as null.
-
-    This field will ensure a decimal of 0 is saved to the DB instead
-    of null.
-    """
-
-    def contribute_to_class(self, cls, name):
-        super().contribute_to_class(cls, name)
-        setattr(cls, self.name, DecimalDescriptor(self.name))
-
-
-class UIDecimalField(AccountsDecimalField):
-    """
-    This field includes a method which flips the sign of the value stored in DB
-    so it looks right in the UI.
-    """
-
-    def contribute_to_class(self, cls, name):
-        super().contribute_to_class(cls, name)
-        setattr(cls, f"ui_{self.name}", UIDecimalDescriptor(self.name))
 
 
 class TransactionBase:

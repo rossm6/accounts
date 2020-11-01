@@ -2,11 +2,38 @@ from functools import partial
 from itertools import groupby
 from operator import attrgetter
 
+from django.db import models
 from django.forms.models import ModelChoiceField, ModelChoiceIterator
+
+from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
+
+
+class AccountsDecimalField(models.DecimalField):
+    """
+    I want decimal fields in forms to show as blank by default.
+    But I don't want the DB to save the value as null.
+
+    This field will ensure a decimal of 0 is saved to the DB instead
+    of null.
+    """
+
+    def contribute_to_class(self, cls, name):
+        super().contribute_to_class(cls, name)
+        setattr(cls, self.name, DecimalDescriptor(self.name))
+
+
+class UIDecimalField(AccountsDecimalField):
+    """
+    This field includes a method which flips the sign of the value stored in DB
+    so it looks right in the UI.
+    """
+
+    def contribute_to_class(self, cls, name):
+        super().contribute_to_class(cls, name)
+        setattr(cls, f"ui_{self.name}", UIDecimalDescriptor(self.name))
 
 
 class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
-
     """
     Based on the Xero accounts software we wish to show a
     list of account nominals where an account structure like -
@@ -22,14 +49,7 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
 
     In order words, get all the roots in the nominal tree
     structure, and get all the leaves for each root.
-
-    Only there is a problem if the queryset provided is
-    paginated because the group may not be included
-    in the queryset.  We therefore program defensively
-    to take this possibility into account.
-
     """
-
     def __iter__(self):
         if self.field.empty_label is not None:
             yield ("", self.field.empty_label)
@@ -57,12 +77,18 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
 
 class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
     """
+    When creating nominal codes one needs to ick the account type i.e.
+    the child of a root.  Again this is based on Xero.
 
-    When creating nominal codes one needs to pick the account type i.e.
-    the child of a root.
+        E.g.
 
-    This structure is built into the software.  Might make the whole thing
-    user definable later on.
+            Assets
+                Current Assets
+                    Bank
+
+
+        If the user were to create Bank, they would select "Current Assets" from
+        the dropdown.  "Assets" would not show.
     """
 
     def __iter__(self):
@@ -131,15 +157,9 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
                 pass
         return (value, label, tmp)
 
+
 class ModelChoiceFieldChooseIterator(ModelChoiceField):
     def __init__(self, *args, **kwargs):
         iterator = kwargs.pop("iterator")
         super().__init__(*args, **kwargs)
         self.iterator = iterator
-
-
-# Use the ModelChoiceFieldChooseIterato class instead and then remove this
-class RootAndChildrenModelChoiceField(ModelChoiceField):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.iterator = RootAndChildrenModelChoiceIterator

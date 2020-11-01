@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
-                                RootAndChildrenModelChoiceField,
+                                RootAndChildrenModelChoiceIterator,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseLineFormset,
                                BaseTransactionHeaderForm,
@@ -26,9 +26,10 @@ from .models import Nominal, NominalHeader, NominalLine
 
 class NominalForm(forms.ModelForm):
 
-    parent = RootAndChildrenModelChoiceField(
+    parent = ModelChoiceFieldChooseIterator(
         label="Account Type",
         queryset=Nominal.objects.all().prefetch_related("children"),
+        iterator=RootAndChildrenModelChoiceIterator
     )
 
     class Meta:

@@ -6,7 +6,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
-                                RootAndChildrenModelChoiceField,
                                 RootAndLeavesModelChoiceIterator)
 from accountancy.forms import (BaseAjaxForm, BaseAjaxFormMixin,
                                BaseCashBookLineForm, BaseTransactionHeaderForm,
