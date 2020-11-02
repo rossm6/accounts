@@ -1,13 +1,33 @@
-from accountancy.helpers import (bulk_delete_with_history,
-                                 get_all_historical_changes,
-                                 get_historical_change)
+from accountancy.helpers import get_action, get_historical_change
 from contacts.models import Contact
 from django.test import TestCase
-from simple_history.models import HistoricalRecords
-from utils.helpers import get_deleted_objects
 
 
-class GetAllHistoricalChangesTest(TestCase):
+class GetActionTests(TestCase):
+
+    def test_action_create(self):
+        action = get_action("+")
+        self.assertEqual(
+            action,
+            "Create"
+        )
+
+    def test_action_update(self):
+        action = get_action("~")
+        self.assertEqual(
+            action,
+            "Update"
+        )
+
+    def test_action_delete(self):
+        action = get_action("-")
+        self.assertEqual(
+            action,
+            "Delete"
+        )
+
+
+class GetHistoricalChangeTests(TestCase):
 
     def test_historical_change_for_created_audit_only(self):
         """
@@ -72,16 +92,6 @@ class GetAllHistoricalChangesTest(TestCase):
         )
 
     def test_historical_change_for_updated_but_no_change(self):
-        """
-        Simple history will create an audit log even if there have been
-        no changes, for performance reasons.
-
-        Periodically we'll need to run a utility they provide to
-        remove the duplicates.
-
-        But regardless i don't want to show these duplicates
-        in the UI.
-        """
         contact = Contact.objects.create(code="1", name="11", email="111")
         contact.name = "11"  # No change !!!
         contact.save()  # Create another log
@@ -98,10 +108,6 @@ class GetAllHistoricalChangesTest(TestCase):
         )
 
     def test_historical_change_for_deleted(self):
-        """
-        Check that a deleted log is returned with values of item
-        deleted showing in `old` column, not new.
-        """
         contact = Contact.objects.create(code="1", name="11", email="111")
         pk = contact.pk
         contact.delete()  # Create another log
@@ -148,100 +154,4 @@ class GetAllHistoricalChangesTest(TestCase):
         self.assertEqual(
             audit["email"]["new"],
             ""
-        )
-
-    def test_getting_all_historical_changes(self):
-        contact = Contact.objects.create(code="1", name="11", email="111")
-        contact.name = "12"
-        contact.save()
-        historical_records = Contact.history.all().order_by("pk")
-        self.assertEqual(
-            len(historical_records),
-            2
-        )
-        changes = get_all_historical_changes(historical_records)
-        self.assertEqual(
-            len(changes),
-            2
-        )
-        creation_change = changes[0]
-        update_change = changes[1]
-        self.assertEqual(
-            creation_change["id"]["old"],
-            ""
-        )
-        self.assertEqual(
-            creation_change["id"]["new"],
-            str(contact.id)
-        )
-        self.assertEqual(
-            creation_change["code"]["old"],
-            ""
-        )
-        self.assertEqual(
-            creation_change["code"]["new"],
-            "1"
-        )
-        self.assertEqual(
-            creation_change["name"]["old"],
-            ""
-        )
-        self.assertEqual(
-            creation_change["name"]["new"],
-            "11"
-        )
-
-        self.assertEqual(
-            update_change["name"]["old"],
-            "11"
-        )
-        self.assertEqual(
-            update_change["name"]["new"],
-            "12"
-        )
-
-    def test_getting_deleted_objects(self):
-        """
-        Where there is no audit log for the deletion.
-        Not sure this is really needed...
-        """
-        contact = Contact.objects.create(code="1", name="11", email="111")
-        contact.name = "12"
-        contact.save()
-        historical_records = Contact.history.all().order_by("pk")
-        deleted = get_deleted_objects(
-            [],
-            historical_records,
-            Contact._meta.pk.name
-        )
-        self.assertEqual(
-            len(deleted.keys()),
-            1
-        )
-        self.assertEqual(
-            list(deleted.keys())[0],
-            contact.pk
-        )
-        self.assertEqual(
-            deleted[contact.pk].history_type,
-            "-"
-        )
-
-    def test_getting_deleted_objects_where_there_exists_an_audit_log_for_deletion(self):
-        """
-        Where there IS a audit log for the deletion
-        """
-        contact = Contact.objects.create(code="1", name="11", email="111")
-        contact.name = "12"
-        contact.save()
-        contact.delete()
-        historical_records = Contact.history.all().order_by("pk")
-        deleted = get_deleted_objects(
-            [],
-            historical_records,
-            Contact._meta.pk.name
-        )
-        self.assertEqual(
-            len(deleted.keys()),
-            0
         )

@@ -7,7 +7,6 @@ from django.db import models
 from django.db.models import Q
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
-from utils.helpers import non_negative_zero_decimal
 
 from accountancy.fields import AccountsDecimalField, UIDecimalField
 from accountancy.helpers import bulk_delete_with_history

@@ -1,5 +1,6 @@
 import re
 from datetime import date
+from decimal import Decimal
 from functools import reduce
 from itertools import groupby
 
@@ -101,6 +102,9 @@ def get_all_historical_changes(objects, pk_name="id"):
 
     return changes
 
+"""
+TESTING SHOULD CONTINUE FROM HERE
+"""
 
 def disconnect_simple_history_receiver_for_post_delete_signal(model):
     """
@@ -123,6 +127,15 @@ def create_historical_records(
         default_user=None,
         default_change_reason="",
         default_date=None):
+    """
+    Very similar to bulk_history_create which is a method of the HistoryManager
+    within the simple history package.
+
+    This one though allows the history type to be passed which is necessary because
+    we are using a deletion history type.  The manager method only supports create and
+    update history types for this method.  We need this because we have created our
+    own bulk_delete_with_history below.
+    """
     if model._meta.proxy:
         history_manager = get_history_manager_for_model(
             model._meta.proxy_for_model)
@@ -164,7 +177,6 @@ def bulk_delete_with_history(objects, model, batch_size=None, default_user=None,
     The package `simple_history` does not log what was deleted if the items
     are deleted in bulk.  This does.
     """
-
     model_manager = model._default_manager
     model_manager.filter(pk__in=[obj.pk for obj in objects]).delete()
 
@@ -348,9 +360,12 @@ def get_index_of_object_in_queryset(queryset, obj, key):
     except:
         pass
 
+
 """
 Remove this and delay_reverse_lazy
 """
+
+
 def input_dropdown_widget_attrs_config(app_name, fields):
     configs = {}
     for field in fields:
@@ -408,3 +423,17 @@ def sort_multiple(sequence, *sort_order):
         reversed(sort_order),
         sequence
     )
+
+
+"""
+Temporary until forms and views are refactored
+"""
+
+
+def non_negative_zero_decimal(decimal):
+    """
+    Avoids negative zero
+    """
+    if decimal == Decimal(0.00):
+        return Decimal(0.00)
+    return decimal
