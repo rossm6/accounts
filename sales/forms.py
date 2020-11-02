@@ -72,7 +72,7 @@ class SaleLineForm(SaleAndPurchaseLineForm):
             attrs={
                 "data-load-url": reverse_lazy("vat:load_vat_codes"),
                 # i.e. add the rate value to the option as data-rate
-                "data-attrs": ["rate"],
+                "data-option-attrs": ["rate"],
                 "data-selectize-type": 'vat'
             }
         )

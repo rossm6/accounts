@@ -348,7 +348,9 @@ def get_index_of_object_in_queryset(queryset, obj, key):
     except:
         pass
 
-
+"""
+Remove this and delay_reverse_lazy
+"""
 def input_dropdown_widget_attrs_config(app_name, fields):
     configs = {}
     for field in fields:
