@@ -1,7 +1,8 @@
 from django.urls import path, reverse_lazy
 from django.views.generic.base import RedirectView
 
-from users.views import SignIn, SignUp, Profile, validate_forms_by_ajax, UserPasswordResetView, UserPasswordResetConfirmView
+from users.views import (Profile, SignIn, SignUp, UserPasswordResetConfirmView,
+                         UserPasswordResetView, validate_forms_by_ajax)
 
 app_name = "users"
 urlpatterns = [

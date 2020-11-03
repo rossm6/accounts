@@ -151,6 +151,7 @@ class LoadSuppliers(LoginRequiredMixin, LoadContacts):
         q = super().get_queryset()
         return q.filter(supplier=True)
 
+
 class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = PurchaseHeader
     fields = [
@@ -231,5 +232,6 @@ class AgeCreditorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalContactForm(action=reverse_lazy("contacts:create"), prefix="contact")
+        context["contact_form"] = ModalContactForm(
+            action=reverse_lazy("contacts:create"), prefix="contact")
         return context

@@ -95,9 +95,9 @@ def create_transaction_enquiry_time_fields(search_within=False):
     return row
 
 
-
 def create_transaction_enquiry_layout(main_choice, search_within=False):
-    second_row = create_transaction_enquiry_time_fields(search_within=search_within)
+    second_row = create_transaction_enquiry_time_fields(
+        search_within=search_within)
     return Layout(
         Div(
             Div(

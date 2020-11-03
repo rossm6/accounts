@@ -1,6 +1,7 @@
 from django.urls import path
 
-from vat.views import LoadVatCodes, VatList, VatDetail, VatUpdate, VatCreate, VatTransactionEnquiry
+from vat.views import (LoadVatCodes, VatCreate, VatDetail, VatList,
+                       VatTransactionEnquiry, VatUpdate)
 
 app_name = "vat"
 urlpatterns = [

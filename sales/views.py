@@ -1,7 +1,3 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.utils import timezone
-
 from accountancy.forms import BaseVoidTransactionForm
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
@@ -11,14 +7,18 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                SaleAndPurchaseViewTransaction,
                                SalesAndPurchasesTransList)
 from cashbook.models import CashBookTransaction
+from contacts.forms import ModalContactForm
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from django.utils import timezone
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
-from sales.forms import SaleTransactionSearchForm
 from vat.forms import VatForm
 from vat.models import VatTransaction
-from contacts.forms import ModalContactForm
-from .forms import (DebtorForm, SaleHeaderForm,
-                    SaleLineForm, enter_lines, match)
+
+from sales.forms import SaleTransactionSearchForm
+
+from .forms import DebtorForm, SaleHeaderForm, SaleLineForm, enter_lines, match
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
 
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
@@ -135,6 +135,7 @@ class LoadSaleMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions)
         q = super().get_queryset()
         return q.filter(customer=True)
 
+
 class LoadCustomers(LoginRequiredMixin, LoadContacts):
     model = Customer
 
@@ -217,8 +218,8 @@ class AgeDebtorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
     contact_range_field_names = ['from_customer', 'to_customer']
     contact_field_name = "customer"
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalContactForm(action=reverse_lazy("contacts:create"), prefix="contact")
+        context["contact_form"] = ModalContactForm(
+            action=reverse_lazy("contacts:create"), prefix="contact")
         return context

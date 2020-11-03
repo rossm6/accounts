@@ -1,3 +1,4 @@
+from accountancy.views import ajax_form_validator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import (LoginView, PasswordResetConfirmView,
@@ -6,7 +7,6 @@ from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, UpdateView
 
-from accountancy.views import ajax_form_validator
 from users.forms import (SignInForm, SignUpForm, UserPasswordResetForm,
                          UserProfileForm, UserSetPasswordForm)
 

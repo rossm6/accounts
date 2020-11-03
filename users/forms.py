@@ -1,3 +1,4 @@
+from accountancy.layouts import Div, LabelAndFieldAndErrors
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout, Submit
 from django import forms
@@ -6,8 +7,6 @@ from django.contrib.auth.forms import (AuthenticationForm, PasswordResetForm,
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import ugettext_lazy as _
-
-from accountancy.layouts import Div, LabelAndFieldAndErrors
 
 
 class SignUpForm(UserCreationForm):

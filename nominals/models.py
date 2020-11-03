@@ -1,8 +1,9 @@
-from accountancy.mixins import BaseNominalTransactionPerLineMixin, BaseNominalTransactionMixin
 from itertools import groupby
 
 from accountancy.helpers import bulk_delete_with_history
-from accountancy.mixins import VatTransactionMixin
+from accountancy.mixins import (BaseNominalTransactionMixin,
+                                BaseNominalTransactionPerLineMixin,
+                                VatTransactionMixin)
 from accountancy.models import (MultiLedgerTransactions, Transaction,
                                 TransactionHeader, TransactionLine,
                                 UIDecimalField)

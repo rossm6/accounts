@@ -41,6 +41,7 @@ class UIDecimalDescriptor(DecimalDescriptor):
 
     This descriptor encapsulates this logic.
     """
+
     def __get__(self, instance=None, owner=None):
         value = super().__get__(instance=instance, owner=owner)
         if instance.is_negative_type():

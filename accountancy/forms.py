@@ -251,6 +251,7 @@ class SalesAndPurchaseTransactionSearchForm(BaseTransactionSearchForm):
         )
     )
 
+
 class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
     date = forms.DateField(

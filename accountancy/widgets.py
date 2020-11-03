@@ -10,7 +10,6 @@ class SelectWithDataAttr(Select):
         super().__init__(attrs=attrs, choices=choices)
 
     def optgroups(self, name, value, attrs=None):
-
         """ 
         Return a list of optgroups for this widget. 
 
@@ -18,7 +17,7 @@ class SelectWithDataAttr(Select):
         """
         groups = []
         has_selected = False
-        attrs = {} # overide because option does not inherit select
+        attrs = {}  # overide because option does not inherit select
 
         for index, (option_value, option_label, *model_attrs) in enumerate(self.choices):
             if option_value is None:

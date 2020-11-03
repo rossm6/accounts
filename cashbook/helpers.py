@@ -1,7 +1,8 @@
 from accountancy.helpers import sort_multiple
-from cashbook.models import CashBookLine
 from nominals.models import NominalTransaction
 from vat.models import VatTransaction
+
+from cashbook.models import CashBookLine
 
 
 def create_lines(line_cls, header, lines):

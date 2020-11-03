@@ -1,7 +1,8 @@
 from django.urls import path
 
-from .views import (CreateTransaction, EditTransaction, TransactionEnquiry,
-                    ViewTransaction, VoidTransaction, CashBookCreate, CashBookDetail, CashBookEdit, CashBookList)
+from .views import (CashBookCreate, CashBookDetail, CashBookEdit, CashBookList,
+                    CreateTransaction, EditTransaction, TransactionEnquiry,
+                    ViewTransaction, VoidTransaction)
 
 app_name = "cashbook"
 urlpatterns = [

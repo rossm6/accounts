@@ -1,5 +1,6 @@
-from django.conf import settings
 from itertools import groupby
+
+from django.conf import settings
 
 from accountancy.helpers import DELETED_HISTORY_TYPE, create_historical_records
 from accountancy.signals import audit_post_delete
@@ -230,7 +231,6 @@ class BaseNominalTransactionPerLineMixin:
             )
         return trans
 
-
     def create_nominal_transactions(self, nom_cls, nom_tran_cls, **kwargs):
         vat_nominal = self.get_vat_nominal(nom_cls, **kwargs)
         nominal_transactions = []
@@ -240,24 +240,26 @@ class BaseNominalTransactionPerLineMixin:
             args = [nom_tran_cls, line, vat_nominal]
             if control_nominal := kwargs.get("control_nominal"):
                 args.append(control_nominal)
-            nominal_transactions += self._create_nominal_transactions_for_line(*args)
+            nominal_transactions += self._create_nominal_transactions_for_line(
+                *args)
         if nominal_transactions:
             nominal_transactions = nom_tran_cls.objects.bulk_create(
                 nominal_transactions)
             nominal_transactions = sorted(
                 nominal_transactions, key=lambda n: n.line)
+
             def line_key(n): return n.line
             for line, (key, line_nominal_trans) in zip(lines, groupby(nominal_transactions, line_key)):
                 nom_tran_map = {
                     tran.field: tran for tran in list(line_nominal_trans)}
                 line.add_nominal_transactions(nom_tran_map)
             line_cls = kwargs.get('line_cls')
-            fields_to_update = ['goods_nominal_transaction', 'vat_nominal_transaction']
+            fields_to_update = [
+                'goods_nominal_transaction', 'vat_nominal_transaction']
             if control_nominal := kwargs.get("control_nominal"):
                 fields_to_update.append("total_nominal_transaction")
-            line_cls.objects.audited_bulk_update(lines, fields_to_update) 
-            return nominal_transactions  
-
+            line_cls.objects.audited_bulk_update(lines, fields_to_update)
+            return nominal_transactions
 
     def _edit_nominal_transactions_for_line(self, nom_trans, line, vat_nominal):
         f = self.header_obj.get_nominal_transaction_factor()
@@ -314,7 +316,8 @@ class BaseNominalTransactionPerLineMixin:
                 args = [nom_tran_map, line, vat_nominal]
                 if control_nominal := kwargs.get("control_nominal"):
                     args.append(control_nominal)
-                to_update, to_delete = self._edit_nominal_transactions_for_line(*args)
+                to_update, to_delete = self._edit_nominal_transactions_for_line(
+                    *args)
                 nom_trans_to_delete += to_delete
         nom_trans_to_update = [
             tran for tran in nom_trans_to_update if tran not in nom_trans_to_delete]
@@ -332,7 +335,8 @@ class BaseNominalTransactionPerLineMixin:
             create_kwargs.update({
                 "control_nominal": control_nominal
             })
-        self.create_nominal_transactions(nom_cls, nom_tran_cls, **create_kwargs)
+        self.create_nominal_transactions(
+            nom_cls, nom_tran_cls, **create_kwargs)
         nom_tran_cls.objects.bulk_update(nom_trans_to_update)
         nom_tran_cls.objects.filter(
             pk__in=[tran.pk for tran in nom_trans_to_delete]).delete()

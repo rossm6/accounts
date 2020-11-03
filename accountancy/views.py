@@ -39,6 +39,7 @@ def format_dates(objects, date_keys, format):
                 except AttributeError:
                     pass
 
+
 def get_search_vectors(searchable_fields):
     search_vectors = [
         SearchVector(field)
@@ -341,6 +342,7 @@ class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsLi
 
     def exclude_from_queryset(self, queryset):
         return queryset.exclude(status="v")
+
 
 class CashBookAndNominalTransList(NominalSearchMixin, BaseTransactionsList):
     pass
@@ -821,6 +823,7 @@ class CreatePurchaseOrSalesTransaction(MatchingMixin, CreateCashBookEntriesMixin
             **kwargs
         )
 
+
 class RESTIndividualTransactionForHeaderMixin:
     def get_header_form_kwargs(self):
         kwargs = super().get_header_form_kwargs()
@@ -954,7 +957,8 @@ class RESTBaseEditTransactionMixin:
             ).objects.filter(
                 module=self.get_module(),
                 header=self.header_obj.pk)
-            existing_vat_trans = self.get_vat_transaction_model().objects.filter(module=self.get_module(), header=self.header_obj.pk)
+            existing_vat_trans = self.get_vat_transaction_model().objects.filter(
+                module=self.get_module(), header=self.header_obj.pk)
             self.create_or_update_related_transactions(
                 new_lines=new_lines,
                 updated_lines=lines_to_update,
@@ -992,16 +996,19 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
         if not hasattr(self, 'header_has_been_saved'):
             self.header_obj.save()
         self.match_formset.save(commit=False)
-        new_matches = [ match for match in self.match_formset.new_objects if match.value ]
+        new_matches = [
+            match for match in self.match_formset.new_objects if match.value]
         changed_objects = [obj for obj,
                            _tuple in self.match_formset.changed_objects]
         for match in new_matches + changed_objects:
             if match.matched_by_id == self.header_obj.pk:
-                match.matched_by_type = self.header_obj.type # if change this will not be in match.matched_by
+                # if change this will not be in match.matched_by
+                match.matched_by_type = self.header_obj.type
                 match.matched_to_type = match.matched_to.type
             else:
-                match.matched_by_type = match.matched_by.type   
-                match.matched_to_type = self.header_obj.type # if change this will not be in match.matched_to             
+                match.matched_by_type = match.matched_by.type
+                # if change this will not be in match.matched_to
+                match.matched_to_type = self.header_obj.type
         self.get_match_model().objects.audited_bulk_create(new_matches)
         # exclude zeros from update
         to_update = filter(
@@ -1306,7 +1313,7 @@ class DeleteCashBookTransMixin:
     def form_is_valid(self):
         super().form_is_valid()
         transaction_to_void = self.form.instance
-        (   
+        (
             self.get_cash_book_transaction_model()
             .objects
             .filter(module=self.get_transaction_module())

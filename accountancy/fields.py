@@ -50,6 +50,7 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
     In order words, get all the roots in the nominal tree
     structure, and get all the leaves for each root.
     """
+
     def __iter__(self):
         if self.field.empty_label is not None:
             yield ("", self.field.empty_label)

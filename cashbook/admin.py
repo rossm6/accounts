@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CashBookHeader, CashBookLine, CashBook, CashBookTransaction
+from .models import CashBook, CashBookHeader, CashBookLine, CashBookTransaction
 
 admin.site.register(CashBookHeader)
 admin.site.register(CashBookLine)

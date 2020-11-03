@@ -1,8 +1,3 @@
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout
-from django import forms
-from django.urls import reverse_lazy
-
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
@@ -14,14 +9,18 @@ from accountancy.forms import (BaseAjaxFormMixin, BaseTransactionHeaderForm,
                                SaleAndPurchaseMatchingFormset,
                                SalesAndPurchaseTransactionSearchForm,
                                aged_matching_report_factory)
-from accountancy.helpers import input_dropdown_widget_attrs_config
 from accountancy.layouts import (Div, LabelAndFieldAndErrors,
                                  create_transaction_enquiry_layout)
 from accountancy.widgets import SelectWithDataAttr
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout
+from django import forms
+from django.urls import reverse_lazy
 from nominals.models import Nominal
 from vat.models import Vat
 
 from .models import Customer, SaleHeader, SaleLine, SaleMatching
+
 
 class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
 

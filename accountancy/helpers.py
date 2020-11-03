@@ -102,9 +102,11 @@ def get_all_historical_changes(objects, pk_name="id"):
 
     return changes
 
+
 """
 TESTING SHOULD CONTINUE FROM HERE
 """
+
 
 def disconnect_simple_history_receiver_for_post_delete_signal(model):
     """
@@ -344,36 +346,6 @@ class Period:
 
     def __str__(self):
         return self.period
-
-
-def delay_reverse_lazy(viewname, query_params=""):
-    def _delay_reverse_lazy():
-        return reverse_lazy(viewname) + ("?" + query_params if query_params else "")
-    return _delay_reverse_lazy
-
-
-def get_index_of_object_in_queryset(queryset, obj, key):
-    try:
-        for i, o in enumerate(queryset):
-            if getattr(o, key) == getattr(obj, key):
-                return i
-    except:
-        pass
-
-
-"""
-Remove this and delay_reverse_lazy
-"""
-
-
-def input_dropdown_widget_attrs_config(app_name, fields):
-    configs = {}
-    for field in fields:
-        configs[field] = {
-            "data-new": "#new-" + field,
-            "data-load-url": delay_reverse_lazy(app_name + ":load_options", "field=" + field),
-        }
-    return configs
 
 
 def sort_multiple(sequence, *sort_order):

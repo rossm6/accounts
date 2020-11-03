@@ -1,9 +1,3 @@
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Layout
-from django import forms
-from django.urls import reverse_lazy
-from django.utils.translation import ugettext_lazy as _
-
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
@@ -17,9 +11,15 @@ from accountancy.layouts import (Div, LabelAndFieldAndErrors, PlainFieldErrors,
                                  TableHelper, create_cashbook_header_helper,
                                  create_transaction_enquiry_layout)
 from accountancy.widgets import SelectWithDataAttr
-from cashbook.models import CashBook
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import HTML, Layout
+from django import forms
+from django.urls import reverse_lazy
+from django.utils.translation import ugettext_lazy as _
 from nominals.models import Nominal
 from vat.models import Vat
+
+from cashbook.models import CashBook
 
 from .models import CashBookHeader, CashBookLine
 
@@ -82,7 +82,8 @@ class CashBookForm(BaseAjaxFormMixin, forms.ModelForm):
 class CashBookHeaderForm(BaseTransactionHeaderForm):
     class Meta:
         model = CashBookHeader
-        fields = ('ref', 'date', 'total', 'type', 'period', 'cash_book', 'vat_type')
+        fields = ('ref', 'date', 'total', 'type',
+                  'period', 'cash_book', 'vat_type')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

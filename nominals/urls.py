@@ -1,8 +1,9 @@
 from django.urls import path
 
 from .views import (CreateTransaction, EditTransaction, LoadNominal,
-                    NominalList, TransactionEnquiry, TrialBalance,
-                    ViewTransaction, VoidTransaction, NominalDetail, NominalEdit, NominalCreate)
+                    NominalCreate, NominalDetail, NominalEdit, NominalList,
+                    TransactionEnquiry, TrialBalance, ViewTransaction,
+                    VoidTransaction)
 
 app_name = "nominals"
 urlpatterns = [

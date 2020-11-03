@@ -1,8 +1,7 @@
+from accountancy.models import MultiLedgerTransactions
 from django.apps import apps
 from django.db import models
 from simple_history import register
-
-from accountancy.models import MultiLedgerTransactions
 
 
 class Vat(models.Model):

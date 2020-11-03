@@ -1,9 +1,8 @@
 from datetime import timedelta
 
-from django.utils import timezone
-
 from accountancy.helpers import sort_multiple
 from cashbook.models import CashBookTransaction
+from django.utils import timezone
 from nominals.models import NominalTransaction
 from vat.models import VatTransaction
 
@@ -1263,8 +1262,8 @@ def create_vat_transactions(header, lines):
             )
         )
     vat_trans = VatTransaction.objects.bulk_create(vat_trans)
-    vat_trans = sort_multiple(vat_trans, *[ (lambda v : v.line, False) ])
-    lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+    vat_trans = sort_multiple(vat_trans, *[(lambda v: v.line, False)])
+    lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
     for i, line in enumerate(lines):
         line.vat_transaction = vat_trans[i]
     SaleLine.objects.bulk_update(lines, ["vat_transaction"])

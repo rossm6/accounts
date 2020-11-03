@@ -1,5 +1,6 @@
 from vat.models import Vat
 
+
 def create_default_data():
     vat_rates = [
         Vat(**{

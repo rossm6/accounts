@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import (AgeCreditorsReport, CreateTransaction, EditTransaction,
                     LoadPurchaseMatchingTransactions, LoadSuppliers,
-                    TransactionEnquiry, VoidTransaction, ViewTransaction)
+                    TransactionEnquiry, ViewTransaction, VoidTransaction)
 
 app_name = "purchases"
 urlpatterns = [

@@ -1,9 +1,9 @@
-from django.utils import timezone
-
 from accountancy.helpers import sort_multiple
+from django.utils import timezone
+from vat.models import VatTransaction
+
 from nominals.models import (Nominal, NominalHeader, NominalLine,
                              NominalTransaction)
-from vat.models import VatTransaction
 
 
 def create_nominal_journal_without_nom_trans(journal):
