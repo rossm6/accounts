@@ -1,7 +1,7 @@
 from itertools import groupby
 
 from accountancy.helpers import bulk_delete_with_history
-from accountancy.mixins import (BaseNominalTransactionMixin,
+from accountancy.mixins import (AuditMixin, BaseNominalTransactionMixin,
                                 BaseNominalTransactionPerLineMixin,
                                 VatTransactionMixin)
 from accountancy.models import (MultiLedgerTransactions, Transaction,
@@ -17,16 +17,13 @@ from simple_history import register
 from vat.models import Vat
 
 
-class Nominal(MPTTModel):
+class Nominal(AuditMixin, MPTTModel):
     name = models.CharField(max_length=50, unique=True)
     parent = TreeForeignKey('self', on_delete=models.CASCADE,
                             null=True, blank=True, related_name='children')
 
     def __str__(self):
         return self.name
-
-
-register(Nominal)
 
 
 class NominalTransaction(Transaction):
@@ -77,25 +74,6 @@ class NominalHeader(ModuleTransactionBase, TransactionHeader):
             return Journal(header=self)
 
 
-register(NominalHeader)
-
-
-# class NominalLineQuerySet(models.QuerySet):
-
-#     def line_bulk_update(self, instances):
-#         return self.bulk_update(
-#             instances,
-#             [
-#                 "line_no",
-#                 'description',
-#                 'goods',
-#                 'vat',
-#                 "nominal",
-#                 "vat_code",
-#             ]
-#         )
-
-
 class NominalLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
@@ -124,27 +102,6 @@ class NominalLine(ModuleTransactionBase, TransactionLine):
             "vat_code",
             "type"
         ]
-
-
-register(NominalLine)
-
-
-# class NominalTransactionQuerySet(models.QuerySet):
-
-#     # DO WE NEED THIS?
-#     # I THINK IT SLIPPED IN BY ACCIDENT
-#     def line_bulk_update(self, instances):
-#         return self.bulk_update(
-#             instances,
-#             [
-#                 "nominal",
-#                 "value",
-#                 "ref",
-#                 "period",
-#                 "date",
-#                 "type"
-#             ]
-#         )
 
 
 class NominalTransaction(MultiLedgerTransactions):

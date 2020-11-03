@@ -1,10 +1,11 @@
+from accountancy.mixins import AuditMixin
 from accountancy.models import MultiLedgerTransactions
 from django.apps import apps
 from django.db import models
 from simple_history import register
 
 
-class Vat(models.Model):
+class Vat(AuditMixin, models.Model):
     code = models.CharField(max_length=10)
     name = models.CharField(max_length=30)
     rate = models.DecimalField(

@@ -21,7 +21,7 @@ from mptt.utils import get_cached_trees
 from nominals.models import Nominal
 from querystring_parser import parser
 
-from accountancy.helpers import (AuditTransaction, JSONBlankDate, Period,
+from accountancy.helpers import (AuditTransaction, Period,
                                  bulk_delete_with_history,
                                  non_negative_zero_decimal, sort_multiple)
 

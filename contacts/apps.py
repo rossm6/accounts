@@ -1,5 +1,6 @@
+from accountancy.mixins import AuditMixin
 from django.apps import AppConfig
 
 
-class ContactsConfig(AppConfig):
+class ContactsConfig(AuditMixin, AppConfig):
     name = 'contacts'

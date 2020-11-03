@@ -1,8 +1,12 @@
 from itertools import groupby
+from uuid import uuid4
 
 from django.conf import settings
+from simple_history import register
 
-from accountancy.helpers import DELETED_HISTORY_TYPE, create_historical_records
+from accountancy.helpers import (
+    DELETED_HISTORY_TYPE, create_historical_records,
+    disconnect_simple_history_receiver_for_post_delete_signal)
 from accountancy.signals import audit_post_delete
 
 
@@ -18,7 +22,7 @@ class AuditMixin:
     We then provide our own signal which is fired when delete is called for a model instance but it is not fired
     when we bulk_delete.
 
-    Subclasses should therefore do the following -
+    Subclasses should therefore do the following (now this is done automatically in simple_history_custom_set_up) -
 
         E.g.
 
@@ -40,12 +44,36 @@ class AuditMixin:
     """
 
     @classmethod
+    def simple_history_custom_set_up(cls):
+        """
+        See note in class definition for explanation.
+
+        This should be called in AppConfig.ready
+        """
+        register(cls)
+        disconnect_simple_history_receiver_for_post_delete_signal(cls)
+        audit_post_delete.connect(
+            cls.post_delete, sender=cls, dispatch_uid=uuid4())
+
+    @classmethod
     def post_delete(cls, sender, instance, **kwargs):
         return create_historical_records([instance], instance._meta.model, DELETED_HISTORY_TYPE)
 
     def delete(self):
         audit_post_delete.send(sender=self._meta.model, instance=self)
         super().delete()
+
+    
+    def ready(self):
+        """
+        Called by <app_name>.apps.<app_name>Config
+        """
+        print("APP READY")
+        models = list(self.get_models()) # use up generator
+        # otherwise it complains about dict changing size
+        for model in models:
+            if hasattr(model, "simple_history_custom_set_up"):
+                model.simple_history_custom_set_up()
 
 
 class VatTransactionMixin:

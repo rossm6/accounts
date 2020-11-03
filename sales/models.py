@@ -21,6 +21,10 @@ class Customer(Contact):
     class Meta:
         proxy = True
 
+    @classmethod
+    def simple_history_custom_set_up(cls):
+        pass
+        # without this it will try to register the Supplier class which is unwanted
 
 class SalesTransaction(Transaction):
     module = "SL"
@@ -151,9 +155,6 @@ class SaleHeader(ModuleTransactionBase, TransactionHeader):
             return Refund(header=self)
 
 
-register(SaleHeader)
-
-
 class SaleLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(SaleHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
@@ -192,9 +193,6 @@ class SaleLine(ModuleTransactionBase, TransactionLine):
         ]
 
 
-register(SaleLine)
-
-
 class SaleMatching(MatchedHeaders):
     # matched_by is the header record through which
     # all the other transactions were matched
@@ -224,6 +222,3 @@ class SaleMatching(MatchedHeaders):
     # So we can do for two trans, t1 and t2
     # t1.matched_to_these.all()
     # t2.matched_by_these.all()
-
-
-register(SaleMatching)

@@ -22,6 +22,11 @@ class Supplier(Contact):
     class Meta:
         proxy = True
 
+    @classmethod
+    def simple_history_custom_set_up(cls):
+        pass
+        # without this it will try to register the Supplier class which is unwanted
+
 
 class PurchaseTransaction(Transaction):
     module = "PL"
@@ -152,9 +157,6 @@ class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
             return Refund(header=self)
 
 
-register(PurchaseHeader)
-
-
 class PurchaseLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
@@ -194,9 +196,6 @@ class PurchaseLine(ModuleTransactionBase, TransactionLine):
         ]
 
 
-register(PurchaseLine)
-
-
 class PurchaseMatching(MatchedHeaders):
     # matched_by is the header record through which
     # all the other transactions were matched
@@ -229,6 +228,3 @@ class PurchaseMatching(MatchedHeaders):
     @classmethod
     def get_not_fully_matched_at_period(cls, headers, period):
         return super(PurchaseMatching, cls).get_not_fully_matched_at_period(headers, period)
-
-
-register(PurchaseMatching)

@@ -1,5 +1,6 @@
+from accountancy.mixins import AuditMixin
 from django.apps import AppConfig
 
 
-class NominalsConfig(AppConfig):
+class NominalsConfig(AuditMixin, AppConfig):
     name = 'nominals'

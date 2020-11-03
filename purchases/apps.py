@@ -1,8 +1,6 @@
+from accountancy.mixins import AuditMixin
 from django.apps import AppConfig
 
 
-class PurchasesConfig(AppConfig):
+class PurchasesConfig(AuditMixin, AppConfig):
     name = 'purchases'
-
-    def ready(self):
-        pass

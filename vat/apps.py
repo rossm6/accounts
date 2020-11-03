@@ -1,5 +1,6 @@
+from accountancy.mixins import AuditMixin
 from django.apps import AppConfig
 
 
-class VatConfig(AppConfig):
+class VatConfig(AuditMixin, AppConfig):
     name = 'vat'

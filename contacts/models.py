@@ -17,9 +17,3 @@ class Contact(AuditMixin, models.Model):
 
     def __str__(self):
         return self.code
-
-
-register(Contact)
-disconnect_simple_history_receiver_for_post_delete_signal(Contact)
-audit_post_delete.connect(Contact.post_delete,
-                          sender=Contact, dispatch_uid=uuid4())

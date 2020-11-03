@@ -76,13 +76,13 @@ INSTALLED_APPS = [
 
     # ours
     'accountancy',
-    'cashbook',
-    'contacts',
-    'nominals',
-    'purchases',
-    'sales',
+    'cashbook.apps.CashbookConfig',
+    'contacts.apps.ContactsConfig',
+    'nominals.apps.NominalsConfig',
+    'purchases.apps.PurchasesConfig',
+    'sales.apps.SalesConfig',
     'users',
-    'vat'
+    'vat.apps.VatConfig'
 ]
 
 MIDDLEWARE = [

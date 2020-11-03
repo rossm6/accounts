@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 from functools import reduce
 from itertools import groupby
+from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -10,9 +11,12 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from django.utils import timezone
 from more_itertools import pairwise
+from simple_history import register
 from simple_history.models import HistoricalRecords
 from simple_history.utils import (get_change_reason_from_object,
                                   get_history_manager_for_model)
+
+from accountancy.signals import audit_post_delete
 
 DELETED_HISTORY_TYPE = "-"
 
@@ -105,6 +109,10 @@ def get_all_historical_changes(objects, pk_name="id"):
 
 """
 TESTING SHOULD CONTINUE FROM HERE
+"""
+
+"""
+Still need to use this
 """
 
 
@@ -241,24 +249,6 @@ class AuditTransaction:
 
         all_changes.sort(key=lambda c: c["meta"]["AUDIT_date"])
         return all_changes
-
-
-class JSONBlankDate(date):
-    """
-    The serializer used by Django when encoding into Json for JsonResponse
-    is `DjangoJSONEncoder`
-
-    Per - https://docs.djangoproject.com/en/3.1/topics/serialization/
-
-    And this serializer uses the isoformat method on the date object
-    for getting the value for the json.  Per - https://github.com/django/django/blob/master/django/core/serializers/json.py
-
-    This subclass just returns an empty string for the json response.  It is used with the creditor and debtor reports.
-    A date object is needed to sort the objects based on this but the database value is ''.
-    """
-
-    def isoformat(self):
-        return ""
 
 
 class FY:

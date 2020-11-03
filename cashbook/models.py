@@ -1,5 +1,5 @@
 from accountancy.mixins import (CashBookPaymentTransactionMixin,
-                                VatTransactionMixin)
+                                VatTransactionMixin, AuditMixin)
 from accountancy.models import (MultiLedgerTransactions, Transaction,
                                 TransactionHeader, TransactionLine)
 from django.db import models
@@ -9,16 +9,13 @@ from simple_history import register
 from vat.models import Vat
 
 
-class CashBook(models.Model):
+class CashBook(models.Model, AuditMixin):
     name = models.CharField(max_length=10)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
-
-
-register(CashBook)
 
 
 class CashBookTransaction(Transaction):
@@ -113,25 +110,6 @@ class CashBookHeader(ModuleTransactionBase, TransactionHeader):
             return Refund(header=self)
 
 
-register(CashBookHeader)
-
-
-# class CashBookLineQuerySet(models.QuerySet):
-
-#     def line_bulk_update(self, instances):
-#         return self.bulk_update(
-#             instances,
-#             [
-#                 "line_no",
-#                 "description",
-#                 "goods",
-#                 "vat",
-#                 "nominal",
-#                 "vat_code"
-#             ]
-#         )
-
-
 class CashBookLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(CashBookHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
@@ -168,14 +146,11 @@ class CashBookLine(ModuleTransactionBase, TransactionLine):
         ]
 
 
-register(CashBookLine)
-
 all_module_types = (
     PurchaseHeader.analysis_required +
     SaleHeader.analysis_required +
     CashBookHeader.analysis_required
 )
-
 
 class CashBookTransaction(MultiLedgerTransactions):
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
