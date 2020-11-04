@@ -19,8 +19,7 @@ from accountancy.mixins import AuditMixin
         1. Move the methods on TransactionHeader which relate to transaction type to the TransactionBase model so that TransactionLine has them also
         2. MatchedHeaders would be improved by having two value fields.  One relating to the matched_by and the other to matched_to.  This should erase the logic
            in the calling code which checks what the value relates.
-
-    Also we have not tested AccountsDecimalField
+        3. We have not tested AccountsDecimalField.
 
 """
 
@@ -122,7 +121,7 @@ class TransactionBase:
         return self.type in self.negatives
 
 
-class TransactionHeader(TransactionBase, models.Model, AuditMixin):
+class TransactionHeader(AuditMixin, TransactionBase, models.Model):
     """
     Every ledger which allows transactions to be posted must subclass this Abstract Model.
     """
@@ -323,7 +322,7 @@ class TransactionHeader(TransactionBase, models.Model, AuditMixin):
         return cls.credits
 
 
-class TransactionLine(TransactionBase, models.Model, AuditMixin):
+class TransactionLine(AuditMixin, TransactionBase, models.Model):
     line_no = models.IntegerField()
     description = models.CharField(max_length=100)
     goods = UIDecimalField(
@@ -362,7 +361,7 @@ class TransactionLine(TransactionBase, models.Model, AuditMixin):
             return False
 
 
-class MatchedHeaders(models.Model, AuditMixin):
+class MatchedHeaders(AuditMixin, models.Model):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
     """

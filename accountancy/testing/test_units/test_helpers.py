@@ -1,5 +1,6 @@
 from accountancy.helpers import get_action, get_historical_change
 from contacts.models import Contact
+from django.db import models
 from django.test import TestCase
 
 

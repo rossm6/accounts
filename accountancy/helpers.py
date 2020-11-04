@@ -107,15 +107,6 @@ def get_all_historical_changes(objects, pk_name="id"):
     return changes
 
 
-"""
-TESTING SHOULD CONTINUE FROM HERE
-"""
-
-"""
-Still need to use this
-"""
-
-
 def disconnect_simple_history_receiver_for_post_delete_signal(model):
     """
     We don't want the post_delete signal from the `simple_history` package.

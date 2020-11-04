@@ -13,6 +13,9 @@ from accountancy.signals import audit_post_delete
 class AuditMixin:
     """
 
+    IMPORTANT - This class must come before models.Model (i.e. to the left of this class) so that delete is
+    called on this class first.
+
     `simple_history` is the django package used to audit.  It does not provide a way of auditing for bulk
     deletion however.  The solution is easy enough but we must remember to disconnect the simple_history post_delete
     receiver for the model being audited so that it does receive the post_delete signal;
@@ -66,7 +69,12 @@ class AuditMixin:
     
     def ready(self):
         """
-        Called by <app_name>.apps.<app_name>Config
+        Called by <app_name>.apps.<app_name>Config.
+
+        This might be viewed as dangerous in case ever there is a
+        ready method implemented on the models.Model class but without
+        calling the super class here we'd surely know from running
+        our tests something was seriously wrong.
         """
         print("APP READY")
         models = list(self.get_models()) # use up generator

@@ -9,7 +9,7 @@ from simple_history import register
 from vat.models import Vat
 
 
-class CashBook(models.Model, AuditMixin):
+class CashBook(AuditMixin, models.Model):
     name = models.CharField(max_length=10)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)
