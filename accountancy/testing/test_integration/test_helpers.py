@@ -1,6 +1,14 @@
-from accountancy.helpers import get_all_historical_changes
+from datetime import date
+
+from accountancy.helpers import (AuditTransaction, Period,
+                                 get_all_historical_changes)
+from cashbook.models import CashBook
 from contacts.models import Contact
 from django.test import TestCase
+from nominals.models import Nominal
+from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
+                              Supplier)
+from vat.models import Vat
 
 
 class GetAllHistoricalChangesTest(TestCase):
@@ -104,7 +112,6 @@ class GetAllHistoricalChangesTest(TestCase):
             update_change["meta"]["AUDIT_action"],
             "Update"
         )
-
 
     def test_create_and_update_and_delete(self):
         contact = Contact.objects.create(code="1", name="11", email="111")
@@ -218,4 +225,935 @@ class GetAllHistoricalChangesTest(TestCase):
         self.assertEqual(
             deleted_change["meta"]["AUDIT_action"],
             "Delete"
+        )
+
+
+class AuditTransactionTest(TestCase):
+    """
+    Test with PL header, line, matching
+    """
+
+    def test_no_lines(self):
+        cash_book = CashBook.objects.create(
+            nominal=None,
+            name="current"
+        )
+        supplier = Supplier.objects.create(
+            code="1",
+            name="2",
+            email="3"
+        )
+        h = PurchaseHeader.objects.create(
+            type="pp",  # payment
+            date=date.today(),
+            goods=120,
+            vat=0,
+            total=120,
+            ref="123",
+            cash_book=cash_book,
+            supplier=supplier,
+            paid=0,
+            due=0,
+            period="202006"
+        )
+        self.assertEqual(
+            len(PurchaseHeader.history.all()),
+            1
+        )
+        h.ref = "1234"  # update the header
+        h.save()
+        h.refresh_from_db()
+        self.assertEqual(
+            len(PurchaseHeader.history.all()),
+            2
+        )
+        audit_transaction = AuditTransaction(
+            h, PurchaseHeader, PurchaseLine, PurchaseMatching)
+        self.assertEqual(
+            len(audit_transaction.audit_header_history),
+            2
+        )
+        self.assertEqual(
+            len(audit_transaction.audit_lines_history),
+            0
+        )
+        self.assertEqual(
+            len(audit_transaction.audit_matches_history),
+            0
+        )
+        all_changes = audit_transaction.get_historical_changes()
+        self.assertEqual(
+            len(all_changes),
+            2
+        )
+        self.assertTrue(
+            all_changes[0]["meta"]["AUDIT_date"] < all_changes[1]["meta"]["AUDIT_date"]
+        )
+        create = all_changes[0]
+        self.assertEqual(
+            create["id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["id"]["new"],
+            str(h.id),
+        )
+        self.assertEqual(
+            create["ref"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["ref"]["new"],
+            "123",
+        )
+        self.assertEqual(
+            create["goods"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["goods"]["new"],
+            str(h.goods),
+        )
+        self.assertEqual(
+            create["vat"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["vat"]["new"],
+            str(h.vat),
+        )
+        self.assertEqual(
+            create["total"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["total"]["new"],
+            str(h.total),
+        )
+        self.assertEqual(
+            create["paid"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["paid"]["new"],
+            str(h.paid),
+        )
+        self.assertEqual(
+            create["due"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["due"]["new"],
+            str(h.due),
+        )
+        self.assertEqual(
+            create["date"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["date"]["new"],
+            str(h.date),
+        )
+        self.assertEqual(
+            create["due_date"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["due_date"]["new"],
+            str(h.due_date),
+        )
+        self.assertEqual(
+            create["period"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["period"]["new"],
+            str(h.period),
+        )
+        self.assertEqual(
+            create["status"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["status"]["new"],
+            str(h.status),
+        )
+        self.assertEqual(
+            create["type"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["type"]["new"],
+            str(h.type),
+        )
+        self.assertEqual(
+            create["cash_book_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["cash_book_id"]["new"],
+            str(h.cash_book_id),
+        )
+        self.assertEqual(
+            create["supplier_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["supplier_id"]["new"],
+            str(h.supplier_id),
+        )
+        self.assertEqual(
+            create["meta"]["AUDIT_action"],
+            "Create"
+        )
+        self.assertEqual(
+            create["meta"]["transaction_aspect"],
+            "header"
+        )
+        update = all_changes[1]
+        self.assertEqual(
+            update["ref"]["old"],
+            "123",
+        )
+        self.assertEqual(
+            update["ref"]["new"],
+            h.ref,
+        )
+        self.assertEqual(
+            update["meta"]["AUDIT_action"],
+            "Update"
+        )
+        self.assertEqual(
+            update["meta"]["transaction_aspect"],
+            "header"
+        )
+
+    def test_lines(self):
+        # same as above except for change a line
+        # above has no lines
+        cash_book = CashBook.objects.create(
+            nominal=None,
+            name="current"
+        )
+        supplier = Supplier.objects.create(
+            code="1",
+            name="2",
+            email="3"
+        )
+        h = PurchaseHeader.objects.create(
+            type="pi",  # payment
+            date=date.today(),
+            goods=100,
+            vat=20,
+            total=120,
+            ref="123",
+            cash_book=cash_book,
+            supplier=supplier,
+            paid=0,
+            due=0,
+            period="202006"
+        )
+
+        nominal = Nominal.objects.create(
+            name="something",
+            parent=None
+        )
+        vat_code = Vat.objects.create(
+            code="1",
+            name="2",
+            rate=20
+        )
+        l = PurchaseLine.objects.create(
+            nominal=nominal,
+            goods=100,
+            vat=20,
+            vat_code=vat_code,
+            description="123",
+            line_no=1,
+            header=h
+        )
+        self.assertEqual(
+            len(PurchaseHeader.history.all()),
+            1
+        )
+        h.ref = "1234"  # update the header
+        h.save()
+        h.refresh_from_db()
+        l.description = "12345"
+        l.save()
+        l.refresh_from_db()
+        self.assertEqual(
+            len(PurchaseHeader.history.all()),
+            2
+        )
+        audit_transaction = AuditTransaction(
+            h, PurchaseHeader, PurchaseLine, PurchaseMatching)
+        self.assertEqual(
+            len(audit_transaction.audit_header_history),
+            2
+        )
+        self.assertEqual(
+            len(audit_transaction.audit_lines_history),
+            2
+        )
+        self.assertEqual(
+            len(audit_transaction.audit_matches_history),
+            0
+        )
+        all_changes = audit_transaction.get_historical_changes()
+        self.assertEqual(
+            len(all_changes),
+            4
+        )
+        self.assertTrue(
+            all_changes[0]["meta"]["AUDIT_date"] < all_changes[1]["meta"]["AUDIT_date"]
+        )
+        self.assertTrue(
+            all_changes[1]["meta"]["AUDIT_date"] < all_changes[2]["meta"]["AUDIT_date"]
+        )
+        self.assertTrue(
+            all_changes[2]["meta"]["AUDIT_date"] < all_changes[3]["meta"]["AUDIT_date"]
+        )
+
+        create = all_changes[0]
+        self.assertEqual(
+            create["id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["id"]["new"],
+            str(h.id),
+        )
+        self.assertEqual(
+            create["ref"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["ref"]["new"],
+            "123",
+        )
+        self.assertEqual(
+            create["goods"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["goods"]["new"],
+            str(h.goods),
+        )
+        self.assertEqual(
+            create["vat"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["vat"]["new"],
+            str(h.vat),
+        )
+        self.assertEqual(
+            create["total"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["total"]["new"],
+            str(h.total),
+        )
+        self.assertEqual(
+            create["paid"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["paid"]["new"],
+            str(h.paid),
+        )
+        self.assertEqual(
+            create["due"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["due"]["new"],
+            str(h.due),
+        )
+        self.assertEqual(
+            create["date"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["date"]["new"],
+            str(h.date),
+        )
+        self.assertEqual(
+            create["due_date"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["due_date"]["new"],
+            str(h.due_date),
+        )
+        self.assertEqual(
+            create["period"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["period"]["new"],
+            str(h.period),
+        )
+        self.assertEqual(
+            create["status"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["status"]["new"],
+            str(h.status),
+        )
+        self.assertEqual(
+            create["type"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["type"]["new"],
+            str(h.type),
+        )
+        self.assertEqual(
+            create["cash_book_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["cash_book_id"]["new"],
+            str(h.cash_book_id),
+        )
+        self.assertEqual(
+            create["supplier_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["supplier_id"]["new"],
+            str(h.supplier_id),
+        )
+        self.assertEqual(
+            create["meta"]["AUDIT_action"],
+            "Create"
+        )
+        self.assertEqual(
+            create["meta"]["transaction_aspect"],
+            "header"
+        )
+        update = all_changes[2]
+        self.assertEqual(
+            update["ref"]["old"],
+            "123",
+        )
+        self.assertEqual(
+            update["ref"]["new"],
+            h.ref,
+        )
+        self.assertEqual(
+            update["meta"]["AUDIT_action"],
+            "Update"
+        )
+        self.assertEqual(
+            update["meta"]["transaction_aspect"],
+            "header"
+        )
+
+        # now for the line change
+        create = all_changes[1]
+        self.assertEqual(
+            create["id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["id"]["new"],
+            str(l.id),
+        )
+        self.assertEqual(
+            create["description"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["description"]["new"],
+            "123",
+        )
+        self.assertEqual(
+            create["goods"]["old"],
+            ""
+        )
+        self.assertEqual(
+            create["goods"]["new"],
+            str(l.goods),
+        )
+        self.assertEqual(
+            create["vat"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["vat"]["new"],
+            str(l.vat),
+        )
+        self.assertEqual(
+            create["line_no"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["line_no"]["new"],
+            str(l.line_no),
+        )
+        self.assertEqual(
+            create["nominal_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["nominal_id"]["new"],
+            str(l.nominal.pk),
+        )
+        self.assertEqual(
+            create["vat_code_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["vat_code_id"]["new"],
+            str(l.vat_code.pk),
+        )
+        self.assertEqual(
+            create["header_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["header_id"]["new"],
+            str(l.header.pk),
+        )
+
+        self.assertEqual(
+            create["meta"]["AUDIT_action"],
+            "Create"
+        )
+        self.assertEqual(
+            create["meta"]["transaction_aspect"],
+            "line"
+        )
+
+        update = all_changes[3]
+        self.assertEqual(
+            update["description"]["old"],
+            "123",
+        )
+        self.assertEqual(
+            update["description"]["new"],
+            l.description,
+        )
+        self.assertEqual(
+            update["meta"]["AUDIT_action"],
+            "Update"
+        )
+        self.assertEqual(
+            update["meta"]["transaction_aspect"],
+            "line"
+        )
+
+    def test_matching(self):
+        # same as above except for change a line
+        # above has no lines
+        cash_book = CashBook.objects.create(
+            nominal=None,
+            name="current"
+        )
+        supplier = Supplier.objects.create(
+            code="1",
+            name="2",
+            email="3"
+        )
+        to_match_against = PurchaseHeader.objects.create(
+            type="pi",  # payment
+            date=date.today(),
+            goods=-100,
+            vat=-20,
+            total=-120,
+            ref="123",
+            cash_book=cash_book,
+            supplier=supplier,
+            paid=0,
+            due=0,
+            period="202006"
+        )
+        h = PurchaseHeader.objects.create(
+            type="pi",  # payment
+            date=date.today(),
+            goods=100,
+            vat=20,
+            total=120,
+            ref="123",
+            cash_book=cash_book,
+            supplier=supplier,
+            paid=0,
+            due=0,
+            period="202006"
+        )
+        nominal = Nominal.objects.create(
+            name="something",
+            parent=None
+        )
+        vat_code = Vat.objects.create(
+            code="1",
+            name="2",
+            rate=20
+        )
+        l = PurchaseLine.objects.create(
+            nominal=nominal,
+            goods=100,
+            vat=20,
+            vat_code=vat_code,
+            description="123",
+            line_no=1,
+            header=h
+        )
+        match = PurchaseMatching.objects.create(
+            matched_by=h,
+            matched_to=to_match_against,
+            period="202006",
+            value=-100
+        )
+        self.assertEqual(
+            len(PurchaseHeader.history.all()),
+            2
+        )
+        self.assertEqual(
+            len(PurchaseMatching.history.all()),
+            1
+        )
+        h.ref = "1234"  # update the header
+        h.save()
+        h.refresh_from_db()
+
+        l.description = "12345"
+        l.save()
+        l.refresh_from_db()
+
+        match.value = -120
+        match.save()
+        match.refresh_from_db()
+
+        audit_transaction = AuditTransaction(
+            h, PurchaseHeader, PurchaseLine, PurchaseMatching)
+        self.assertEqual(
+            len(audit_transaction.audit_header_history),
+            2
+        )
+        self.assertEqual(
+            len(audit_transaction.audit_lines_history),
+            2
+        )
+        self.assertEqual(
+            len(audit_transaction.audit_matches_history),
+            2
+        )
+        all_changes = audit_transaction.get_historical_changes()
+        self.assertEqual(
+            len(all_changes),
+            6
+        )
+
+        self.assertTrue(
+            all_changes[0]["meta"]["AUDIT_date"] <= all_changes[1]["meta"]["AUDIT_date"]
+        )
+        self.assertTrue(
+            all_changes[1]["meta"]["AUDIT_date"] <= all_changes[2]["meta"]["AUDIT_date"]
+        )
+        self.assertTrue(
+            all_changes[2]["meta"]["AUDIT_date"] <= all_changes[3]["meta"]["AUDIT_date"]
+        )
+        self.assertTrue(
+            all_changes[3]["meta"]["AUDIT_date"] <= all_changes[4]["meta"]["AUDIT_date"]
+        )
+        self.assertTrue(
+            all_changes[4]["meta"]["AUDIT_date"] <= all_changes[5]["meta"]["AUDIT_date"]
+        )
+
+        create = all_changes[0]
+        self.assertEqual(
+            create["id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["id"]["new"],
+            str(h.id),
+        )
+        self.assertEqual(
+            create["ref"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["ref"]["new"],
+            "123",
+        )
+        self.assertEqual(
+            create["goods"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["goods"]["new"],
+            str(h.goods),
+        )
+        self.assertEqual(
+            create["vat"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["vat"]["new"],
+            str(h.vat),
+        )
+        self.assertEqual(
+            create["total"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["total"]["new"],
+            str(h.total),
+        )
+        self.assertEqual(
+            create["paid"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["paid"]["new"],
+            str(h.paid),
+        )
+        self.assertEqual(
+            create["due"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["due"]["new"],
+            str(h.due),
+        )
+        self.assertEqual(
+            create["date"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["date"]["new"],
+            str(h.date),
+        )
+        self.assertEqual(
+            create["due_date"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["due_date"]["new"],
+            str(h.due_date),
+        )
+        self.assertEqual(
+            create["period"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["period"]["new"],
+            str(h.period),
+        )
+        self.assertEqual(
+            create["status"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["status"]["new"],
+            str(h.status),
+        )
+        self.assertEqual(
+            create["type"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["type"]["new"],
+            str(h.type),
+        )
+        self.assertEqual(
+            create["cash_book_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["cash_book_id"]["new"],
+            str(h.cash_book_id),
+        )
+        self.assertEqual(
+            create["supplier_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["supplier_id"]["new"],
+            str(h.supplier_id),
+        )
+        self.assertEqual(
+            create["meta"]["AUDIT_action"],
+            "Create"
+        )
+        self.assertEqual(
+            create["meta"]["transaction_aspect"],
+            "header"
+        )
+        update = all_changes[3]
+        self.assertEqual(
+            update["ref"]["old"],
+            "123",
+        )
+        self.assertEqual(
+            update["ref"]["new"],
+            h.ref,
+        )
+        self.assertEqual(
+            update["meta"]["AUDIT_action"],
+            "Update"
+        )
+        self.assertEqual(
+            update["meta"]["transaction_aspect"],
+            "header"
+        )
+
+        # now for the line change
+        create = all_changes[1]
+        self.assertEqual(
+            create["id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["id"]["new"],
+            str(l.id),
+        )
+        self.assertEqual(
+            create["description"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["description"]["new"],
+            "123",
+        )
+        self.assertEqual(
+            create["goods"]["old"],
+            ""
+        )
+        self.assertEqual(
+            create["goods"]["new"],
+            str(l.goods),
+        )
+        self.assertEqual(
+            create["vat"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["vat"]["new"],
+            str(l.vat),
+        )
+        self.assertEqual(
+            create["line_no"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["line_no"]["new"],
+            str(l.line_no),
+        )
+        self.assertEqual(
+            create["nominal_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["nominal_id"]["new"],
+            str(l.nominal.pk),
+        )
+        self.assertEqual(
+            create["vat_code_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["vat_code_id"]["new"],
+            str(l.vat_code.pk),
+        )
+        self.assertEqual(
+            create["header_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["header_id"]["new"],
+            str(l.header.pk),
+        )
+        self.assertEqual(
+            create["meta"]["AUDIT_action"],
+            "Create"
+        )
+        self.assertEqual(
+            create["meta"]["transaction_aspect"],
+            "line"
+        )
+
+        update = all_changes[4]
+        self.assertEqual(
+            update["description"]["old"],
+            "123",
+        )
+        self.assertEqual(
+            update["description"]["new"],
+            l.description,
+        )
+        self.assertEqual(
+            update["meta"]["AUDIT_action"],
+            "Update"
+        )
+        self.assertEqual(
+            update["meta"]["transaction_aspect"],
+            "line"
+        )
+
+        create = all_changes[2]
+        self.assertEqual(
+            create["matched_by_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["matched_by_id"]["new"],
+            str(match.matched_by_id),
+        )
+        self.assertEqual(
+            create["matched_to_id"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["matched_to_id"]["new"],
+            str(match.matched_to_id),
+        )
+        self.assertEqual(
+            create["value"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["value"]["new"],
+            "-100.00",
+        )
+        self.assertEqual(
+            create["period"]["old"],
+            "",
+        )
+        self.assertEqual(
+            create["period"]["new"],
+            str(match.period),
+        )
+        self.assertEqual(
+            create["meta"]["AUDIT_action"],
+            "Create"
+        )
+        self.assertEqual(
+            create["meta"]["transaction_aspect"],
+            "match"
+        )
+
+        update = all_changes[5]
+        self.assertEqual(
+            update["value"]["old"],
+            "-100.00"
+        )
+        self.assertEqual(
+            update["value"]["new"],
+            "-120.00"
+        )
+        self.assertEqual(
+            update["meta"]["AUDIT_action"],
+            "Update"
+        )
+        self.assertEqual(
+            update["meta"]["transaction_aspect"],
+            "match"
         )
