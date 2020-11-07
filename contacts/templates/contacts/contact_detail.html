@@ -1,23 +1,5 @@
-{% extends 'base.html' %}
+{% extends 'accountancy/single_object_detail_with_audit.html' %}
 
-{% load static %}
-
-{% block head %}
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="{% static 'accountancy/css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
-    <link rel="stylesheet" href="{% static 'accountancy/css/audit_table.css' %}">
-    <style>
-
-        div.contact-details {
-            background-color: #fdfdfd;
-        }
-
-    </style>
-    {% block extra_head %}
-    {% endblock extra_head %}
-{% endblock head %}
- 
 {% block content %}
 
 <div class="cont">
@@ -70,18 +52,3 @@
 </div>
 
 {% endblock content %}
-
-
-{% block js %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-<script src="{% static 'accountancy/js/audit.js' %}"></script>
-<script>
-    $(document).ready(function(){
-        
-        $("button.audit-btn").on("click", function(){
-            $("div.audit_section").toggleClass("d-none");
-        });
-
-    });
-</script>
-{% endblock js %}

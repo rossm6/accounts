@@ -6,7 +6,8 @@ from simple_history import register
 
 from accountancy.helpers import (
     DELETED_HISTORY_TYPE, create_historical_records,
-    disconnect_simple_history_receiver_for_post_delete_signal)
+    disconnect_simple_history_receiver_for_post_delete_signal,
+    get_all_historical_changes)
 from accountancy.signals import audit_post_delete
 
 
@@ -66,7 +67,6 @@ class AuditMixin:
         audit_post_delete.send(sender=self._meta.model, instance=self)
         super().delete()
 
-    
     def ready(self):
         """
         Called by <app_name>.apps.<app_name>Config.
@@ -77,11 +77,24 @@ class AuditMixin:
         our tests something was seriously wrong.
         """
         print("APP READY")
-        models = list(self.get_models()) # use up generator
+        models = list(self.get_models())  # use up generator
         # otherwise it complains about dict changing size
         for model in models:
             if hasattr(model, "simple_history_custom_set_up"):
                 model.simple_history_custom_set_up()
+
+
+class SingleObjectAuditDetailViewMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        audit_records = self.model.history.filter(
+            **{
+                self.model._meta.pk.name: self.object.pk
+            }
+        ).order_by("pk")
+        changes = get_all_historical_changes(audit_records)
+        context["audits"] = changes
+        return context
 
 
 class VatTransactionMixin:

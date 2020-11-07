@@ -1,4 +1,5 @@
 from accountancy.forms import BaseVoidTransactionForm
+from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
                                CashBookAndNominalTransList,
                                CreateCashBookTransaction,
@@ -202,7 +203,7 @@ class CashBookList(LoginRequiredMixin, ListView):
     context_object_name = "cashbooks"
 
 
-class CashBookDetail(LoginRequiredMixin, DetailView):
+class CashBookDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
     model = CashBook
     template_name = "cashbook/cashbook_detail.html"
 

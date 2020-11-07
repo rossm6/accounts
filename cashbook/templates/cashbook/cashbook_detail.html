@@ -1,7 +1,6 @@
-{% extends 'base.html' %}
+{% extends 'accountancy/single_object_detail_with_audit.html' %}
 
 {% block content %}
-
 <div class="cont">
     <div>
         <div class="container">
@@ -13,7 +12,12 @@
                             Details to add at later date
                         </div>
                         <div class="mt-3">
+                            <button class="btn btn-primary btn-sm mr-2 audit-btn">Audit</button>
                             <a class="btn btn-sm btn-success" href="{% url 'cashbook:cashbook_edit' pk=cashbook.pk %}">Edit</a>
+                        </div>
+                        <div class="d-none mt-3 audit_section p-3 border rounded">
+                            <h2 class="h4 font-weight-bold">Audit</h2>
+                            {% include 'accountancy/audit.html' %}
                         </div>
                     </div>
                 </div>
@@ -21,5 +25,4 @@
         </div>
     </div>
 </div>
-
 {% endblock content %}

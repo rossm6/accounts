@@ -2,7 +2,7 @@ import collections
 from json import loads
 
 from accountancy.forms import BaseVoidTransactionForm
-from accountancy.helpers import FY
+from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
                                CashBookAndNominalTransList)
@@ -352,7 +352,7 @@ class NominalList(LoginRequiredMixin, ListView):
     context_object_name = "nominals"
 
 
-class NominalDetail(LoginRequiredMixin, DetailView):
+class NominalDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
     model = Nominal
     template_name = "nominals/nominal_detail.html"
 

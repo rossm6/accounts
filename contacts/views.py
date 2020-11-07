@@ -1,3 +1,4 @@
+from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from itertools import chain
 
 from accountancy.helpers import get_all_historical_changes
@@ -184,24 +185,10 @@ class CreateContact(LoginRequiredMixin, CreateAndUpdateMixin, CreateView):
         return super().render_to_response(context, **response_kwargs)
 
 
-class ContactDetail(LoginRequiredMixin, DetailView):
+class ContactDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
     model = Contact
     template_name = "contacts/contact_detail.html"
     context_object_name = "contact"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        instance = context["contact"]
-        context["edit_href"] = reverse_lazy("contacts:edit", kwargs={
-                                            "pk": instance.pk})
-        audit_records = self.model.history.filter(
-            **{
-                self.model._meta.pk.name: instance.pk
-            }
-        ).order_by("pk")
-        changes = get_all_historical_changes(audit_records)
-        context["audits"] = changes
-        return context
 
 
 class ContactUpdate(LoginRequiredMixin, CreateAndUpdateMixin, UpdateView):

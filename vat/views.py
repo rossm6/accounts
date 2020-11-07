@@ -1,3 +1,4 @@
+from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import CashBookAndNominalTransList
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
@@ -33,7 +34,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     advanced_search_form_class = VatTransactionSearchForm
     template_name = "vat/transactions.html"
     converters = {
-        "vat_type": lambda t : { vat_type[0] : vat_type[1] for vat_type in VatTransaction.vat_types }[t]
+        "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t]
     }
     row_identifier = "header"
 
@@ -63,6 +64,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         )
         print(q)
         return q
+
 
 class LoadVatCodes(LoginRequiredMixin, ListView):
     paginate_by = 50
@@ -99,7 +101,7 @@ class VatList(LoginRequiredMixin, ListView):
     context_object_name = "vats"
 
 
-class VatDetail(LoginRequiredMixin, DetailView):
+class VatDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
     model = Vat
     template_name = "vat/vat_detail.html"
 
@@ -117,7 +119,7 @@ class VatCreate(LoginRequiredMixin, CreateView):
     form_class = VatForm
     template_name = "vat/vat_create_and_edit.html"
     success_url = reverse_lazy("vat:vat_list")
-    prefix="vat"
+    prefix = "vat"
 
     def form_valid(self, form):
         redirect_response = super().form_valid(form)

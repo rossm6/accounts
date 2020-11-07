@@ -1,9 +1,10 @@
 from accountancy.helpers import bulk_delete_with_history
+from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.signals import audit_post_delete
 from contacts.models import Contact
+from django.db import models
 from django.test import TestCase
 from simple_history.models import HistoricalRecords
-from django.db import models
 
 
 class AuditMixinTest(TestCase):
@@ -38,7 +39,8 @@ class AuditMixinTest(TestCase):
                 found = True
             break
         if not found:
-            self.fail("Failed to find the post_delete method of the AuditMixin class")
+            self.fail(
+                "Failed to find the post_delete method of the AuditMixin class")
 
     def test_instance_deleted(self):
         c = Contact(
