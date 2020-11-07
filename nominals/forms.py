@@ -2,7 +2,7 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceIterator,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxForm, BaseAjaxFormMixin,
+from accountancy.forms import (BaseAjaxFormMixin,
                                BaseLineFormset, BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
                                BaseTransactionSearchForm)
@@ -94,7 +94,7 @@ line_css_classes = {
 }
 
 
-class NominalLineForm(BaseTransactionLineForm, BaseAjaxForm):
+class NominalLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
     nominal = ModelChoiceFieldChooseIterator(
         queryset=Nominal.objects.none(),
         iterator=RootAndLeavesModelChoiceIterator,

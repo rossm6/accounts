@@ -1,7 +1,7 @@
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxForm, BaseAjaxFormMixin,
+from accountancy.forms import (BaseAjaxFormMixin,
                                BaseCashBookLineForm, BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
                                BaseTransactionSearchForm,

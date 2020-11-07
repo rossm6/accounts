@@ -7,6 +7,9 @@ from django.forms.models import ModelChoiceField, ModelChoiceIterator
 
 from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
 
+"""
+MODEL FIELDS
+"""
 
 class AccountsDecimalField(models.DecimalField):
     """

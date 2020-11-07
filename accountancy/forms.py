@@ -1,3 +1,4 @@
+from accountancy.fields import UIDecimalField
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 from django import forms
@@ -43,88 +44,15 @@ class BaseAjaxFormMixin:
             if self.data:
                 queryset = querysets["post"]
             elif hasattr(self.Meta, "model") and self.instance.pk:
-                # then it is a model form
-                pk_field_name = field + "_id"  # THIS WILL DO FOR NOW BUT THIS ISN'T ALWAYS THE CASE
-                # 'to_field' could have different name other than "id"
-                queryset = querysets["instance"](
-                    getattr(self.instance, pk_field_name))
+                field_value_from_instance = getattr(
+                    self.instance, f"{field}_{field_model._meta.pk.name}")
+                queryset = querysets["instance"](field_value_from_instance)
             else:
                 queryset = querysets["get"]
             self.fields[field].queryset = queryset
             self.fields[field].load_queryset = querysets["load"]
             # We need this to validate inputs for the input dropdown widget
             self.fields[field].post_queryset = querysets["post"]
-            if searchable_fields := fields[field].get('searchable_fields'):
-                self.fields[field].searchable_fields = searchable_fields
-            self.fields[field].empty_label = fields[field].get(
-                "empty_label", None)
-
-    def full_clean(self):
-        """
-        Override the choices so that only the chosen is included
-        """
-        super().full_clean()  # clean all of self.data and populate self._errors and self.cleaned_data
-        if hasattr(self, "cleaned_data"):
-            ajax_fields = self.Meta.ajax_fields
-            for field in ajax_fields:
-                if chosen := self.cleaned_data.get(field):
-                    iterator = self.fields[field].iterator
-                    if isinstance(iterator, type):
-                        iterator = iterator(self.fields[field])
-                        self.fields[field].iterator = iterator
-                    choice_for_ui = self.fields[field].iterator.choice(
-                        chosen)  # e.g. (value, label)
-                    self.fields[field].choices = [choice_for_ui]
-                else:
-                    self.fields[field].choices = [
-                        (None, (self.fields[field].empty_label or ""))]
-
-
-class BaseAjaxForm(forms.ModelForm):
-    """
-
-    AJAX is obviously recommended if the total choices is very high for any field
-    in a form.
-
-    This class just sets the different querysets needed depending on whether
-    the form is new, for an instance, or data is being posted.  In addition
-    it always also sets the queryset to be used by remote AJAX calls.
-
-    It only supports foreign key model choices at the moment ...
-
-    WARNING - The iterator cannot be set at this stage after form initialisation.
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        form_model = self.Meta.model
-        fields = self.Meta.ajax_fields
-        for field in fields:
-            field_model = form_model._meta.get_field(field).related_model
-            pk_field_name = field + "_id"  # THIS WILL DO FOR NOW BUT THIS ISN'T ALWAYS THE CASE
-            # 'to_field' could have different name other than "id"
-            querysets = {
-                "get": field_model.objects.none(),
-                "load": field_model.objects.all(),
-                "post": field_model.objects.all(),
-                "instance": lambda pk: field_model.objects.filter(pk=pk),
-            }
-            querysets.update(
-                fields[field].get("querysets", {})
-            )
-            if self.data:
-                queryset = querysets["post"]
-            elif self.instance.pk:
-                queryset = querysets["instance"](
-                    getattr(self.instance, pk_field_name))
-            else:
-                queryset = querysets["get"]
-            self.fields[field].queryset = queryset
-            self.fields[field].load_queryset = querysets["load"]
-            # We need this to validate inputs for the input dropdown widget
-            self.fields[field].post_queryset = querysets["post"]
-            # DO WE NEED SEARCHABLE FIELDS?
             if searchable_fields := fields[field].get('searchable_fields'):
                 self.fields[field].searchable_fields = searchable_fields
             self.fields[field].empty_label = fields[field].get(
@@ -152,38 +80,23 @@ class BaseAjaxForm(forms.ModelForm):
 
 
 class BaseTransactionMixin:
-
     """
-
-    This should change so that is uses the UIDecimalFieldDescriptor.
-    We probably should create a UIDecimalField actually ...
-
-    At least this is needed ...
-
-        Accountancy forms should give the user the option to enter a positive number
-        which is then understand by the system as a negative number i.e. a credit balance
-
-        For example when entering a payment it is more intuitive to type 100.00
-        but this needs to be saved in the database as -100.00, because it is a credit balance
-
-        If the user is creating data there is no problem.  But if they are editing data they
-        need to see this negative value as a positive.
-
-        So we need a global dictionary of transaction types and the associated debit or credit.
-        And then we just look up the transaction type and flip the sign if it is a credit
-        transaction.
-
+    This mixin ensures that the correct sign is showed in the UI by using the ui_<field_name> attribute of the model instance.
     """
 
     def __init__(self, *args, **kwargs):
-        # based on - https://stackoverflow.com/a/60118733
+        _initial = {}
+        if instance := kwargs.get("instance"):
+            for field in self._meta.fields:
+                model_field = instance._meta.get_field(field)
+                if isinstance(model_field, UIDecimalField):
+                    _initial[field] = getattr(instance, "ui_" + field)
+        if initial := kwargs.get("initial"):
+            # initial passed to model form should override our _initial
+            _initial.update(initial)
+        elif _initial:
+            kwargs["initial"] = _initial
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
-            for field in self.fields:
-                if isinstance(self.fields[field], forms.DecimalField):
-                    if self.instance.type in self._meta.model.negatives:
-                        tmp = self.initial[field]
-                        self.initial[field] = -1 * tmp
 
 
 class BaseTransactionSearchForm(forms.Form):
@@ -342,7 +255,7 @@ class BaseTransactionModelFormSet(forms.BaseModelFormSet):
         return forms.HiddenInput(attrs={'class': 'ordering'})
 
 
-class BaseTransactionLineForm(forms.ModelForm):
+class BaseTransactionLineForm(BaseTransactionMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -442,7 +355,7 @@ line_css_classes = {
 }
 
 
-class BroughtForwardLineForm(BaseTransactionLineForm, BaseAjaxForm):
+class BroughtForwardLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
 
     def __init__(self, *args, **kwargs):
 
@@ -467,13 +380,6 @@ class BroughtForwardLineForm(BaseTransactionLineForm, BaseAjaxForm):
             kwargs.pop("header")
 
         super().__init__(*args, **kwargs)
-
-        if self.instance.pk:
-            for field in self.fields:
-                if isinstance(self.fields[field], forms.DecimalField):
-                    if self.header.is_negative_type():
-                        tmp = self.initial[field]
-                        self.initial[field] = -1 * tmp
 
         if hasattr(self, 'brought_forward') and self.brought_forward:
             self.fields["nominal"].required = False

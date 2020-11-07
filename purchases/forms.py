@@ -8,7 +8,7 @@ from tempus_dominus.widgets import DatePicker
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxForm, BaseAjaxFormMixin,
+from accountancy.forms import (BaseAjaxFormMixin,
                                BaseLineFormset, BaseTransactionHeaderForm,
                                BaseTransactionLineForm, BaseTransactionMixin,
                                BaseTransactionModelFormSet,
