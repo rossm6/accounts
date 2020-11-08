@@ -1,9 +1,11 @@
-from accountancy.fields import UIDecimalField
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
+
+from accountancy.fields import UIDecimalField
+from accountancy.models import MatchedHeaders
 
 from .layouts import (AdvSearchField, DataTableTdField, Draggable, Label,
                       LabelAndFieldAndErrors, PlainField, PlainFieldErrors,
@@ -201,7 +203,6 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
             # Form will validate if they do change it but save will not reflect change.
             self.fields["type"].disabled = True
 
-
     def save(self, commit=True):
         instance = super().save(commit=False)
         if self.cleaned_data["total"] == instance.total:
@@ -286,6 +287,7 @@ class BaseTransactionLineForm(BaseTransactionMixin, forms.ModelForm):
             instance.save()
         return instance
 
+
 class BaseLineFormset(BaseTransactionModelFormSet):
 
     def __init__(self, *args, **kwargs):
@@ -366,6 +368,7 @@ line_css_classes = {
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }
+
 
 class BroughtForwardLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
 
@@ -482,101 +485,21 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                 self.tran_being_created_or_edited = tran_being_created_or_edited
             kwargs.pop("tran_being_created_or_edited")
         super().__init__(*args, **kwargs)
-
-        # matched_by_initial is the current value of the matched_by transaction which is matched to the
-        # matched_to
-
-        # matched_to_initial is the current value of the matched_to transaction which is matched to the
-        # matched by
-
         if not self.instance.pk:
             # GET and POST requests for creating a match
-            self.f1 = 1
-            self.matched_by_initial = 0
-            self.matched_to_initial = 0
-            # the value entered by the user is taken as given
             self.fields["matched_by"].required = False
-            if self.data:
-                self.initial_value = self.matched_to_initial
         else:
-            """
-            GET and POST requests for editing a match
-
-            The transactions which show as matched to the transaction being edited or viewed
-            need to show in the same way as they would do if any one of them was being edited or viewed.
-
-            E.g.
-
-            A credit note for 120.00 shows on the account as -120.00.  I.e. Per transaction enquiry.
-            Yet if the credit note is being edited / viewed it shows as 120.00.
-            Indeed the same is true of creating the credit note in the first place.  The user enters 120.00
-            into the total and positive values for the lines also.
-            
-            Assume now a refund is put on and matched to the credit note
-            so in this matching relationship the credit note is the matched_to and the refund is the matched_by
-            the refund is then viewed in view / edit mode.  The credit note will show in the matching transaction
-            section because it is matched to the refund.  It needs to show with a total of 120.00 and paid 120.00.
-            Otherwise it is confusing to the user at a glance.  They'd have to think about the credit note in the context
-            of the other transactions to know whether it had debited or credited the account.  Consistency is therefore important.
-
-            Also we must remember that the value to match - that is the `value` column - in the matching section, is the `value`
-            of the matched transaction which matches / pays the transaction being viewed or edited.
-            Following on from our example, this means the value in the UI can be anywhere between 0 and 120.00
-
-            the logic for determing the correct sign for this value is simple.  It just depends on whether
-            the transaction being edited / viewed is the matched_by or the matched_to.  `f1` is the factor
-            which determines the sign based on this logic.
-
-            `f2` is the factor which flips the sign based on the first consideration above.  I.e. should this transaction
-            show in the UI as a negative or positive.  For our example above the credit note for 120.00 should show as
-            120.00.  By contrast an invoice entered for a value of -120.00 ought to show in the UI as -120.00.  Again
-            the logic is simple.  The sign is flipped based on whether the transaction is a negative transaction or not.
-            Since the credit note is saved in the DB as -120.00 and it is a negative transaction we flip the sign so it
-            becomes +120.00 in the UI.  Whereas the invoice, from the example above, would save to the DB as -120.00 and
-            since the invoice is NOT a negative type of transaction we don't flip the sign.
-
-            We begin with changing the sign assuming a GET request
-            Finally we reverse the logic IF it is a POST request
-            """
-
-            if self.tran_being_created_or_edited.pk == self.instance.matched_to_id:
-                matched_header = self.instance.matched_by
-                self.matched_by_initial = self.initial["value"] * -1
-                self.initial_value = self.matched_by_initial
-                f1 = -1
-            else:
-                matched_header = self.instance.matched_to
-                self.matched_to_initial = self.initial["value"]
-                self.initial_value = self.matched_to_initial
-                f1 = 1
-
-            self.f1 = f1  # needed for method `change_values_for_UI`
-
-            if matched_header.is_negative_type():
-                f2 = -1
-            else:
-                f2 = 1
-
-            self.f2 = f2  # needed for method `change_values_for_UI`
-
-            self.fields["type"].initial = matched_header.type
-            self.fields["ref"].initial = matched_header.ref
-            self.fields["total"].initial = matched_header.total
-            self.fields["paid"].initial = matched_header.paid
-            self.fields["due"].initial = matched_header.due
-
-            self.change_values_for_ui()
-
-            # matched_to is a field rendered on the client because it is for the user to pick (in some situations)
-            # but matched_by, although a field, can always be determined server side so we override the POST data to do so
-
-            # MATCHED_TO AND MATCHED_BY SHOULD BOTH BE UNCHANGEABLE SO WE SHOULD DO THE SAME TO MATCHED_TO ALSO
-            if self.data:
-                self.data = self.data.copy()
-                # we are editing a transaction in the system
-                self.data[self.prefix + "-" +
-                          "matched_by"] = self.initial.get('matched_by', self.tran_being_created_or_edited.pk)
-                # FIX ME - set matched_by to read only so we don't need to do this
+            # GET and POST requests for editing a match
+            self.fields["matched_by"].disabled = True
+            self.fields["matched_to"].disabled = True
+            ui_match = self.Meta.model.show_match_in_UI(
+                tran_being_created_or_edited, self.instance)
+            self.fields["type"].initial = ui_match["type"]
+            self.fields["ref"].initial = ui_match["ref"]
+            self.fields["total"].initial = ui_match["total"]
+            self.fields["paid"].initial = ui_match["paid"]
+            self.fields["due"].initial = ui_match["due"]
+            self.initial["value"] = ui_match["value"]
 
         self.helpers = TableHelper(
             ('type', 'ref', 'total', 'paid', 'due',) +
@@ -603,103 +526,76 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
             }
         ).render()
 
-    def change_values_for_ui(self):
-        if self.instance.pk:
-            self.fields["total"].initial *= self.f2
-            self.fields["paid"].initial *= self.f2
-            self.fields["due"].initial *= self.f2
-            self.initial["value"] *= (self.f1 * self.f2)
-
     def clean(self):
-        # The purpose of this clean is to check that each match is valid
-        # But we can only do the check if the matched_to transaction in the relationship IS NOT the
-        # transaction being created or edited.  Well, the transaction must be being edited if
-        # it is a matched to.
-        # This is because we don't know how much is being matched to other transactions at this point
         cleaned_data = super().clean()
-        initial_value = self.initial_value
-        # we do not use self.initial[value] because this has been changed so it
-        # suits the UI.  At form init we store self.initial_value before changes
-        # are made
         matched_by = cleaned_data.get("matched_by")
         matched_to = cleaned_data.get("matched_to")
-        value = cleaned_data.get("value")
-        header = matched_to
+        ui_initial_value = self.initial.get("value") or 0
+        ui_value = cleaned_data.get("value")
+        header = None
         # check transaction exists as attribute first because it will not if the header_form fails
         if hasattr(self, 'tran_being_created_or_edited'):
-            if self.tran_being_created_or_edited.pk:
-                # so tran is being edited not created
-                if self.tran_being_created_or_edited.pk == matched_to.pk:
+            if not self.instance.pk:
+                # this is a new match so we need to check matched_to can be adjusted by new match value
+                header = matched_to
+                self.initial_value = initial_value = 0
+            else:
+                if self.tran_being_created_or_edited.pk == self.instance.matched_by_id:
+                    header = matched_to
+                else:
                     header = matched_by
-                    # We still need to check the value is acceptable
+                self.initial_value = initial_value = self.Meta.model.ui_match_value(header, ui_initial_value)
         else:
             return  # header_form must have failed so do not bother checking anything further
-
-        if header.is_negative_type():
-            self.f2 = -1
-            _value = value * self.f2
-        else:
-            self.f2 = 1
-            _value = value * self.f2
-
-        # The header then at this point is NOT the transaction being created or edited.  Since only one matching record
-        # can map any two transactions we can with certainly determine whether the value to match is valid or not.
-        # To be clear - header here is NOT the transaction created / edited by the header form.
-        # header.due is therefore fixed.
+        # convert ui_value to the value to be checked against the header
+        # e.g. credit note of 120.00 has ui_value of 120.00
+        # value here would be -120.00
+        # header.total would be -120.00
+        value = self.Meta.model.ui_match_value(header, ui_value)
         if header:
-            # however value is the user input
-            # sometimes this needs the sign changing
-            # i.e. with negative trans
-            # e.g. credit note.  the user inputs 120.00 to match
-            # because total shows as 120 in the UI
-            # server side though credit note total is -120
-            # so value should be -120.00
-            # we don't want to change value in the form
-            # because if form errors we need to render form again
-
             if header.total > 0:
-                if _value < 0:
+                if value < 0:
                     self.add_error(
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
+                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
                             ),
                             code="invalid-match"
                         )
                     )
-                elif _value > header.due + initial_value:
+                elif value > header.due + initial_value:
                     self.add_error(
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
+                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
                             ),
                             code="invalid-match"
                         )
                     )
             elif header.total < 0:
-                if _value > 0:
+                if value > 0:
                     self.add_error(
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
+                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
                             ),
                             code="invalid-match"
                         )
                     )
-                elif _value < header.due + initial_value:
+                elif value < header.due + initial_value:
                     self.add_error(
                         "value",
                         forms.ValidationError(
                             _(
-                                f"Value must be between 0 and { self.f2 * header.due + self.f2 * initial_value}"
+                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
                             ),
                             code="invalid-match"
                         )
                     )
-            would_be_due = header.due + (initial_value - _value)
+            would_be_due = header.due + (initial_value - value)
             if header.total > 0:
                 if would_be_due < 0:
                     self.add_error(
@@ -741,7 +637,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if instance.matched_to_id != self.tran_being_created_or_edited.pk:
+        if not instance.pk:
             instance.matched_by = self.tran_being_created_or_edited
         if commit:
             instance.save()
@@ -791,26 +687,35 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
         # undo the effects of matching to date
         self.tran_being_created_or_edited.due = self.tran_being_created_or_edited.total
         self.tran_being_created_or_edited.paid = 0
-        total_matching_value = 0
+        total_matching_value = 0 # a bit confusing.  see note below
         self.headers = []
-        header_to_update = None
         for form in self.forms:
-            initial_value = form.initial_value or 0
-            value = form.instance.value * form.f2
-            form.instance.value = value
-            diff = value - initial_value
-            total_matching_value += value
+            initial_value = form.initial_value
+            ui_value = form.instance.value
             if not form.instance.matched_by_id or self.tran_being_created_or_edited.pk == form.instance.matched_by_id:
-                # either new transaction is being created
-                # or we are editing a transaction.
-                # here we just consider those matches where matched_by is the transaction being edited.
                 header_to_update = form.instance.matched_to
+                value = MatchedHeaders.ui_match_value(
+                    header_to_update, ui_value)
+                diff = value - initial_value
+                header_to_update.due -= diff
+                header_to_update.paid += diff
+                form.instance.value = value
+                total_matching_value += value # a bit confusing
             else:
-                form.instance.value = -1 * value
                 header_to_update = form.instance.matched_by
-            header_to_update.due -= diff
-            header_to_update.paid += diff
+                value = MatchedHeaders.ui_match_value(
+                    header_to_update, ui_value)
+                diff = value - initial_value
+                header_to_update.due -= diff
+                header_to_update.paid += diff
+                value = value * -1
+                form.instance.value = value
+                total_matching_value += (-1 * value) # a bit confusing
             self.headers.append(header_to_update)
+        """
+        total_match_value is the sum of values for all matches where the value is the value of the header in the match
+        which is not the tran_being_created_or_edited.
+        """
         if self.tran_being_created_or_edited.total == 0:
             if total_matching_value != 0:
                 raise forms.ValidationError(
@@ -952,6 +857,7 @@ def aged_matching_report_factory(
                 }))
 
             if not self.data:
+                # ajax form mixin form not work here so we do this
                 self.set_none_queryset_for_fields(
                     [from_contact_field, to_contact_field])
 

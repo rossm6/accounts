@@ -9,7 +9,8 @@ from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 
 from accountancy.fields import AccountsDecimalField, UIDecimalField
-from accountancy.helpers import bulk_delete_with_history
+from accountancy.helpers import (bulk_delete_with_history,
+                                 non_negative_zero_decimal)
 from accountancy.mixins import AuditMixin
 
 """
@@ -384,6 +385,26 @@ class MatchedHeaders(AuditMixin, models.Model):
         abstract = True
 
     objects = AuditQuerySet.as_manager()
+
+    @staticmethod
+    def show_match_in_UI(tran_being_being_edited_or_created=None, match=None):
+        if not match:
+            return None
+        if tran_being_being_edited_or_created.pk == match.matched_to_id:
+            header = match.matched_by
+            value = MatchedHeaders.ui_match_value(header, -1 * match.value)
+        else:
+            header = match.matched_to
+            value = MatchedHeaders.ui_match_value(header, match.value)
+        return {
+            "type": header.type,
+            "ref": header.ref,
+            "total": header.ui_total,
+            "paid": header.ui_paid,
+            "due": header.ui_due,
+            "value": value
+        }
+
 
     @staticmethod
     def ui_match_value(transaction_header, match_value):

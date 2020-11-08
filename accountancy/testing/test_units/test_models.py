@@ -752,3 +752,105 @@ class TransactionLineTests(TestCase):
         )
 
 
+class MatchedHeadersTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        supplier = Supplier.objects.create(code="1", name="12")
+        cls.mb = mb = PurchaseHeader.objects.create(
+            type="pi",
+            supplier=supplier,
+            ref="1",
+            date=date.today(),
+            total=100,
+            due=0,
+            paid=100
+        )
+        cls.mt = mt = PurchaseHeader.objects.create(
+            type="pc",
+            supplier=supplier,
+            ref="2",
+            date=date.today(),
+            total=-100,
+            paid=-100,
+            due=0
+        )
+        PurchaseMatching.objects.create(
+            matched_by=mb,
+            matched_to=mt,
+            value=-100,
+            period="202007",
+            matched_by_type="pi",
+            matched_to_type="pc"
+        )
+        cls.match = PurchaseMatching.objects.select_related("matched_by", "matched_to").first()
+
+    def test_show_match_in_UI_for_matched_by(self):
+        ui_match = PurchaseMatching.show_match_in_UI(self.mb, self.match)
+        self.assertEqual(
+            ui_match["type"],
+            self.mt.type
+        )
+        self.assertEqual(
+            ui_match["ref"],
+            self.mt.ref
+        )
+        self.assertEqual(
+            ui_match["total"],
+            100
+        )
+        self.assertEqual(
+            ui_match["paid"],
+            100
+        )
+        self.assertEqual(
+            ui_match["due"],
+            0
+        )
+        self.assertEqual(
+            ui_match["value"],
+            100
+        )
+
+    def test_show_match_in_UI_for_matched_to(self):
+        ui_match = PurchaseMatching.show_match_in_UI(self.mt, self.match)
+        self.assertEqual(
+            ui_match["type"],
+            self.mb.type
+        )
+        self.assertEqual(
+            ui_match["ref"],
+            self.mb.ref
+        )
+        self.assertEqual(
+            ui_match["total"],
+            self.mb.total
+        )
+        self.assertEqual(
+            ui_match["paid"],
+            self.mb.paid
+        )
+        self.assertEqual(
+            ui_match["due"],
+            self.mb.due
+        )
+        self.assertEqual(
+            ui_match["value"],
+            100
+        )
+
+    def test_show_match_in_UI_for_no_match(self):
+        ui_match = PurchaseMatching.show_match_in_UI(self.mt)
+        self.assertIsNone(ui_match)
+
+    def test_ui_match_value_for_matched_by(self):
+        self.assertEqual(
+            PurchaseMatching.ui_match_value(self.mb, -1 * self.match.value),
+            100
+        )
+
+    def test_ui_match_value_for_matched_to(self):
+        self.assertEqual(
+            PurchaseMatching.ui_match_value(self.mt, self.match.value),
+            100
+        )
