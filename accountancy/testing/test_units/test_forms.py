@@ -1,3 +1,4 @@
+from accountancy.forms import BaseTransactionHeaderForm
 from datetime import date
 
 import mock
@@ -425,3 +426,141 @@ class BaseTransactionMixinTests(TestCase):
                     "total": 999
                 }
             )
+
+
+class BaseTransactionHeaderFormTests(TestCase):
+
+
+    def test_cannot_change_the_sign(self):
+
+        supplier = Supplier.objects.create(code="1", name="12")
+
+        instance = PurchaseHeader.objects.create(
+            type="pi",
+            supplier=supplier,
+            ref="1",
+            date=date.today(),
+            total=120
+        )
+
+        class Form(BaseTransactionHeaderForm):
+            class Meta:
+                model = PurchaseHeader
+                fields = ("type", "supplier", "ref", "date", "total",)
+
+        data = {
+            "type": "pc",
+            "supplier": supplier.pk,
+            "ref": "1",
+            "date": date.today(),
+            "total": 120
+        }
+
+        f = Form(data=data, instance=instance)
+        self.assertTrue(f.is_valid())
+        instance = f.save()
+        self.assertEqual(
+            instance.type,
+            "pi"
+        )
+
+    def test_clean_switches_sign_for_negative_tran(self):
+        """
+        E.g. a credit note will be entered in the UI with 120.00.  But it should
+        be saved to the DB with total -120.00
+        """
+
+        supplier = Supplier.objects.create(code="1", name="12")
+
+        class Form(BaseTransactionHeaderForm):
+            class Meta:
+                model = PurchaseHeader
+                fields = ("type", "supplier", "ref", "date", "total",)
+
+        data = {
+            "type": "pc",
+            "supplier": supplier.pk,
+            "ref": "1",
+            "date": date.today(),
+            "total": 120
+        }
+
+        f = Form(data=data)
+        f.is_valid()
+        instance = f.save(commit=False)
+        self.assertEqual(
+            instance.total,
+            -120
+        )
+        self.assertEqual(
+            instance.due,
+            -120
+        )
+        self.assertEqual(
+            instance.paid,
+            0
+        )
+        instance = f.save()
+        self.assertEqual(
+            instance.total,
+            -120
+        )
+        self.assertEqual(
+            instance.due,
+            -120
+        )
+        self.assertEqual(
+            instance.paid,
+            0
+        )
+
+
+    def test_clean_does_not_switch_sign_for_positive_tran(self):
+        """
+        E.g. a credit note will be entered in the UI with 120.00.  But it should
+        be saved to the DB with total -120.00
+        """
+
+        supplier = Supplier.objects.create(code="1", name="12")
+
+        class Form(BaseTransactionHeaderForm):
+            class Meta:
+                model = PurchaseHeader
+                fields = ("type", "supplier", "ref", "date", "total",)
+
+        data = {
+            "type": "pi",
+            "supplier": supplier.pk,
+            "ref": "1",
+            "date": date.today(),
+            "total": 120
+        }
+
+        f = Form(data=data)
+        f.is_valid()
+        instance = f.save(commit=False)
+        self.assertEqual(
+            instance.total,
+            120
+        )
+        self.assertEqual(
+            instance.due,
+            120
+        )
+        self.assertEqual(
+            instance.paid,
+            0
+        )
+        instance = f.save()
+        self.assertEqual(
+            instance.total,
+            120
+        )
+        self.assertEqual(
+            instance.due,
+            120
+        )
+        self.assertEqual(
+            instance.paid,
+            0
+        )

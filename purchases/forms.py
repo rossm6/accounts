@@ -140,6 +140,7 @@ class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
     type = forms.ChoiceField(choices=PurchaseHeader.types, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
     # readonly not permitted for select element so disable used and on client we enable the element before the form is submitted
+    # search 'CLIENT JS ITEM 1'.  Currently in edit_matching_js.html
 
     class Meta(SaleAndPurchaseMatchingForm.Meta):
         model = PurchaseMatching

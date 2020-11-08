@@ -198,19 +198,35 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
         if self.instance.pk:
             # VERY IMPORTANT USERS CANNOT CHANGE THE TYPE ONCE A TRANSACTION
             # HAS BEEN CREATED
+            # Form will validate if they do change it but save will not reflect change.
             self.fields["type"].disabled = True
 
-    def clean(self):
-        cleaned_data = super().clean()
-        type = cleaned_data.get("type")
-        total = cleaned_data.get("total")
-        if type in self._meta.model.negatives:
-            cleaned_data["total"] = -1 * total
-        return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.due = instance.total - instance.paid
+        if self.cleaned_data["total"] == instance.total:
+            """
+            We need to flip the sign entered into the form field if the transaction is 
+            a negative transaction.
+
+            Often in Django though, as is done in all the views, one wants to save the model form 
+            to get the instance without hitting the db yet.  Without this check between instance.total and
+            the total within the cleaned data, we'd reverse the following change each time we called save.
+            """
+            instance.ui_total = instance.total
+            """
+            I tried putting the logic inside ui_total just into total but this causes Django to refresh 
+            the instance from the db which falls over.  So this is necessary -
+
+                instance.ui = instance.total
+
+            Where,
+
+                instance.total is from self.cleaned_data["total"] i.e. value entered into UI form
+                instance.ui_total takes this value and flips the sign ready for saving to DB
+
+            """
+            instance.due = instance.total - instance.paid
         if commit:
             instance.save()
         return instance
@@ -220,22 +236,17 @@ class SaleAndPurchaseHeaderFormMixin:
     def __init__(self, *args, **kwargs):
         contact_model_name = kwargs.pop("contact_model_name")
         super().__init__(*args, **kwargs)
-        # it might be tempting to change the url the form is posted to on the client
-        # to include the GET parameter but this means adding a further script to
-        # the edit view on the clientside because we do not reload the edit view on changing
-        # the type
         if self.data:
-            _type = self.data.get(self.prefix + "-" + "type")
+            tran_type = self.data.get(self.prefix + "-" + "type")
         else:
-            _type = self.initial.get('type')
+            tran_type = self.initial.get('type')
 
-        if _type in self._meta.model.payment_types:
-            if _type in self._meta.model.get_types_requiring_analysis():
-                payment_form = True
+        if tran_type in self._meta.model.payment_types:
+            payment_form = True
+            if tran_type in self._meta.model.get_types_requiring_analysis():
                 payment_brought_forward_form = False
                 self.fields["cash_book"].required = True
             else:
-                payment_form = True
                 payment_brought_forward_form = True
         else:
             payment_brought_forward_form = False
@@ -257,9 +268,6 @@ class BaseTransactionModelFormSet(forms.BaseModelFormSet):
 
 class BaseTransactionLineForm(BaseTransactionMixin, forms.ModelForm):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def clean(self):
         cleaned_data = super().clean()
         goods = cleaned_data.get("goods")
@@ -278,10 +286,13 @@ class BaseTransactionLineForm(BaseTransactionMixin, forms.ModelForm):
             instance.save()
         return instance
 
-
 class BaseLineFormset(BaseTransactionModelFormSet):
 
     def __init__(self, *args, **kwargs):
+        """
+        header is the header object e.g. PurchaseHeader instance
+        brought_forward is just a boolean flag
+        """
         if 'header' in kwargs:
             if header := kwargs.get('header'):  # header could be None
                 self.header = header
@@ -320,15 +331,17 @@ class SaleAndPurchaseLineFormset(BaseLineFormset):
             return
         goods = 0
         vat = 0
-        header_type_is_negative = self.header.is_negative_type()
-        multiplier = -1 if header_type_is_negative else 1
         for form in self.forms:
             # empty_permitted = False is set on forms for existing data
             # empty_permitted = True is set new forms i.e. for non existent data
             if not form.empty_permitted or (form.empty_permitted and form.has_changed()):
                 if not form.cleaned_data.get("DELETE"):
-                    form.instance.goods *= multiplier
-                    form.instance.vat *= multiplier
+                    form.instance.type = self.header.type
+                    # The type is actually reassigned in accountancy.views.RESTBaseCreateTransactionMixin
+                    # But we need to it here early so that the ui_goods and ui_vat descriptor logic works
+                    # We can't remove the assignment in the aforementioned view because the nominal app relies on this
+                    form.instance.ui_goods = form.instance.goods
+                    form.instance.ui_vat = form.instance.vat
                     goods += form.instance.goods
                     vat += form.instance.vat
         total = goods + vat
@@ -353,7 +366,6 @@ line_css_classes = {
         "vat": "can_highlight w-100 h-100 border-0"
     }
 }
-
 
 class BroughtForwardLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
 
@@ -384,7 +396,6 @@ class BroughtForwardLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
         if hasattr(self, 'brought_forward') and self.brought_forward:
             self.fields["nominal"].required = False
             self.fields["vat_code"].required = False
-
         # if the type is a payment type we will hide the line_formset
         # on the client.
         # if the type is a brought forward type the line_formset will show
@@ -442,12 +453,10 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
     name of the value.  This is easy when we have an instance;
     if the submitted form though is for a new instance we
     have to get the label based on the cleaned user input.  This
-    is done in clean.
+    is done in clean.  Type is defined on the base class.
 
     """
 
-    # readonly not permitted for select element so disable used and on client we enable the element before the form is submitted
-    # search 'CLIENT JS ITEM 1'.  Currently in edit_matching_js.html
     ref = forms.CharField(
         max_length=20, widget=forms.TextInput(attrs={"readonly": True}))
     total = forms.DecimalField(
@@ -465,31 +474,14 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-
         # this logic is in case we ever need the form without the formset
         # but with a formset the keyword argument will not be passed
-
         if 'tran_being_created_or_edited' in kwargs:
             # match_by could be None
             if tran_being_created_or_edited := kwargs.get('tran_being_created_or_edited'):
                 self.tran_being_created_or_edited = tran_being_created_or_edited
             kwargs.pop("tran_being_created_or_edited")
-
         super().__init__(*args, **kwargs)
-
-        # # Setting the disabled attribute means even if the user tampers
-        # # with the html widget django discounts the change
-        # for field in self.fields:
-        #     if field != "value":
-        #         self.fields[field].disabled = True
-
-        # GET request for CREATE
-        if not self.data and not self.instance.pk:
-            q = self.fields["matched_to"].queryset
-            self.fields["matched_to"].queryset = q.none()
-
-        # Do not confuse creating and editing a match with creating / editing a transaction
-        # Because a user can edit an invoice and create a matching transaction
 
         # matched_by_initial is the current value of the matched_by transaction which is matched to the
         # matched_to
@@ -507,40 +499,45 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
             if self.data:
                 self.initial_value = self.matched_to_initial
         else:
-            # GET and POST requests for editing a match
+            """
+            GET and POST requests for editing a match
 
-            # the transactions which show as matched to the transaction being edited or viewed
-            # need to show in the same way as they would do if any one of them was being edited or viewed
-            # e.g.
-            # a credit note for 120.00 shows on the account as -120.00.  I.e. Per transaction enquiry
-            # yet if the credit note is being edited / viewed it shows as 120.00
-            # indeed the same is true of creating the credit note in the first place.  The user enter 120.00
-            # into the total and positive values for the lines also
-            # assume now a refund is put on and matched to the credit note
-            # so in this matching relationship the credit note is the matched_to and the refund is the matched_by
-            # the refund is then viewed in view / edit mode.  The credit note will show in the matching transaction
-            # section because it is matched to the refund.  It needs to show with a total of 120.00 and paid 120.00.
-            # Otherwise is confusing to the user at a glance.  They'd had to think about the credit note in the context
-            # of the other transactions to know whether it had debited or credited the account.  Consistency is therefore important.
+            The transactions which show as matched to the transaction being edited or viewed
+            need to show in the same way as they would do if any one of them was being edited or viewed.
 
-            # also we must remember that the value to match - that is the `value` column - in the matching section, is the `value`
-            # of the matched transaction which matches / pays the transaction being viewed or edited.
-            # following on from our example, this means the value in the UI can be anywhere between 0 and 120.00
+            E.g.
 
-            # the logic for determing the correct sign for this value is simple.  It just depends on whether
-            # the transaction being edited / viewed is the matched_by or the matched_to.  `f1` is the factor
-            # which determines the sign based on this logic.
+            A credit note for 120.00 shows on the account as -120.00.  I.e. Per transaction enquiry.
+            Yet if the credit note is being edited / viewed it shows as 120.00.
+            Indeed the same is true of creating the credit note in the first place.  The user enters 120.00
+            into the total and positive values for the lines also.
+            
+            Assume now a refund is put on and matched to the credit note
+            so in this matching relationship the credit note is the matched_to and the refund is the matched_by
+            the refund is then viewed in view / edit mode.  The credit note will show in the matching transaction
+            section because it is matched to the refund.  It needs to show with a total of 120.00 and paid 120.00.
+            Otherwise it is confusing to the user at a glance.  They'd have to think about the credit note in the context
+            of the other transactions to know whether it had debited or credited the account.  Consistency is therefore important.
 
-            # `f2` is the factor which flips the sign based on the first consideration above.  I.e. should this transaction
-            # show in the UI as a negative or positive.  For our example above the credit note for 120.00 should show as
-            # 120.00.  By contrast an invoice entered for a value of -120.00 ought to show in the UI as -120.00.  Again
-            # the logic is simple.  The sign is flipped based on whether the transaction is a negative transaction or not.
-            # Since the credit note is saved in the DB as -120.00 and it is a negative transaction we flip the sign so it
-            # becomes +120.00 in the UI.  Whereas the invoice, from the example above, would save to the DB as -120.00 and
-            # since the invoice is NOT a negative type of transaction we don't flip the sign.
+            Also we must remember that the value to match - that is the `value` column - in the matching section, is the `value`
+            of the matched transaction which matches / pays the transaction being viewed or edited.
+            Following on from our example, this means the value in the UI can be anywhere between 0 and 120.00
 
-            # We begin with changing the sign assuming a GET request
-            # Finally we reverse the logic IF it is a POST request
+            the logic for determing the correct sign for this value is simple.  It just depends on whether
+            the transaction being edited / viewed is the matched_by or the matched_to.  `f1` is the factor
+            which determines the sign based on this logic.
+
+            `f2` is the factor which flips the sign based on the first consideration above.  I.e. should this transaction
+            show in the UI as a negative or positive.  For our example above the credit note for 120.00 should show as
+            120.00.  By contrast an invoice entered for a value of -120.00 ought to show in the UI as -120.00.  Again
+            the logic is simple.  The sign is flipped based on whether the transaction is a negative transaction or not.
+            Since the credit note is saved in the DB as -120.00 and it is a negative transaction we flip the sign so it
+            becomes +120.00 in the UI.  Whereas the invoice, from the example above, would save to the DB as -120.00 and
+            since the invoice is NOT a negative type of transaction we don't flip the sign.
+
+            We begin with changing the sign assuming a GET request
+            Finally we reverse the logic IF it is a POST request
+            """
 
             if self.tran_being_created_or_edited.pk == self.instance.matched_to_id:
                 matched_header = self.instance.matched_by
