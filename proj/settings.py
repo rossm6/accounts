@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'accountancy',
     'cashbook.apps.CashbookConfig',
     'contacts.apps.ContactsConfig',
+    'dashboard',
     'nominals.apps.NominalsConfig',
     'purchases.apps.PurchasesConfig',
     'sales.apps.SalesConfig',

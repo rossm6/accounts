@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="cont">
+    <div>
+        <div class="d-flex justify-content-center">
+            <div>
+                <div class="border data-grid p-4 position-relative" style="width: 1000px;">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="card">
+                                <div class="d-flex justify-content-between card-header bg-white font-weight-bold">
+                                    <span>Total cash in and out</span>
+                                    <div>
+                                        <a class="btn btn-sm btn-primary" role="button" href="{% url 'cashbook:transaction_enquiry' %}">View Cash Book</a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chart_1" width="400" height="400"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card">
+                                <div class="d-flex justify-content-between card-header bg-white font-weight-bold">
+                                    <span>Invoices owed to you</span>
+                                    <a class="btn btn-sm btn-primary" role="button" href="{% url 'sales:transaction_enquiry' %}">View Sales</a>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chart_2" width="400" height="400"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-6">
+                            <div class="card">
+                                <div class="d-flex justify-content-between card-header bg-white font-weight-bold">
+                                    <span>Invoices you need to pay</span>
+                                    <a class="btn btn-sm btn-primary" role="button" href="{% url 'purchases:transaction_enquiry' %}">View Purchases</a>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chart_3" width="400" height="400"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js" integrity="sha512-d9xgZrVZpmmQlfonhQUvTR7lMPtO7NkZMkA0ABN3PHCbKA5nqylQ/yWlFAyY6hYgdF1Qh6nYiuADWwKB4C2WSw==" crossorigin="anonymous"></script>
+<script>
+    $(document).ready(function(){
+
+        var ctx1 = document.getElementById("chart_1").getContext("2d");
+
+        var data = {
+            labels: ["01 2020", "02 2020", "03 2020"],
+            datasets: [{
+                label: "Cash In",
+                backgroundColor: "#89d0f5",
+                data: [3, 7, 4]
+            }, {
+                label: "Cash Out",
+                backgroundColor: "#d6dade",
+                data: [4, 3, 5]
+            }]
+        };
+
+        var doubleBarChart = new Chart(ctx1, {
+            type: 'bar',
+            data: data,
+            options: {
+                barValueSpacing: 20,
+                scales: {
+                yAxes: [{
+                    ticks: {
+                    min: 0,
+                    }
+                }]
+                }
+            }
+        });
+
+        var ctx2 = document.getElementById("chart_2").getContext("2d");
+
+        var myChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ["Older", "4 periods ago", "3 periods ago", "2 periods ago", "1 period ago", "Current"],
+                datasets: [{
+                    label: '# of Tomatoes',
+                    data: [12, 19, 3, 5, 2, 3, 20, 3, 5, 6, 2, 1],
+                    backgroundColor: [
+                        "#d6dade",
+                        "#89d0f5",
+                        "#89d0f5",
+                        "#89d0f5",
+                        "#89d0f5",
+                        "#89d0f5"
+                    ],
+                }]
+            },
+            options: {
+                legend: false,
+                scales: {
+                yAxes: [{
+                    ticks: {
+                    beginAtZero: true
+                    }
+                }]
+                }
+            }
+        });
+
+        var ctx3 = document.getElementById("chart_3").getContext("2d");
+
+        var myChart = new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: ["Older", "4 periods ago", "3 periods ago", "2 periods ago", "1 period ago", "Current"],
+                datasets: [{
+                    label: '# of Tomatoes',
+                    data: [12, 19, 3, 5, 2, 3, 20, 3, 5, 6, 2, 1],
+                    backgroundColor: [
+                        "#d6dade",
+                        "#89d0f5",
+                        "#89d0f5",
+                        "#89d0f5",
+                        "#89d0f5",
+                        "#89d0f5"
+                    ]
+                }]
+            },
+            options: {
+                legend: false,
+                scales: {
+                yAxes: [{
+                    ticks: {
+                    beginAtZero: true
+                    }
+                }]
+                }
+            }
+        });
+
+
+    });
+</script>
+{% endblock js %}

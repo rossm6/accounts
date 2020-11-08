@@ -25,6 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('cashbook/', include("cashbook.urls")),
     path('contacts/', include("contacts.urls")),
+    path('dashboard/', include("dashboard.urls")),
     path('nominals/', include("nominals.urls")),
     path('purchases/', include("purchases.urls")),
     path('sales/', include("sales.urls")),
@@ -32,5 +33,5 @@ urlpatterns = [
     path('users/', include("django.contrib.auth.urls")),
     path('vat/', include("vat.urls")),
     path('', RedirectView.as_view(url=reverse_lazy(
-        "purchases:transaction_enquiry")), name="home")
+        "dashboard:dashboard")), name="home")
 ]
