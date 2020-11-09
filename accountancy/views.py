@@ -6,8 +6,7 @@ from itertools import chain, groupby
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.postgres.search import (SearchQuery, SearchRank,
-                                            SearchVector, TrigramSimilarity)
+from django.contrib.postgres.search import TrigramSimilarity
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q, Sum
 from django.http import (Http404, HttpResponse, HttpResponseForbidden,
@@ -26,6 +25,12 @@ from accountancy.helpers import (AuditTransaction, Period,
                                  non_negative_zero_decimal, sort_multiple)
 
 
+"""
+Remove format dates.  Use convert objects instead.
+Remove non_negative_zero_decimal
+"""
+
+
 def format_dates(objects, date_keys, format):
     """
     Convert date or datetime objects to the format specified.
@@ -33,121 +38,141 @@ def format_dates(objects, date_keys, format):
     for obj in objects:
         for key in obj:
             if key in date_keys:
-                try:
-                    string_format = obj[key].strftime(format)
-                    obj[key] = string_format
-                except AttributeError:
-                    pass
+                obj[key] = obj[key].strftime(format)
 
 
-def get_search_vectors(searchable_fields):
-    search_vectors = [
-        SearchVector(field)
-        for field in searchable_fields
-    ]
-    return functools.reduce(lambda a, b: a + b, search_vectors)
-
-
-def get_trig_vectors_for_different_inputs(fields_and_inputs):
+def get_trig_vectors_for_different_inputs(model_attrs_and_inputs):
     """
-    This builds a TrigramSimilarity search across multiple columns / fields
-    for the given input.
+    This builds a TrigramSimilarity search across many model attributes
+    for the given search input.
     """
     trig_vectors = [
-        TrigramSimilarity(field, _input)
-        for field, _input in fields_and_inputs
+        TrigramSimilarity(model_attr, search_input)
+        for model_attr, search_input in model_attrs_and_inputs
     ]
     return functools.reduce(lambda a, b: a + b, trig_vectors)
 
 
-class jQueryDataTable:
+def get_value(obj, field):
+    try:
+        return getattr(obj, field)
+    except AttributeError:
+        return obj.get(field)
+
+
+class jQueryDataTableMixin:
+    """
+    A mixin to help with implementing jQueryDataTables where the data is gotten via Ajax.
+    """
+    paginate_by = 25
+
+    def get(self, request, *args, **kwargs):
+        if request.is_ajax():
+            table_data = self.get_table_data()
+            return JsonResponse(data=table_data, safe=False)
+        return self.render_to_response(self.load_page())
+
+    def get_table_data(self, **kwargs):
+        pass
+
+    def load_page(self, **kwargs):
+        pass
 
     def paginate_objects(self, objects):
         """
-        Only use this if you are using pagination.  Not suitable
-        for jQueryDataTable scroller.
+        Only use this if you are using pagination.  It isn't suitable for jQuery scroller because the
+        scroller will request slices which don't necessarily conform to the whole pages.
         """
         start = self.request.GET.get("start", 0)
-        paginate_by = self.request.GET.get("length", 25)
-        p = Paginator(objects, paginate_by)
-        trans_count = p.count
+        paginate_by = self.request.GET.get("length", self.paginate_by)
+        paginator_obj = Paginator(objects, paginate_by)
         page_number = int(int(start) / int(paginate_by)) + 1
         try:
-            page_obj = p.page(page_number)
+            page_obj = paginator_obj.page(page_number)
         except PageNotAnInteger:
-            page_obj = p.page(1)
+            page_obj = paginator_obj.page(1)
         except EmptyPage:
-            page_obj = p.page(1)
-            page_obj.object_list = []
-            page_obj.has_other_pages = False
-        return p, page_obj
+            page_obj = paginator_obj.page(paginator_obj.num_pages)
+        return paginator_obj, page_obj
 
-    def order_objects(self, objs, type="dict"):
+    def order_objects(self, objs):
         """
         Sometimes it is not possible in Django to use the ORM, or it would be tricky,
         so we have to order in python.
-
-        Supports model instances and dict objects.  Just specify the type as either
-        "dict" or "instance"
         """
-        orm_ordering = self.order_by()  # so we don't repeat ourselves
+        orm_ordering = self.order_by()
         ordering = []
         for order in orm_ordering:
             if order[0] == "-":
                 field = order[1:]
-                if type == "dict":
-                    ordering.append(
-                        (lambda obj: obj.get(field), True)  # descending
-                    )
-                else:
-                    ordering.append(
-                        (lambda obj: getattr(obj, field), True)  # descending
-                    )
+                desc = True
             else:
                 field = order
-                if type == "dict":
-                    ordering.append(
-                        (lambda obj: obj.get(field), False)  # ascending
-                    )
-                else:
-                    ordering.append(
-                        (lambda obj: getattr(obj, field), False)  # ascending
-                    )
+                desc = False
+            ordering.append(
+                (lambda obj: get_value(obj, field), desc)
+            )
         return sort_multiple(objs, *ordering)
 
     def order_by(self):
         ordering = []  # will pass this to ORM to order the fields correctly
         # create objects out of GET params
+        # without this package the QueryDict object is tricky to use.  We just want a nested dict
         d = parser.parse(self.request.GET.urlencode())
-        improved = {}
-        for key in d:
-            val = d[key]
-            if isinstance(val, dict):
-                val = list(val.values())
-            improved[key] = val
-        self.GET = improved
-        orders = self.GET.get("order", [])
-        columns = self.GET.get("columns", [])
-        if orders:
-            for order in orders:
-                column_index = order.get("column")
+        # which this package gives us.
+        order = d.get("order")
+        columns = d.get("columns")
+        if order:
+            for order_index, ordered_column in order.items():
+                column_index = ordered_column.get("column")
                 try:
                     column_index = int(column_index)
+                    if column_index >= 0:
+                        try:
+                            column = columns[column_index]
+                            field_name = column.get("data")
+                            if field_name:
+                                order_dir = ordered_column.get("dir")
+                                if order_dir in ["asc", "desc"]:
+                                    ordering.append(
+                                        ("" if order_dir ==
+                                         "asc" else "-") + field_name
+                                    )
+                        except IndexError as e:
+                            break
                 except:
                     break
-                if column_index >= 0:
-                    try:
-                        column = columns[column_index]
-                        field_name = column.get("data")
-                        if field_name:
-                            order_by = order.get("dir")
-                            if order_by in ["asc", "desc"]:
-                                ordering.append(
-                                    ("" if order_by == "asc" else "-") + field_name
-                                )
-                    except IndexError as e:
-                        break
         return ordering
+
+
+class CustomFilterjQueryDataTableMixin:
+    """
+    By default jQuery Datatables supports filtering by a single search input field.
+    Often times however we'll want to use our own form for filtering.
+    """
+
+    def get_filter_form_kwargs(self):
+        pass
+
+    def get_filter_form(self):
+        pass
+
+    def apply_filter(self):
+        # get form instance with GET data
+        pass
+
+    def filter_form_valid(self):
+        # get base queryset
+        # apply filtering based on form
+        # user can override this for advanced filtering e.g. use trigram search
+        pass
+
+    def filter_form_invalid(self):
+        # use default queryset instead
+        pass
+
+    def get_counts(self):
+        pass
 
 
 class SalesAndPurchaseSearchMixin:
@@ -223,7 +248,7 @@ class NominalSearchMixin:
         return queryset
 
 
-class BaseTransactionsList(jQueryDataTable, ListView):
+class BaseTransactionsList(jQueryDataTableMixin, ListView):
     converters = {}
 
     def get_list_of_search_values_for_model_attributes(self, form_cleaned_data):
@@ -321,6 +346,7 @@ class BaseTransactionsList(jQueryDataTable, ListView):
             }
             self.convert_object_values(row)
             rows.append(row)
+        # use convert_object_values instead
         format_dates(rows, self.datetime_fields, self.datetime_format)
         context_data["data"] = rows
         return context_data
@@ -1322,7 +1348,7 @@ class DeleteCashBookTransMixin:
         )
 
 
-class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
+class AgeMatchingReportMixin(jQueryDataTableMixin, TemplateResponseMixin, View):
 
     """
 
@@ -1643,7 +1669,7 @@ class AgeMatchingReportMixin(jQueryDataTable, TemplateResponseMixin, View):
         return self.form_template
 
 
-class LoadMatchingTransactions(jQueryDataTable, ListView):
+class LoadMatchingTransactions(jQueryDataTableMixin, ListView):
 
     """
     Standard django pagination will not work here

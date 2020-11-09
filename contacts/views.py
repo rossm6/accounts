@@ -3,7 +3,7 @@ from itertools import chain
 
 from accountancy.helpers import get_all_historical_changes
 from accountancy.views import (get_trig_vectors_for_different_inputs,
-                               jQueryDataTable)
+                               jQueryDataTableMixin)
 from crispy_forms.utils import render_crispy_form
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.forms import inlineformset_factory
@@ -21,7 +21,7 @@ from contacts.forms import ContactForm, ModalContactForm
 from contacts.models import Contact
 
 
-class ContactListView(LoginRequiredMixin, jQueryDataTable, TemplateResponseMixin, View):
+class ContactListView(LoginRequiredMixin, jQueryDataTableMixin, TemplateResponseMixin, View):
     model = Contact
     template_name = "contacts/contact_list.html"
     searchable_fields = ['code', 'name', 'email']

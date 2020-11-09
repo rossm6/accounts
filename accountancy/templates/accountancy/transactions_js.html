@@ -118,14 +118,18 @@ $(document).ready(function () {
                 for(var i = 0; i < fields.length; i++){
                     var field = $(fields[i]);
                     var name = field.attr("name");
-                    var value = field.val();
-                    if(field.attr("type") == "checkbox"){
-                        if(field.get(0).checked){
+                    if(name){
+                        // selectize widget creates an input without a name
+                        // so ignore these with this
+                        var value = field.val();
+                        if(field.attr("type") == "checkbox"){
+                            if(field.get(0).checked){
+                                data[name] = true;
+                            }
+                        }
+                        else{
                             data[name] = value;
                         }
-                    }
-                    else{
-                        data[name] = value;
                     }
                 }
                 $.ajax({
