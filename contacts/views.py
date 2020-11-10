@@ -1,7 +1,7 @@
-from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from itertools import chain
 
 from accountancy.helpers import get_all_historical_changes
+from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (get_trig_vectors_for_different_inputs,
                                jQueryDataTableMixin)
 from crispy_forms.utils import render_crispy_form
@@ -25,114 +25,37 @@ class ContactListView(LoginRequiredMixin, jQueryDataTableMixin, TemplateResponse
     model = Contact
     template_name = "contacts/contact_list.html"
     searchable_fields = ['code', 'name', 'email']
+    columns = searchable_fields
 
-    def get_model(self):
-        return self.model
+    def get_row_href(self, obj):
+        return reverse_lazy("contacts:detail", kwargs={"pk": obj.pk})
 
-    def get(self, request, *args, **kwargs):
-        if request.is_ajax():
-            # populate the table
-            context = self.get_context_for_ajax_request(**kwargs)
-            # need the recordsTotal i.e. not considering search
-            querysets = self.get_querysets()
-            counts = self.get_total_counts(querysets)
-            q_filter = self.request.GET.get("q")
-            if q_filter == "customer":
-                recordsTotal = counts["customer"]
-            elif q_filter == "supplier":
-                recordsTotal = counts["supplier"]
-            else:
-                recordsTotal = counts["all"]
-            data = {
-                "draw": int(self.request.GET.get("draw"), 0),
-                "recordsTotal": recordsTotal,
-                "recordsFiltered": context["paginator_object"].count,
-                "data": context["data"]
-            }
-            return JsonResponse(data=data, safe=False)
+    def get_queryset(self):
+        queryset_filter = self.request.GET.get("q")
+        if queryset_filter == "customers":
+            return self.get_model().objects.filter(customer=True)
+        elif queryset_filter == "suppliers":
+            return self.get_model().objects.filter(supplier=True)
         else:
-            page_load_context = self.get_page_load_context_data(**kwargs)
-            return self.render_to_response(page_load_context)
+            return self.get_model().objects.all()
 
-    def apply_search(self, queryset):
-        parsed_request = parser.parse(self.request.GET.urlencode())
-        if search_value := parsed_request["search"]["value"]:
-            queryset = queryset.annotate(
-                similarity=(
-                    get_trig_vectors_for_different_inputs([
-                        (field, search_value, )
-                        for field in self.searchable_fields
-                    ])
-                )
-            ).filter(similarity__gt=0.5)
-        return queryset
-
-    def get_querysets(self):
-        customers = self.get_model().objects.filter(customer=True)
-        suppliers = self.get_model().objects.filter(supplier=True)
-        return {
-            "customer": customers,
-            "supplier": suppliers,
-            "all": self.get_model().objects.all()
+    def load_page(self, **kwargs):
+        context = super().load_page(**kwargs)
+        queryset_filter = self.request.GET.get("q")
+        if queryset_filter == "customers":
+            contact_filter = "customers"
+        elif queryset_filter == "suppliers":
+            contact_filter = "suppliers"
+        else:
+            contact_filter = "all"
+        context["contact_filter"] = contact_filter
+        total_customers = self.get_model().objects.filter(customer=True).count()
+        total_suppliers = self.get_model().objects.filter(supplier=True).count()
+        context["counts"] = {
+            "customers": total_customers,
+            "suppliers": total_suppliers,
+            "all": total_customers + total_suppliers
         }
-
-    def get_total_counts(self, querysets):
-        counts = {}
-        for q in querysets:
-            copy_queryset = querysets[q].all()
-            counts[q] = copy_queryset.count()
-        return counts
-
-    def get_page_load_context_data(self, **kwargs):
-        context = {}
-        querysets = self.get_querysets()
-        q_filter = self.request.GET.get("q")
-        if q_filter == "customer":
-            context["contact_filter"] = "customer"
-        elif q_filter == "supplier":
-            context["contact_filter"] = "supplier"
-        else:
-            context["contact_filter"] = "all"
-        # for the nav bar
-        counts = self.get_total_counts(querysets)
-        context["counts"] = counts
-        return context
-
-    def get_context_for_ajax_request(self, **kwargs):
-        context = {}
-        querysets = self.get_querysets()
-        q_filter = self.request.GET.get("q")
-        if q_filter == 'customer':
-            q = querysets["customer"]
-            q = self.apply_search(q)
-            contacts = q.order_by(*self.order_by())
-        elif q_filter == 'supplier':
-            q = querysets["supplier"]
-            q = self.apply_search(q)
-            contacts = q.order_by(*self.order_by())
-        else:
-            q = querysets["all"]
-            q = self.apply_search(q)
-            contacts = q.order_by(*self.order_by())
-
-        paginator_object, page_object = self.paginate_objects(contacts)
-        rows = []
-        for contact in page_object.object_list:
-            o = {
-                "code": contact.code,
-                "name": contact.name,
-                "email": contact.email
-            }
-            pk = contact.pk
-            href = reverse_lazy(
-                "contacts:detail", kwargs={"pk": pk})
-            o["DT_RowData"] = {
-                "pk": pk,
-                "href": href
-            }
-            rows.append(o)
-        context["paginator_object"] = paginator_object
-        context["data"] = rows
         return context
 
 

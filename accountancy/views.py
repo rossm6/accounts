@@ -24,7 +24,6 @@ from accountancy.helpers import (AuditTransaction, Period,
                                  bulk_delete_with_history,
                                  non_negative_zero_decimal, sort_multiple)
 
-
 """
 Remove format dates.  Use convert objects instead.
 Remove non_negative_zero_decimal
@@ -65,6 +64,8 @@ class jQueryDataTableMixin:
     A mixin to help with implementing jQueryDataTables where the data is gotten via Ajax.
     """
     paginate_by = 25
+    searchable_fields = None
+    row_identifier = None
 
     def get(self, request, *args, **kwargs):
         if request.is_ajax():
@@ -72,11 +73,67 @@ class jQueryDataTableMixin:
             return JsonResponse(data=table_data, safe=False)
         return self.render_to_response(self.load_page())
 
-    def get_table_data(self, **kwargs):
+    def apply_filter(self, queryset, **kwargs):
+        parsed_request = parser.parse(self.request.GET.urlencode())
+        if search_value := parsed_request["search"]["value"]:
+            if self.searchable_fields:
+                queryset = queryset.annotate(
+                    similarity=(
+                        get_trig_vectors_for_different_inputs([
+                            (field, search_value, )
+                            for field in self.searchable_fields
+                        ])
+                    )
+                ).filter(similarity__gt=0.5)
+        return queryset
+
+    def get_row(self, obj):
+        row = {}
+        for column in self.columns:
+            row[column] = getattr(obj, column)
+        return row
+
+    def get_row_href(self, obj):
         pass
 
+    def get_model(self):
+        return self.model
+
+    def get_queryset(self):
+        return self.get_model().objects.all()
+
+    def get_row_identifier(self, row):
+        if self.row_identifier:
+            return getattr(row, self.row_identifier)
+        return row.pk
+
+    def get_table_data(self, **kwargs):
+        queryset = self.get_queryset()
+        queryset = self.apply_filter(queryset, **kwargs)
+        queryset = queryset.order_by(*self.order_by())
+        queryset_cp = queryset.all()  # for getting the count
+        paginator_object, page_object = self.paginate_objects(queryset)
+        rows = []
+        for obj in page_object.object_list:
+            row = self.get_row(obj)
+            row["DT_RowData"] = {
+                "pk": self.get_row_identifier(obj),
+                "href": self.get_row_href(obj)
+            }
+            rows.append(row)
+        draw = int(self.request.GET.get("draw"), 0)
+        recordsTotal = queryset_cp.count()
+        recordsFiltered = paginator_object.count
+        data = rows
+        return {
+            "draw": draw,
+            "recordsTotal": recordsTotal,
+            "recordsFiltered": recordsFiltered,
+            "data": data
+        }
+
     def load_page(self, **kwargs):
-        pass
+        return {}
 
     def paginate_objects(self, objects):
         """
@@ -149,42 +206,63 @@ class CustomFilterjQueryDataTableMixin:
     """
     By default jQuery Datatables supports filtering by a single search input field.
     Often times however we'll want to use our own form for filtering.
+
+    The form is rendered on the client like the table data, via ajax.  So we must
+    render the form in the view.
     """
 
-    def get_filter_form_kwargs(self):
-        pass
+    def get_table_data(self, **kwargs):
+        """
+        get table data and filter form
+        """
+        use_form = True if self.request.GET.get("use_adv_search") else False
+        if use_form:
+            form = self.get_filter_form(bind_form=True)
+        else:
+            form = self.get_filter_form()
+        kwargs["form"] = form
+        table_data = super().get_table_data(**kwargs)
+        ctx = {}
+        ctx.update(csrf(self.request))
+        form_html = render_crispy_form(form, context=ctx)
+        table_data["form"] = form_html
+        return table_data
 
-    def get_filter_form(self):
-        pass
+    def get_filter_form_kwargs(self, **kwargs):
+        form_kwargs = {}
+        if kwargs.get("bind_form"):
+            form_kwargs.update({"data": self.request.GET})
+        return form_kwargs
 
-    def apply_filter(self):
-        # get form instance with GET data
-        pass
+    def get_filter_form(self, **kwargs):
+        return self.filter_form_class(
+            **self.get_filter_form_kwargs(**kwargs)
+        )
 
-    def filter_form_valid(self):
-        # get base queryset
-        # apply filtering based on form
-        # user can override this for advanced filtering e.g. use trigram search
-        pass
+    def apply_filter(self, queryset, **kwargs):
+        if form := kwargs.get("form"):
+            if form.is_valid():
+                queryset = self.filter_form_valid(queryset, form)
+            else:
+                queryset = self.filter_form_invalid(queryset, form)
+        return queryset
 
-    def filter_form_invalid(self):
-        # use default queryset instead
-        pass
+    def filter_form_valid(self, queryset, form):
+        return queryset
 
-    def get_counts(self):
-        pass
+    def filter_form_invalid(self, queryset, form):
+        return queryset
 
 
 class SalesAndPurchaseSearchMixin:
-    def apply_advanced_search(self, cleaned_data):
+    def apply_advanced_search(self, queryset, cleaned_data):
         reference = cleaned_data.get("reference")
         total = cleaned_data.get("total")
         period = cleaned_data.get("period")
         search_within = cleaned_data.get("search_within")
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
-        queryset = self.get_queryset()
-
+        include_voided = cleaned_data.get("include_voided")
         if reference:
             queryset = (
                 queryset.annotate(
@@ -214,6 +292,8 @@ class SalesAndPurchaseSearchMixin:
             if search_within == "any" or search_within == "due":
                 q_object_end_date |= Q(due_date__lte=end_date)
             queryset = queryset.filter(q_object_end_date)
+        if not include_voided:
+            queryset = queryset.exclude(status="v")
         return queryset
 
 
@@ -248,126 +328,40 @@ class NominalSearchMixin:
         return queryset
 
 
-class BaseTransactionsList(jQueryDataTableMixin, ListView):
-    converters = {}
+class BaseTransactionsList(CustomFilterjQueryDataTableMixin,
+                           jQueryDataTableMixin,
+                           TemplateResponseMixin,
+                           View):
+    column_transformers = {}
 
     def get_list_of_search_values_for_model_attributes(self, form_cleaned_data):
         return [
-            (model_field, form_cleaned_data.get(form_field, ""))
-            for form_field, model_field in self.form_field_to_searchable_model_field.items()
+            (model_attr, form_cleaned_data.get(form_field, ""))
+            for form_field, model_attr in self.form_field_to_searchable_model_attr.items()
         ]
 
-    def exclude_from_queryset(self, queryset):
-        return queryset
-
-    def apply_advanced_search(self, cleaned_data):
-        raise NotImplementedError
-
-    def get_form_kwargs(self, **kwargs):
-        form_kwargs = {}
-        if kwargs.get("pass_data"):
-            form_kwargs.update({"data": self.request.GET})
-        return form_kwargs
-
-    def get_search_form(self, **kwargs):
-        return self.advanced_search_form_class(
-            **self.get_form_kwargs(**kwargs)
-        )
-
-    def form_valid(self, form):
-        queryset = self.apply_advanced_search(form.cleaned_data)
-        if not form.cleaned_data["include_voided"]:
-            self.exclude_from_queryset(queryset)
-        return queryset
-
-    def form_invalid(self, form):
-        queryset = self.get_queryset()
-        self.exclude_from_queryset(queryset)
-        return queryset
-
-    def convert_object_values(self, row):
-        """
-        row is a model instance dictionary.
-        """
-        for field, converter in self.converters.items():
-            row[field] = converter(row[field])
-        return row
-
-    def get_context_data(self, **kwargs):
+    def load_page(self, **kwargs):
         context_data = {}
         context_data["columns"] = [field[0] for field in self.fields]
         context_data["column_labels"] = [field[1] for field in self.fields]
-        if self.request.is_ajax() and self.request.method == "GET" and self.request.GET.get('use_adv_search'):
-            form = self.get_search_form(pass_data=True)
-            # form = AdvancedTransactionSearchForm(data=self.request.GET)
-            # This form was not validating despite a valid datetime being entered on the client
-            # The problem was jquery.serialize encodes
-            # And on top of this jQuery datatable does also
-            # solution on client - do not use jQuery.serialize
-            if form.is_valid():
-                queryset = self.form_valid(form)
-            else:
-                queryset = self.form_invalid(form)
-        else:
-            form = self.get_search_form()
-            queryset = self.get_queryset()
-            queryset = self.exclude_from_queryset(queryset)
-        # rather than render the form in in the template
-        ctx = {}
-        ctx.update(csrf(self.request))
-        context_data["form"] = render_crispy_form(form, context=ctx)
-
-        start = self.request.GET.get("start", 0)
-        paginate_by = self.request.GET.get("length", 25)
-        p = Paginator(queryset, paginate_by)
-        trans_count = p.count
-        page_number = int(int(start) / int(paginate_by)) + 1
-        try:
-            page_obj = p.page(page_number)
-        except PageNotAnInteger:
-            page_obj = p.page(1)
-        except EmptyPage:
-            page_obj = p.page(1)
-            page_obj.object_list = self.get_queryset().none()
-            page_obj.has_other_pages = False
-        context_data["paginator_obj"] = p
-        context_data["page_obj"] = page_obj
-        rows = []
-
-        if identifier := hasattr(self, 'row_identifier'):
-            identifier = self.row_identifier
-        else:
-            identifier = 'id'
-
-        for row in page_obj.object_list:
-            row["DT_RowData"] = {
-                "pk": row.get(identifier),
-                "href": self.get_transaction_url(row=row)
-            }
-            self.convert_object_values(row)
-            rows.append(row)
-        # use convert_object_values instead
-        format_dates(rows, self.datetime_fields, self.datetime_format)
-        context_data["data"] = rows
         return context_data
 
-    def render_to_response(self, context, **response_kwargs):
-        if self.request.is_ajax():
-            data = {
-                "draw": int(self.request.GET.get('draw'), 0),
-                "recordsTotal": context["paginator_obj"].count,
-                "recordsFiltered": context["paginator_obj"].count,
-                "data": context["data"],
-            }
-            data["form"] = context["form"]
-            return JsonResponse(data)
-        return super().render_to_response(context, **response_kwargs)
+    def get_row(self, obj):
+        for column, transformer in self.column_transformers.items():
+            obj[column] = transformer(obj[column])
+        return obj
+
+    def filter_form_valid(self, queryset, form):
+        return self.apply_advanced_search(queryset, form.cleaned_data)
+
+    def get_row_identifier(self, row):
+        if self.row_identifier:
+            return row[self.row_identifier]
+        return row["id"]
 
 
 class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsList):
-
-    def exclude_from_queryset(self, queryset):
-        return queryset.exclude(status="v")
+    pass
 
 
 class CashBookAndNominalTransList(NominalSearchMixin, BaseTransactionsList):

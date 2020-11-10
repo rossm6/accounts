@@ -164,24 +164,27 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
         ("paid", "Paid"),
         ("due", "Due"),
     ]
-    form_field_to_searchable_model_field = {
+    # perhaps we ought to just rename the field
+    # also consider adding resizable columns
+    form_field_to_searchable_model_attr = {
         "reference": "ref"
     }
-    datetime_fields = ["date", "due_date"]
-    datetime_format = '%d %b %Y'
-    advanced_search_form_class = PurchaseTransactionSearchForm
+    column_transformers = {
+        "date": lambda d: d.strftime('%d %b %Y'),
+        "due_date": lambda d: d.strftime('%d %b %Y')
+    }
+    filter_form_class = PurchaseTransactionSearchForm
     contact_name = "supplier"
     template_name = "purchases/transactions.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalContactForm(
+    def load_page(self):
+        context_data = super().load_page()
+        context_data["contact_form"] = ModalContactForm(
             action=reverse_lazy("contacts:create"), prefix="contact")
-        return context
+        return context_data
 
-    def get_transaction_url(self, **kwargs):
-        row = kwargs.pop("row")
-        pk = row["id"]
+    def get_row_href(self, obj):
+        pk = obj["id"]
         return reverse_lazy("purchases:view", kwargs={"pk": pk})
 
     def get_queryset(self):
@@ -196,8 +199,8 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
             .order_by(*self.order_by())
         )
 
-    def apply_advanced_search(self, cleaned_data):
-        queryset = super().apply_advanced_search(cleaned_data)
+    def apply_advanced_search(self, queryset, cleaned_data):
+        queryset = super().apply_advanced_search(queryset, cleaned_data)
         if supplier := cleaned_data.get("supplier"):
             queryset = queryset.filter(supplier=supplier)
         return queryset
