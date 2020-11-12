@@ -30,6 +30,7 @@ more-itertools = "*"
 pylint = "*"
 autopep8 = "*"
 pylint-django = "*"
+deepdiff = "*"
 
 [requires]
 python_version = "3.8"

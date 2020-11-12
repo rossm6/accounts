@@ -10,7 +10,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                EditPurchaseOrSalesTransaction, LoadContacts,
                                LoadMatchingTransactions,
                                SaleAndPurchaseViewTransaction,
-                               SalesAndPurchasesTransList, jQueryDataTableMixin)
+                               SalesAndPurchasesTransList, JQueryDataTableMixin)
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
 from django.contrib import messages

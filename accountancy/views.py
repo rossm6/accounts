@@ -25,20 +25,8 @@ from accountancy.helpers import (AuditTransaction, Period,
                                  non_negative_zero_decimal, sort_multiple)
 
 """
-Remove format dates.  Use convert objects instead.
 Remove non_negative_zero_decimal
 """
-
-
-def format_dates(objects, date_keys, format):
-    """
-    Convert date or datetime objects to the format specified.
-    """
-    for obj in objects:
-        for key in obj:
-            if key in date_keys:
-                obj[key] = obj[key].strftime(format)
-
 
 def get_trig_vectors_for_different_inputs(model_attrs_and_inputs):
     """
@@ -59,7 +47,7 @@ def get_value(obj, field):
         return obj.get(field)
 
 
-class jQueryDataTableMixin:
+class JQueryDataTableMixin:
     """
     A mixin to help with implementing jQueryDataTables where the data is gotten via Ajax.
     """
@@ -121,7 +109,7 @@ class jQueryDataTableMixin:
                 "href": self.get_row_href(obj)
             }
             rows.append(row)
-        draw = int(self.request.GET.get("draw"), 0)
+        draw = int(self.request.GET.get("draw", 0))
         recordsTotal = queryset_cp.count()
         recordsFiltered = paginator_object.count
         data = rows
@@ -202,7 +190,7 @@ class jQueryDataTableMixin:
         return ordering
 
 
-class CustomFilterjQueryDataTableMixin:
+class CustomFilterJQueryDataTableMixin:
     """
     By default jQuery Datatables supports filtering by a single search input field.
     Often times however we'll want to use our own form for filtering.
@@ -268,7 +256,7 @@ class SalesAndPurchaseSearchMixin:
                 queryset.annotate(
                     similarity=(
                         get_trig_vectors_for_different_inputs(
-                            self.get_list_of_search_values_for_model_attributes(
+                            self.get_list_of_search_values_for_model_attrs(
                                 cleaned_data)
                         )
                     )
@@ -311,7 +299,7 @@ class NominalSearchMixin:
                 queryset.annotate(
                     similarity=(
                         get_trig_vectors_for_different_inputs(
-                            self.get_list_of_search_values_for_model_attributes(
+                            self.get_list_of_search_values_for_model_attrs(
                                 cleaned_data)
                         )
                     )
@@ -328,13 +316,13 @@ class NominalSearchMixin:
         return queryset
 
 
-class BaseTransactionsList(CustomFilterjQueryDataTableMixin,
-                           jQueryDataTableMixin,
+class BaseTransactionsList(CustomFilterJQueryDataTableMixin,
+                           JQueryDataTableMixin,
                            TemplateResponseMixin,
                            View):
     column_transformers = {}
 
-    def get_list_of_search_values_for_model_attributes(self, form_cleaned_data):
+    def get_list_of_search_values_for_model_attrs(self, form_cleaned_data):
         return [
             (model_attr, form_cleaned_data.get(form_field, ""))
             for form_field, model_attr in self.form_field_to_searchable_model_attr.items()
@@ -467,12 +455,10 @@ class RESTBaseTransactionMixin:
             return self.line.get('prefix', 'line')
 
     def get_line_formset_kwargs(self, header=None):
-
         kwargs = {
             'prefix': self.get_line_prefix(),
             'queryset': self.get_line_formset_queryset()
         }
-
         if self.request.method in ('POST', 'PUT'):
             # passing in data will mean the form will use the POST queryset
             # which means potentially huge choices rendered on the client
@@ -483,15 +469,12 @@ class RESTBaseTransactionMixin:
             kwargs.update({
                 'header': header
             })
-
         if (self.requires_lines(self.header_form) and not self.requires_analysis(self.header_form)):
             brought_forward = True
         else:
             brought_forward = False
-
         kwargs["brought_forward"] = brought_forward
         # need to tell the formset the forms contained should have the nominal and vat code field hidden
-
         return kwargs
 
     def get_line_formset(self, header=None):
@@ -624,18 +607,15 @@ class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMi
         return self.get_match_model().objects.none()
 
     def get_match_formset_kwargs(self, header=None):
-
         kwargs = {
             'prefix': self.get_match_prefix(),
             'queryset': self.get_match_formset_queryset(),
             'match_by': header
         }
-
         if self.request.method in ('POST', 'PUT'):
             kwargs.update({
                 'data': self.request.POST,
             })
-
         return kwargs
 
     def get_match_formset(self, header=None):
@@ -1342,26 +1322,10 @@ class DeleteCashBookTransMixin:
         )
 
 
-class AgeMatchingReportMixin(jQueryDataTableMixin, TemplateResponseMixin, View):
+class AgeMatchingReportMixin(JQueryDataTableMixin, TemplateResponseMixin, View):
 
     """
-
-        CHALLENGE YOURSELF!
-
-            This report does nearly all the work in Python i.e. it pulls out
-            the data from the database and then applies filtering and ordering
-            in Python.  It would be interesting to ee how much could be done
-            in Postgresql directly as I'm pretty confident the ORM cannot
-            be used further.
-
-        Why do it in Python?
-
-            Ordering cannot be applied at the SQL level since the values to be ordered -
-            some at least - are not known when the query executes.  Only after another
-            sql are we in a position to calculate these values.  Likewise, filtering
-            cannot be applied either until the these values have been calculated.
-
-        This is how we approach the problem -
+        Overview -
 
             Get all the transactions out of the DB.  And all the matching transactions.
 
@@ -1663,7 +1627,7 @@ class AgeMatchingReportMixin(jQueryDataTableMixin, TemplateResponseMixin, View):
         return self.form_template
 
 
-class LoadMatchingTransactions(jQueryDataTableMixin, ListView):
+class LoadMatchingTransactions(JQueryDataTableMixin, ListView):
 
     """
     Standard django pagination will not work here
