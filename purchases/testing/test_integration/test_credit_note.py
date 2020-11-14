@@ -23,7 +23,7 @@ from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
-MATCHING_FORM_PREFIX = "match"
+match_form_prefix = "match"
 PERIOD = '202007'  # the calendar month i made the change !
 PL_MODULE = "PL"
 
@@ -185,7 +185,7 @@ class CreateCreditNoteNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
 
             'description': self.description,
@@ -498,7 +498,7 @@ class CreateCreditNoteNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
             'description': self.description,
             'goods': 100,
@@ -771,7 +771,7 @@ class CreateCreditNoteNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
             'description': self.description,
             'goods': 0,
@@ -1063,7 +1063,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {
                                                   "id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': 20,
@@ -1539,7 +1539,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {
                                                   "id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1652,7 +1652,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {
                                                   "id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': 0,
@@ -1699,7 +1699,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": -2400})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': 100,
@@ -2053,7 +2053,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": 0})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': 100,
@@ -2396,7 +2396,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": -0.01})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
 
             'description': self.description,
@@ -2480,7 +2480,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": -2400.01})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
 
             'description': self.description,
@@ -2564,7 +2564,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": -1200})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': 100,
@@ -2914,7 +2914,7 @@ class CreateCreditNoteNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
             'description': self.description,
             'goods': -100,
@@ -3226,7 +3226,7 @@ class CreateCreditNoteNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
             'description': self.description,
             'goods': -100,
@@ -3550,7 +3550,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": 2400})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': -100,
@@ -3905,7 +3905,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": 0})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': -100,
@@ -4248,7 +4248,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": 0.01})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
 
             'description': self.description,
@@ -4333,7 +4333,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": 2400.01})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
 
             'description': self.description,
@@ -4418,7 +4418,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
                                                   "id": "matched_to"}, {"value": 1200})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         line_forms = ([{
             'description': self.description,
             'goods': -100,
@@ -5093,7 +5093,7 @@ class EditCreditNoteNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -5631,7 +5631,7 @@ class EditCreditNoteNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -6091,7 +6091,7 @@ class EditCreditNoteNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -6608,7 +6608,7 @@ class EditCreditNoteNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -7129,7 +7129,7 @@ class EditCreditNoteNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -7395,7 +7395,7 @@ class EditCreditNoteNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -7863,7 +7863,7 @@ class EditCreditNoteNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {
                                                   "id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -8048,7 +8048,7 @@ class EditCreditNoteNominalEntries(TestCase):
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -8333,7 +8333,7 @@ class EditCreditNoteNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -8367,7 +8367,7 @@ class EditCreditNoteNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -8430,7 +8430,7 @@ class EditCreditNoteNominalEntries(TestCase):
             "value": headers[1].total,
         })
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(reverse("purchases:create"), data)
         self.assertEqual(
@@ -8526,7 +8526,7 @@ class EditCreditNoteNominalEntries(TestCase):
             "id": matches[0].pk
         })
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
@@ -8572,7 +8572,7 @@ class EditCreditNoteNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -8607,7 +8607,7 @@ class EditCreditNoteNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -8671,7 +8671,7 @@ class EditCreditNoteNominalEntries(TestCase):
             "value": headers[1].total,
         })
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(reverse("purchases:create"), data)
         self.assertEqual(
@@ -8767,7 +8767,7 @@ class EditCreditNoteNominalEntries(TestCase):
             "id": matches[0].pk
         })
         matching_data = create_formset_data(
-            MATCHING_FORM_PREFIX, matching_forms)
+            match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
@@ -9032,7 +9032,7 @@ class EditCreditNoteNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})

@@ -21,7 +21,7 @@ from ..models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
-MATCHING_FORM_PREFIX = "match"
+match_form_prefix = "match"
 PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
 
@@ -139,7 +139,7 @@ class GeneralTransactionTests(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
                 
                 'description': self.description,
@@ -178,7 +178,7 @@ class GeneralTransactionTests(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
                 
                 'description': self.description,
@@ -286,7 +286,7 @@ class GeneralTransactionTests(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": header.pk})
@@ -412,7 +412,7 @@ class GeneralTransactionTests(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": header.pk})

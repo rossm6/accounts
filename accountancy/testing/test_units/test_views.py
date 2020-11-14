@@ -3,7 +3,8 @@ from datetime import date
 import mock
 from accountancy.views import (BaseTransactionsList,
                                CustomFilterJQueryDataTableMixin,
-                               JQueryDataTableMixin, get_value)
+                               JQueryDataTableMixin, RESTBaseTransactionMixin,
+                               get_value)
 from deepdiff import DeepDiff
 from django.test import TestCase
 from nominals.models import Nominal
@@ -476,11 +477,12 @@ class JQueryDataTableMixinTests(TestCase):
 
     def test_get_queryset(self):
         j = JQueryDataTableMixin()
-        with mock.patch.object(j, "get_model") as mock_model:
-            self.assertEqual(
-                j.get_queryset()._extract_mock_name(),
-                "get_model().objects.all()"
-            )
+        j.model = mock.Mock()
+        q = j.get_queryset()
+        self.assertEqual(
+            q._extract_mock_name(),
+            "mock.objects.all()"
+        )
 
     """
     test get_table_data method
@@ -878,7 +880,17 @@ class BaseTransactionsListTests(TestCase):
 
 
 class RESTBaseTransactionMixinTests(TestCase):
-    pass
+
     """
-    Remove unncessary getter methods first !!!
+    test get_transaction_type_object method
+    """
+
+    def test_get_transaction_type_object_without_attribute(self):
+        pass
+
+    def test_get_transaction_type_object_with_attribute(self):
+        pass
+
+    """
+    test 
     """

@@ -89,7 +89,7 @@ class JQueryDataTableMixin:
         return self.model
 
     def get_queryset(self):
-        return self.get_model().objects.all()
+        return self.model.objects.all()
 
     def get_row_identifier(self, row):
         if self.row_identifier:
@@ -321,7 +321,8 @@ class BaseTransactionsList(CustomFilterJQueryDataTableMixin,
                            TemplateResponseMixin,
                            View):
     column_transformers = {}
-    form_field_to_searchable_model_attr = {} # keys are those fields you want to show form,
+    # keys are those fields you want to show form,
+    form_field_to_searchable_model_attr = {}
     # values are those model attrs the form field maps to
 
     def get_list_of_search_values_for_model_attrs(self, form_cleaned_data):
@@ -363,15 +364,6 @@ class CashBookAndNominalTransList(NominalSearchMixin, BaseTransactionsList):
 
 class RESTBaseTransactionMixin:
 
-    def get_nominal_model(self):
-        return self.nominal_model
-
-    def get_vat_transaction_model(self):
-        return self.vat_transaction_model
-
-    def get_nominal_transaction_model(self):
-        return self.nominal_transaction_model
-
     def create_or_update_related_transactions(self, **kwargs):
         self.create_or_update_nominal_transactions(**kwargs)
         self.create_or_update_vat_transactions(**kwargs)
@@ -382,9 +374,6 @@ class RESTBaseTransactionMixin:
         else:
             self.transaction_type_object = self.header_obj.get_type_transaction()
             return self.transaction_type_object
-
-    def get_module(self):
-        return self.module
 
     def lines_should_be_ordered(self):
         if hasattr(self, "line"):
@@ -397,12 +386,10 @@ class RESTBaseTransactionMixin:
         kwargs = {
             'prefix': self.get_header_prefix()
         }
-
         if self.request.method in ('POST', 'PUT'):
             kwargs.update({
                 'data': self.request.POST,
             })
-
         return kwargs
 
     def get_header_form(self):
@@ -413,41 +400,29 @@ class RESTBaseTransactionMixin:
         return self.header_form
 
     def requires_analysis(self, header_form):
+        t = None
         if hasattr(header_form, "cleaned_data"):
-            if t := header_form.cleaned_data.get("type"):
-                if t in self.get_header_model().get_types_requiring_analysis():
-                    return True
-                else:
-                    return False
-        if t := self.header_form.initial.get('type'):
+            t = header_form.cleaned_data.get("type")
+        else:
+            t = self.header_form.initial.get('type')
+        if t:
             if t in self.get_header_model().get_types_requiring_analysis():
                 return True
-            # we need this because read only forms used for the detail transaction view
-            # convert the initial choice value to the choice label
-            if t in self.get_header_model().get_type_names_requiring_analysis():
-                return True
-        else:
-            return False
+        return False
 
     def get_header_model(self):
         return self.header.get('model')
 
     def requires_lines(self, header_form):
+        t = None
         if hasattr(header_form, "cleaned_data"):
-            if t := header_form.cleaned_data.get("type"):
-                if t in self.get_header_model().get_types_requiring_lines():
-                    return True
-                else:
-                    return False
-        if t := self.header_form.initial.get('type'):
+            t = header_form.cleaned_data.get("type")
+        else:
+            t = self.header_form.initial.get('type')
+        if t:
             if t in self.get_header_model().get_types_requiring_lines():
                 return True
-            # we need this because read only forms used for the detail transaction view
-            # convert the initial choice value to the choice label
-            if t in self.get_header_model().get_type_names_requiring_lines():
-                return True
-        else:
-            return False
+        return False
 
     def get_line_model(self):
         return self.line.get('model')
@@ -465,8 +440,6 @@ class RESTBaseTransactionMixin:
             'queryset': self.get_line_formset_queryset()
         }
         if self.request.method in ('POST', 'PUT'):
-            # passing in data will mean the form will use the POST queryset
-            # which means potentially huge choices rendered on the client
             if self.requires_lines(self.header_form):
                 kwargs.update({
                     'data': self.request.POST
@@ -478,8 +451,9 @@ class RESTBaseTransactionMixin:
             brought_forward = True
         else:
             brought_forward = False
+        # a flag used for UI rendering e.g. hide the nominal column
         kwargs["brought_forward"] = brought_forward
-        # need to tell the formset the forms contained should have the nominal and vat code field hidden
+        # and to decide whether the field is required server side
         return kwargs
 
     def get_line_formset(self, header=None):
@@ -490,25 +464,11 @@ class RESTBaseTransactionMixin:
                 formset_class = self.line.get('formset')
                 return formset_class(**self.get_line_formset_kwargs(header))
 
-    # This needs moving from the Base to the higher level class used
-    # only by sales and purchases
-    def matching_is_invalid(self):
-        self.match_formset = self.get_match_formset()
-        if self.match_formset:
-            self.match_formset.is_valid()
-            if self.match_formset.non_form_errors():
-                self.non_field_errors = True
-            for form in self.match_formset:
-                if form.non_field_errors():
-                    self.non_field_errors = True
-
     def lines_are_invalid(self):
         self.line_formset = self.get_line_formset()
-
         if self.line_formset:
             self.line_formset.is_valid()
-            # validation may have been called already but Django will not run full_clean
-            # again if so
+            # validation will not run again if this method has already been run
             # see is_valid method at - https://github.com/django/django/blob/master/django/forms/forms.py
             if self.line_formset.non_form_errors():
                 self.non_field_errors = True
@@ -524,26 +484,15 @@ class RESTBaseTransactionMixin:
         self.header_is_invalid()
         if self.requires_lines(self.get_header_form()):
             self.lines_are_invalid()
-        self.matching_is_invalid()
         return self.render_to_response(self.get_context_data())
 
     def post(self, request, *args, **kwargs):
-        """
-
-        This is for CB and NL at the moment only !!!
-
-        Handle POST requests: instantiate forms with the passed POST variables
-        and then check if it is valid
-
-        WARNING - LINE FORMSET MUST BE VALIDATED BEFORE MATCH FORMSET
-
-        """
         self.header_form = self.get_header_form()
         if self.header_form.is_valid():
-            # changed name from header because this is a cls attribute of course
             self.header_obj = self.header_form.save(commit=False)
             self.line_formset = self.get_line_formset(self.header_obj)
             if self.line_formset.is_valid():
+                self.header_obj.save()
                 self.lines_are_valid()
             else:
                 return self.invalid_forms()
@@ -569,85 +518,27 @@ class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMi
         return self.success_url
 
     def get_context_data(self, **kwargs):
-        # FIX ME - change 'matching_formset" to "match_formset" in the template
-
         if 'header_form' not in kwargs:
             kwargs["header_form"] = self.get_header_form()
-
-        if 'matching_formset' not in kwargs:
-            kwargs["matching_formset"] = self.get_match_formset()
         if 'header_prefix' not in kwargs:
             kwargs['header_form_prefix'] = self.get_header_prefix()
-
         if self.requires_lines(kwargs["header_form"]):
             if 'line_form_prefix' not in kwargs:
                 kwargs["line_form_prefix"] = self.get_line_prefix()
             if 'line_formset' not in kwargs:
                 kwargs["line_formset"] = self.get_line_formset()
-
-        if 'matching_form_prefix' not in kwargs:
-            kwargs["matching_form_prefix"] = self.get_match_prefix()
         if 'non_field_errors' not in kwargs:
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
-
         if 'negative_transaction_types' not in kwargs:
+            # calculator.js needs this
             kwargs['negative_transaction_types'] = self.get_header_model().negatives
-
         if hasattr(self, 'create_on_the_fly'):
             for form in self.create_on_the_fly:
-                # this is a form instance already
                 kwargs[form] = self.create_on_the_fly[form]
-
         return super().get_context_data(**kwargs)
 
-    def get_match_model(self):
-        return self.match.get('model')
-
-    def get_match_prefix(self):
-        if hasattr(self, 'match'):
-            return self.match.get('prefix', 'match')
-
-    def get_match_formset_queryset(self):
-        return self.get_match_model().objects.none()
-
-    def get_match_formset_kwargs(self, header=None):
-        kwargs = {
-            'prefix': self.get_match_prefix(),
-            'queryset': self.get_match_formset_queryset(),
-            'match_by': header
-        }
-        if self.request.method in ('POST', 'PUT'):
-            kwargs.update({
-                'data': self.request.POST,
-            })
-        return kwargs
-
-    def get_match_formset(self, header=None):
-        if hasattr(self, 'match'):
-            if hasattr(self, 'match_formset'):
-                return self.match_formset
-            else:
-                formset_class = self.match.get('formset')
-                return formset_class(**self.get_match_formset_kwargs(header))
-
-    # MIGHT BE OBSOLETE NOW
-    def header_is_payment_type(self):
-        return self.header_obj.type in ("pbp", "pp", "pbr", "pr")
-
-    def type_is_debit(self):
-        if t := self.header_form.instance.type:
-            pass
-        elif t := self.header_form.initial.get("type"):
-            pass
-        # if type is '' then user abusing UI so stuff them
-        if t in self.get_header_model().get_debit_types():
-            return True
-        else:
-            return False
-
     def get(self, request, *args, **kwargs):
-        """ Handle GET requests: instantiate a blank version of the form. """
         return self.render_to_response(self.get_context_data())
 
 
@@ -657,21 +548,17 @@ class RESTBaseCreateTransactionMixin:
         return self.default_type
 
     def get_header_form_type(self):
-        t = self.request.GET.get("t", self.get_default_type())
-        return t
+        return self.request.GET.get("t", self.get_default_type())
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
             "line_cls": self.get_line_model(),
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        # e.g. Invoice, CreditNote etc
         transaction_type_object = self.get_transaction_type_object()
-        # add nom trans as attribute so API response can return in JSON response
-        # for python api client
         self.nom_trans = transaction_type_object.create_nominal_transactions(
-            self.get_nominal_model(),
-            self.get_nominal_transaction_model(),
+            self.nominal_model,
+            self.nominal_transaction_model,
             **kwargs
         )
 
@@ -681,15 +568,13 @@ class RESTBaseCreateTransactionMixin:
         })
         transaction_type_object = self.get_transaction_type_object()
         self.vat_trans = transaction_type_object.create_vat_transactions(
-            self.get_vat_transaction_model(),
+            self.vat_transaction_model,
             **kwargs
         )
 
     def lines_are_valid(self):
         line_no = 1
         lines = []
-        self.header_obj.save()
-        self.header_has_been_saved = True
         line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
         ) else self.line_formset
         for form in line_forms:
@@ -724,25 +609,6 @@ class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
         context["header_type"] = self.get_header_form_type()
         return context
 
-    def matching_is_valid(self):
-        # Q - This flag may be obsolete now
-        if not hasattr(self, 'header_has_been_saved'):
-            self.header_obj.save()
-        matches = []
-        for form in self.match_formset:
-            if form.empty_permitted and form.has_changed():
-                match = form.save(commit=False)
-                match.matched_by_type = match.matched_by.type
-                match.matched_to_type = match.matched_to.type
-                if match.value != 0:
-                    matches.append(match)
-        if matches:
-            self.get_header_model().objects.audited_bulk_update(
-                self.match_formset.headers,
-                ['due', 'paid']
-            )
-            self.get_match_model().objects.audited_bulk_create(matches)
-
 
 class CreateCashBookEntriesMixin:
 
@@ -764,7 +630,58 @@ class CreateCashBookTransaction(CreateCashBookEntriesMixin, BaseCreateTransactio
     pass
 
 
-class MatchingMixin:
+class BaseMatchingMixin:
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["match_formset"] = self.get_match_formset()
+        context["match_prefix"] = self.get_match_prefix()
+        return context
+
+    def get_match_model(self):
+        return self.match.get('model')
+
+    def get_match_prefix(self):
+        if hasattr(self, 'match'):
+            return self.match.get('prefix', 'match')
+
+    def get_match_formset_queryset(self):
+        return self.get_match_model().objects.none()
+
+    def get_match_formset_kwargs(self, header=None):
+        kwargs = {
+            'prefix': self.get_match_prefix(),
+            'queryset': self.get_match_formset_queryset(),
+            'match_by': header
+        }
+        if self.request.method in ('POST', 'PUT'):
+            kwargs.update({
+                'data': self.request.POST,
+            })
+        return kwargs
+
+    def get_match_formset(self, header=None):
+        if hasattr(self, 'match'):
+            if hasattr(self, 'match_formset'):
+                return self.match_formset
+            else:
+                formset_class = self.match.get('formset')
+                return formset_class(**self.get_match_formset_kwargs(header))
+
+    def matching_is_invalid(self):
+        self.match_formset = self.get_match_formset()
+        if self.match_formset:
+            self.match_formset.is_valid()
+            if self.match_formset.non_form_errors():
+                self.non_field_errors = True
+            for form in self.match_formset:
+                if form.non_field_errors():
+                    self.non_field_errors = True
+
+    def invalid_forms(self):
+        self.matching_is_invalid()
+        return super().invalid_forms()
+
     def post(self, request, *args, **kwargs):
         """
 
@@ -784,7 +701,6 @@ class MatchingMixin:
             if not self.requires_lines(self.header_form):
                 if self.match_formset.is_valid():
                     self.header_obj.save()
-                    self.header_has_been_saved = True
                     # FIX ME - implement get_module and get_account_name methods
                     self.create_or_update_related_transactions()
                     self.matching_is_valid()
@@ -797,6 +713,7 @@ class MatchingMixin:
             else:
                 if self.line_formset and self.match_formset:
                     if self.line_formset.is_valid() and self.match_formset.is_valid():
+                        self.header_obj.save()
                         # has to come before matching_is_valid because this formset could alter header_obj
                         self.lines_are_valid()
                         self.matching_is_valid()
@@ -812,7 +729,26 @@ class MatchingMixin:
         return HttpResponseRedirect(self.get_success_url())
 
 
-class CreatePurchaseOrSalesTransaction(MatchingMixin, CreateCashBookEntriesMixin, BaseCreateTransaction):
+class CreateMatchingMixin(BaseMatchingMixin):
+
+    def matching_is_valid(self):
+        matches = []
+        for form in self.match_formset:
+            if form.empty_permitted and form.has_changed():
+                match = form.save(commit=False)
+                match.matched_by_type = match.matched_by.type
+                match.matched_to_type = match.matched_to.type
+                if match.value != 0:
+                    matches.append(match)
+        if matches:
+            self.get_header_model().objects.audited_bulk_update(
+                self.match_formset.headers,
+                ['due', 'paid']
+            )
+            self.get_match_model().objects.audited_bulk_create(matches)
+
+
+class CreatePurchaseOrSalesTransaction(CreateMatchingMixin, CreateCashBookEntriesMixin, BaseCreateTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -823,8 +759,8 @@ class CreatePurchaseOrSalesTransaction(MatchingMixin, CreateCashBookEntriesMixin
         # e.g. Invoice, CreditNote etc
         transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.create_nominal_transactions(
-            self.get_nominal_model(),
-            self.get_nominal_transaction_model(),
+            self.nominal_model,
+            self.nominal_transaction_model,
             **kwargs
         )
 
@@ -852,19 +788,6 @@ class RESTIndividualTransactionMixin:
     def get_line_formset_queryset(self):
         return self.get_line_model().objects.filter(header=self.main_header)
 
-    def get_match_formset_queryset(self):
-        return (
-            self.get_match_model()
-            .objects
-            .filter(Q(matched_by=self.main_header) | Q(matched_to=self.main_header))
-            .select_related('matched_by')
-            .select_related('matched_to')
-        )
-
-    def get_match_formset(self, header=None):
-        header = self.main_header
-        return super().get_match_formset(header)
-
 
 class IndividualTransactionMixin:
 
@@ -891,8 +814,8 @@ class RESTBaseEditTransactionMixin:
         # e.g. Invoice, CreditNote etc
         transaction_type_object = self.get_transaction_type_object()
         self.nom_trans = transaction_type_object.edit_nominal_transactions(
-            self.get_nominal_model(),
-            self.get_nominal_transaction_model(),
+            self.nominal_model,
+            self.nominal_transaction_model,
             **kwargs
         )
 
@@ -902,7 +825,7 @@ class RESTBaseEditTransactionMixin:
         })
         transaction_type_object = self.get_transaction_type_object()
         self.vat_trans = transaction_type_object.edit_vat_transactions(
-            self.get_vat_transaction_model(),
+            self.vat_transaction_model,
             **kwargs
         )
 
@@ -920,8 +843,6 @@ class RESTBaseEditTransactionMixin:
         Nothing else is changed.  This means only the header changed and none of the lines.  However we will need to
         make changes now to the vat records at least so that they have vat_type = output now.
         """
-        self.header_obj.save()
-        self.header_has_been_saved = True
         self.line_formset.save(commit=False)
         self.lines_to_delete = self.line_formset.deleted_objects
         line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
@@ -958,12 +879,11 @@ class RESTBaseEditTransactionMixin:
             self.get_line_model()
         )
         if self.requires_analysis(self.header_form):
-            existing_nom_trans = self.get_nominal_transaction_model(
-            ).objects.filter(
-                module=self.get_module(),
+            existing_nom_trans = self.nominal_transaction_model.objects.filter(
+                module=self.module,
                 header=self.header_obj.pk)
-            existing_vat_trans = self.get_vat_transaction_model().objects.filter(
-                module=self.get_module(), header=self.header_obj.pk)
+            existing_vat_trans = self.vat_transaction_model.objects.filter(
+                module=self.module, header=self.header_obj.pk)
             self.create_or_update_related_transactions(
                 new_lines=new_lines,
                 updated_lines=lines_to_update,
@@ -997,9 +917,23 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
     def get_success_message(self):
         return "Transaction was edited successfully."
 
+
+class EditMatchingMixin(CreateMatchingMixin):
+
+    def get_match_formset_queryset(self):
+        return (
+            self.get_match_model()
+            .objects
+            .filter(Q(matched_by=self.main_header) | Q(matched_to=self.main_header))
+            .select_related('matched_by')
+            .select_related('matched_to')
+        )
+
+    def get_match_formset(self, header=None):
+        header = self.main_header
+        return super().get_match_formset(header)
+
     def matching_is_valid(self):
-        if not hasattr(self, 'header_has_been_saved'):
-            self.header_obj.save()
         self.match_formset.save(commit=False)
         new_matches = [
             match for match in self.match_formset.new_objects if match.value]
@@ -1040,11 +974,11 @@ class NominalTransactionsMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         nom_trans = (
-            self.get_nominal_transaction_model()
+            self.nominal_transaction_model
                 .objects
                 .select_related("nominal__name")
                 .filter(header=self.main_header.pk)
-                .filter(module=self.get_module())
+                .filter(module=self.module)
                 .values("nominal__name")
                 .annotate(total=Sum("value"))
         )
@@ -1066,9 +1000,9 @@ class EditCashBookTransaction(EditCashBookEntriesMixin, NominalTransactionsMixin
 
 
 class EditPurchaseOrSalesTransaction(
-        MatchingMixin,
         EditCashBookEntriesMixin,
         NominalTransactionsMixin,
+        EditMatchingMixin,
         BaseEditTransaction):
 
     def get_audit(self):
@@ -1090,8 +1024,8 @@ class EditPurchaseOrSalesTransaction(
         # e.g. Invoice, CreditNote etc
         transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.edit_nominal_transactions(
-            self.get_nominal_model(),
-            self.get_nominal_transaction_model(),
+            self.nominal_model,
+            self.nominal_transaction_model,
             **kwargs
         )
 
@@ -1133,7 +1067,7 @@ class BaseViewTransaction(DetailView):
         context["lines"] = lines = self.get_line_model(
         ).objects.select_related("header").filter(header=header)
         context["void_form"] = self.get_void_form(header=header)
-        context["module"] = self.get_module()
+        context["module"] = self.module
         context["edit_view_name"] = self.get_edit_view_name()
         return context
 
@@ -1185,7 +1119,7 @@ class MatchingViewTransactionMixin:
         return context
 
 
-class SaleAndPurchaseViewTransaction(NominalViewTransactionMixin, MatchingMixin, BaseViewTransaction):
+class SaleAndPurchaseViewTransaction(NominalViewTransactionMixin, BaseMatchingMixin, BaseViewTransaction):
     pass
 
 
@@ -1250,14 +1184,14 @@ class BaseVoidTransaction(View):
             ["paid", "due", "status"]
         )
         (
-            self.get_nominal_transaction_model()
+            self.nominal_transaction_model
             .objects
             .filter(module=self.get_transaction_module())
             .filter(header=transaction_to_void.pk)
             .delete()
         )
         (
-            self.get_vat_transaction_model()
+            self.vat_transaction_model
             .objects
             .filter(module=self.get_transaction_module())
             .filter(header=transaction_to_void.pk)

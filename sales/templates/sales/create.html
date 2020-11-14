@@ -23,12 +23,12 @@
     </div>
     <div>
         <div class="d-none matching_transactions_formset">
-            {{ matching_formset.management_form|crispy }}
+            {{ match_formset.management_form|crispy }}
         </div>
         <div class="new_matched_transactions_wrapper">
             <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="new_matched_transactions">
-                {% crispy matching_formset %}
-                {% crispy matching_formset.empty_form matching_formset.empty_form.helpers.empty_form %}
+                {% crispy match_formset %}
+                {% crispy match_formset.empty_form match_formset.empty_form.helpers.empty_form %}
             </table>
         </div>
     </div>

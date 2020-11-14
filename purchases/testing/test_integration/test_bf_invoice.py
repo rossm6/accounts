@@ -23,7 +23,7 @@ from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
-MATCHING_FORM_PREFIX = "match"
+match_form_prefix = "match"
 PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
 
@@ -162,7 +162,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
                 'description': self.description,
                 'goods': 100,
@@ -274,7 +274,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -336,7 +336,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
                 'description': self.description,
                 'goods': 0,
@@ -382,7 +382,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': 100,
@@ -518,7 +518,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': 100,
@@ -643,7 +643,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0.01})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': 100,
@@ -718,7 +718,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400.01})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': 100,
@@ -791,7 +791,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 1200})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': 100,
@@ -927,7 +927,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
                 'description': self.description,
                 'goods': -100,
@@ -1021,7 +1021,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
                 'description': self.description,
                 'goods': -100,
@@ -1127,7 +1127,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2400})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': -100,
@@ -1263,7 +1263,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': -100,
@@ -1385,7 +1385,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -0.01})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': -100,
@@ -1457,7 +1457,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2400.01})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': -100,
@@ -1530,7 +1530,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -1200})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
                 'description': self.description,
                 'goods': -100,
@@ -1826,7 +1826,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -2036,7 +2036,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -2224,7 +2224,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -2434,7 +2434,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -2644,7 +2644,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -2773,7 +2773,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -2962,7 +2962,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})
@@ -3135,7 +3135,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -3285,7 +3285,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -3317,7 +3317,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -3377,7 +3377,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             "matched_to": headers[1].pk,
             "value": headers[1].total * -1,
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(reverse("purchases:create"), data)
         self.assertEqual(
@@ -3469,7 +3469,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             "value": '-110.01',
             "id": matches[0].pk
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
@@ -3514,7 +3514,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -3546,7 +3546,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -3606,7 +3606,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             "matched_to": headers[1].pk,
             "value": headers[1].total * -1,
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(reverse("purchases:create"), data)
         self.assertEqual(
@@ -3698,7 +3698,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             "value": '-120.02',
             "id": matches[0].pk
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
@@ -3822,7 +3822,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
 
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": headers[0].pk})

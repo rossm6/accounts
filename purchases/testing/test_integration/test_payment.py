@@ -22,7 +22,7 @@ from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
-MATCHING_FORM_PREFIX = "match"
+match_form_prefix = "match"
 PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
 
@@ -162,7 +162,7 @@ class CreatePayment(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 302)
@@ -214,7 +214,7 @@ class CreatePayment(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -279,7 +279,7 @@ class CreatePayment(TestCase):
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against[:5], {"id": "matched_to"}, {"value": -100})
         matching_forms += add_and_replace_objects(headers_to_match_against[5:], {"id": "matched_to"}, {"value": 100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -354,7 +354,7 @@ class CreatePayment(TestCase):
         # SO FAR SAME AS TEST ABOVE.  NOW FOR THE DIFFERENCE.
         matching_forms[-1]["value"] = 80
         # Now the values to match do not equal 0 which is not acceptable
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -408,7 +408,7 @@ class CreatePayment(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -448,7 +448,7 @@ class CreatePayment(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -515,7 +515,7 @@ class CreatePayment(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
         # by entering -100 we are creating a negative payment which has a positive balance
         # so we match the positive balance of 100.00
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -599,7 +599,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -685,7 +685,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -737,7 +737,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -788,7 +788,7 @@ class CreatePayment(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -855,7 +855,7 @@ class CreatePayment(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
         # by entering -100 we are creating a negative payment which has a positive balance
         # so we match the positive balance of 100.00
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -939,7 +939,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1024,7 +1024,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1076,7 +1076,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1151,7 +1151,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 10})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1202,7 +1202,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 130}) # rememeber the invoice we create above is not including VAT. So 120 total, not 100.00
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1249,7 +1249,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -10})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1295,7 +1295,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -130}) # Trying to match -130.00 when due is only -120.00
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1344,7 +1344,7 @@ class CreatePayment(TestCase):
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 120}) # Trying to match -130.00 when due is only -120.00
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
@@ -1415,7 +1415,7 @@ class CreatePaymentNominalEntries(TestCase):
         )
         data.update(header_data)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(line_data)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1610,7 +1610,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         data.update(matching_data)
@@ -1711,7 +1711,7 @@ class CreatePaymentNominalEntries(TestCase):
         )
         data.update(header_data)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(line_data)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1911,7 +1911,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 120})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -2122,7 +2122,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -2322,7 +2322,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 120.01})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -2405,7 +2405,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -0.01})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -2488,7 +2488,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 60})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -2725,7 +2725,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -120})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -2936,7 +2936,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -3135,7 +3135,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -120.01})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -3218,7 +3218,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 0.01})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -3300,7 +3300,7 @@ class CreatePaymentNominalEntries(TestCase):
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -60})
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
 
         data.update(header_data)
         data.update(line_data)
@@ -3626,7 +3626,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
 
         data.update(matching_data)
@@ -3727,7 +3727,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
 
         data.update(matching_data)
@@ -3819,7 +3819,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
@@ -3917,7 +3917,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -4010,7 +4010,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -4110,7 +4110,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
@@ -4211,7 +4211,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -4306,7 +4306,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -4409,7 +4409,7 @@ class EditPayment(TestCase):
         # Remember we changing EXISTING instances so we need to post the id of the instance also
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
@@ -4530,7 +4530,7 @@ class EditPayment(TestCase):
         # This means we haven't changed the original two invoices matched against the payment - both still match only 500.00
         # But we've matched the third invoice to the payment also and for a value of 1000.00
         # So the payment should be fully paid now
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -4649,7 +4649,7 @@ class EditPayment(TestCase):
         # This means we haven't changed the original two invoices matched against the payment - both still match only 500.00
         # But we've matched the third invoice to the payment also and for a value of 1000.00
         # So the payment should be fully paid now
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -4769,7 +4769,7 @@ class EditPayment(TestCase):
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
         # So we are trying to match 3 x 1000.00 invoices fully to a 2000.00 payment
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
@@ -4890,7 +4890,7 @@ class EditPayment(TestCase):
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
         # So we are trying to match 3 x 1000.00 invoices fully to a 2000.00 payment
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -5006,7 +5006,7 @@ class EditPayment(TestCase):
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
         # So we are trying to match 3 x 1000.00 invoices fully to a 2000.00 payment
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
 
@@ -5130,7 +5130,7 @@ class EditPayment(TestCase):
         matching_forms += add_and_replace_objects([invoices_to_match_against[2]], {"id": "matched_to"}, {"value": -900})
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(create_formset_data(LINE_FORM_PREFIX, []))
         data.update(matching_data)
@@ -5243,7 +5243,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 800
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -5351,7 +5351,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 0
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -5457,7 +5457,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 1200
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -5566,7 +5566,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 700
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -5675,7 +5675,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 400
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -5782,7 +5782,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = -400
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -5896,7 +5896,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 1000
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -6012,7 +6012,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 400
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -6125,7 +6125,7 @@ class EditPayment(TestCase):
         matching_trans[1]["matched_to"] = payment.pk # THIS IS NOT NEEDED FOR VALIDATION LOGIC BUT IS A REQUIRED FIELD
         matching_trans[1]["value"] = 1000
         matching_forms.append(matching_trans[1])
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2 
 
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
@@ -6382,7 +6382,7 @@ class EditPaymentNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": header.pk})
@@ -6751,7 +6751,7 @@ class EditPaymentNominalEntries(TestCase):
         matching_forms = []
         matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
         matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": header.pk})
@@ -6906,7 +6906,7 @@ class EditPaymentNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         url = reverse("purchases:edit", kwargs={"pk": header.pk})
@@ -7109,7 +7109,7 @@ class EditPaymentNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -7131,7 +7131,7 @@ class EditPaymentNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -7181,7 +7181,7 @@ class EditPaymentNominalEntries(TestCase):
             "matched_to": headers[1].pk,
             "value": headers[1].total,
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(reverse("purchases:create"), data)
         self.assertEqual(
@@ -7255,7 +7255,7 @@ class EditPaymentNominalEntries(TestCase):
             "value": '-110.01',
             "id": matches[0].pk
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
@@ -7305,7 +7305,7 @@ class EditPaymentNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -7327,7 +7327,7 @@ class EditPaymentNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, [])
+        matching_data = create_formset_data(match_form_prefix, [])
         data.update(matching_data)
 
         response = self.client.post(reverse("purchases:create"), data)
@@ -7377,7 +7377,7 @@ class EditPaymentNominalEntries(TestCase):
             "matched_to": headers[1].pk,
             "value": headers[1].total,
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(reverse("purchases:create"), data)
         self.assertEqual(
@@ -7451,7 +7451,7 @@ class EditPaymentNominalEntries(TestCase):
             "value": '-120.02',
             "id": matches[0].pk
         })
-        matching_data = create_formset_data(MATCHING_FORM_PREFIX, matching_forms)
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 

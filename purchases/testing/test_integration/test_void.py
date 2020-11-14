@@ -23,7 +23,7 @@ from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
-MATCHING_FORM_PREFIX = "match"
+match_form_prefix = "match"
 PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
 
