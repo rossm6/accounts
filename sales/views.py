@@ -2,12 +2,13 @@ from accountancy.forms import BaseVoidTransactionForm
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
-                               EditPurchaseOrSalesTransaction, LoadContacts,
+                               EditPurchaseOrSalesTransaction,
                                LoadMatchingTransactions,
                                SaleAndPurchaseViewTransaction,
                                SalesAndPurchasesTransList)
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
+from contacts.views import LoadContacts
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.utils import timezone

@@ -2,15 +2,16 @@ from itertools import chain
 
 from accountancy.helpers import get_all_historical_changes
 from accountancy.mixins import SingleObjectAuditDetailViewMixin
-from accountancy.views import (get_trig_vectors_for_different_inputs,
-                               JQueryDataTableMixin)
+from accountancy.views import (JQueryDataTableMixin,
+                               get_trig_vectors_for_different_inputs)
 from crispy_forms.utils import render_crispy_form
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.postgres.search import TrigramSimilarity
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
 from django.template.context_processors import csrf
 from django.urls import reverse_lazy
-from django.views.generic import (CreateView, DeleteView, DetailView,
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView, View)
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from purchases.models import Supplier
@@ -19,6 +20,33 @@ from sales.models import Customer
 
 from contacts.forms import ContactForm, ModalContactForm
 from contacts.models import Contact
+
+
+class LoadContacts(ListView):
+    """
+    Purchases and Sales both use this for selecting either a supplier or customer via ajax / selectize widget.
+    """
+    paginate_by = 50
+
+    def get_queryset(self):
+        if q := self.request.GET.get('q'):
+            return (
+                self.model.objects.annotate(
+                    similarity=TrigramSimilarity('code', q),
+                ).filter(similarity__gt=0.3).order_by('-similarity')
+            )
+        return self.model.objects.none()
+
+    def render_to_response(self, context, **response_kwargs):
+        contacts = []
+        for contact in context["page_obj"].object_list:
+            s = {
+                'code': contact.code,
+                "id": contact.id
+            }
+            contacts.append(s)
+        data = {"data": contacts}
+        return JsonResponse(data)
 
 
 class ContactListView(LoginRequiredMixin, JQueryDataTableMixin, TemplateResponseMixin, View):

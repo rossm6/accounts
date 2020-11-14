@@ -683,25 +683,14 @@ class BaseMatchingMixin:
         return super().invalid_forms()
 
     def post(self, request, *args, **kwargs):
-        """
-
-        Handle POST requests: instantiate forms with the passed POST variables
-        and then check if it is valid
-
-        WARNING - LINE FORMSET MUST BE VALIDATED BEFORE MATCH FORMSET
-
-        """
-
         self.header_form = self.get_header_form()
         if self.header_form.is_valid():
-            # changed name from header because this is a cls attribute of course
             self.header_obj = self.header_form.save(commit=False)
             self.line_formset = self.get_line_formset(self.header_obj)
             self.match_formset = self.get_match_formset(self.header_obj)
             if not self.requires_lines(self.header_form):
                 if self.match_formset.is_valid():
                     self.header_obj.save()
-                    # FIX ME - implement get_module and get_account_name methods
                     self.create_or_update_related_transactions()
                     self.matching_is_valid()
                     messages.success(
@@ -714,7 +703,6 @@ class BaseMatchingMixin:
                 if self.line_formset and self.match_formset:
                     if self.line_formset.is_valid() and self.match_formset.is_valid():
                         self.header_obj.save()
-                        # has to come before matching_is_valid because this formset could alter header_obj
                         self.lines_are_valid()
                         self.matching_is_valid()
                         messages.success(
@@ -748,7 +736,10 @@ class CreateMatchingMixin(BaseMatchingMixin):
             self.get_match_model().objects.audited_bulk_create(matches)
 
 
-class CreatePurchaseOrSalesTransaction(CreateMatchingMixin, CreateCashBookEntriesMixin, BaseCreateTransaction):
+class CreatePurchaseOrSalesTransaction(
+        CreateMatchingMixin,
+        CreateCashBookEntriesMixin,
+        BaseCreateTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -811,7 +802,6 @@ class RESTBaseEditTransactionMixin:
             "line_cls": self.get_line_model(),
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        # e.g. Invoice, CreditNote etc
         transaction_type_object = self.get_transaction_type_object()
         self.nom_trans = transaction_type_object.edit_nominal_transactions(
             self.nominal_model,
@@ -835,14 +825,6 @@ class RESTBaseEditTransactionMixin:
         return super().dispatch(request, *args, **kwargs)
 
     def lines_are_valid(self):
-        """
-        On testing the edition and creation of vat transactions i realised a misnomer.
-        We pass to create_or_update_related_transactions the keyword argument `updated_lines`.  This
-        is misleading.  Even if a line has not changed at all it should still be passed along in this argument list.
-        The reason being best explained by an example.  A user edits an nominal journal from vat_type input to output.
-        Nothing else is changed.  This means only the header changed and none of the lines.  However we will need to
-        make changes now to the vat records at least so that they have vat_type = output now.
-        """
         self.line_formset.save(commit=False)
         self.lines_to_delete = self.line_formset.deleted_objects
         line_forms = self.line_formset.ordered_forms if self.lines_should_be_ordered(
@@ -869,7 +851,6 @@ class RESTBaseEditTransactionMixin:
                     lines_to_update.append(form.instance)
                 else:
                     self.line_formset.deleted_objects.append(form.instance)
-
         self.lines_to_update = lines_to_update
         self.new_lines = new_lines = self.get_line_model(
         ).objects.audited_bulk_create(self.line_formset.new_objects)
@@ -886,7 +867,7 @@ class RESTBaseEditTransactionMixin:
                 module=self.module, header=self.header_obj.pk)
             self.create_or_update_related_transactions(
                 new_lines=new_lines,
-                updated_lines=lines_to_update,
+                lines_to_update=lines_to_update,
                 deleted_lines=self.line_formset.deleted_objects,
                 existing_nom_trans=existing_nom_trans,
                 existing_vat_trans=existing_vat_trans
@@ -937,28 +918,22 @@ class EditMatchingMixin(CreateMatchingMixin):
         self.match_formset.save(commit=False)
         new_matches = [
             match for match in self.match_formset.new_objects if match.value]
-        changed_objects = [obj for obj,
-                           _tuple in self.match_formset.changed_objects]
+        changed_objects = [obj for obj, *
+                           other in self.match_formset.changed_objects]
         for match in new_matches + changed_objects:
             if match.matched_by_id == self.header_obj.pk:
-                # if change this will not be in match.matched_by
                 match.matched_by_type = self.header_obj.type
                 match.matched_to_type = match.matched_to.type
             else:
                 match.matched_by_type = match.matched_by.type
-                # if change this will not be in match.matched_to
                 match.matched_to_type = self.header_obj.type
         self.get_match_model().objects.audited_bulk_create(new_matches)
-        # exclude zeros from update
         to_update = filter(
             lambda o: True if o.value else False, changed_objects)
-        # delete the zero values
         to_delete = filter(
             lambda o: True if not o.value else False, changed_objects)
         self.get_match_model().objects.audited_bulk_update(
-            to_update,
-            ['value', 'matched_by_type', 'matched_to_type']
-        )
+            to_update, ['value', 'matched_by_type', 'matched_to_type'])
         bulk_delete_with_history(
             to_delete,
             self.get_match_model()
@@ -995,7 +970,10 @@ class EditCashBookEntriesMixin(CreateCashBookEntriesMixin):
         )
 
 
-class EditCashBookTransaction(EditCashBookEntriesMixin, NominalTransactionsMixin, BaseEditTransaction):
+class EditCashBookTransaction(
+        EditCashBookEntriesMixin,
+        NominalTransactionsMixin,
+        BaseEditTransaction):
     pass
 
 
@@ -1021,7 +999,6 @@ class EditPurchaseOrSalesTransaction(
             "control_nominal_name": self.control_nominal_name,
             "vat_nominal_name": settings.DEFAULT_VAT_NOMINAL,
         })
-        # e.g. Invoice, CreditNote etc
         transaction_type_object = self.get_transaction_type_object()
         transaction_type_object.edit_nominal_transactions(
             self.nominal_model,
@@ -1033,15 +1010,6 @@ class EditPurchaseOrSalesTransaction(
 class BaseViewTransaction(DetailView):
     context_object_name = "header"
 
-    def get_header_model(self):
-        return self.model
-
-    def get_line_model(self):
-        return self.line_model
-
-    def get_module(self):
-        return self.module
-
     def get_void_form_kwargs(self, header):
         return {
             "prefix": "void",
@@ -1050,7 +1018,7 @@ class BaseViewTransaction(DetailView):
 
     def get_void_form(self, header=None):
         return self.void_form(
-            self.get_header_model(),
+            self.model,
             self.get_void_form_action(),
             **self.get_void_form_kwargs(header=header)
         )
@@ -1064,29 +1032,21 @@ class BaseViewTransaction(DetailView):
     def get_context_data(self, **kwargs):
         self.main_header = header = self.object
         context = super().get_context_data(**kwargs)
-        context["lines"] = lines = self.get_line_model(
-        ).objects.select_related("header").filter(header=header)
+        context["lines"] = lines = self.line_model.objects.select_related(
+            "header").filter(header=header)
         context["void_form"] = self.get_void_form(header=header)
         context["module"] = self.module
         context["edit_view_name"] = self.get_edit_view_name()
         return context
 
 
-class NominalViewTransactionMixin(NominalTransactionsMixin):
-    def get_nominal_transaction_model(self):
-        return self.nominal_transaction_model
-
-
 class MatchingViewTransactionMixin:
-
-    def get_match_model(self):
-        return self.match_model
 
     def get_context_data(self, **kwargs):
         self.main_header = header = self.object
         context = super().get_context_data(**kwargs)
         matches = (
-            self.get_match_model()
+            self.match_model
             .objects
             .select_related("matched_by")
             .select_related("matched_to")
@@ -1119,7 +1079,10 @@ class MatchingViewTransactionMixin:
         return context
 
 
-class SaleAndPurchaseViewTransaction(NominalViewTransactionMixin, BaseMatchingMixin, BaseViewTransaction):
+class SaleAndPurchaseViewTransaction(
+        NominalTransactionsMixin,
+        MatchingViewTransactionMixin,
+        BaseViewTransaction):
     pass
 
 
@@ -1128,15 +1091,6 @@ class BaseVoidTransaction(View):
 
     def get_success_url(self):
         return self.success_url
-
-    def get_transaction_module(self):
-        return self.module
-
-    def get_nominal_transaction_model(self):
-        return self.nominal_transaction_model
-
-    def get_vat_transaction_model(self):
-        return self.vat_transaction_model
 
     def form_is_valid(self):
         self.success = True
@@ -1179,21 +1133,21 @@ class BaseVoidTransaction(View):
                 matches,
                 matching_model
             )
-        self.get_header_model().objects.audited_bulk_update(
+        self.header_model.objects.audited_bulk_update(
             headers_to_update,
             ["paid", "due", "status"]
         )
         (
             self.nominal_transaction_model
             .objects
-            .filter(module=self.get_transaction_module())
+            .filter(module=self.module)
             .filter(header=transaction_to_void.pk)
             .delete()
         )
         (
             self.vat_transaction_model
             .objects
-            .filter(module=self.get_transaction_module())
+            .filter(module=self.module)
             .filter(header=transaction_to_void.pk)
             .delete()
         )
@@ -1203,9 +1157,6 @@ class BaseVoidTransaction(View):
         non_field_errors = self.form.non_field_errors()
         self.error_message = render_to_string(
             "messages.html", {"messages": [non_field_errors[0]]})
-
-    def get_header_model(self):
-        return self.header_model
 
     def get_matching_model(self):
         if hasattr(self, "matching_model"):
@@ -1222,7 +1173,7 @@ class BaseVoidTransaction(View):
 
     def get_void_form(self):
         form_action = None  # does not matter for the form with this view
-        return self.form(self.get_header_model(), form_action, **self.get_void_form_kwargs())
+        return self.form(self.header_model, form_action, **self.get_void_form_kwargs())
 
     def post(self, request, *args, **kwargs):
         self.form = form = self.get_void_form()
@@ -1246,16 +1197,13 @@ class BaseVoidTransaction(View):
 
 class DeleteCashBookTransMixin:
 
-    def get_cash_book_transaction_model(self):
-        return self.cash_book_transaction_model
-
     def form_is_valid(self):
         super().form_is_valid()
         transaction_to_void = self.form.instance
         (
-            self.get_cash_book_transaction_model()
+            self.cash_book_transaction_model
             .objects
-            .filter(module=self.get_transaction_module())
+            .filter(module=self.module)
             .filter(header=transaction_to_void.pk)
             .delete()
         )
@@ -1567,11 +1515,10 @@ class AgeMatchingReportMixin(JQueryDataTableMixin, TemplateResponseMixin, View):
 
 
 class LoadMatchingTransactions(JQueryDataTableMixin, ListView):
-
     """
     Standard django pagination will not work here
     """
-
+    
     def get_context_data(self, **kwargs):
         context = {}
         start = self.request.GET.get("start", 0)
@@ -1683,32 +1630,6 @@ class LoadMatchingTransactions(JQueryDataTableMixin, ListView):
         }
         return JsonResponse(data)
 
-
-class LoadContacts(ListView):
-    paginate_by = 50
-
-    def get_contact_model(self):
-        return self.model
-
-    def get_queryset(self):
-        if q := self.request.GET.get('q'):
-            return (
-                self.get_contact_model().objects.annotate(
-                    similarity=TrigramSimilarity('code', q),
-                ).filter(similarity__gt=0.3).order_by('-similarity')
-            )
-        return self.get_contact_model().objects.none()
-
-    def render_to_response(self, context, **response_kwargs):
-        contacts = []
-        for contact in context["page_obj"].object_list:
-            s = {
-                'code': contact.code,
-                "id": contact.id
-            }
-            contacts.append(s)
-        data = {"data": contacts}
-        return JsonResponse(data)
 
 
 def ajax_form_validator(forms):

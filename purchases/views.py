@@ -7,12 +7,13 @@ from accountancy.helpers import AuditTransaction
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
-                               EditPurchaseOrSalesTransaction, LoadContacts,
-                               LoadMatchingTransactions,
+                               EditPurchaseOrSalesTransaction,
+                               JQueryDataTableMixin, LoadMatchingTransactions,
                                SaleAndPurchaseViewTransaction,
-                               SalesAndPurchasesTransList, JQueryDataTableMixin)
+                               SalesAndPurchasesTransList)
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
+from contacts.views import LoadContacts
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.postgres.search import TrigramSimilarity

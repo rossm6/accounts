@@ -5,7 +5,7 @@ from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
                                CreateCashBookTransaction,
                                DeleteCashBookTransMixin,
                                EditCashBookTransaction,
-                               NominalViewTransactionMixin)
+                               NominalTransactionsMixin)
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
@@ -75,7 +75,7 @@ class EditTransaction(LoginRequiredMixin, EditCashBookTransaction):
     module = "CB"
 
 
-class ViewTransaction(LoginRequiredMixin, NominalViewTransactionMixin, BaseViewTransaction):
+class ViewTransaction(LoginRequiredMixin, NominalTransactionsMixin, BaseViewTransaction):
     model = CashBookHeader
     line_model = CashBookLine
     nominal_transaction_model = NominalTransaction

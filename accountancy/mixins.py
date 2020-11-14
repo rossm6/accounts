@@ -178,18 +178,18 @@ class VatTransactionMixin:
 
         if new_lines := kwargs.get("new_lines"):
             sorted(new_lines, key=lambda l: l.pk)
-        if updated_lines := kwargs.get("updated_lines"):  # this is misleading
-            sorted(updated_lines, key=lambda l: l.pk)
+        if lines_to_update := kwargs.get("lines_to_update"):  # this is misleading
+            sorted(lines_to_update, key=lambda l: l.pk)
         if deleted_lines := kwargs.get("deleted_lines"):
             sorted(deleted_lines, key=lambda l: l.pk)
 
-        if updated_lines:
-            lines_to_update = [line.pk for line in updated_lines]
+        if lines_to_update:
+            lines_to_update_pk = [line.pk for line in lines_to_update]
             vat_trans_to_update = [
-                tran for tran in existing_vat_trans if tran.line in lines_to_update]
+                tran for tran in existing_vat_trans if tran.line in lines_to_update_pk]
             vat_trans_to_update = sorted(
                 vat_trans_to_update, key=lambda n: n.line)
-            line_pk_map = {line.pk: line for line in updated_lines}
+            line_pk_map = {line.pk: line for line in lines_to_update}
             for vat_tran in vat_trans_to_update:
                 line = line_pk_map[vat_tran.line]
                 to_delete = self._edit_vat_transaction_for_line(
@@ -349,17 +349,17 @@ class BaseNominalTransactionPerLineMixin:
         nom_trans_to_delete = []
         if new_lines := kwargs.get("new_lines"):
             sorted(new_lines, key=lambda l: l.pk)
-        if updated_lines := kwargs.get("updated_lines"):
-            sorted(updated_lines, key=lambda l: l.pk)
+        if lines_to_update := kwargs.get("lines_to_update"):
+            sorted(lines_to_update, key=lambda l: l.pk)
         if deleted_lines := kwargs.get("deleted_lines"):
             sorted(deleted_lines, key=lambda l: l.pk)
-        if updated_lines:
-            lines_to_update = [line.pk for line in updated_lines]
+        if lines_to_update:
+            lines_to_update_pk = [line.pk for line in lines_to_update]
             nom_trans_to_update = [
-                tran for tran in existing_nom_trans if tran.line in lines_to_update]
+                tran for tran in existing_nom_trans if tran.line in lines_to_update_pk]
             nom_trans_to_update = sorted(
                 nom_trans_to_update, key=lambda n: n.line)
-            for line, (key, line_nominal_trans) in zip(updated_lines, groupby(nom_trans_to_update, key=lambda n: n.line)):
+            for line, (key, line_nominal_trans) in zip(lines_to_update, groupby(nom_trans_to_update, key=lambda n: n.line)):
                 nom_tran_map = {
                     tran.field: tran for tran in list(line_nominal_trans)}
                 args = [nom_tran_map, line, vat_nominal]
