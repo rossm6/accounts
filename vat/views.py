@@ -26,27 +26,19 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         ("goods", "Goods"),
         ("vat", "Vat"),
     ]
-    form_field_to_searchable_model_field = {
+    form_field_to_searchable_model_attr = {
         "reference": "ref"
     }
-    datetime_fields = ["created", "date"]
-    datetime_format = '%d %b %Y'
-    advanced_search_form_class = VatTransactionSearchForm
+    filter_form_class = VatTransactionSearchForm
     template_name = "vat/transactions.html"
     converters = {
         "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t]
     }
     row_identifier = "header"
 
-    def form_valid(self, form):
-        queryset = self.apply_advanced_search(form.cleaned_data)
-        # ignore voided with it does by default
-        return queryset
-
-    def get_transaction_url(self, **kwargs):
-        row = kwargs.pop("row")
-        module = row.get("module")
-        header = row.get("header")
+    def get_row_href(self, obj):
+        module = obj["module"]
+        header = obj["header"]
         modules = settings.ACCOUNTANCY_MODULES
         module_name = modules[module]
         return reverse_lazy(module_name + ":view", kwargs={"pk": header})
@@ -62,7 +54,6 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
             .annotate(Sum("vat"))
             .order_by(*self.order_by())
         )
-        print(q)
         return q
 
 

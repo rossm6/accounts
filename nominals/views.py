@@ -101,25 +101,22 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         ("date", "Date"),
         ("total", "Total"),
     ]
-    form_field_to_searchable_model_field = {
+    form_field_to_searchable_model_attr = {
         "reference": "ref"
     }
-    datetime_fields = ["created", ]
-    datetime_format = '%d %b %Y'
-    advanced_search_form_class = NominalTransactionSearchForm
+    filter_form_class = NominalTransactionSearchForm
     template_name = "nominals/transactions.html"
     row_identifier = "header"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["nominal_form"] = NominalForm(action=reverse_lazy(
+    def load_page(self):
+        context_data = super().load_page()
+        context_data["nominal_form"] = NominalForm(action=reverse_lazy(
             "nominals:nominal_create"), prefix="nominal")
-        return context
+        return context_data
 
-    def get_transaction_url(self, **kwargs):
-        row = kwargs.pop("row")
-        module = row.get("module")
-        header = row.get("header")
+    def get_row_href(self, obj):
+        module = obj["module"]
+        header = obj["header"]
         modules = settings.ACCOUNTANCY_MODULES
         module_name = modules[module]
         return reverse_lazy(module_name + ":view", kwargs={"pk": header})

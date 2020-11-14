@@ -152,24 +152,25 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
         ("paid", "Paid"),
         ("due", "Due"),
     ]
-    form_field_to_searchable_model_field = {
+    form_field_to_searchable_model_attr = {
         "reference": "ref"
     }
-    datetime_fields = ["date", "due_date"]
-    datetime_format = '%d %b %Y'
-    advanced_search_form_class = SaleTransactionSearchForm
+    column_transformers = {
+        "date": lambda d: d.strftime('%d %b %Y'),
+        "due_date": lambda d: d.strftime('%d %b %Y')
+    }
+    filter_form_class = SaleTransactionSearchForm
     contact_name = "customer"
     template_name = "sales/transactions.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalContactForm(
+    def load_page(self):
+        context_data = super().load_page()
+        context_data["contact_form"] = ModalContactForm(
             action=reverse_lazy("contacts:create"), prefix="contact")
-        return context
+        return context_data
 
-    def get_transaction_url(self, **kwargs):
-        row = kwargs.pop("row")
-        pk = row["id"]
+    def get_row_href(self, obj):
+        pk = obj["id"]
         return reverse_lazy("sales:view", kwargs={"pk": pk})
 
     def get_queryset(self):

@@ -28,6 +28,7 @@ from accountancy.helpers import (AuditTransaction, Period,
 Remove non_negative_zero_decimal
 """
 
+
 def get_trig_vectors_for_different_inputs(model_attrs_and_inputs):
     """
     This builds a TrigramSimilarity search across many model attributes
@@ -208,7 +209,6 @@ class CustomFilterJQueryDataTableMixin:
             form = self.get_filter_form(bind_form=True)
         else:
             form = self.get_filter_form()
-        kwargs["form"] = form
         table_data = super().get_table_data(**kwargs)
         ctx = {}
         ctx.update(csrf(self.request))
@@ -321,8 +321,13 @@ class BaseTransactionsList(CustomFilterJQueryDataTableMixin,
                            TemplateResponseMixin,
                            View):
     column_transformers = {}
+    form_field_to_searchable_model_attr = {} # keys are those fields you want to show form,
+    # values are those model attrs the form field maps to
 
     def get_list_of_search_values_for_model_attrs(self, form_cleaned_data):
+        """
+        Will be used for Trigram Search
+        """
         return [
             (model_attr, form_cleaned_data.get(form_field, ""))
             for form_field, model_attr in self.form_field_to_searchable_model_attr.items()

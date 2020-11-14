@@ -1,7 +1,9 @@
 from datetime import date
 
 import mock
-from accountancy.views import JQueryDataTableMixin, get_value
+from accountancy.views import (BaseTransactionsList,
+                               CustomFilterJQueryDataTableMixin,
+                               JQueryDataTableMixin, get_value)
 from deepdiff import DeepDiff
 from django.test import TestCase
 from nominals.models import Nominal
@@ -558,73 +560,325 @@ class CustomFilterJQueryDataTableMixinTests(TestCase):
     test get_table_data method
     """
 
-    def test_get_table_data_without_adv_search_form(self):
-        pass
+    @mock.patch("accountancy.views.render_crispy_form")
+    @mock.patch("accountancy.views.csrf")
+    @mock.patch("builtins.super")
+    @mock.patch("accountancy.views.CustomFilterJQueryDataTableMixin.get_filter_form")
+    def test_get_table_data_without_adv_search_form(
+            self,
+            mock_get_filter_form,
+            mock_super,
+            mock_csrf,
+            mock_render_crispy_form):
+        j = CustomFilterJQueryDataTableMixin()
+        j.request = mock.Mock()
+        j.request.GET.get = mock.Mock()
+        j.request.GET.get.return_value = False
+        mock_get_filter_form.return_value = "form_object"
+        mock_super().get_table_data.return_value = {}
+        mock_csrf.return_value = {"csrf": "something"}
+        mock_render_crispy_form.return_value = "<form></form>"
+        table_data = j.get_table_data()
 
-    def test_get_table_data_with_adv_search_form(self):
-        pass
+        args, kwargs = mock_get_filter_form.call_args_list[0]
+        self.assertEqual(
+            len(args),
+            0
+        )
+        self.assertEqual(
+            len(kwargs),
+            0
+        )
+        self.assertEqual(
+            table_data,
+            {
+                "form": "<form></form>"
+            }
+        )
+
+    @mock.patch("accountancy.views.render_crispy_form")
+    @mock.patch("accountancy.views.csrf")
+    @mock.patch("builtins.super")
+    @mock.patch("accountancy.views.CustomFilterJQueryDataTableMixin.get_filter_form")
+    def test_get_table_data_with_adv_search_form(
+            self,
+            mock_get_filter_form,
+            mock_super,
+            mock_csrf,
+            mock_render_crispy_form):
+        j = CustomFilterJQueryDataTableMixin()
+        j.request = mock.Mock()
+        j.request.GET.get = mock.Mock()
+        j.request.GET.get.return_value = True
+        mock_get_filter_form.return_value = "form_object"
+        mock_super().get_table_data.return_value = {}
+        mock_csrf.return_value = {"csrf": "something"}
+        mock_render_crispy_form.return_value = "<form></form>"
+        table_data = j.get_table_data()
+
+        args, kwargs = mock_get_filter_form.call_args_list[0]
+        self.assertEqual(
+            len(args),
+            0
+        )
+        self.assertEqual(
+            len(kwargs),
+            1
+        )
+        self.assertEqual(
+            kwargs,
+            {
+                "bind_form": True
+            }
+        )
+        self.assertEqual(
+            table_data,
+            {
+                "form": "<form></form>"
+            }
+        )
 
     """
     test get_filter_form_kwargs method
     """
 
     def test_get_filter_form_kwargs_with_unbound_form(self):
-        pass
+        j = CustomFilterJQueryDataTableMixin()
+        form_kwargs = j.get_filter_form_kwargs()
+        self.assertEqual(
+            form_kwargs,
+            {}
+        )
 
     def test_get_filter_form_kwargs_with_bound_form(self):
-        pass
+        j = CustomFilterJQueryDataTableMixin()
+        j.request = mock.Mock()
+        j.request.GET = {"some_field": "some_value"}
+        form_kwargs = j.get_filter_form_kwargs(bind_form=True)
+        self.assertEqual(
+            form_kwargs,
+            {
+                "data": {"some_field": "some_value"}
+            }
+        )
 
     """
     test get_filter_form method
     """
 
-    def test_get_filter_form(self):
-        pass
+    @mock.patch("accountancy.views.CustomFilterJQueryDataTableMixin.get_filter_form_kwargs")
+    def test_get_filter_form(self, mock_get_filter_form_kwargs):
+        mock_get_filter_form_kwargs.return_value = {
+            "data": {
+                "some_field": "some_value"
+            }
+        }
+        j = CustomFilterJQueryDataTableMixin()
+        j.filter_form_class = mock.Mock
+        form_instance = j.get_filter_form()
+        self.assertEqual(
+            form_instance.data,
+            {
+                "some_field": "some_value"
+            }
+        )
 
     """
     test apply_filter method
     """
 
-    def test_apply_filter_when_form_is_valid(self):
-        pass
+    @mock.patch("accountancy.views.CustomFilterJQueryDataTableMixin.filter_form_valid")
+    def test_apply_filter_when_form_is_valid(self, mock_filter_form_valid):
+        j = CustomFilterJQueryDataTableMixin()
+        mock_form = mock.Mock()
+        mock_form.is_valid.return_value = True
+        kwargs = {"form": mock_form}
+        queryset = mock.Mock()
+        mock_filter_form_valid.return_value = queryset
+        result = j.apply_filter(queryset, **kwargs)
+        args, kwargs = mock_filter_form_valid.call_args_list[0]
+        self.assertEqual(
+            len(args),
+            2
+        )
+        self.assertEqual(
+            args[0],
+            queryset
+        )
+        self.assertEqual(
+            args[1],
+            mock_form
+        )
+        self.assertEqual(
+            queryset,
+            result
+        )
 
-    def test_apply_filter_when_form_is_invalid(self):
-        pass
+    @mock.patch("accountancy.views.CustomFilterJQueryDataTableMixin.filter_form_invalid")
+    def test_apply_filter_when_form_is_invalid(self, mock_filter_form_invalid):
+        j = CustomFilterJQueryDataTableMixin()
+        mock_form = mock.Mock()
+        mock_form.is_valid.return_value = False
+        kwargs = {"form": mock_form}
+        queryset = mock.Mock()
+        mock_filter_form_invalid.return_value = queryset
+        result = j.apply_filter(queryset, **kwargs)
+        args, kwargs = mock_filter_form_invalid.call_args_list[0]
+        self.assertEqual(
+            len(args),
+            2
+        )
+        self.assertEqual(
+            args[0],
+            queryset
+        )
+        self.assertEqual(
+            args[1],
+            mock_form
+        )
+        self.assertEqual(
+            queryset,
+            result
+        )
 
 
 class BaseTransactionsListTests(TestCase):
 
     """
-    This method needs a note has it is a bit confusing
+    This method needs a note as it is a bit confusing
     """
 
+    def test_get_list_of_search_values_for_model_attrs_without_search_values_defined(self):
+        b = BaseTransactionsList()
+        form_cleaned_data = {
+            "some_form_field": "some_value"
+        }
+        search = b.get_list_of_search_values_for_model_attrs(form_cleaned_data)
+        self.assertEqual(
+            len(search),
+            0
+        )
+
     def test_get_list_of_search_values_for_model_attrs(self):
-        pass
+        b = BaseTransactionsList()
+        b.form_field_to_searchable_model_attr = {
+            "some_form_field": "some_model_attr"
+        }
+        form_cleaned_data = {
+            "some_form_field": "some_value"
+        }
+        search = b.get_list_of_search_values_for_model_attrs(form_cleaned_data)
+        self.assertEqual(
+            len(search),
+            1
+        )
+        model_attr, form_value = search[0]
+        self.assertEqual(
+            model_attr,
+            "some_model_attr"
+        )
+        self.assertEqual(
+            form_value,
+            "some_value"
+        )
 
     """
     test load_page method
     """
 
     def test_load_page(self):
-        pass
+        b = BaseTransactionsList()
+        b.fields = [
+            ("model_field", "model_field_in_ui")
+        ]
+        context_data = b.load_page()
+        self.assertEqual(
+            context_data["columns"],
+            ["model_field"]
+        )
+        self.assertEqual(
+            context_data["column_labels"],
+            ["model_field_in_ui"]
+        )
 
     """
     test get_row
     """
 
-    def test_get_row(self):
-        pass
+    def test_get_row_without_column_transformer(self):
+        b = BaseTransactionsList()
+        o = {"model_attr": "model_attr_value"}
+        obj = b.get_row(o)
+        self.assertEqual(
+            obj,
+            o
+        )
+
+    def test_get_row_with_column_transformer(self):
+        b = BaseTransactionsList()
+        b.column_transformers = {
+            "model_attr": lambda v: "duh"
+        }
+        o = {"model_attr": "model_attr_value"}
+        obj = b.get_row(o)
+        self.assertEqual(
+            obj,
+            {
+                "model_attr":
+                "duh"
+            }
+        )
 
     """
     test form_form_valid method
     """
 
     def test_filter_form_valid(self):
-        pass
+        b = BaseTransactionsList()
+        queryset = mock.Mock()
+        cleaned_data = mock.Mock()
+        b.apply_advanced_search = mock.Mock()
+        b.apply_advanced_search(queryset, cleaned_data)
+        args, kwargs = b.apply_advanced_search.call_args_list[0]
+        self.assertEqual(
+            len(args),
+            2
+        )
+        self.assertEqual(
+            args[0],
+            queryset
+        )
+        self.assertEqual(
+            args[1],
+            cleaned_data
+        )
 
     """
     test get_row_identifier method
     """
 
-    def test_get_row_identifier(self):
-        pass
+    def test_get_row_identifier_default(self):
+        b = BaseTransactionsList()
+        row = {"id": "duh"}
+        identifier = b.get_row_identifier(row)
+        self.assertEqual(
+            identifier,
+            "duh"
+        )
+
+    def test_get_row_identifier_defined(self):
+        b = BaseTransactionsList()
+        b.row_identifier = "doris"
+        row = {"doris": "derek"}
+        identifier = b.get_row_identifier(row)
+        self.assertEqual(
+            identifier,
+            "derek"
+        )
+
+
+class RESTBaseTransactionMixinTests(TestCase):
+    pass
+    """
+    Remove unncessary getter methods first !!!
+    """
