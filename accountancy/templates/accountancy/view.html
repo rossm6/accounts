@@ -19,7 +19,6 @@
 {% endblock head %}
  
 {% block content %}
-
     <div class="cont">
         <div>
             <div class="d-flex justify-content-center">
@@ -34,7 +33,10 @@
                                     <div class="d-flex">
                                         {% block module_actions %}
                                         {% endblock module_actions %}
-                                        <div class="ml-3">
+                                        <button type="button" class="ml-2 btn btn-sm btn-primary" data-backdrop="false" data-toggle="modal" data-target="#auditModal">
+                                            Audit
+                                        </button>
+                                        <div class="ml-2">
                                             <div class="dropdown">
                                                 <button class="btn btn-sm bg-primary text-white dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                     Options
@@ -68,6 +70,7 @@
                                     <tbody class="table-bordered bg-white">
                                         {% for line in lines %}
                                             <tr>
+                                                <td class="d-none" data-pk="{{ line.pk }}">{{ line.pk }}</td>
                                                 <td>{{ line.description }}</td>
                                                 <td>{{ line.ui_goods }}</td>
                                                 <td class="{% if not header.requires_analysis %} d-none {% endif %}">{{ line.nominal }}</td>
@@ -106,6 +109,10 @@
     <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
     <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
+    <script>
+        {% include "accountancy/audit.js" %}
+    </script>
+    <script src="{% static 'accountancy/js/audit_transaction.js' %}"></script>
     <script>
         $(document).ready(function(){
             var existing_matched_transactions_table = $("table.existing_matched_transactions").DataTable({

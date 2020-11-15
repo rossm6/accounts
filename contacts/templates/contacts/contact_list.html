@@ -157,6 +157,7 @@
 
         var table = $("table")
         .on('init.dt', function (e, settings, json) {
+            console.log("init");
             var search_box = $("div.has-search");
             $("div.search-col").append(search_box);    
             add_row_events();

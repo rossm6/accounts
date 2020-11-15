@@ -295,15 +295,15 @@ table.nominal_transactions {
 }
 
 .header_aspect_audit {
-    border: 2px solid #343a40;
+    outline: 2px solid #343a40;
 }
 
 .line_aspect_audit {
-    border: 2px solid #6c757d;
+    outline: 2px solid #6c757d;
 }
 
 .match_aspect_audit {
-    border: 2px solid #b8bdc3;
+    outline: 2px solid #b8bdc3;
 }
 
 select.input-grid-selectize-unfocussed::-ms-expand {

@@ -4,6 +4,7 @@ $(document).ready(function () {
         dom: "t",
     });
 
+    var edit_mode = "{{ edit_mode }}";
     var header_aspect_audit_style_class = "header_aspect_audit";
     var line_aspect_audit_style_class = "line_aspect_audit";
     var match_aspect_audit_style_class = "match_aspect_audit";
@@ -16,6 +17,28 @@ $(document).ready(function () {
         $("[data-audit-aspect-section=match]")
             .find("tr")
             .removeClass(match_aspect_audit_style_class);
+    }
+
+    function find_line_or_match_item($elem, match_regex, object_pk){
+        // filter dom descendants based on whether we are editing or viewing transaction
+        if(edit_mode){
+            return (
+                $elem
+                .find(":input")
+                .filter(function (index) {
+                    return this.name.match(match_regex);
+                })
+                .filter(function (index) {
+                    return this.value == object_pk
+                })
+            )
+        }
+        else{
+            return (
+                $elem
+                .find("td[data-pk=" + object_pk + "]")
+            )
+        }
     }
 
     $("table.audits tbody tr").on("click", function () {
@@ -44,35 +67,33 @@ $(document).ready(function () {
                 }
             } else if (aspect == "line") {
 
-                var el = $("[data-audit-aspect-section=" + aspect + "]")
-                    .find(":input")
-                    .filter(function (index) {
-                        return this.name.match(/line-\d+-id/);
-                    })
-                    .filter(function (index) {
-                        return this.value == object_pk
-                    })
+                var el = (
+                    find_line_or_match_item(
+                        $("[data-audit-aspect-section=" + aspect + "]"),
+                        RegExp("line-\\d+-id"),
+                        object_pk
+                    )
                     .parents("tr")
                     .eq(0)
-                    .addClass(line_aspect_audit_style_class);
-                    
+                    .addClass(line_aspect_audit_style_class)
+                );
+
                 if(el.length){
                     el.get(0).scrollIntoView();
                 }
 
             } else {
 
-                var el = $("[data-audit-aspect-section=" + aspect + "]")
-                    .find(":input")
-                    .filter(function (index) {
-                        return this.name.match(/match-\d+-id/);
-                    })
-                    .filter(function (index) {
-                        return this.value == object_pk
-                    })
+                var el = (
+                    find_line_or_match_item(
+                        $("[data-audit-aspect-section=" + aspect + "]"),
+                        RegExp("match-\\d+-id"),
+                        object_pk
+                    )
                     .parents("tr")
                     .eq(0)
-                    .addClass(match_aspect_audit_style_class);
+                    .addClass(match_aspect_audit_style_class)
+                );
 
                 if(el.length){
                     el.get(0).scrollIntoView();

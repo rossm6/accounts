@@ -28,7 +28,6 @@
 {% endblock totals %}
 
 {% block modal_forms %}
-    <!-- Modal -->
     <div class="void-modal modal fade" id="voidModal" tabindex="-1" role="dialog" aria-labelledby="voidModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -48,6 +47,7 @@
             </div>
         </div>
     </div>
+    {% include 'accountancy/audit_transaction.html' %}
 {% endblock modal_forms %}
 
 {% block module_js %}

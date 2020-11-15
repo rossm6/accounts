@@ -114,7 +114,6 @@ class EditTransaction(LoginRequiredMixin, SupplierMixin, EditPurchaseOrSalesTran
     cash_book_transaction_model = CashBookTransaction
     vat_transaction_model = VatTransaction
 
-
 class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     model = PurchaseHeader
     line_model = PurchaseLine
@@ -125,7 +124,6 @@ class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     void_form = BaseVoidTransactionForm
     template_name = "purchases/view.html"
     edit_view_name = "purchases:edit"
-
 
 class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = PurchaseHeader
@@ -140,7 +138,7 @@ class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTran
 
 
 class LoadPurchaseMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions):
-    header_model = PurchaseHeader
+    model = PurchaseHeader
     matching_model = PurchaseMatching
     contact_name = "supplier"
 

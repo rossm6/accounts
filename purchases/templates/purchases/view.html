@@ -57,6 +57,7 @@
                         <tbody>
                             {% for match in matches %}
                                 <tr>
+                                    <td class="d-none" data-pk="{{ match.pk }}">{{ match.pk }}</td>
                                     <td>{{ match.type }}</td>
                                     <td>{{ match.ref }}</td>
                                     <td>{{ match.total }}</td>

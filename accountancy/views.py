@@ -49,6 +49,71 @@ def get_value(obj, field):
         return obj.get(field)
 
 
+"""
+Scroller and ScrollInView are used by the class which supports JQueryDataTable scroller i.e. JQueryDataTableScrollerMixin
+
+JQueryDataTable scroller differs to normal pagination in that the slice will not necessarily, in fact rarely,
+be the same slice as a page.  For example the slice could be from the middle of one page to the middle of the next.
+
+paginate_by is a method which supports pagination and uses the Paginator class from django core.  It returns both an instance of
+the paginator class and a page object which is just the object returned by calling a page number from the paginator object.  The paginator
+object is used for getting the count of the whole filtered set; the page object contains the slice of objects which will be rendered on the UI.
+
+The Scroller class below uses the same interface as the paginator class and the ScrollerInView class uses the same interface as
+the page object class.  The second is necessary to take the slice we need and the first is necessary to return this object.
+
+This way we can swap these classes for the paginator classes without changing the code.
+"""
+
+
+class ScrollerInView:
+    def __init__(self, queryset_or_object_list, start, length):
+        self.queryset_or_object_list = queryset_or_object_list
+        self.start = start
+        self.length = length
+
+    @property
+    def object_list(self):
+        start = self.start
+        length = self.length
+        return self.queryset_or_object_list[int(start): int(start) + int(length)]
+
+
+class Scroller:
+    def __init__(self, queryset_or_object_list, start, length):
+        if isinstance(queryset_or_object_list, (list,)):
+            self.is_queryset = False
+        else:
+            self.is_queryset = True  # at least we expect a queryset
+        self._q = queryset_or_object_list
+        self.start = start
+        self.length = length
+
+    @property
+    def queryset(self):
+        if not self.is_queryset:
+            raise AttributeError("Queryset was not passed to Scroller")
+        return self._q.all()  # a new copy of the queryset object so original is not evaluated
+
+    @property
+    def queryset_or_object_list(self):
+        if self.is_queryset:
+            return self.queryset
+        else:
+            return self._q
+
+    @property
+    def count(self):
+        if self.is_queryset:
+            return self.queryset.count()
+        else:
+            return len(self._q)
+
+    @property
+    def visible(self):
+        return ScrollerInView(self.queryset_or_object_list, self.start, self.length)
+
+
 class JQueryDataTableMixin:
     """
     A mixin to help with implementing jQueryDataTables where the data is gotten via Ajax.
@@ -86,10 +151,7 @@ class JQueryDataTableMixin:
     def get_row_href(self, obj):
         pass
 
-    def get_model(self):
-        return self.model
-
-    def get_queryset(self):
+    def get_queryset(self, **kwargs):
         return self.model.objects.all()
 
     def get_row_identifier(self, row):
@@ -105,23 +167,28 @@ class JQueryDataTableMixin:
         # otherwise queryset argument is evaluated
         return q.count()
 
+    def set_dt_row_data(self, obj, row):
+        row["DT_RowData"] = {
+            "pk": self.get_row_identifier(obj),
+            "href": self.get_row_href(obj)
+        }
+        return row
+
     def get_table_data(self, **kwargs):
-        queryset = self.get_queryset()
+        queryset = self.get_queryset(**kwargs)
+        # counts the set before filtering i.e. total
+        queryset_count = self.queryset_count(queryset)
         queryset = self.apply_filter(queryset, **kwargs)
         queryset = self.order(queryset)
-        queryset_count = self.queryset_count(queryset)
         paginator_object, page_object = self.paginate_objects(queryset)
         rows = []
         for obj in page_object.object_list:
             row = self.get_row(obj)
-            row["DT_RowData"] = {
-                "pk": self.get_row_identifier(obj),
-                "href": self.get_row_href(obj)
-            }
+            row = self.set_dt_row_data(obj, row)
             rows.append(row)
         draw = int(self.request.GET.get("draw", 0))
         recordsTotal = queryset_count
-        recordsFiltered = paginator_object.count
+        recordsFiltered = paginator_object.count  # counts the filtered set
         data = rows
         return {
             "draw": draw,
@@ -136,7 +203,8 @@ class JQueryDataTableMixin:
     def paginate_objects(self, objects):
         """
         Only use this if you are using pagination.  It isn't suitable for jQuery scroller because the
-        scroller will request slices which don't necessarily conform to the whole pages.
+        scroller will request slices which don't necessarily conform to the whole pages.  For this see the
+        mixin class JQueryDataTableScrollMixin below.
         """
         start = self.request.GET.get("start", 0)
         paginate_by = self.request.GET.get("length", self.paginate_by)
@@ -249,7 +317,6 @@ class CustomFilterJQueryDataTableMixin:
             if form.is_valid():
                 queryset = self.filter_form_valid(queryset, form)
             else:
-                print(form.errors)
                 queryset = self.filter_form_invalid(queryset, form)
         return queryset
 
@@ -258,6 +325,18 @@ class CustomFilterJQueryDataTableMixin:
 
     def filter_form_invalid(self, queryset, form):
         return queryset
+
+
+class JQueryDataTableScrollerMixin:
+    """
+    Supports the scroller feature of jQueryDataTables.
+    """
+
+    def paginate_objects(self, queryset_or_object_list):
+        start = self.request.GET.get("start", 0)
+        length = self.request.GET.get("length", 25)
+        s = Scroller(queryset_or_object_list, start, length)
+        return s, s.visible
 
 
 class SalesAndPurchaseSearchMixin:
@@ -900,12 +979,7 @@ class RESTBaseEditTransactionMixin:
             )
 
 
-class BaseEditTransaction(RESTBaseEditTransactionMixin,
-                          RESTIndividualTransactionForHeaderMixin,
-                          RESTIndividualTransactionMixin,
-                          IndividualTransactionMixin,
-                          BaseTransaction):
-
+class ViewTransactionAuditMixin:
     def get_audit(self):
         header = self.main_header
         audit = AuditTransaction(
@@ -921,8 +995,21 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
         context["multi_object_audit"] = True
         return context
 
+
+class BaseEditTransaction(RESTBaseEditTransactionMixin,
+                          RESTIndividualTransactionForHeaderMixin,
+                          RESTIndividualTransactionMixin,
+                          IndividualTransactionMixin,
+                          ViewTransactionAuditMixin,
+                          BaseTransaction):
+
     def get_success_message(self):
         return "Transaction was edited successfully."
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data["edit_mode"] = "1"  # js script interpretes this as truthy
+        return context_data
 
 
 class EditMatchingMixin(CreateMatchingMixin):
@@ -1003,12 +1090,7 @@ class EditCashBookTransaction(
     pass
 
 
-class EditPurchaseOrSalesTransaction(
-        EditCashBookEntriesMixin,
-        NominalTransactionsMixin,
-        EditMatchingMixin,
-        BaseEditTransaction):
-
+class ViewSaleOrPurchaseTransactionAuditMixin:
     def get_audit(self):
         header = self.main_header
         audit = AuditTransaction(
@@ -1018,6 +1100,14 @@ class EditPurchaseOrSalesTransaction(
             self.get_match_model()
         )
         return audit.get_historical_changes()
+
+
+class EditPurchaseOrSalesTransaction(
+        EditCashBookEntriesMixin,
+        NominalTransactionsMixin,
+        EditMatchingMixin,
+        ViewSaleOrPurchaseTransactionAuditMixin,
+        BaseEditTransaction):
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -1033,8 +1123,17 @@ class EditPurchaseOrSalesTransaction(
         )
 
 
-class BaseViewTransaction(DetailView):
+class BaseViewTransaction(
+        ViewTransactionAuditMixin,
+        DetailView):
+
     context_object_name = "header"
+
+    def get_header_model(self):
+        return self.model
+
+    def get_line_model(self):
+        return self.line_model
 
     def get_void_form_kwargs(self, header):
         return {
@@ -1063,10 +1162,14 @@ class BaseViewTransaction(DetailView):
         context["void_form"] = self.get_void_form(header=header)
         context["module"] = self.module
         context["edit_view_name"] = self.get_edit_view_name()
+        context["edit_mode"] = ""  # js script interprets this as a Falsey
         return context
 
 
 class MatchingViewTransactionMixin:
+
+    def get_match_model(self):
+        return self.match_model
 
     def get_context_data(self, **kwargs):
         self.main_header = header = self.object
@@ -1108,6 +1211,7 @@ class MatchingViewTransactionMixin:
 class SaleAndPurchaseViewTransaction(
         NominalTransactionsMixin,
         MatchingViewTransactionMixin,
+        ViewSaleOrPurchaseTransactionAuditMixin,
         BaseViewTransaction):
     pass
 
@@ -1236,6 +1340,7 @@ class DeleteCashBookTransMixin:
 
 
 class AgeMatchingReportMixin(
+        JQueryDataTableScrollerMixin,
         CustomFilterJQueryDataTableMixin,
         JQueryDataTableMixin,
         TemplateResponseMixin,
@@ -1383,23 +1488,39 @@ class AgeMatchingReportMixin(
     def get_row(self, obj):
         return obj  # this was done in filter_form_valid
 
-    def paginate_objects(self, filtered_and_ordered_transactions):
-        start = int(self.request.GET.get("start", 0))
-        length = int(self.request.GET.get("length", 25))
-        report_trans = filtered_and_ordered_transactions[start:start + length]
-        # report trans will be [] if the form is not valid
-        # second parameter is page size and 0 is not valid so we pass 1 in this case instead
-        p = Paginator(report_trans, len(report_trans) or 1)
-        page_obj = p.page(1)
-        return p, page_obj
-
     def queryset_count(self, filtered_and_ordered_transactions):
         return len(filtered_and_ordered_transactions)
 
     def order(self, filtered_transactions):
         return self.order_objects(filtered_transactions)
 
-    def filter_form_valid(self, queryset, form):
+    def filter_form_valid(self, transactions, form):
+        from_contact_field, to_contact_field = self.get_contact_range_field_names()
+        from_contact = form.cleaned_data.get(from_contact_field)
+        to_contact = form.cleaned_data.get(to_contact_field)
+        period = form.cleaned_data.get("period")
+        # only filter applied so far is `period` but for the purpose of recordsFiltered which jQueryDataTable needs,
+        # this does not count because it is a necessary filter
+        # now we filter by the contact below.  This does count and so it is the first real filter (i.e. optional)
+        if form.cleaned_data.get("show_transactions"):
+            report_trans = []
+            for tran in transactions:
+                report_trans.append(
+                    self.create_report_transaction(tran, period)
+                )
+        else:
+            report_trans = transactions
+        return self.filter_by_contact(report_trans, from_contact, to_contact)
+
+    def filter_form_invalid(self, queryset, form):
+        return []
+
+    def get_queryset(self, **kwargs):
+        q = super().get_queryset(**kwargs)
+        queryset = q.select_related(self.contact_field_name)
+        form = kwargs["form"]
+        if not form.is_valid():
+            return []
         contact_field_name = self.contact_field_name
         from_contact_field, to_contact_field = self.get_contact_range_field_names()
         from_contact = form.cleaned_data.get(from_contact_field)
@@ -1424,28 +1545,86 @@ class AgeMatchingReportMixin(
                 if not self.aggregate_is_zero(aggregate):
                     aggregates.append(aggregate)
             aggregates = list(chain(aggregates))
-        # only filter applied so far is `period` but for the purpose of recordsFiltered which jQueryDataTable needs,
-        # this does not count because it is a necessary filter
-        # now we filter by the contact below.  This does count and so it is the first real filter (i.e. optional)
-        if form.cleaned_data.get("show_transactions"):
-            report_trans = []
-            for tran in transactions:
-                report_trans.append(
-                    self.create_report_transaction(tran, period)
+            return aggregates
+        return transactions
+
+
+class LoadMatchingTransactions(
+        JQueryDataTableScrollerMixin,
+        JQueryDataTableMixin,
+        ListView):
+
+    def set_dt_row_data(self, obj, row):
+        row["DT_RowData"] = {
+            "pk": self.get_row_identifier(obj),
+            "fields": {
+                "type": {
+                    'value': obj.type,
+                    'order': obj.type
+                },
+                "ref": {
+                    'value': obj.ref,
+                    'order': obj.ref
+                },
+                "total": {
+                    'value': obj.ui_total,
+                    'order': obj.ui_total
+                },
+                "paid": {
+                    'value': obj.ui_paid,
+                    'order': obj.ui_paid
+                },
+                "due": {
+                    'value': obj.ui_due,
+                    'order': obj.ui_due
+                },
+                "matched_to": {
+                    'value': obj.pk,
+                    'order': obj.pk
+                }
+            }
+        }
+        print(row)
+        return row
+
+    def get_row(self, obj):
+        return {
+            "type": {
+                "label": obj.get_type_display(),
+                "value": obj.type
+            },
+            "ref": obj.ref,
+            "total": obj.ui_total,
+            "paid": obj.ui_paid,
+            "due": obj.ui_due
+        }
+
+    def apply_filter(self, queryset, **kwargs):
+        if contact := self.request.GET.get("s"):
+            contact_name = self.contact_name
+            queryset = (
+                queryset
+                .filter(**{contact_name: contact})
+                .exclude(due__exact=0)
+            )
+            if edit := self.request.GET.get("edit"):
+                matches = (
+                    self.match_model.objects.filter(
+                        Q(matched_to=edit) | Q(matched_by=edit))
                 )
+                matches = [(match.matched_by_id, match.matched_to_id)
+                           for match in matches]
+                matched_headers = list(chain(*matches))
+                pk_to_exclude = [header for header in matched_headers]
+                # at least exclude the record being edited itself !!!
+                pk_to_exclude.append(edit)
+                queryset = queryset.exclude(pk__in=pk_to_exclude)
         else:
-            report_trans = aggregates
-        return self.filter_by_contact(report_trans, from_contact, to_contact)
-
-    def filter_form_invalid(self, queryset, form):
-        return []
-
-    def get_queryset(self):
-        q = super().get_queryset()
-        return q.select_related(self.contact_field_name)
+            queryset = queryset.none()
+        return queryset
 
 
-class LoadMatchingTransactions(JQueryDataTableMixin, ListView):
+class OldLoadMatchingTransactions(JQueryDataTableMixin, ListView):
     """
     Standard django pagination will not work here
     """

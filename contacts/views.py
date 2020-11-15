@@ -61,11 +61,11 @@ class ContactListView(LoginRequiredMixin, JQueryDataTableMixin, TemplateResponse
     def get_queryset(self):
         queryset_filter = self.request.GET.get("q")
         if queryset_filter == "customers":
-            return self.get_model().objects.filter(customer=True)
+            return self.model.objects.filter(customer=True)
         elif queryset_filter == "suppliers":
-            return self.get_model().objects.filter(supplier=True)
+            return self.model.objects.filter(supplier=True)
         else:
-            return self.get_model().objects.all()
+            return self.model.objects.all()
 
     def load_page(self, **kwargs):
         context = super().load_page(**kwargs)
@@ -77,12 +77,10 @@ class ContactListView(LoginRequiredMixin, JQueryDataTableMixin, TemplateResponse
         else:
             contact_filter = "all"
         context["contact_filter"] = contact_filter
-        total_customers = self.get_model().objects.filter(customer=True).count()
-        total_suppliers = self.get_model().objects.filter(supplier=True).count()
         context["counts"] = {
-            "customers": total_customers,
-            "suppliers": total_suppliers,
-            "all": total_customers + total_suppliers
+            "customers": self.model.objects.filter(customer=True).count(),
+            "suppliers": self.model.objects.filter(supplier=True).count(),
+            "all": self.model.objects.all().count()
         }
         return context
 
