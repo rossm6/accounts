@@ -2,11 +2,11 @@ from json import loads
 
 from django.test import TestCase
 
-from purchases.forms import CreditorForm
+from purchases.forms import CreditorsForm
 from purchases.models import Supplier
 
 
-class CreditorFormTest(TestCase):
+class CreditorsFormTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -16,10 +16,11 @@ class CreditorFormTest(TestCase):
         cls.period = "202007"
 
     def test_valid_range(self):
-        form = CreditorForm({
+        form = CreditorsForm({
             "from_supplier": self.first_supplier.pk,
             "to_supplier": self.second_supplier.pk,
-            "period": self.period
+            "period": self.period,
+            "use_adv_search": True
         })
 
         self.assertTrue(
@@ -27,10 +28,11 @@ class CreditorFormTest(TestCase):
         )
 
     def test_invalid_range(self):
-        form = CreditorForm({
+        form = CreditorsForm({
             "from_supplier": self.third_supplier.pk,
             "to_supplier": self.first_supplier.pk,
-            "period": self.period
+            "period": self.period,
+            "use_adv_search": True
         })
 
         self.assertFalse(
@@ -49,10 +51,11 @@ class CreditorFormTest(TestCase):
         )
 
     def test_single_supplier(self):
-        form = CreditorForm({
+        form = CreditorsForm({
             "from_supplier": self.first_supplier.pk,
             "to_supplier": self.first_supplier.pk,
-            "period": self.period
+            "period": self.period,
+            "use_adv_search": True
         })
 
         self.assertTrue(

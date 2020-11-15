@@ -2,6 +2,7 @@ import collections
 from json import loads
 
 from accountancy.forms import BaseVoidTransactionForm
+from accountancy.helpers import FY, Period
 from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
@@ -165,7 +166,6 @@ class TrialBalance(LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
-        # return JsonResponse(data=context["report"], safe=False)
         return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):

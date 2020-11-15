@@ -1,3 +1,4 @@
+from django.db import transaction
 import functools
 from copy import deepcopy
 from datetime import date
@@ -518,7 +519,15 @@ class RESTBaseTransactionMixin:
         return self.get_successful_response()
 
 
-class BaseTransaction(RESTBaseTransactionMixin, TemplateResponseMixin, ContextMixin, View):
+class BaseTransaction(
+        RESTBaseTransactionMixin,
+        TemplateResponseMixin,
+        ContextMixin,
+        View):
+
+    @transaction.atomic
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get_successful_response(self):
         messages.success(

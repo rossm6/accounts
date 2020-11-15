@@ -304,21 +304,18 @@ class Period:
         else:
             return str(self) <= other
 
-    # NOT TESTED
     def __lt__(self, other):
         if type(other) is type(self):
             return str(self) < str(other)
         else:
             return str(self) < other
 
-    # NOT TESTED
     def __ge__(self, other):
         if type(other) is type(self):
             return str(self) >= str(other)
         else:
             return str(self) >= other
 
-    # NOT TESTED
     def __gt__(self, other):
         if type(other) is type(self):
             return str(self) > str(other)
