@@ -96,11 +96,19 @@ class JQueryDataTableMixin:
             return getattr(row, self.row_identifier)
         return row.pk
 
+    def order(self, queryset):
+        return queryset.order_by(*self.order_by())
+
+    def queryset_count(self, queryset):
+        q = queryset.all()  # creates a new queryset object
+        # otherwise queryset argument is evaluated
+        return q.count()
+
     def get_table_data(self, **kwargs):
         queryset = self.get_queryset()
         queryset = self.apply_filter(queryset, **kwargs)
-        queryset = queryset.order_by(*self.order_by())
-        queryset_cp = queryset.all()  # for getting the count
+        queryset = self.order(queryset)
+        queryset_count = self.queryset_count(queryset)
         paginator_object, page_object = self.paginate_objects(queryset)
         rows = []
         for obj in page_object.object_list:
@@ -111,7 +119,7 @@ class JQueryDataTableMixin:
             }
             rows.append(row)
         draw = int(self.request.GET.get("draw", 0))
-        recordsTotal = queryset_cp.count()
+        recordsTotal = queryset_count
         recordsFiltered = paginator_object.count
         data = rows
         return {
@@ -207,19 +215,27 @@ class CustomFilterJQueryDataTableMixin:
         use_form = True if self.request.GET.get("use_adv_search") else False
         if use_form:
             form = self.get_filter_form(bind_form=True)
+            kwargs.update({"form": form})
         else:
             form = self.get_filter_form()
         table_data = super().get_table_data(**kwargs)
         ctx = {}
         ctx.update(csrf(self.request))
-        form_html = render_crispy_form(form, context=ctx)
+        if hasattr(self, "form_template"):
+            ctx["form"] = form
+            form_html = render_to_string(
+                self.form_template, ctx)
+        else:
+            form_html = render_crispy_form(form, context=ctx)
         table_data["form"] = form_html
         return table_data
 
     def get_filter_form_kwargs(self, **kwargs):
         form_kwargs = {}
         if kwargs.get("bind_form"):
-            form_kwargs.update({"data": self.request.GET})
+            kwargs.pop("bind_form")
+            kwargs.update({"data": self.request.GET})
+        form_kwargs.update(kwargs)
         return form_kwargs
 
     def get_filter_form(self, **kwargs):
@@ -232,6 +248,7 @@ class CustomFilterJQueryDataTableMixin:
             if form.is_valid():
                 queryset = self.filter_form_valid(queryset, form)
             else:
+                print(form.errors)
                 queryset = self.filter_form_invalid(queryset, form)
         return queryset
 
@@ -1209,28 +1226,11 @@ class DeleteCashBookTransMixin:
         )
 
 
-class AgeMatchingReportMixin(JQueryDataTableMixin, TemplateResponseMixin, View):
-
-    """
-        Overview -
-
-            Get all the transactions out of the DB.  And all the matching transactions.
-
-            We need to know the `recordsTotal`.  This assumes a valid form and is
-            the total number of transactions the report would show without a
-            supplier or customer filter.  The period filter cannot be dismissed
-            because the report makes no sense otherwise.  Only group the
-            transactions for each supplier if this is needed.
-
-            We then apply the contact filtering.  Apply either to the individual
-            transactions or the group set.  From this we get the `recordsFiltered`
-
-            Next we need to order the transactions.  Again either the grouped
-            or the grouped set.
-
-            Finally we take the slice of the relevant set.
-
-    """
+class AgeMatchingReportMixin(
+        CustomFilterJQueryDataTableMixin,
+        JQueryDataTableMixin,
+        TemplateResponseMixin,
+        View):
 
     show_trans_columns = [
         # add the subclasses' contact_field_name here
@@ -1251,22 +1251,6 @@ class AgeMatchingReportMixin(JQueryDataTableMixin, TemplateResponseMixin, View):
             'field': '4 month'
         }
     ]
-
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
-        if request.is_ajax():
-            data = {}
-            data["success"] = True
-            data["data"] = {
-                "draw": int(request.GET.get('draw'), 0),
-                "recordsTotal": context["recordsTotal"],
-                "recordsFiltered": context["recordsFiltered"],
-                "data": context["data"]
-            }
-            data["form_html"] = context["form_html"]
-            return JsonResponse(data=data)
-        else:
-            return self.render_to_response(context)
 
     def filter_by_contact(self, transactions, from_contact, to_contact):
         """
@@ -1300,10 +1284,8 @@ class AgeMatchingReportMixin(JQueryDataTableMixin, TemplateResponseMixin, View):
             return True
 
     def create_report_transaction(self, header, report_period):
-        """
-        `header` e.g. PurchaseHeader or SaleHeader
-        """
-        contact_field_name = self.get_contact_field_name()
+        # header e.g. PurchaseHeader or SaleHeader
+        contact_field_name = self.contact_field_name
         report_tran = {
             "meta": {
                 "contact_pk": getattr(header, contact_field_name).pk
@@ -1361,114 +1343,14 @@ class AgeMatchingReportMixin(JQueryDataTableMixin, TemplateResponseMixin, View):
             return x
         return functools.reduce(_aggregate_transactions, transactions)
 
-    def get_context_data(self, **kwargs):
+    def load_page(self):
         context = {}
-        contact_field_name = self.get_contact_field_name()
-        from_contact_field, to_contact_field = self.get_contact_range_field_names()
-
-        if self.request.is_ajax():
-            # get the report
-            form = self.get_filter_form()(data=self.request.GET)
-            if form.is_valid():
-                from_contact = form.cleaned_data.get(from_contact_field)
-                to_contact = form.cleaned_data.get(to_contact_field)
-                period = form.cleaned_data.get("period")
-                start = int(self.request.GET.get("start", 0))
-                length = int(self.request.GET.get("length", 25))
-                queryset = (
-                    self.get_transaction_queryset()
-                    .filter(period__lte=period)
-                    .order_by(contact_field_name)
-                )
-                transactions = self.get_matching_model().get_not_fully_matched_at_period(
-                    list(queryset),
-                    period
-                )
-
-                # get the recordsTotal for the response
-                if form.cleaned_data.get("show_transactions"):
-                    unfiltered_count = len(transactions)
-                else:
-                    contact_trans = groupby(
-                        transactions, key=lambda t: getattr(t, contact_field_name))
-                    unfiltered_count = 0
-                    aggregates = []
-                    for contact, trans in contact_trans:
-                        report_trans = [
-                            self.create_report_transaction(tran, period)
-                            for tran in trans
-                        ]
-                        aggregate = self.aggregate_transactions(report_trans)
-                        if not self.aggregate_is_zero(aggregate):
-                            unfiltered_count += 1
-                            aggregates.append(aggregate)
-                    aggregates = list(chain(aggregates))
-
-                # filter by the supplier or customer.  This is the only true filter because
-                # period is necessary for the report to make sense.  You cannot have a report
-                # without a period.
-
-                if form.cleaned_data.get("show_transactions"):
-                    report_transactions = []
-                    for tran in transactions:
-                        report_transactions.append(
-                            self.create_report_transaction(tran, period)
-                        )
-                    filtered_report_transactions = self.filter_by_contact(
-                        report_transactions,
-                        from_contact,
-                        to_contact
-                    )
-                else:
-                    filtered_report_transactions = self.filter_by_contact(
-                        aggregates,
-                        from_contact,
-                        to_contact
-                    )
-
-                # get the recordsFiltered count
-                filtered_count = len(filtered_report_transactions)
-                report_transactions = self.order_objects(
-                    filtered_report_transactions)
-                report_transactions = report_transactions[start:start + length]
-
-                context["recordsTotal"] = unfiltered_count
-                context["recordsFiltered"] = filtered_count
-                context["data"] = report_transactions
-
-            else:
-                context["recordsTotal"] = 0
-                context["recordsFiltered"] = 0
-                context["data"] = []
-            # Whether the form fails or not render the form again because if it is successful
-            # it could have failed last so we need to a new error without errors showing
-            ctx = {}
-            ctx["form"] = form
-            fields = [from_contact_field, to_contact_field]
-            for field in fields:
-                field_value = form.cleaned_data.get(field)
-                if field_value:
-                    choice = (field_value.pk, str(field_value))
-                else:
-                    choice = iter(form.fields[field].widget.choices)
-                    choice = next(choice)
-                form.fields[field].widget.choices = [choice]
-            form_html = render_to_string(
-                self.get_form_template(), ctx)
-            context["form_html"] = form_html
-        else:
-            # page load -- render default filter form
-            # no report is rendered because ajax request is made on page load
-            # for the report
-            form = self.get_filter_form()(
-                initial={"period": "202007", "show_transactions": True})
-            context["form"] = form
-
+        form = self.get_filter_form(
+            initial={"period": "202007", "show_transactions": True})
+        context["form"] = form
         context["columns"] = columns = []
-
         show_trans_columns = self.show_trans_columns.copy()
-        show_trans_columns.insert(0, contact_field_name)
-
+        show_trans_columns.insert(0, self.contact_field_name)
         for column in show_trans_columns:
             if type(column) is type(""):
                 columns.append({
@@ -1477,48 +1359,88 @@ class AgeMatchingReportMixin(JQueryDataTableMixin, TemplateResponseMixin, View):
                 })
             elif isinstance(column, dict):
                 columns.append(column)
-
-        context["contact_field_name"] = contact_field_name
+        from_contact_field, to_contact_field = self.get_contact_range_field_names()
+        context["contact_field_name"] = self.contact_field_name
         context["from_contact_field"] = from_contact_field
         context["to_contact_field"] = to_contact_field
-
         return context
-
-    def get_header_model(self):
-        return self.model
-
-    def get_transaction_queryset(self):
-        return (
-            self.get_header_model()
-            .objects
-            .all()
-            .select_related(self.get_contact_field_name())
-        )
-
-    def get_matching_model(self):
-        return self.matching_model
-
-    def get_filter_form(self):
-        return self.filter_form
-
-    def get_contact_field_name(self):
-        return self.contact_field_name
 
     def get_contact_range_field_names(self):
         return self.contact_range_field_names
 
-    def get_form_template(self):
-        return self.form_template
+    def get_row_identifier(self, obj):
+        return
 
-    def get_form_template(self):
-        return self.form_template
+    def get_row(self, obj):
+        return obj  # this was done in filter_form_valid
+
+    def paginate_objects(self, filtered_and_ordered_transactions):
+        start = int(self.request.GET.get("start", 0))
+        length = int(self.request.GET.get("length", 25))
+        report_trans = filtered_and_ordered_transactions[start:start + length]
+        # report trans will be [] if the form is not valid
+        # second parameter is page size and 0 is not valid so we pass 1 in this case instead
+        p = Paginator(report_trans, len(report_trans) or 1)
+        page_obj = p.page(1)
+        return p, page_obj
+
+    def queryset_count(self, filtered_and_ordered_transactions):
+        return len(filtered_and_ordered_transactions)
+
+    def order(self, filtered_transactions):
+        return self.order_objects(filtered_transactions)
+
+    def filter_form_valid(self, queryset, form):
+        contact_field_name = self.contact_field_name
+        from_contact_field, to_contact_field = self.get_contact_range_field_names()
+        from_contact = form.cleaned_data.get(from_contact_field)
+        to_contact = form.cleaned_data.get(to_contact_field)
+        period = form.cleaned_data.get("period")
+        # queryset is simply the whole set of PL or SL transactions
+        queryset = queryset.filter(period__lte=period).order_by(
+            contact_field_name)  # must order in case
+        # we need to group by contact_field_name below
+        transactions = self.match_model.get_not_fully_matched_at_period(
+            list(queryset), period)
+        if not form.cleaned_data.get("show_transactions"):
+            contact_trans = groupby(
+                transactions, key=lambda t: getattr(t, self.contact_field_name))
+            aggregates = []
+            for contact, trans in contact_trans:
+                report_trans = [
+                    self.create_report_transaction(tran, period)
+                    for tran in trans
+                ]
+                aggregate = self.aggregate_transactions(report_trans)
+                if not self.aggregate_is_zero(aggregate):
+                    aggregates.append(aggregate)
+            aggregates = list(chain(aggregates))
+        # only filter applied so far is `period` but for the purpose of recordsFiltered which jQueryDataTable needs,
+        # this does not count because it is a necessary filter
+        # now we filter by the contact below.  This does count and so it is the first real filter (i.e. optional)
+        if form.cleaned_data.get("show_transactions"):
+            report_trans = []
+            for tran in transactions:
+                report_trans.append(
+                    self.create_report_transaction(tran, period)
+                )
+        else:
+            report_trans = aggregates
+        return self.filter_by_contact(report_trans, from_contact, to_contact)
+
+    def filter_form_invalid(self, queryset, form):
+        return []
+
+    def get_queryset(self):
+        q = super().get_queryset()
+        return q.select_related(self.contact_field_name)
 
 
 class LoadMatchingTransactions(JQueryDataTableMixin, ListView):
     """
     Standard django pagination will not work here
     """
-    
+
     def get_context_data(self, **kwargs):
         context = {}
         start = self.request.GET.get("start", 0)
@@ -1629,7 +1551,6 @@ class LoadMatchingTransactions(JQueryDataTableMixin, ListView):
             "data": context["data"]
         }
         return JsonResponse(data)
-
 
 
 def ajax_form_validator(forms):

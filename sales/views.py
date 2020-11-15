@@ -1,5 +1,5 @@
 from accountancy.forms import BaseVoidTransactionForm
-from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
+from accountancy.views import (BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction,
@@ -14,13 +14,13 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
+from purchases.views import AgeCreditorsReport
 from vat.forms import VatForm
 from vat.models import VatTransaction
 
-from sales.forms import SaleTransactionSearchForm
-
-from .forms import DebtorForm, SaleHeaderForm, SaleLineForm, enter_lines, match
-from .models import Customer, SaleHeader, SaleLine, SaleMatching
+from sales.forms import (DebtorsForm, SaleHeaderForm, SaleLineForm,
+                         SaleTransactionSearchForm, enter_lines, match)
+from sales.models import Customer, SaleHeader, SaleLine, SaleMatching
 
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
 
@@ -211,17 +211,9 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
             return self.paid_queryset
 
 
-class AgeDebtorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
+class AgeDebtorsReport(AgeCreditorsReport):
     model = SaleHeader
     matching_model = SaleMatching
-    filter_form = DebtorForm
-    form_template = "accountancy/aged_matching_report_form.html"
-    template_name = "accountancy/aged_matching_report.html"
+    filter_form_class = DebtorsForm
     contact_range_field_names = ['from_customer', 'to_customer']
     contact_field_name = "customer"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["contact_form"] = ModalContactForm(
-            action=reverse_lazy("contacts:create"), prefix="contact")
-        return context

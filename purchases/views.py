@@ -30,11 +30,11 @@ from querystring_parser import parser
 from vat.forms import VatForm
 from vat.models import Vat, VatTransaction
 
-from purchases.forms import PurchaseTransactionSearchForm
-
-from .forms import (CreditorForm, PurchaseHeaderForm, PurchaseLineForm,
-                    enter_lines, match)
-from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
+from purchases.forms import (CreditorsForm, PurchaseHeaderForm,
+                             PurchaseLineForm, PurchaseTransactionSearchForm,
+                             enter_lines, match)
+from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
+                              Supplier)
 
 
 class SupplierMixin:
@@ -197,6 +197,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
                 'id',
                 *[field[0] for field in self.fields]
             )
+            # unneccessary because parent class does this
             .order_by(*self.order_by())
         )
 
@@ -227,15 +228,15 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
 
 class AgeCreditorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
     model = PurchaseHeader
-    matching_model = PurchaseMatching
-    filter_form = CreditorForm
+    match_model = PurchaseMatching
+    filter_form_class = CreditorsForm
     form_template = "accountancy/aged_matching_report_form.html"
     template_name = "accountancy/aged_matching_report.html"
     contact_range_field_names = ['from_supplier', 'to_supplier']
     contact_field_name = "supplier"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def load_page(self, **kwargs):
+        context = super().load_page(**kwargs)
         context["contact_form"] = ModalContactForm(
             action=reverse_lazy("contacts:create"), prefix="contact")
         return context

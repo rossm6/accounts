@@ -1,15 +1,8 @@
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Layout
-from django import forms
-from django.urls import reverse_lazy
-from django.utils.translation import ugettext_lazy as _
-from tempus_dominus.widgets import DatePicker
-
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxFormMixin,
-                               BaseLineFormset, BaseTransactionHeaderForm,
+from accountancy.forms import (BaseAjaxFormMixin, BaseLineFormset,
+                               BaseTransactionHeaderForm,
                                BaseTransactionLineForm, BaseTransactionMixin,
                                BaseTransactionModelFormSet,
                                SaleAndPurchaseHeaderFormMixin,
@@ -25,11 +18,17 @@ from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import HTML, Layout
+from django import forms
+from django.urls import reverse_lazy
+from django.utils.translation import ugettext_lazy as _
 from nominals.models import Nominal
+from tempus_dominus.widgets import DatePicker
 from vat.models import Vat
 
-from .models import PurchaseHeader, PurchaseLine, PurchaseMatching, Supplier
-
+from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
+                              Supplier)
 
 """
 
@@ -39,6 +38,7 @@ A note on formsets -
     I use this in my django crispy forms template to decide whether to include the empty form.
 
 """
+
 
 class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
 
@@ -75,7 +75,7 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
 
 class PurchaseLineForm(SaleAndPurchaseLineForm):
     """
-    WARNING, WHEN YOU COME TO REFACTOR THE CODE - 
+    WARNING, WHEN YOU COME TO REFACTOR THE CODE -
 
     You cannot instantiate a ModelForm and then just override the iterator.
     It has to be done during the instantiation of the field it seems.
@@ -155,12 +155,102 @@ match = forms.modelformset_factory(
 
 match.include_empty_form = False
 
-# returns form class
-CreditorForm = aged_matching_report_factory(
-    Supplier,
-    reverse_lazy("contacts:create"),
-    reverse_lazy("purchases:load_suppliers")
-)
+
+class CreditorsForm(BaseAjaxFormMixin, forms.Form):
+    from_contact_field = "from_supplier"
+    to_contact_field = "to_supplier"
+    contact_field_name = "supplier"
+    contact_creation_url = reverse_lazy("contacts:create")
+    contact_load_url = reverse_lazy("purchases:load_suppliers")
+    from_supplier = forms.ModelChoiceField(
+        queryset=Supplier.objects.all(),
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "data-form": contact_field_name,
+                "data-form-field": contact_field_name + "-code",
+                "data-creation-url": contact_creation_url,
+                "data-load-url": contact_load_url,
+                "data-contact-field": True
+            }
+        )
+    )
+    to_supplier = forms.ModelChoiceField(
+        queryset=Supplier.objects.all(),
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "data-form": contact_field_name,
+                "data-form-field": contact_field_name + "-code",
+                "data-creation-url": contact_creation_url,
+                "data-load-url": contact_load_url,
+                "data-contact-field": True
+            }
+        )
+    )
+    period = forms.CharField(max_length=6)
+    show_transactions = forms.BooleanField(required=False)
+    use_adv_search = forms.BooleanField(required=True, initial=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if (
+            (to_contact := cleaned_data.get(self.to_contact_field)) and
+            (from_contact := cleaned_data.get(self.from_contact_field))
+            and to_contact.pk < from_contact.pk
+        ):
+            raise forms.ValidationError(
+                _(
+                    f"This is not a valid range for {self.contact_field_name}s "
+                    f"because the second {self.contact_field_name} you choose comes before the first {self.contact_field_name}"
+                ),
+                code=f"invalid {self.contact_field_name} range"
+            )
+        return cleaned_data
+
+    class Meta:
+        ajax_fields = {
+            "to_supplier": {},
+            "from_supplier": {}
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "GET"
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        self.from_contact_field, css_class="w-100"),
+                    css_class="col"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        self.to_contact_field, css_class="w-100"),
+                    css_class="col"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        "period", css_class="input w-100"),
+                    css_class="col"
+                ),
+                css_class="row"
+            ),
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        "show_transactions", css_class=""),
+                    css_class="col"
+                ),
+                Hidden('adv_search_form', True),
+                css_class="mt-4 row"
+            ),
+            Div(
+                HTML("<button class='btn btn-sm btn-primary'>Report</button>"),
+                css_class="text-right mt-3"
+            )
+        )
 
 
 class PurchaseTransactionSearchForm(BaseAjaxFormMixin, SalesAndPurchaseTransactionSearchForm):

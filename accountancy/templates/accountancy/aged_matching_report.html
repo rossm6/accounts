@@ -127,6 +127,7 @@
                     if(show_transactions){
                         data["show_transactions"] = "yes"
                     }
+                    data["use_adv_search"] = "yes";
                     $.ajax({
                         url: report_url,
                         type: "GET",
@@ -138,7 +139,8 @@
                             else{
                                 callback(data);
                             }
-                            form_wrapper.empty().append($(data.form_html));
+                            console.log(data.form);
+                            form_wrapper.empty().append($(data.form));
                             form_init();
                         },
                         complete: function(jqXHR, textStatus){

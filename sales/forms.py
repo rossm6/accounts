@@ -7,8 +7,7 @@ from accountancy.forms import (BaseAjaxFormMixin, BaseTransactionHeaderForm,
                                SaleAndPurchaseLineFormset,
                                SaleAndPurchaseMatchingForm,
                                SaleAndPurchaseMatchingFormset,
-                               SalesAndPurchaseTransactionSearchForm,
-                               aged_matching_report_factory)
+                               SalesAndPurchaseTransactionSearchForm)
 from accountancy.layouts import (Div, LabelAndFieldAndErrors,
                                  create_transaction_enquiry_layout)
 from accountancy.widgets import SelectWithDataAttr
@@ -17,9 +16,10 @@ from crispy_forms.layout import Layout
 from django import forms
 from django.urls import reverse_lazy
 from nominals.models import Nominal
+from purchases.forms import CreditorsForm
 from vat.models import Vat
 
-from .models import Customer, SaleHeader, SaleLine, SaleMatching
+from sales.models import Customer, SaleHeader, SaleLine, SaleMatching
 
 
 class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
@@ -127,13 +127,44 @@ match = forms.modelformset_factory(
 
 match.include_empty_form = False
 
-# returns form class
-DebtorForm = aged_matching_report_factory(
-    Customer,
-    reverse_lazy("contacts:create"),
-    reverse_lazy("sales:load_customers")
-)
 
+class DebtorsForm(CreditorsForm):
+    from_contact_field = "from_customer"
+    to_contact_field = "to_customer"
+    contact_field_name = "customer"
+    contact_load_url = reverse_lazy("sales:load_customers")
+    from_customer = forms.ModelChoiceField(
+        queryset=Customer.objects.all(),
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "data-form": contact_field_name,
+                "data-form-field": contact_field_name + "-code",
+                "data-creation-url": CreditorsForm.contact_creation_url,
+                "data-load-url": contact_load_url,
+                "data-contact-field": True
+            }
+        )
+    )
+    to_customer = forms.ModelChoiceField(
+        queryset=Customer.objects.all(),
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "data-form": contact_field_name,
+                "data-form-field": contact_field_name + "-code",
+                "data-creation-url": CreditorsForm.contact_creation_url,
+                "data-load-url": contact_load_url,
+                "data-contact-field": True
+            }
+        )
+    )
+
+    class Meta:
+        ajax_fields = {
+            "to_customer": {},
+            "from_customer": {}
+        }
 
 class SaleTransactionSearchForm(BaseAjaxFormMixin, SalesAndPurchaseTransactionSearchForm):
     """

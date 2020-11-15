@@ -805,6 +805,7 @@ def aged_matching_report_factory(
     class Form(forms.Form):
         period = forms.CharField(max_length=6)
         show_transactions = forms.BooleanField(required=False)
+        adv_search_form = forms.BooleanField(required=True, initial=True)
 
         def set_none_queryset_for_fields(self, fields):
             for field in fields:
@@ -888,6 +889,7 @@ def aged_matching_report_factory(
                             "show_transactions", css_class=""),
                         css_class="col"
                     ),
+                    Hidden('adv_search_form', True),
                     css_class="mt-4 row"
                 ),
                 Div(
