@@ -23,15 +23,15 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         ("period", "Period"),
         ("date", "Date"),
         ("vat_type", "Vat Type"),
-        ("goods", "Goods"),
-        ("vat", "Vat"),
+        ("goods__sum", "Goods"),
+        ("vat__sum", "Vat"),
     ]
     form_field_to_searchable_model_attr = {
         "reference": "ref"
     }
     filter_form_class = VatTransactionSearchForm
     template_name = "vat/transactions.html"
-    converters = {
+    column_transformers = {
         "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t]
     }
     row_identifier = "header"
@@ -43,12 +43,12 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         module_name = modules[module]
         return reverse_lazy(module_name + ":view", kwargs={"pk": header})
 
-    def get_queryset(self):
+    def get_queryset(self, **kwargs):
         q = (
             VatTransaction.objects
             .all()
             .values(
-                *[field[0] for field in self.fields]
+                *[field[0] for field in self.fields[:-2]]
             )
             .annotate(Sum("goods"))
             .annotate(Sum("vat"))

@@ -383,13 +383,12 @@ class SalesAndPurchaseSearchMixin:
 
 
 class NominalSearchMixin:
-    def apply_advanced_search(self, cleaned_data):
+    def apply_advanced_search(self, queryset, cleaned_data):
         reference = cleaned_data.get("reference")
         total = cleaned_data.get("total")
         period = cleaned_data.get("period")
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
-        queryset = self.get_queryset()
 
         if reference:
             queryset = (
