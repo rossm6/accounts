@@ -176,3 +176,9 @@ class CashBookTransaction(MultiLedgerTransactions):
             "date",
             "type"
         ]
+
+    def update_details_from_header(self, header):
+        super().update_details_from_header(header)
+        self.cash_book = header.cash_book
+        self.type = header.type
+        self.value = header.total

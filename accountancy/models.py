@@ -488,3 +488,8 @@ class MultiLedgerTransactions(models.Model):
         ]
 
     objects = NonAuditQuerySet.as_manager()
+
+    def update_details_from_header(self, header):
+        self.ref = header.ref
+        self.period = header.period
+        self.date = header.date

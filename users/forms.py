@@ -72,7 +72,6 @@ class UserProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.helper.form_class = "mt-5 border rounded p-2 w-100"
         self.helper.layout = Layout(
             Div(
                 Div(
@@ -162,8 +161,7 @@ class UserProfileForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         password = self.cleaned_data["password"]
-        if password != instance.password:
-            # VERY IMPORTANT CHECK OTHERWISE WE RE-HASH AN ALREADY HASHED PASSWORD !!!
+        if 'password' in self.changed_data:
             instance.set_password(self.cleaned_data["password"])
         if commit:
             instance.save()
@@ -185,6 +183,7 @@ class UserSetPasswordForm(SetPasswordForm):
     """
         For Password Reset
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()

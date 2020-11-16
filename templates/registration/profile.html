@@ -2,15 +2,12 @@
 
 {% block content %}
 
-<div class="border-bottom bg-white">
-    <div class="container p-3">
-        <h1 class="p-0 m-0 h4 font-weight-bold">Profile Settings</h1>
-    </div>
-</div>
-
 <div class="container">
-    <div class="d-flex justify-content-center">
-        {% include 'accountancy/crispy_form_template.html' %}
+    <div class="mt-5 border rounded p-2 w-100">
+        <h1 class="h4 mb-3 font-weight-bold">Profile</h1>
+        <div>
+            {% include 'accountancy/crispy_form_template.html' %}
+        </div>
     </div>
 </div>
 

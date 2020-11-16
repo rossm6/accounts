@@ -71,3 +71,8 @@ class VatTransaction(MultiLedgerTransactions):
             "goods",
             "vat"
         ]
+
+
+    def update_details_from_header(self, header):
+        super().update_details_from_header(header)
+        self.tran_type = header.type

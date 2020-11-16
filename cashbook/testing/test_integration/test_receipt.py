@@ -4387,3 +4387,546 @@ class EditReceipt(TestCase):
             '<li class="py-1">Cash book transactions cannot be for a zero value.</li>',
             html=True
         )
+
+    def test_edit_header_only(self):
+        # check that header only changes feed through to vat and nominal entries
+        # here we change the period only from 202007 to 202008
+        self.client.force_login(self.user)
+        header = CashBookHeader.objects.create(**{
+            "type": "cr",
+            "cash_book": self.cash_book,
+            "ref": self.ref,
+            "date": self.date,
+            "total": 120,
+            "goods": 100,
+            "vat": 20,
+            "vat_type": "o"
+        })
+        lines = [
+            {
+                "description": self.description,
+                "goods": 100,
+                "nominal": self.not_bank_nominal,
+                "vat_code": self.vat_code,
+                "vat": 20
+            }
+        ]
+        lines = create_lines(CashBookLine, header, lines)
+        nom_trans = create_nom_trans(
+            NominalTransaction, CashBookLine, header, lines, self.bank_nominal, self.vat_nominal)
+        cash_book_trans = create_cash_book_trans(CashBookTransaction, header)
+
+        create_vat_transactions(header, lines)
+
+        headers = CashBookHeader.objects.all()
+        header = headers[0]
+        self.assertEqual(
+            len(headers),
+            1
+        )
+        self.assertEqual(
+            header.cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            header.goods,
+            100
+        )
+        self.assertEqual(
+            header.vat,
+            20
+        )
+        self.assertEqual(
+            header.total,
+            120
+        )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
+
+        lines = CashBookLine.objects.all()
+        self.assertEqual(
+            len(lines),
+            1
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            3
+        )
+        vat_transactions = VatTransaction.objects.all()
+        self.assertEqual(
+            len(vat_transactions),
+            1
+        )
+
+        self.assertEqual(
+            lines[0].description,
+            self.description
+        )
+        self.assertEqual(
+            lines[0].goods,
+            100
+        )
+        self.assertEqual(
+            lines[0].nominal,
+            self.not_bank_nominal
+        )
+        self.assertEqual(
+            lines[0].vat_code,
+            self.vat_code
+        )
+        self.assertEqual(
+            lines[0].vat,
+            20
+        )
+        self.assertEqual(
+            lines[0].goods_nominal_transaction,
+            nom_trans[0]
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            nom_trans[1]
+        )
+        self.assertEqual(
+            lines[0].total_nominal_transaction,
+            nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
+
+        self.assertEqual(
+            nom_trans[0].module,
+            'CB'
+        )
+        self.assertEqual(
+            nom_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            nom_trans[0].line,
+            lines[0].pk
+        )
+        self.assertEqual(
+            nom_trans[0].nominal,
+            self.not_bank_nominal
+        )
+        self.assertEqual(
+            nom_trans[0].value,
+            -100
+        )
+        self.assertEqual(
+            nom_trans[0].field,
+            'g'
+        )
+        self.assertEqual(
+            nom_trans[0].type,
+            header.type
+        )
+
+        self.assertEqual(
+            nom_trans[1].module,
+            'CB'
+        )
+        self.assertEqual(
+            nom_trans[1].header,
+            header.pk
+        )
+        self.assertEqual(
+            nom_trans[1].line,
+            lines[0].pk
+        )
+        self.assertEqual(
+            nom_trans[1].nominal,
+            self.vat_nominal
+        )
+        self.assertEqual(
+            nom_trans[1].value,
+            -20
+        )
+        self.assertEqual(
+            nom_trans[1].field,
+            'v'
+        )
+        self.assertEqual(
+            nom_trans[1].type,
+            header.type
+        )
+
+        self.assertEqual(
+            nom_trans[2].module,
+            'CB'
+        )
+        self.assertEqual(
+            nom_trans[2].header,
+            header.pk
+        )
+        self.assertEqual(
+            nom_trans[2].line,
+            lines[0].pk
+        )
+        self.assertEqual(
+            nom_trans[2].nominal,
+            self.bank_nominal
+        )
+        self.assertEqual(
+            nom_trans[2].value,
+            120
+        )
+        self.assertEqual(
+            nom_trans[2].field,
+            't'
+        )
+        self.assertEqual(
+            nom_trans[2].type,
+            header.type
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'CB'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": header.type,
+                "cash_book": header.cash_book.pk,
+                "ref": header.ref,
+                "date": header.date,
+                "total": 120,
+                "vat_type": "o",
+                "period": "202008" # DIFFERENT PERIOD
+            }
+        )
+        data.update(header_data)
+        line = lines[0]
+        line_forms = [
+            {
+                "id": line.pk,
+                "description": line.description,
+                "goods": 100,
+                "nominal": line.nominal_id,
+                "vat_code": line.vat_code_id,
+                "vat": 20
+            }
+        ]
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 1
+        data.update(line_data)
+        response = self.client.post(
+            reverse("cashbook:edit", kwargs={"pk": header.pk}), data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+
+        headers = CashBookHeader.objects.all()
+        header = headers[0]
+        self.assertEqual(
+            len(headers),
+            1
+        )
+        self.assertEqual(
+            header.cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            header.goods,
+            100
+        )
+        self.assertEqual(
+            header.vat,
+            20
+        )
+        self.assertEqual(
+            header.total,
+            120
+        )
+        self.assertEqual(
+            header.vat_type,
+            "o"
+        )
+        self.assertEqual(
+            header.period,
+            "202008"
+        )
+
+        lines = CashBookLine.objects.all().order_by("pk")
+        self.assertEqual(
+            len(lines),
+            1
+        )
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            3
+        )
+        vat_transactions = VatTransaction.objects.all().order_by("line")
+        self.assertEqual(
+            len(vat_transactions),
+            1
+        )
+
+        self.assertEqual(
+            lines[0].description,
+            self.description
+        )
+        self.assertEqual(
+            lines[0].goods,
+            100
+        )
+        self.assertEqual(
+            lines[0].nominal,
+            self.not_bank_nominal
+        )
+        self.assertEqual(
+            lines[0].vat_code,
+            self.vat_code
+        )
+        self.assertEqual(
+            lines[0].vat,
+            20
+        )
+        self.assertEqual(
+            lines[0].goods_nominal_transaction,
+            nom_trans[0]
+        )
+        self.assertEqual(
+            lines[0].vat_nominal_transaction,
+            nom_trans[1]
+        )
+        self.assertEqual(
+            lines[0].total_nominal_transaction,
+            nom_trans[2]
+        )
+        self.assertEqual(
+            lines[0].vat_transaction,
+            vat_transactions[0]
+        )
+
+        self.assertEqual(
+            nom_trans[0].module,
+            'CB'
+        )
+        self.assertEqual(
+            nom_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            nom_trans[0].line,
+            lines[0].pk
+        )
+        self.assertEqual(
+            nom_trans[0].nominal,
+            self.not_bank_nominal
+        )
+        self.assertEqual(
+            nom_trans[0].value,
+            -100
+        )
+        self.assertEqual(
+            nom_trans[0].field,
+            'g'
+        )
+        self.assertEqual(
+            nom_trans[0].type,
+            header.type
+        )
+        self.assertEqual(
+            nom_trans[0].period,
+            "202008"
+        )
+
+        self.assertEqual(
+            nom_trans[1].module,
+            'CB'
+        )
+        self.assertEqual(
+            nom_trans[1].header,
+            header.pk
+        )
+        self.assertEqual(
+            nom_trans[1].line,
+            lines[0].pk
+        )
+        self.assertEqual(
+            nom_trans[1].nominal,
+            self.vat_nominal
+        )
+        self.assertEqual(
+            nom_trans[1].value,
+            -20
+        )
+        self.assertEqual(
+            nom_trans[1].field,
+            'v'
+        )
+        self.assertEqual(
+            nom_trans[1].type,
+            header.type
+        )
+        self.assertEqual(
+            nom_trans[1].period,
+            "202008"
+        )  
+
+        self.assertEqual(
+            nom_trans[2].module,
+            'CB'
+        )
+        self.assertEqual(
+            nom_trans[2].header,
+            header.pk
+        )
+        self.assertEqual(
+            nom_trans[2].line,
+            lines[0].pk
+        )
+        self.assertEqual(
+            nom_trans[2].nominal,
+            self.bank_nominal
+        )
+        self.assertEqual(
+            nom_trans[2].value,
+            120
+        )
+        self.assertEqual(
+            nom_trans[2].field,
+            't'
+        )
+        self.assertEqual(
+            nom_trans[2].type,
+            header.type
+        )
+        self.assertEqual(
+            nom_trans[2].period,
+            "202008"
+        )
+
+        cash_book_trans = CashBookTransaction.objects.all()
+        self.assertEqual(
+            len(cash_book_trans),
+            1
+        )
+
+        self.assertEqual(
+            cash_book_trans[0].module,
+            'CB'
+        )
+        self.assertEqual(
+            cash_book_trans[0].header,
+            header.pk
+        )
+        self.assertEqual(
+            cash_book_trans[0].line,
+            1
+        )
+        self.assertEqual(
+            cash_book_trans[0].cash_book,
+            self.cash_book
+        )
+        self.assertEqual(
+            cash_book_trans[0].value,
+            120
+        )
+        self.assertEqual(
+            cash_book_trans[0].field,
+            't'
+        )
+        self.assertEqual(
+            cash_book_trans[0].type,
+            header.type
+        )
+        self.assertEqual(
+            cash_book_trans[0].period,
+            "202008"
+        )
+
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "CB"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                "202008"
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )

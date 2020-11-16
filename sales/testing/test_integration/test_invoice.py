@@ -9055,3 +9055,483 @@ class EditInvoiceNominalEntries(TestCase):
             header.vat,
             sum(vat_tran.vat for vat_tran in vat_transactions)
         )
+
+    def test_edit_header_only(self):
+        # change period in header only and check period for NL, VL trans is updated
+        self.client.force_login(self.user)
+
+        create_invoice_with_nom_entries(
+            {
+                "type": "si",
+                "customer": self.customer,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 2400,
+                "paid": 0,
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400,
+                "period": PERIOD
+            },
+            [
+                {
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ] * 20,
+            self.vat_nominal,
+            self.sale_control
+        )
+
+        headers = SaleHeader.objects.all().order_by("pk")
+
+        lines = SaleLine.objects.all().order_by("pk")
+        self.assertEqual(
+            len(lines),
+            20
+        )
+
+        create_vat_transactions(headers[0], lines)
+        vat_transactions = VatTransaction.objects.all().order_by("line")
+        self.assertEqual(
+            len(vat_transactions),
+            20
+        )
+
+
+        self.assertEqual(
+            len(headers),
+            1
+        )
+        self.assertEqual(
+            headers[0].total,
+            2400
+        )
+        self.assertEqual(
+            headers[0].paid,
+            0
+        )
+        self.assertEqual(
+            headers[0].due,
+            2400
+        )
+        self.assertEqual(
+            headers[0].period,
+            PERIOD
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        self.assertEqual(
+            len(nom_trans),
+            20 + 20 + 20
+        )
+
+        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+
+        header = headers[0]
+
+        for i, line in enumerate(lines):
+            self.assertEqual(line.line_no, i + 1)
+            self.assertEqual(line.header, header)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            self.assertEqual(
+                line.goods_nominal_transaction,
+                nom_trans[ 3 * i ]
+            )
+            self.assertEqual(
+                line.vat_nominal_transaction,
+                nom_trans[ (3 * i) + 1 ]
+            )
+            self.assertEqual(
+                line.total_nominal_transaction,
+                nom_trans[ (3 * i) + 2 ]
+            )
+            self.assertEqual(
+                line.vat_transaction,
+                vat_transactions[i]
+            )
+
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "SL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                PERIOD
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum(vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum(vat_tran.vat for vat_tran in vat_transactions)
+        )
+
+        goods_nom_trans = nom_trans[::3]
+        vat_nom_trans = nom_trans[1::3]
+        total_nom_trans = nom_trans[2::3]
+
+        for i, tran in enumerate(goods_nom_trans):
+            self.assertEqual(
+                tran.value,
+                -100
+            )
+            self.assertEqual(
+                tran.nominal,
+                self.nominal
+            )
+            self.assertEqual(
+                tran.field,
+                "g"
+            )
+            self.assertEqual(
+                lines[i].goods_nominal_transaction,
+                tran
+            )
+            self.assertEqual(
+                tran.period,
+                PERIOD
+            )
+
+        for i, tran in enumerate(vat_nom_trans):
+            self.assertEqual(
+                tran.value,
+                -20
+            )
+            self.assertEqual(
+                tran.nominal,
+                self.vat_nominal
+            )
+            self.assertEqual(
+                tran.field,
+                "v"
+            )
+            self.assertEqual(
+                lines[i].vat_nominal_transaction,
+                tran
+            )
+            self.assertEqual(
+                tran.period,
+                PERIOD
+            )
+
+        for i, tran in enumerate(total_nom_trans):
+            self.assertEqual(
+                tran.value,
+                120
+            )
+            self.assertEqual(
+                tran.nominal,
+                self.sale_control
+            )
+            self.assertEqual(
+                tran.field,
+                "t"
+            )
+            self.assertEqual(
+                lines[i].total_nominal_transaction,
+                tran
+            )
+            self.assertEqual(
+                tran.period,
+                PERIOD
+            )
+
+        matches = SaleMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": header.type,
+                "customer": header.customer.pk,
+                "ref": header.ref,
+                "date": header.date,
+                "due_date": header.due_date,
+                "total": header.total,
+                "period": "202008"
+            }
+        )
+        data.update(header_data)
+
+        lines_as_dicts = [ to_dict(line) for line in lines ]
+        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        line_forms = line_trans
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 20
+        data.update(line_data)
+
+        matching_data = create_formset_data(match_form_prefix, [])
+        data.update(matching_data)
+
+        url = reverse("sales:edit", kwargs={"pk": headers[0].pk})
+
+        response = self.client.post(url, data)
+
+        headers = SaleHeader.objects.all()
+        self.assertEqual(len(headers), 1)
+
+        self.assertEqual(
+            headers[0].total,
+            2400
+        )
+        self.assertEqual(
+            headers[0].paid,
+            0
+        )
+        self.assertEqual(
+            headers[0].due,
+            2400
+        )
+        self.assertEqual(
+            headers[0].period,
+            "202008"
+        )
+
+        nom_trans = NominalTransaction.objects.all()
+        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        self.assertEqual(
+            len(nom_trans),
+            20 + 20 + 20
+        )
+
+        header = headers[0]
+        lines = (
+            SaleLine.objects
+            .select_related("vat_code")
+            .all()
+            .order_by("pk")
+        )
+        self.assertEqual(
+            len(lines),
+            20
+        )
+        vat_transactions = VatTransaction.objects.all().order_by("line")
+        self.assertEqual(
+            len(vat_transactions),
+            20
+        )
+        vat_transactions = list(vat_transactions)
+        lines = list(lines)
+
+        for i, line in enumerate(lines):
+            self.assertEqual(line.line_no, i + 1)
+            self.assertEqual(line.header, header)
+            self.assertEqual(line.description, self.description)
+            self.assertEqual(line.goods, 100)
+            self.assertEqual(line.nominal, self.nominal)
+            self.assertEqual(line.vat_code, self.vat_code)
+            self.assertEqual(line.vat, 20)
+            self.assertEqual(
+                line.goods_nominal_transaction,
+                nom_trans[ 3 * i ]
+            )
+            self.assertEqual(
+                line.vat_nominal_transaction,
+                nom_trans[ (3 * i) + 1 ]
+            )
+            self.assertEqual(
+                line.total_nominal_transaction,
+                nom_trans[ (3 * i) + 2 ]
+            )
+            self.assertEqual(
+                line.vat_transaction,
+                vat_transactions[i]
+            )
+
+        goods_nom_trans = nom_trans[::3]
+        vat_nom_trans = nom_trans[1::3]
+        total_nom_trans = nom_trans[2::3]
+
+
+        for tran in goods_nom_trans:
+            self.assertEqual(
+                tran.value,
+                -100
+            )
+            self.assertEqual(
+                tran.nominal,
+                self.nominal
+            )
+            self.assertEqual(
+                tran.field,
+                "g"
+            )
+            self.assertEqual(
+                tran.period,
+                "202008"
+            )
+
+        for tran in vat_nom_trans:
+            self.assertEqual(
+                tran.value,
+                -20
+            )
+            self.assertEqual(
+                tran.nominal,
+                self.vat_nominal
+            )
+            self.assertEqual(
+                tran.field,
+                "v"
+            )
+            self.assertEqual(
+                tran.period,
+                "202008"
+            )
+
+        for tran in total_nom_trans:
+            self.assertEqual(
+                tran.value,
+                120
+            )
+            self.assertEqual(
+                tran.nominal,
+                self.sale_control
+            )
+            self.assertEqual(
+                tran.field,
+                "t"
+            )
+            self.assertEqual(
+                tran.period,
+                "202008"
+            )
+
+        matches = SaleMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+
+        total = 0
+        for tran in nom_trans:
+            total = total + tran.value
+        self.assertEqual(
+            total,
+            0
+        )
+
+        for i, vat_tran in enumerate(vat_transactions):
+            self.assertEqual(
+                vat_tran.header,
+                header.pk
+            )
+            self.assertEqual(
+                vat_tran.line,
+                lines[i].pk
+            )
+            self.assertEqual(
+                vat_tran.module,
+                "SL"
+            )
+            self.assertEqual(
+                vat_tran.ref,
+                header.ref
+            )
+            self.assertEqual(
+                vat_tran.period,
+                "202008"
+            )
+            self.assertEqual(
+                vat_tran.date,
+                header.date
+            )
+            self.assertEqual(
+                vat_tran.field,
+                "v"
+            )
+            self.assertEqual(
+                vat_tran.tran_type,
+                header.type
+            )
+            self.assertEqual(
+                vat_tran.vat_type,
+                "o"
+            )
+            self.assertEqual(
+                vat_tran.vat_code,
+                lines[i].vat_code
+            )
+            self.assertEqual(
+                vat_tran.vat_rate,
+                lines[i].vat_code.rate
+            )
+            self.assertEqual(
+                vat_tran.goods,
+                lines[i].goods
+            )
+            self.assertEqual(
+                vat_tran.vat,
+                lines[i].vat
+            )
+
+        self.assertEqual(
+            header.goods,
+            sum( vat_tran.goods for vat_tran in vat_transactions)
+        )
+
+        self.assertEqual(
+            header.vat,
+            sum( vat_tran.vat for vat_tran in vat_transactions)
+        )

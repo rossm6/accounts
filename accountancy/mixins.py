@@ -158,11 +158,9 @@ class VatTransactionMixin:
 
     def _edit_vat_transaction_for_line(self, vat_tran, line):
         if line.vat_code:
+            vat_tran.update_details_from_header(self.header_obj) # notice vat_type is updated outside this method
             vat_tran.goods = line.goods
             vat_tran.vat = line.vat
-            vat_tran.ref = self.header_obj.ref
-            vat_tran.period = self.header_obj.period
-            vat_tran.date = self.header_obj.date
             vat_tran.vat_code = line.vat_code
             vat_tran.vat_rate = line.vat_code.rate
             vat_tran.vat_type = self.vat_type
@@ -313,10 +311,7 @@ class BaseNominalTransactionPerLineMixin:
     def _edit_nominal_transactions_for_line(self, nom_trans, line, vat_nominal):
         f = self.header_obj.get_nominal_transaction_factor()
         for tran_field, tran in nom_trans.items():
-            tran.ref = self.header_obj.ref
-            tran.period = self.header_obj.period
-            tran.date = self.header_obj.date
-            tran.type = self.header_obj.type
+            tran.update_details_from_header(self.header_obj)
         if 'g' in nom_trans:
             tran = nom_trans["g"]
             tran.nominal = line.nominal
@@ -546,11 +541,7 @@ class CashBookEntryMixin:
                 line=1
             )
             if self.header_obj.total != 0:
-                cash_book_tran.value = self.header_obj.total
-                cash_book_tran.ref = self.header_obj.ref
-                cash_book_tran.period = self.header_obj.period
-                cash_book_tran.date = self.header_obj.date
-                cash_book_tran.cash_book = self.header_obj.cash_book
+                cash_book_tran.update_details_from_header(self.header_obj)
                 cash_book_tran.save()
             else:
                 cash_book_tran.delete()
@@ -621,6 +612,8 @@ class ControlAccountPaymentTransactionMixin(BaseNominalTransactionMixin):
         control_nominal = self.get_control_nominal(nom_cls, **kwargs)
         if nom_trans and self.header_obj.total != 0:
             f = self.header_obj.get_nominal_transaction_factor()
+            for tran in nom_trans:
+                tran.update_details_from_header(self.header_obj)
             bank_nom_tran, control_nom_tran = nom_trans
             bank_nom_tran.value = f * self.header_obj.total
             bank_nom_tran.nominal = self.header_obj.cash_book.nominal

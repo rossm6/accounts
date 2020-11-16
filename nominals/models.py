@@ -135,3 +135,7 @@ class NominalTransaction(MultiLedgerTransactions):
             "date",
             "type"
         ]
+
+    def update_details_from_header(self, header):
+        super().update_details_from_header(header)
+        self.type = header.type

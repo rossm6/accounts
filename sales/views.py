@@ -128,8 +128,8 @@ class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTran
 
 
 class LoadSaleMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions):
-    header_model = SaleHeader
-    matching_model = SaleMatching
+    model = SaleHeader
+    match_model = SaleMatching
     contact_name = "customer"
 
     def get_queryset(self):
@@ -140,6 +140,9 @@ class LoadSaleMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions)
 class LoadCustomers(LoginRequiredMixin, LoadContacts):
     model = Customer
 
+    def get_queryset(self):
+        q = super().get_queryset()
+        return q.filter(customer=True)
 
 class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = SaleHeader
@@ -213,7 +216,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
 
 class AgeDebtorsReport(AgeCreditorsReport):
     model = SaleHeader
-    matching_model = SaleMatching
+    match_model = SaleMatching
     filter_form_class = DebtorsForm
     contact_range_field_names = ['from_customer', 'to_customer']
     contact_field_name = "customer"

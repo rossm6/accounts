@@ -1,4 +1,5 @@
 from accountancy.views import ajax_form_validator
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import (LoginView, PasswordResetConfirmView,
@@ -36,6 +37,10 @@ class Profile(LoginRequiredMixin, UpdateView):
     def get_object(self):
         return self.request.user
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        update_session_auth_hash(self.request, self.request.user)
+        return response
 
 class UserPasswordResetView(PasswordResetView):
     form_class = UserPasswordResetForm

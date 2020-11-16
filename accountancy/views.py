@@ -1584,7 +1584,6 @@ class LoadMatchingTransactions(
                 }
             }
         }
-        print(row)
         return row
 
     def get_row(self, obj):
