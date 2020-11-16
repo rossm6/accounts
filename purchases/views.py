@@ -139,7 +139,7 @@ class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTran
 
 class LoadPurchaseMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions):
     model = PurchaseHeader
-    matching_model = PurchaseMatching
+    match_model = PurchaseMatching
     contact_name = "supplier"
 
 
@@ -170,7 +170,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     }
     column_transformers = {
         "date": lambda d: d.strftime('%d %b %Y'),
-        "due_date": lambda d: d.strftime('%d %b %Y')
+        "due_date": lambda d: d.strftime('%d %b %Y') if d else "" # payment trans do not have due dates
     }
     filter_form_class = PurchaseTransactionSearchForm
     contact_name = "supplier"
