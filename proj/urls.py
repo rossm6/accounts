@@ -29,6 +29,7 @@ urlpatterns = [
     path('nominals/', include("nominals.urls")),
     path('purchases/', include("purchases.urls")),
     path('sales/', include("sales.urls")),
+    path('settings/', include("settings.urls")),
     path('users/', include("users.urls")),
     path('users/', include("django.contrib.auth.urls")),
     path('vat/', include("vat.urls")),

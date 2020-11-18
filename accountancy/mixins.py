@@ -97,6 +97,18 @@ class SingleObjectAuditDetailViewMixin:
         return context
 
 
+class ResponsivePaginationMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        page_number = context["page_obj"].number
+        page_range = [i for i in range(
+            page_number - 5, page_number + 5) if i > 0]
+        context["page_range"] = page_range
+        context["lower_page_on_xs"] = page_number - 3
+        context["upper_range_on_xs"] = page_number + 3
+        return context
+
+
 class VatTransactionMixin:
     """
 
@@ -158,7 +170,8 @@ class VatTransactionMixin:
 
     def _edit_vat_transaction_for_line(self, vat_tran, line):
         if line.vat_code:
-            vat_tran.update_details_from_header(self.header_obj) # notice vat_type is updated outside this method
+            # notice vat_type is updated outside this method
+            vat_tran.update_details_from_header(self.header_obj)
             vat_tran.goods = line.goods
             vat_tran.vat = line.vat
             vat_tran.vat_code = line.vat_code
@@ -176,7 +189,8 @@ class VatTransactionMixin:
 
         if new_lines := kwargs.get("new_lines"):
             sorted(new_lines, key=lambda l: l.pk)
-        if lines_to_update := kwargs.get("lines_to_update"):  # this is misleading
+        # this is misleading
+        if lines_to_update := kwargs.get("lines_to_update"):
             sorted(lines_to_update, key=lambda l: l.pk)
         if deleted_lines := kwargs.get("deleted_lines"):
             sorted(deleted_lines, key=lambda l: l.pk)

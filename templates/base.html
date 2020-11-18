@@ -19,6 +19,17 @@
       <nav class="navbar navbar-expand-lg text-white">
         <div class="collapse navbar-collapse justify-content-between" id="navbarNavDropdown">
           <ul class="navbar-nav">
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Demo Company (UK)
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <div class="p-3 small font-weight-bold">Demo Company (UK)</div>
+                    <a class="dropdown-item" href="{% url 'settings:index' %}">Settings</a>
+                    <a class="dropdown-item" href="#">Empty Item</a>
+                    <a class="dropdown-item" href="#">Empty Item</a>
+                </div>
+            </div>
             <li class="nav-item active">
               <a class="nav-link" href="{% url 'dashboard:dashboard' %}">Dashboard</a>
             </li>

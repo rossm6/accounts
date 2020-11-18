@@ -1,0 +1,555 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+    .dtrg-group.dtrg-level-0 {
+        font-weight: 900;
+    }
+
+    .dtrg-group.dtrg-level-1 {
+        font-weight: 600;
+    }
+
+    tr.even,
+    tr.odd {
+        background-color: white;
+    }
+
+</style>
+{% endblock head %}
+
+{% block content %}
+<div class="cont">
+    <div>
+        <div class="container">
+            <div class="mt-5">
+                <div class="border p-4">
+                    <h1 class="h4 font-weight-bold mb-4">{% block header %}Purchase Ledger Clerk Group{% endblock header %}</h1>
+                    <div>
+                        <h2 class="h5">Permissions</h2>
+                        <table class="mt-4 table w-50">
+                            <thead>
+                                <tr>
+                                    <th>Module</th>
+                                    <th>Abstract</th>
+                                    <th>Object</th>
+                                    <th style="width: 100px;">Create</th>
+                                    <th style="width: 100px;">Edit</th>
+                                    <th style="width: 100px;">View</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span>Contacts</span></td>
+                                    <td><span class="ml-3">Maintenance</span></td>
+                                    <td><span class="ml-4">Customer</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <tr>
+                                    <td><span>Contacts</span></td>
+                                    <td><span class="ml-3">Maintenance</span></td>
+                                    <td><span class="ml-4">Supplier</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Purchase Ledger</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Brought Forward Invoice</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Purchase Ledger</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Brought Forward Credit Note</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Purchase Ledger</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Invoice</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Purchase Ledger</span></td>
+                                    <td><span class="ml-3">Enquiry</span></td>
+                                    <td><span class="ml-4">View Transactions</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Purchase Ledger</span></td>
+                                    <td><span class="ml-3">Reports</span></td>
+                                    <td><span class="ml-4">Age Creditors</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Sales Ledger</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Brought Forward Invoice</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Sales Ledger</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Brought Forward Credit Note</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Sales Ledger</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Invoice</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Sales Ledger</span></td>
+                                    <td><span class="ml-3">Enquiry</span></td>
+                                    <td><span class="ml-4">View Transactions</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Sales Ledger</span></td>
+                                    <td><span class="ml-3">Reports</span></td>
+                                    <td><span class="ml-4">Age Debtors</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Nominal Ledger</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Journal</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Nominal Ledger</span></td>
+                                    <td><span class="ml-3">Enquiry</span></td>
+                                    <td><span class="ml-4">View Transactions</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Nominal Ledger</span></td>
+                                    <td><span class="ml-3">Reports</span></td>
+                                    <td><span class="ml-4">Trial Balance</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Nominal Ledger</span></td>
+                                    <td><span class="ml-3">Maintenance</span></td>
+                                    <td><span class="ml-4">Nominals</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Cashbook</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Brought Forward Receipt</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Cashbook</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Brought Forward Refund</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Cashbook</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Receipt</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Cashbook</span></td>
+                                    <td><span class="ml-3">Transaction</span></td>
+                                    <td><span class="ml-4">Refund</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Cashbook</span></td>
+                                    <td><span class="ml-3">Enquiry</span></td>
+                                    <td><span class="ml-4">View Transactions</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Cashbook</span></td>
+                                    <td><span class="ml-3">Maintenance</span></td>
+                                    <td><span class="ml-4">Cashbooks</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Vat</span></td>
+                                    <td><span class="ml-3">Enquiry</span></td>
+                                    <td><span class="ml-4">View Transactions</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span>Vat</span></td>
+                                    <td><span class="ml-3">Maintenance</span></td>
+                                    <td><span class="ml-4">Vat Code</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/ disabled>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" name="perm"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block js %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowgroup/1.1.2/js/dataTables.rowGroup.min.js"></script>
+<script>
+    $(document).ready(function(){
+        var table = $("table").DataTable({
+            "paging": false,
+            dom: "t",
+            order: [
+                [0, 'asc'],
+                [1, 'asc'],
+                [2, 'asc']
+            ],
+            rowGroup: {
+                dataSrc: [0,1],
+                emptyDataGroup: null
+            },
+            columnDefs: [
+                { targets: [0, 1], visible: false},
+            ]
+        });
+    });
+</script>
+{% endblock js %}

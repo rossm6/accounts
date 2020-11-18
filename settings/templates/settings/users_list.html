@@ -1,0 +1,10 @@
+{% extends 'settings/list.html' %}
+
+{% block header %}Users{% endblock header %}
+
+{% block object %}
+    <a href="" class="d-flex justify-content-between list-group-item list-group-item-action">
+        <div class="text-primary">{{ object.username }}</div>
+        <div class="text-muted">{{ object.last_login }}</div>
+    </a>
+{% endblock object %}

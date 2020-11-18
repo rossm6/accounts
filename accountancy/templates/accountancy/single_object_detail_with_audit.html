@@ -23,7 +23,9 @@
 
 {% block js %}
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-<script src="{% static 'accountancy/js/audit.js' %}"></script>
+<script>
+    {% include 'accountancy/audit.js' %}
+</script>
 <script>
     $(document).ready(function(){
         

@@ -6,6 +6,7 @@ from django.contrib.auth.forms import (AuthenticationForm, PasswordResetForm,
                                        SetPasswordForm, UserCreationForm)
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -126,10 +127,8 @@ class UserProfileForm(forms.ModelForm):
                         css_class="form-row"
                     ),
                     Div(
-                        Submit(
-                            'cancel',
-                            'Cancel',
-                            css_class="btn btn-secondary mr-2"
+                        HTML(
+                            "<a class='btn btn-secondary mr-2' href='{% url 'dashboard:dashboard'  %}'>Cancel</a>"
                         ),
                         Submit(
                             'Save',
