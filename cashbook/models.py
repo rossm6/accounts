@@ -99,6 +99,27 @@ class CashBookHeader(ModuleTransactionBase, TransactionHeader):
     )
     # payee to add
 
+    class Meta:
+        permissions = [
+            ("create_brought_forward_payment", "Can create brought forward payment"),
+            ("create_brought_forward_receipt", "Can create brought forward receipt"),
+            ("create_payment", "Can create payment"),
+            ("create_receipt", "Can create receipt"),
+            ("edit_brought_forward_payment", "Can edit brought forward payment"),
+            ("edit_brought_forward_receipt", "Can edit brought forward receipt"),
+            ("edit_payment", "Can edit payment"),
+            ("edit_receipt", "Can edit receipt"),
+            ("view_brought_forward_payment", "Can view brought forward payment"),
+            ("view_brought_forward_receipt", "Can view brought forward receipt"),
+            ("view_payment", "Can view payment"),
+            ("view_receipt", "Can view receipt"),
+            ("void_brought_forward_payment", "Can void brought forward payment"),
+            ("void_brought_forward_receipt", "Can void brought forward receipt"),
+            ("void_payment", "Can void payment"),
+            ("void_receipt", "Can void receipt"),
+        ]
+
+
     def get_type_transaction(self):
         if self.type == "cbp":
             return BroughtForwardPayment(header=self)

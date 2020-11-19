@@ -136,6 +136,42 @@ class SaleHeader(ModuleTransactionBase, TransactionHeader):
     matched_to = models.ManyToManyField(
         'self', through='SaleMatching', symmetrical=False)
 
+    class Meta:
+        permissions = [
+            ("create_brought_forward_invoice", "Can create brought forward invoice"),
+            ("create_brought_forward_credit_note", "Can create brought forward credit note"),
+            ("create_brought_forward_receipt", "Can create brought forward receipt"),
+            ("create_brought_forward_refund", "Can create brought forward refund"),
+            ("create_invoice", "Can create invoice"),
+            ("create_credit_note", "Can create credit note"),
+            ("create_receipt", "Can create receipt"),
+            ("create_refund", "Can create refund"),
+            ("edit_brought_forward_invoice", "Can edit brought forward invoice"),
+            ("edit_brought_forward_credit_note", "Can edit brought forward credit note"),
+            ("edit_brought_forward_receipt", "Can edit brought forward receipt"),
+            ("edit_brought_forward_refund", "Can edit brought forward refund"),
+            ("edit_invoice", "Can edit invoice"),
+            ("edit_credit_note", "Can edit credit note"),
+            ("edit_receipt", "Can edit receipt"),
+            ("edit_refund", "Can edit refund"),
+            ("view_brought_forward_invoice", "Can view brought forward invoice"),
+            ("view_brought_forward_crview_note", "Can view brought forward crview note"),
+            ("view_brought_forward_receipt", "Can view brought forward receipt"),
+            ("view_brought_forward_refund", "Can view brought forward refund"),
+            ("view_invoice", "Can view invoice"),
+            ("view_crview_note", "Can view crview note"),
+            ("view_receipt", "Can view receipt"),
+            ("view_refund", "Can view refund"),
+            ("void_brought_forward_invoice", "Can void brought forward invoice"),
+            ("void_brought_forward_crvoid_note", "Can void brought forward crvoid note"),
+            ("void_brought_forward_receipt", "Can void brought forward receipt"),
+            ("void_brought_forward_refund", "Can void brought forward refund"),
+            ("void_invoice", "Can void invoice"),
+            ("void_crvoid_note", "Can void crvoid note"),
+            ("void_receipt", "Can void receipt"),
+            ("void_refund", "Can void refund"),
+        ]
+
     def get_type_transaction(self):
         if self.type == "sbi":
             return BroughtForwardInvoice(header=self)

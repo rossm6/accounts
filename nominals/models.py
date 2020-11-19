@@ -69,6 +69,14 @@ class NominalHeader(ModuleTransactionBase, TransactionHeader):
         blank=True
     )
 
+    class Meta:
+        permissions = [
+            ("create_journal", "Can create journal"),
+            ("edit_journal", "Can edit journal"),
+            ("view_journal", "Can view journal"),
+            ("void_journal", "Can void journal"),
+        ]
+
     def get_type_transaction(self):
         if self.type == "nj":
             return Journal(header=self)
