@@ -5,6 +5,7 @@ from functools import reduce
 from itertools import groupby
 from uuid import uuid4
 
+from django import forms
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Q
@@ -19,6 +20,133 @@ from simple_history.utils import (get_change_reason_from_object,
 from accountancy.signals import audit_post_delete
 
 DELETED_HISTORY_TYPE = "-"
+
+
+"""
+Permission Forms i.e. checkboxes shown in the UI for selecting what the user can and cannot do.
+
+Each form is part of a section in the UI.
+
+E.g.
+
+
+Purchase Ledger
+    Enquiry
+        View Transactions
+    Reports
+        Aged Creditors
+    Transaction
+        Brought Forward Invoice
+
+
+So ViewTransactions, Aged Creditors and Brought Forward invoice each have a form.
+
+"""
+
+
+class BasePermissionForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        perms = kwargs.pop("perms")
+        super().__init__(*args, **kwargs)
+        self.field_to_perm = {}
+        for perm in perms:
+            self.fields[perm.codename] = forms.BooleanField(
+                required=False, initial=False)
+            # we need this when we have data bound to the form
+            # when saving we need the perm pks
+            self.field_to_perm[perm.codename] = perm
+
+
+class BaseModelPermissions:
+
+    @classmethod
+    def get_perms_for_users(cls):
+        from django.contrib.contenttypes.models import ContentType
+        # ContentType.objects.get_for_model uses a cache so does not the db each time
+        model_content_types = {
+            model["model"]:
+            ContentType.objects.get_for_model(
+                model["model"],
+                for_concrete_model=model.get("for_concrete_model", True)
+            )
+            for model in cls.models
+        }
+        cls.model_content_types = model_content_types
+        from django.contrib.auth.models import Permission
+        perms = Permission.objects.filter(
+            content_type__in=model_content_types.values())
+        exclusions = {model_content_types[model["model"]].pk: model.get("exclude", [])
+                      for model in cls.models}
+        return [
+            perm
+            for perm in perms
+            if perm.codename not in exclusions[perm.content_type_id]
+        ]
+
+    @classmethod
+    def get_section(cls, perm):
+        # by convention the section is the last word after the last underscore in
+        # the codename of the permission.  Sometimes this may not be though.
+        section = None
+        if hasattr(cls, "model_content_types"):
+            model_content_types = cls.model_content_types
+        else:
+            model_content_types = {model["model"]: ContentType.objects.get_for_model(
+                model["model"]) for model in cls.models}
+            cls.model_content_types = model_content_types
+        reverse_dict = {content_type_obj.pk: model for model,
+                        content_type_obj in model_content_types.items()}
+        model = reverse_dict[perm.content_type_id]
+        for m in cls.models:
+            if m["model"] is model:
+                section = m.get("section")
+                break
+        return section
+
+    @classmethod
+    def get_initial(cls, perms, current_perms):
+        initial = {}
+        for perm in current_perms:
+            if perm in perms:
+                initial[perm.codename] = True
+        return initial
+
+    @classmethod
+    def get_forms_for_perms(cls, perms, current_perms, **kwargs):
+        ui = {}
+        for perm in perms:
+            codename = perm.codename
+            matches = re.match("^(.*?)_(.*)_(.*)$", codename)
+            if matches:
+                # custom permissions
+                full_codename = matches[0]
+                action = matches[1]
+                perm_thing = matches[2]
+                section = matches[3]
+            else:
+                # built in django permissions
+                matches = re.match("^(.*?)_(.*)$", codename)
+                full_codename = matches[0]
+                action = matches[1]
+                perm_thing = matches[2]
+                section = cls.get_section(perm)
+            if section not in ui:
+                ui[section] = {}
+            if perm_thing not in ui[section]:
+                ui[section][perm_thing] = []
+            ui[section][perm_thing].append(perm)
+        forms = {}
+        for section in ui:
+            for perm_thing in ui[section]:
+                perms = ui[section][perm_thing]
+                if data := kwargs.get("data"):
+                    form = BasePermissionForm(data, perms=perms, prefix=cls.prefix, initial=cls.get_initial(perms, current_perms))
+                else:
+                    form = BasePermissionForm(perms=perms, prefix=cls.prefix, initial=cls.get_initial(perms, current_perms))
+                if section not in forms:
+                    forms[section] = {}
+                forms[section][perm_thing] = form
+        return forms
 
 
 def get_action(history_type):

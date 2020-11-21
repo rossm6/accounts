@@ -71,10 +71,15 @@ class NominalHeader(ModuleTransactionBase, TransactionHeader):
 
     class Meta:
         permissions = [
-            ("create_journal", "Can create journal"),
-            ("edit_journal", "Can edit journal"),
-            ("view_journal", "Can view journal"),
-            ("void_journal", "Can void journal"),
+            # enquiry perms
+            ("view_transactions_enquiry", "Can view transactions"),
+            # report perms
+            ("view_trial_balance_report", "Can view trial balance report"),
+            # transactions
+            ("create_journal_transaction", "Can create journal"),
+            ("edit_journal_transaction", "Can edit journal"),
+            ("view_journal_transaction", "Can view journal"),
+            ("void_journal_transaction", "Can void journal"),
         ]
 
     def get_type_transaction(self):

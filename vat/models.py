@@ -57,6 +57,10 @@ class VatTransaction(MultiLedgerTransactions):
             models.UniqueConstraint(
                 fields=['module', 'header', 'line', 'field'], name="vat_unique_batch")
         ]
+        permissions = [
+            # enquiry perms
+            ("view_transactions_enquiry", "Can view transactions"),
+        ]
 
     @classmethod
     def fields_to_update(cls):

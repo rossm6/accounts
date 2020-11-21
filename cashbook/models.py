@@ -101,22 +101,25 @@ class CashBookHeader(ModuleTransactionBase, TransactionHeader):
 
     class Meta:
         permissions = [
-            ("create_brought_forward_payment", "Can create brought forward payment"),
-            ("create_brought_forward_receipt", "Can create brought forward receipt"),
-            ("create_payment", "Can create payment"),
-            ("create_receipt", "Can create receipt"),
-            ("edit_brought_forward_payment", "Can edit brought forward payment"),
-            ("edit_brought_forward_receipt", "Can edit brought forward receipt"),
-            ("edit_payment", "Can edit payment"),
-            ("edit_receipt", "Can edit receipt"),
-            ("view_brought_forward_payment", "Can view brought forward payment"),
-            ("view_brought_forward_receipt", "Can view brought forward receipt"),
-            ("view_payment", "Can view payment"),
-            ("view_receipt", "Can view receipt"),
-            ("void_brought_forward_payment", "Can void brought forward payment"),
-            ("void_brought_forward_receipt", "Can void brought forward receipt"),
-            ("void_payment", "Can void payment"),
-            ("void_receipt", "Can void receipt"),
+            # enquiry perms
+            ("view_transactions_enquiry", "Can view transactions"),
+            # transaction perms
+            ("create_brought_forward_payment_transaction", "Can create brought forward payment"),
+            ("create_brought_forward_receipt_transaction", "Can create brought forward receipt"),
+            ("create_payment_transaction", "Can create payment"),
+            ("create_receipt_transaction", "Can create receipt"),
+            ("edit_brought_forward_payment_transaction", "Can edit brought forward payment"),
+            ("edit_brought_forward_receipt_transaction", "Can edit brought forward receipt"),
+            ("edit_payment_transaction", "Can edit payment"),
+            ("edit_receipt_transaction", "Can edit receipt"),
+            ("view_brought_forward_payment_transaction", "Can view brought forward payment"),
+            ("view_brought_forward_receipt_transaction", "Can view brought forward receipt"),
+            ("view_payment_transaction", "Can view payment"),
+            ("view_receipt_transaction", "Can view receipt"),
+            ("void_brought_forward_payment_transaction", "Can void brought forward payment"),
+            ("void_brought_forward_receipt_transaction", "Can void brought forward receipt"),
+            ("void_payment_transaction", "Can void payment"),
+            ("void_receipt_transaction", "Can void receipt"),
         ]
 
 

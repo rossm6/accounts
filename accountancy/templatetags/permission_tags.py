@@ -12,12 +12,12 @@ def perm_form(context, form):
     edit_field = ""
     view_field = ""
     void_field = ""
-    for bound_field in iter(form):
+    for bound_field in form:
         match = re.search('name="(.*)"', str(bound_field))
         widget_name_attr = match[1]
         # name attr on widget element is the permission code name
-        matches = re.match("^(.*?)_(.*)_(.*)$", widget_name_attr)
-        action = matches[1]
+        matches = re.match("^(.*?)-(.*?)_(.*?)_(.*?)$", widget_name_attr)
+        action = matches[2]
         if action == "create":
             create_field = bound_field
         elif action == "edit" or action == "change":

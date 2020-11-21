@@ -30,33 +30,39 @@
                     <h1 class="h4 font-weight-bold mb-4">{% block header %}Purchase Ledger Clerk Group{% endblock header %}</h1>
                     <div>
                         <h2 class="h5">Permissions</h2>
-                        <table class="mt-4 table w-50">
-                            <thead>
-                                <tr>
-                                    <th>Module</th>
-                                    <th>Abstract</th>
-                                    <th>Object</th>
-                                    <th style="text-align: center; width: 100px;">Create</th>
-                                    <th style="text-align: center; width: 100px;">Edit</th>
-                                    <th style="text-align: center; width: 100px;">View</th>
-                                    <th style="text-align: center; width: 100px;">Void</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for module, sections in perm_forms.items %}
-                                    {% for section_name, perms in sections.items %}
-                                        {% for perm_thing, form in perms.items %}
-                                            <tr>
-                                                <td><div>{{ module }}</div></td>
-                                                <td><div class="ml-3">{{ section_name|capfirst }}</div></td>
-                                                <td><div class="ml-5">{{ perm_thing|field_to_label }}</div></td>
-                                                {% perm_form form %}
-                                            </tr>
+                        <form method="POST" action="">
+                            {% csrf_token %}
+                            <table class="mt-4 table w-50">
+                                <thead>
+                                    <tr>
+                                        <th>Module</th>
+                                        <th>Abstract</th>
+                                        <th>Object</th>
+                                        <th style="text-align: center; width: 100px;">Create</th>
+                                        <th style="text-align: center; width: 100px;">Edit</th>
+                                        <th style="text-align: center; width: 100px;">View</th>
+                                        <th style="text-align: center; width: 100px;">Void</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for module, sections in module_perm_forms.items %}
+                                        {% for section_name, perms in sections.items %}
+                                            {% for perm_thing, form in perms.items %}
+                                                <tr>
+                                                    <td><div>{{ module }}</div></td>
+                                                    <td><div class="ml-3">{{ section_name|capfirst }}</div></td>
+                                                    <td><div class="ml-5">{{ perm_thing|field_to_label }}</div></td>
+                                                    {% perm_form form %}
+                                                </tr>
+                                            {% endfor %}
                                         {% endfor %}
                                     {% endfor %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-success">Save</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
