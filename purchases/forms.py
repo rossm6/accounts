@@ -279,3 +279,33 @@ class PurchaseTransactionSearchForm(BaseAjaxFormMixin, SalesAndPurchaseTransacti
         ajax_fields = {
             "supplier": {}  # need to change the base ajax form so it can just accept a list of fields
         }
+
+
+
+"""
+Permission Forms i.e. checkboxes shown in the UI for selecting what the user can and cannot do.
+
+Each form is part of a section in the UI.
+
+E.g.
+
+
+Purchase Ledger
+    Enquiry
+        View Transactions
+    Reports
+        Aged Creditors
+    Transaction
+        Brought Forward Invoice
+
+
+So ViewTransactions, Aged Creditors and Brought Forward invoice each have a form.
+
+"""
+
+class PurchasePermissionForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        perms = kwargs.pop("perms")
+        super().__init__(*args, **kwargs)
+        for perm in perms:
+            self.fields[perm.codename] = forms.BooleanField(required=False, initial=False)

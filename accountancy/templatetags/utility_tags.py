@@ -1,3 +1,4 @@
+import re
 from urllib.parse import urlencode
 
 from django.template import Library
@@ -50,3 +51,9 @@ def get_label(fields, field):
 @register.filter(name='lookup')
 def lookup(value, arg):
     return value[arg]
+
+
+@register.filter(name='field_to_label')
+def field_to_label(field_name):
+    field_name = re.sub(r"_", " ", field_name)
+    return field_name.title()
