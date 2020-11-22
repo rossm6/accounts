@@ -1,7 +1,6 @@
 from django.forms.widgets import Select
 
-
-class SelectWithDataAttr(Select):
+class ExtraFieldsMixin:
     def __init__(self, attrs=None, choices=()):
         self.data_option_attrs = None
         if attrs and 'data-option-attrs' in attrs:
@@ -17,7 +16,6 @@ class SelectWithDataAttr(Select):
         """
         groups = []
         has_selected = False
-        attrs = {}  # overide because option does not inherit select
 
         for index, (option_value, option_label, *model_attrs) in enumerate(self.choices):
             if option_value is None:
@@ -42,7 +40,8 @@ class SelectWithDataAttr(Select):
                 has_selected |= selected
 
                 if model_attrs:
-                    model_attrs = model_attrs[0]
+                    attrs = {}
+                    model_attrs = model_attrs[0] # get list in list
                     # additional model fields can be added to the widget option
                     if self.data_option_attrs:
                         # programmer has decided there should be some attrs added to the option
@@ -89,6 +88,9 @@ class SelectWithDataAttr(Select):
             'template_name': self.option_template_name,
             'wrap_label': True,
         }
+
+
+class SelectWithDataAttr(ExtraFieldsMixin, Select):
 
     @staticmethod
     def _choice_has_empty_value(choice):

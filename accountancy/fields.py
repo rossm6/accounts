@@ -3,13 +3,15 @@ from itertools import groupby
 from operator import attrgetter
 
 from django.db import models
-from django.forms.models import ModelChoiceField, ModelChoiceIterator
+from django.forms.models import (ModelChoiceField, ModelChoiceIterator,
+                                 ModelMultipleChoiceField)
 
 from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
 
 """
 MODEL FIELDS
 """
+
 
 class AccountsDecimalField(models.DecimalField):
     """
@@ -148,22 +150,30 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
     def choice(self, obj):
         c = super().choice(obj)  # ('< class ModelChoiceIteratorValue>', 'some_label')
         value, label = c
-        fields = obj._meta.get_fields()
+        d = obj.__dict__
         tmp = []
-        for field in fields:
-            try:
-                attr = field.name
-                attr_value = getattr(obj, attr)
-                tmp.append(
-                    (attr, attr_value)
-                )
-            except:
-                pass
+        for field, val in d.items():
+            tmp.append((field, val))
+        d = d["_state"].__dict__
+        if d["fields_cache"]:
+            related = d["fields_cache"]
+            for related_name, related_obj in related.items():
+                d = related_obj.__dict__
+                for field, val in d.items():
+                    tmp.append((related_name + "__" + field, val))
         return (value, label, tmp)
 
 
-class ModelChoiceFieldChooseIterator(ModelChoiceField):
+class ChooseIteratorMixin:
     def __init__(self, *args, **kwargs):
         iterator = kwargs.pop("iterator")
         super().__init__(*args, **kwargs)
         self.iterator = iterator
+
+
+class ModelChoiceFieldChooseIterator(ChooseIteratorMixin, ModelChoiceField):
+    pass
+
+
+class ModelMultipleChoiceFieldChooseIterator(ChooseIteratorMixin, ModelMultipleChoiceField):
+    pass

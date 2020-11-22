@@ -1,0 +1,36 @@
+{% load utility_tags %}
+{% if row.module %}
+<tr>
+    <td><div>{{ row.module.title }}</div></td>
+    <td><div class="ml-3">{{ row.section|title}}</div></td>
+    <td><div class="ml-5">{{ row.object|field_to_label }}</div></td>
+    <td>
+        <div class="d-flex justify-content-center align-items-center">
+            {% block create_field %}
+                {{ row.create_field }}
+            {% endblock create_field %}
+        </div>
+    </td>
+    <td>
+        <div class="d-flex justify-content-center align-items-center">
+            {% block edit_field %}
+                {{ row.edit_field }}
+            {% endblock edit_field %}
+        </div>
+    </td>
+    <td>
+        <div class="d-flex justify-content-center align-items-center">
+            {% block view_field %}
+                {{ row.view_field }}
+            {% endblock view_field %}
+        </div>
+    </td>
+    <td>
+        <div class="d-flex justify-content-center align-items-center">
+            {% block void_field %}
+                {{ row.void_field }}
+            {% endblock void_field %}
+        </div>
+    </td>
+</tr>
+{% endif %}

@@ -45,18 +45,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for module, sections in module_perm_forms.items %}
-                                        {% for section_name, perms in sections.items %}
-                                            {% for perm_thing, form in perms.items %}
-                                                <tr>
-                                                    <td><div>{{ module }}</div></td>
-                                                    <td><div class="ml-3">{{ section_name|capfirst }}</div></td>
-                                                    <td><div class="ml-5">{{ perm_thing|field_to_label }}</div></td>
-                                                    {% perm_form form %}
-                                                </tr>
+                                    {% block tbody %}
+                                        {% autoescape off %}
+                                            {% for row in perm_table_rows %}
+                                                {% include 'settings/perm_object_detail.html' %}
                                             {% endfor %}
-                                        {% endfor %}
-                                    {% endfor %}
+                                        {% endautoescape %}
+                                    {% endblock tbody %}
                                 </tbody>
                             </table>
                             <div class="d-flex justify-content-end">
@@ -76,6 +71,7 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowgroup/1.1.2/js/dataTables.rowGroup.min.js"></script>
 <script>
     $(document).ready(function(){
+
         var table = $("table").DataTable({
             "paging": false,
             dom: "t",
@@ -86,12 +82,30 @@
             ],
             rowGroup: {
                 dataSrc: [0,1],
-                emptyDataGroup: null
+                emptyDataGroup: null,
+
             },
             columnDefs: [
                 { targets: [0, 1], visible: false},
             ]
         });
+
+        $("table tbody tr").addClass("pointer");
+        $("table tbody tr").not(".dtrg-group.dtrg-start.dtrg-level-0").toggleClass("collapse");
+        $("table tbody tr").on("click", function(){
+            var $tr = $(this);
+            if($tr.hasClass("dtrg-level-0")){
+                var $siblings = $tr.nextAll();
+                $siblings.each(function(index, elem){
+                    var $sibling = $(elem);
+                    if($sibling.hasClass("dtrg-level-0")){
+                        return false;
+                    }
+                    $sibling.toggleClass("collapse");
+                });
+            }
+        });
+
     });
 </script>
 {% endblock js %}
