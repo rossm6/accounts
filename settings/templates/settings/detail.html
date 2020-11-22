@@ -2,11 +2,37 @@
 
 {% load permission_tags %}
 {% load utility_tags %}
+{% load static %}
 
 {% block head %}
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.css"/>
+    <link rel="stylesheet" href="{% static 'accountancy/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowgroup/1.1.2/css/rowGroup.dataTables.min.css">
+    <style>
+
+        table.dataTable td {
+            padding-left: 0.75rem !important;
+            vertical-align: middle !important;
+        }
+
+        .table thead th {
+            border-bottom: 0;
+        }
+
+        table.dataTable thead {
+            background-color: #f5f5f5;
+        }
+
+        div.dataTables_length label {
+            margin: 0;
+        }
+
+    </style>
 <style>
-    .dtrg-group.dtrg-level-0 {
-        font-weight: 900;
+
+    table.dataTable tr.dtrg-group.dtrg-level-0 td {
+        background-color: #a0d5f9 !important;
     }
 
     .dtrg-group.dtrg-level-1 {
@@ -27,21 +53,30 @@
         <div class="container">
             <div class="mt-5">
                 <div class="border p-4">
-                    <h1 class="h4 font-weight-bold mb-4">{% block header %}Purchase Ledger Clerk Group{% endblock header %}</h1>
-                    <div>
-                        <h2 class="h5">Permissions</h2>
-                        <form method="POST" action="">
-                            {% csrf_token %}
-                            <table class="mt-4 table w-50">
+                    <div class="d-flex justify-content-between">
+                        <h1 class="h4 font-weight-bold mb-4">{% block header %}{{ group.name }}{% endblock header %}</h1>
+                        <div>
+                            <a href="{% url 'settings:group_edit' pk=group.pk %}" class="btn btn-primary">Edit</a>
+                            <a href="{% url 'settings:group_edit' pk=group.pk %}" class="btn btn-danger">Delete</a>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center">
+                        <div>
+                            <h2 class="h5">Permissions</h2>
+                            {% if edit %}
+                            <form method="POST" action="">
+                                {% csrf_token %}
+                            {% endif %}
+                            <table class="mt-4 table">
                                 <thead>
                                     <tr>
                                         <th>Module</th>
                                         <th>Abstract</th>
-                                        <th>Object</th>
+                                        <th></th>
                                         <th style="text-align: center; width: 100px;">Create</th>
                                         <th style="text-align: center; width: 100px;">Edit</th>
                                         <th style="text-align: center; width: 100px;">View</th>
-                                        <th style="text-align: center; width: 100px;">Void</th>
+                                        <th style="text-align: center; width: 100px;">Delete | Void</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -54,10 +89,12 @@
                                     {% endblock tbody %}
                                 </tbody>
                             </table>
+                            {% if edit %}
                             <div class="d-flex justify-content-end">
                                 <button class="btn btn-success">Save</button>
                             </div>
-                        </form>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>

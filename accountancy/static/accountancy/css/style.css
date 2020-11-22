@@ -1,3 +1,7 @@
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
 .bg-primary-blue {
     background-color: #0078c8;
 }

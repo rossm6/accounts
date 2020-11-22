@@ -14,21 +14,24 @@ class SettingsView(LoginRequiredMixin, TemplateView):
     template_name = "settings/settings.html"
 
 
-class GroupsView(LoginRequiredMixin, ResponsivePaginationMixin, ListView):
+class GroupsList(LoginRequiredMixin, ResponsivePaginationMixin, ListView):
     paginate_by = 25
     model = Group
     template_name = "settings/group_list.html"
 
 
-class GroupDetail(LoginRequiredMixin, DetailView):
-    model = Group
-    template_name = "settings/detail.html"
-
+class GroupIndividualMixin:
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
-        group = self.object
-        group_perms = group.permissions.all()
-        perm_ui = PermissionUI(group_perms)
+        context_data["edit"] = self.edit
+        return context_data
+
+
+class ReadPermissionsMixin:
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        perms = self.get_perms()
+        perm_ui = PermissionUI(perms)
         for perm in UI_PERMISSIONS.all():
             perm_ui.add_to_group(perm)
         perm_table_rows = perm_ui.create_table_rows()
@@ -36,14 +39,40 @@ class GroupDetail(LoginRequiredMixin, DetailView):
         return context_data
 
 
-class GroupUpdate(LoginRequiredMixin, UpdateView):
+class GroupDetail(
+        LoginRequiredMixin,
+        ReadPermissionsMixin,
+        GroupIndividualMixin,
+        DetailView):
+    model = Group
+    template_name = "settings/detail.html"
+    edit = False
+
+    def get_perms(self):
+        return self.object.permissions.all()
+
+
+class GroupUpdate(LoginRequiredMixin, GroupIndividualMixin, UpdateView):
     model = Group
     template_name = "settings/edit.html"
     success_url = reverse_lazy("settings:groups")
     form_class = GroupForm
+    edit = True
 
 
-class UsersView(LoginRequiredMixin, ListView):
+class UsersList(LoginRequiredMixin, ListView):
     paginate_by = 25
     model = User
     template_name = "settings/users_list.html"
+
+
+class UserDetail(
+        LoginRequiredMixin,
+        ReadPermissionsMixin,
+        DetailView):
+    model = User
+    template_name = "settings/user_detail.html"
+    edit = False
+
+    def get_perms(self):
+        return self.object.user_permissions.all()

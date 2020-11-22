@@ -3,8 +3,10 @@
 {% block header %}Users{% endblock header %}
 
 {% block object %}
-    <a href="" class="d-flex justify-content-between list-group-item list-group-item-action">
+    <a href="{% url 'settings:user_view' pk=object.pk %}" class="d-flex justify-content-between list-group-item list-group-item-action">
         <div class="text-primary">{{ object.username }}</div>
-        <div class="text-muted">{{ object.last_login }}</div>
+        <div>
+            <small class="text-muted">Last logged in at : {{ object.last_login }}</small>
+        </div>
     </a>
 {% endblock object %}
