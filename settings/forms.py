@@ -1,12 +1,16 @@
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 ModelMultipleChoiceFieldChooseIterator)
+from accountancy.layouts import Div, LabelAndFieldAndErrors
 from cashbook.models import CashBook, CashBookHeader
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import HTML, Div, Layout, Submit
 from django import forms
 from django.contrib.auth.models import ContentType, Group, Permission
 from django.db.models import Q
 from nominals.models import Nominal, NominalHeader
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
+from users.forms import UserProfileForm
 from vat.models import Vat, VatTransaction
 
 from settings.widgets import CheckboxSelectMultipleWithDataAttr
@@ -110,9 +114,10 @@ UI_PERMISSIONS = (
     )
 )
 
+
 class GroupForm(forms.ModelForm):
     permissions = ModelMultipleChoiceFieldChooseIterator(
-        queryset=UI_PERMISSIONS.all(), # all is necesssary to take a copy
+        queryset=UI_PERMISSIONS.all(),  # all is necesssary to take a copy
         widget=CheckboxSelectMultipleWithDataAttr(attrs={
             "data-option-attrs": [
                 "codename",
@@ -125,3 +130,67 @@ class GroupForm(forms.ModelForm):
     class Meta:
         model = Group
         fields = ("permissions",)
+
+
+class UserForm(UserProfileForm):
+
+    class Meta(UserProfileForm.Meta):
+        fields = UserProfileForm.Meta.fields + ("groups",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Div(
+                HTML(
+                    "<small><span class='font-weight-bold'>Last logged in:</span> {{ user.last_login }}</small>"),
+                css_class="my-3"
+            ),
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        'first_name', css_class="form-control"),
+                    css_class="col-6"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        'last_name', css_class="form-control"),
+                    css_class="col-6"
+                ),
+                css_class="form-row form-group"
+            ),
+            Div(
+                Div(
+                    LabelAndFieldAndErrors('email', css_class="form-control"),
+                    css_class="col-12"
+                ),
+                css_class="form-row form-group"
+            ),
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        'password', css_class="form-control"),
+                    css_class="col-6"
+                ),
+                Div(
+                    LabelAndFieldAndErrors(
+                        'password2', css_class="form-control"),
+                    css_class="col-6"
+                ),
+                css_class="form-row form-group"
+            ),
+            Div(
+                LabelAndFieldAndErrors('groups')
+            ),
+            Div(
+                HTML(
+                    "<a class='btn btn-secondary mr-2' href='{% url 'settings:users' %}'>Cancel</a>"
+                ),
+                Submit(
+                    'Save',
+                    'Save',
+                    css_class="btn btn-success"
+                ),
+                css_class="d-flex justify-content-end"
+            ),
+        )

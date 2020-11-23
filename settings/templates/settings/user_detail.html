@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{% static 'accountancy/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowgroup/1.1.2/css/rowGroup.dataTables.min.css">
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
     <style>
 
         table.dataTable td {
@@ -67,68 +68,72 @@
                             </ul>
                             <div>
                                 <div>
-                                    <a href="#" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{% url 'settings:user_edit' pk=user.pk %}" class="btn btn-sm btn-primary">Edit</a>
                                 </div>
                             </div>
                         </div>
                         <div class="tab-content border border-top-0 p-3">
                             <div class="tab-pane fade show active" id="collapse_main">
-                                <div class="my-3">
-                                    <small><span class="font-weight-bold">Last logged in:</span> {{ user.last_login }}</small>
-                                </div>
-                                <div class="form-row form-group">
-                                    <div class="col-6">
-                                        <p class="p-2 w-100 border rounded">{{ user.first_name }}</p>
+                                {% block main %}
+                                    <div class="my-3">
+                                        <small><span class="font-weight-bold">Last logged in:</span> {{ user.last_login }}</small>
                                     </div>
-                                    <div class="col-6">
-                                        <p class="p-2 w-100 border rounded">{{ user.last_name }}</p>
+                                    <div class="form-row form-group">
+                                        <div class="col-6">
+                                            <p class="p-2 w-100 border rounded">{{ user.first_name }}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <p class="p-2 w-100 border rounded">{{ user.last_name }}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-row form-group">
-                                    <div class="col-12">
-                                        <p class="p-2 w-100 border rounded">{{ user.email }}</p>
+                                    <div class="form-row form-group">
+                                        <div class="col-12">
+                                            <p class="p-2 w-100 border rounded">{{ user.email }}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-row form-group">
-                                    <div class="col-6">
-                                        <input type="password" class="form-control bg-white" value="{{ user.password }}" disabled>
+                                    <div class="form-row form-group">
+                                        <div class="col-6">
+                                            <input type="password" class="form-control bg-white" value="{{ user.password }}" disabled>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="password" class="form-control bg-white" value="{{ user.password }}" disabled>
+                                        </div>
                                     </div>
-                                    <div class="col-6">
-                                        <input type="password" class="form-control bg-white" value="{{ user.password }}" disabled>
+                                    <div>
+                                        <h2 class="h6 font-weight-bold mt-4">User's Groups</h2>
+                                        <ul class="list-unstyled">
+                                            <li><a href="#">Purchase Ledger Clerk</a></li>
+                                            <li><a href="#">Manager</a></li>
+                                        </ul>
                                     </div>
-                                </div>
-                                <div>
-                                    <h2 class="h6 font-weight-bold mt-4">User's Groups</h2>
-                                    <ul class="list-unstyled">
-                                        <li><a href="#">Purchase Ledger Clerk</a></li>
-                                        <li><a href="#">Manager</a></li>
-                                    </ul>
-                                </div>
+                                {% endblock main %}
                             </div>
-                            <div class="tab-pane fade" id="collapse_permission">
-                                <table class="mt-4 table w-100">
-                                    <thead>
-                                        <tr>
-                                            <th>Module</th>
-                                            <th>Abstract</th>
-                                            <th></th>
-                                            <th style="text-align: center; width: 100px;">Create</th>
-                                            <th style="text-align: center; width: 100px;">Edit</th>
-                                            <th style="text-align: center; width: 100px;">View</th>
-                                            <th style="text-align: center; width: 100px;">Delete | Void</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% block tbody %}
-                                            {% autoescape off %}
-                                                {% for row in perm_table_rows %}
-                                                    {% include 'settings/perm_object_detail.html' %}
-                                                {% endfor %}
-                                            {% endautoescape %}
-                                        {% endblock tbody %}
-                                    </tbody>
-                                </table>
-                            </div>
+                                <div class="tab-pane fade" id="collapse_permission">
+                                    {% block permissions %}
+                                        <table class="mt-4 table w-100">
+                                            <thead>
+                                                <tr>
+                                                    <th>Module</th>
+                                                    <th>Abstract</th>
+                                                    <th></th>
+                                                    <th style="text-align: center; width: 100px;">Create</th>
+                                                    <th style="text-align: center; width: 100px;">Edit</th>
+                                                    <th style="text-align: center; width: 100px;">View</th>
+                                                    <th style="text-align: center; width: 100px;">Delete | Void</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% block tbody %}
+                                                    {% autoescape off %}
+                                                        {% for row in perm_table_rows %}
+                                                            {% include 'settings/perm_object_detail.html' %}
+                                                        {% endfor %}
+                                                    {% endautoescape %}
+                                                {% endblock tbody %}
+                                            </tbody>
+                                        </table>
+                                    {% endblock permissions %}
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -141,6 +146,7 @@
 {% block js %}
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowgroup/1.1.2/js/dataTables.rowGroup.min.js"></script>
+<script src="{% static 'js/selectize.min.js' %}"></script>
 <script>
     $(document).ready(function(){
 
@@ -178,6 +184,16 @@
             }
         });
 
+    });
+</script>
+<script>
+    $('#id_groups').selectize({
+        maxItems: null,
+        render: {
+            item: function(data, escape){
+                return "<div class='item btn' data-value='" + escape(data.value) + "'>" + escape(data.text) + "</div>";
+            }
+        }
     });
 </script>
 {% endblock js %}

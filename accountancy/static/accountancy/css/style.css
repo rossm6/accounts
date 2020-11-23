@@ -1,5 +1,7 @@
+html,
 body {
     font-family: 'Poppins', sans-serif;
+    --font-family-sans-serif: 'Poppins', sans-serif !important;
 }
 
 .bg-primary-blue {

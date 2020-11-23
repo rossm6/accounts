@@ -1,12 +1,16 @@
+from itertools import chain
+
 from accountancy.mixins import ResponsivePaginationMixin
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group, User
+from django.db import transaction
+from django.db.models import prefetch_related_objects
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, TemplateView, UpdateView
 
-from settings.forms import UI_PERMISSIONS, GroupForm
+from settings.forms import UI_PERMISSIONS, GroupForm, UserForm
 from settings.helpers import PermissionUI
 
 
@@ -66,6 +70,16 @@ class UsersList(LoginRequiredMixin, ListView):
     template_name = "settings/users_list.html"
 
 
+"""
+
+    The permissions tab in the UI for the user detail and user edit shows BOTH
+    the permissions of the groups the user belongs to and the permissions for that particular user.
+
+    In edit mode the user only has the option to change the latter.
+
+"""
+
+
 class UserDetail(
         LoginRequiredMixin,
         ReadPermissionsMixin,
@@ -75,4 +89,40 @@ class UserDetail(
     edit = False
 
     def get_perms(self):
-        return self.object.user_permissions.all()
+        user = self.object
+        user_perms = user.user_permissions.all()
+        prefetch_related_objects([user], "groups__permissions__content_type")
+        group_perms = [group.permissions.all() for group in user.groups.all()]
+        group_perms = list(chain(*group_perms))
+        if user_perms and group_perms:
+            return list(set(chain(user_perms, group_perms)))
+        if user_perms:
+            return user_perms
+        if group_perms:
+            return group_perms
+
+
+class UserEdit(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = UserForm
+    template_name = "settings/user_edit.html"
+    success_url = reverse_lazy("settings:users")
+    edit = True
+
+    # because two saves are necessary
+    @transaction.atomic
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form(self):
+        return self.form_class(**self.get_form_kwargs())
+
+    def form_valid(self, form):
+        groups = form.cleaned_data.get("groups")
+        form.instance.groups.add(*groups) # hits the db
+        form.save() # and again
+        return super().form_valid(form)
+
+    def post(self, request, *args, **kwargs):
+        print(request.POST)
+        return super().post(request, *args, **kwargs)

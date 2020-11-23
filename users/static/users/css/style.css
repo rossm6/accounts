@@ -1,6 +1,8 @@
 html,
 body {
   height: 100%;
+  font-family: 'Poppins', sans-serif !important;
+  --font-family-sans-serif: 'Poppins', sans-serif !important;
 }
 
 body {

@@ -62,7 +62,7 @@ class SignInForm(AuthenticationForm):
 
 class UserProfileForm(forms.ModelForm):
     password = forms.CharField(
-        label='Password', widget=forms.PasswordInput(render_value=True))
+        label='Password', widget=forms.PasswordInput(attrs={"class": ""}, render_value=True))
     password2 = forms.CharField(
         label='Password Confirmation', widget=forms.PasswordInput, required=False)
 
