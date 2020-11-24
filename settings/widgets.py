@@ -55,3 +55,37 @@ class CheckboxSelectMultipleWithDataAttr(ExtraFieldsMixin, CheckboxSelectMultipl
             new_optgroups.append(new_optgroup)
         ctx["widget"]["optgroups"] = new_optgroups
         return ctx
+
+
+class CheckboxSelectMultipleWithDataAttr_UserEdit(CheckboxSelectMultipleWithDataAttr):
+    """
+    This is used for the UserForm.
+
+    The permissions for the UserEdit form should only give the user the option to change user permissions 
+    and not group permissions.  But at the same time we want the group permissions to show like it does in the
+    User Detail (read only) view.
+    """
+    
+    def is_group_perm(self, checkbox):
+        if checkbox:
+            value = str(checkbox["value"])
+            if value and int(value) in self.group_perms:
+                return True
+        return False
+
+    def get_context(self, name, value, attrs):
+        ctx = super().get_context(name, value, attrs)
+        for group_name, optgroup, index in ctx["widget"]["optgroups"]:
+            checkboxes = [
+                optgroup["create_field"],
+                optgroup["edit_field"],
+                optgroup["view_field"],
+                optgroup["void_field"]
+            ]
+            for checkbox in checkboxes:
+                if self.is_group_perm(checkbox):
+                    checkbox["attrs"].update({
+                        "disabled": True,
+                        "checked": True
+                    })
+        return ctx

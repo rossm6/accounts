@@ -13,7 +13,8 @@ from sales.models import SaleHeader
 from users.forms import UserProfileForm
 from vat.models import Vat, VatTransaction
 
-from settings.widgets import CheckboxSelectMultipleWithDataAttr
+from settings.widgets import (CheckboxSelectMultipleWithDataAttr,
+                              CheckboxSelectMultipleWithDataAttr_UserEdit)
 
 """
 Not all permissions do we want to show in the UI.
@@ -133,13 +134,24 @@ class GroupForm(forms.ModelForm):
 
 
 class UserForm(UserProfileForm):
+    user_permissions = ModelMultipleChoiceFieldChooseIterator(
+        queryset=UI_PERMISSIONS.all(),  # all is necesssary to take a copy
+        widget=CheckboxSelectMultipleWithDataAttr_UserEdit(attrs={
+            "data-option-attrs": [
+                "codename",
+                "content_type__app_label",
+            ],
+        }),
+        iterator=ModelChoiceIteratorWithFields
+    )
 
     class Meta(UserProfileForm.Meta):
-        fields = UserProfileForm.Meta.fields + ("groups",)
+        fields = UserProfileForm.Meta.fields + ("groups", "user_permissions",)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
+        self.helper.form_tag = False
         self.helper.layout = Layout(
             Div(
                 HTML(

@@ -24,7 +24,7 @@ class GroupsList(LoginRequiredMixin, ResponsivePaginationMixin, ListView):
     template_name = "settings/group_list.html"
 
 
-class GroupIndividualMixin:
+class IndividualMixin:
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data["edit"] = self.edit
@@ -46,7 +46,7 @@ class ReadPermissionsMixin:
 class GroupDetail(
         LoginRequiredMixin,
         ReadPermissionsMixin,
-        GroupIndividualMixin,
+        IndividualMixin,
         DetailView):
     model = Group
     template_name = "settings/detail.html"
@@ -56,7 +56,7 @@ class GroupDetail(
         return self.object.permissions.all()
 
 
-class GroupUpdate(LoginRequiredMixin, GroupIndividualMixin, UpdateView):
+class GroupUpdate(LoginRequiredMixin, IndividualMixin, UpdateView):
     model = Group
     template_name = "settings/edit.html"
     success_url = reverse_lazy("settings:groups")
@@ -102,27 +102,47 @@ class UserDetail(
             return group_perms
 
 
-class UserEdit(LoginRequiredMixin, UpdateView):
+class UserEdit(
+        LoginRequiredMixin,
+        IndividualMixin,
+        UpdateView):
     model = User
     form_class = UserForm
     template_name = "settings/user_edit.html"
     success_url = reverse_lazy("settings:users")
     edit = True
 
-    # because two saves are necessary
+    # because 5 db hits are needed for POST
     @transaction.atomic
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
     def get_form(self):
-        return self.form_class(**self.get_form_kwargs())
+        form = self.form_class(**self.get_form_kwargs())
+        user = self.object
+        prefetch_related_objects([user], "groups__permissions__content_type")
+        group_perms = [group.permissions.all()
+                       for group in user.groups.all()]  # does hit db again
+        group_perms = list(chain(*group_perms))  # does not hit db again
+        group_perms = {perm.pk: perm for perm in group_perms}
+        self.group_perms = group_perms
+        form.fields["user_permissions"].widget.group_perms = group_perms
+        return form
 
     def form_valid(self, form):
         groups = form.cleaned_data.get("groups")
-        form.instance.groups.add(*groups) # hits the db
-        form.save() # and again
+        user_permissions = form.cleaned_data.get("user_permissions")
+        # because the group permissions are included in the form i.e. checkboxes are ticked for
+        # permissions which belong to only groups and not users, we need to discount all such permissions
+        user_permissions = [
+            perm for perm in user_permissions if perm.pk not in self.group_perms]
+        form.instance.user_permissions.clear() # hit db
+        form.instance.user_permissions.add(*user_permissions) # hit db
+        form.instance.groups.clear() # hit db
+        form.instance.groups.add(*groups) # hit db
+        form.save() # hit db
         return super().form_valid(form)
 
-    def post(self, request, *args, **kwargs):
-        print(request.POST)
-        return super().post(request, *args, **kwargs)
+    def form_invalid(self, form):
+        print(form.errors)
+        return super().form_invalid(form)
