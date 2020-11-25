@@ -155,7 +155,7 @@ class ModelChoiceIteratorWithFields(ModelChoiceIterator):
         for field, val in d.items():
             tmp.append((field, val))
         d = d["_state"].__dict__
-        if d["fields_cache"]:
+        if d.get("fields_cache"):
             related = d["fields_cache"]
             for related_name, related_obj in related.items():
                 d = related_obj.__dict__

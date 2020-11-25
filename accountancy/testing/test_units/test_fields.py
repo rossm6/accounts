@@ -950,12 +950,18 @@ class ModelChoiceIteratorWithFieldsTest(TestCase):
         mocked_choice.side_effect = choice  # super call is therefore mocked
         it = ModelChoiceIteratorWithFields(mock.Mock())
         c = it.choice(self.vat_code)
+        # the only thing we can't compare is the _state object
+        # which contains references to objects from joined tables i.e. select_related
+        # so get it first for the comparison
+        extra_model_fields = c[2]
+        key, _state = extra_model_fields[0]
         self.assertEqual(
             c,
             (
                 self.vat_code.pk,
                 self.vat_code.code,
                 [
+                    (key, _state), # we can't mock this ourselves so just compare with real
                     ('id', self.vat_code.pk),
                     ('code', self.vat_code.code),
                     ('name', self.vat_code.name),
