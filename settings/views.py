@@ -1,6 +1,7 @@
 from itertools import chain
 
-from accountancy.mixins import ResponsivePaginationMixin
+from accountancy.mixins import (ResponsivePaginationMixin,
+                                SingleObjectAuditDetailViewMixin)
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group, User
@@ -45,6 +46,7 @@ class ReadPermissionsMixin:
 
 class GroupDetail(
         LoginRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
         ReadPermissionsMixin,
         IndividualMixin,
         DetailView):
@@ -56,7 +58,11 @@ class GroupDetail(
         return self.object.permissions.all()
 
 
-class GroupUpdate(LoginRequiredMixin, IndividualMixin, UpdateView):
+class GroupUpdate(
+        LoginRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
+        IndividualMixin,
+        UpdateView):
     model = Group
     template_name = "settings/edit.html"
     success_url = reverse_lazy("settings:groups")
@@ -82,6 +88,7 @@ class UsersList(LoginRequiredMixin, ListView):
 
 class UserDetail(
         LoginRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
         ReadPermissionsMixin,
         DetailView):
     model = User
@@ -104,6 +111,7 @@ class UserDetail(
 
 class UserEdit(
         LoginRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
         IndividualMixin,
         UpdateView):
     model = User
@@ -136,11 +144,11 @@ class UserEdit(
         # permissions which belong to only groups and not users, we need to discount all such permissions
         user_permissions = [
             perm for perm in user_permissions if perm.pk not in self.group_perms]
-        form.instance.user_permissions.clear() # hit db
-        form.instance.user_permissions.add(*user_permissions) # hit db
-        form.instance.groups.clear() # hit db
-        form.instance.groups.add(*groups) # hit db
-        form.save() # hit db
+        form.instance.user_permissions.clear()  # hit db
+        form.instance.user_permissions.add(*user_permissions)  # hit db
+        form.instance.groups.clear()  # hit db
+        form.instance.groups.add(*groups)  # hit db
+        form.save()  # hit db
         return super().form_valid(form)
 
     def form_invalid(self, form):

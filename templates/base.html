@@ -124,6 +124,10 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
     {% block js %}
+        {% block extra_js %}
+        {% endblock extra_js %}
+        {% block module_js %}
+        {% endblock module_js %}
     {% endblock js %}
     <script src="{% static 'accountancy/js/content_loaded.js' %}"></script>
     <script src="{% static 'accountancy/js/reload.js' %}"></script>

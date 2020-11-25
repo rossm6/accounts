@@ -42,6 +42,7 @@ class Profile(LoginRequiredMixin, UpdateView):
         update_session_auth_hash(self.request, self.request.user)
         return response
 
+
 class UserPasswordResetView(PasswordResetView):
     form_class = UserPasswordResetForm
 

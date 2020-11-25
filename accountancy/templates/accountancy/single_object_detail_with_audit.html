@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block head %}
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.css"/>
     <link rel="stylesheet" href="{% static 'accountancy/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/audit_table.css' %}">
@@ -21,8 +21,8 @@
 {% block content %}
 {% endblock content %}
 
-{% block js %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+{% block extra_js %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
 <script>
     {% include 'accountancy/audit.js' %}
 </script>
@@ -35,4 +35,4 @@
 
     });
 </script>
-{% endblock js %}
+{% endblock extra_js %}
