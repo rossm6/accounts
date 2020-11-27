@@ -1,18 +1,23 @@
+from accountancy.layouts import LabelAndFieldOnly
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 ModelMultipleChoiceFieldChooseIterator)
-from accountancy.layouts import Div, LabelAndFieldAndErrors
+from accountancy.layouts import (Delete, Div, LabelAndFieldAndErrors,
+                                 PlainField, PlainFieldErrors, Td, Tr)
 from cashbook.models import CashBook, CashBookHeader
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Div, Layout, Submit
+from crispy_forms.layout import HTML, Div, Fieldset, Hidden, Layout, Submit
 from django import forms
 from django.contrib.auth.models import ContentType, Group, Permission
 from django.db.models import Q
 from nominals.models import Nominal, NominalHeader
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
+from tempus_dominus.widgets import DatePicker
 from users.forms import UserProfileForm
 from vat.models import Vat, VatTransaction
 
+from settings.layouts import TableFormset
+from settings.models import FinancialYear, Period
 from settings.widgets import (CheckboxSelectMultipleWithDataAttr,
                               CheckboxSelectMultipleWithDataAttr_UserEdit)
 
@@ -204,5 +209,139 @@ class UserForm(UserProfileForm):
                     css_class="btn btn-success"
                 ),
                 css_class="d-flex justify-content-end"
+            ),
+        )
+
+
+class PeriodForm(forms.ModelForm):
+    month_end = forms.DateField(
+        widget=DatePicker(
+            options={
+                "useCurrent": True,
+                "collapse": True,
+                "format": "DD-MM-YYYY"
+            },
+            attrs={
+                "icon_toggle": True,
+                "input_group": False
+            }
+        ),
+        required=False
+    )
+
+    class Meta:
+        model = Period
+        fields = ("id", "period", "month_end")
+        widgets = {
+            "period": forms.widgets.HiddenInput
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["period"].required = False
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.include_media = False
+        self.helper.layout = Layout(
+            Div(
+                PlainField(
+                    'id'
+                ),
+                Div(
+                    Div(
+                        LabelAndFieldOnly('period'),
+                    ),
+                    css_class="bg-primary text-white col-auto col-close-icon border border-primary rounded d-flex justify-content-center align-items-center small"
+                ),
+                Div(
+                    PlainField(
+                        'month_end', css_class="w-100 form-control"),
+                    css_class="col px-2"
+                ),
+                Div(
+                    Div(
+                        PlainField(
+                            'DELETE', css_class="d-none col-close-icon"),
+                        Delete(),
+                    ),
+                    css_class="pointer col-auto col-close-icon border rounded col-close-icon"
+                ),
+                css_class="row no-gutters p-1"
+            )
+        )
+
+
+class PeriodFormSet(forms.BaseInlineFormSet):
+
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        label = form.fields["period"].label
+        form.fields["period"].label = f"P{i + 1}"
+        return form
+
+
+FinancialYearInlineFormSetCreate = forms.inlineformset_factory(
+    FinancialYear,
+    Period,
+    form=PeriodForm,
+    formset=PeriodFormSet,
+    fields=["period", "month_end"],
+    extra=12,
+    can_delete=True,
+)
+
+
+FinancialYearInlineFormSetEdit = forms.inlineformset_factory(
+    FinancialYear,
+    Period,
+    form=PeriodForm,
+    formset=PeriodFormSet,
+    fields=["period", "month_end"],
+    extra=0,
+    can_delete=True,
+)
+
+
+class FinancialYearForm(forms.ModelForm):
+
+    class Meta:
+        model = FinancialYear
+        fields = ("financial_year",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Div(
+                LabelAndFieldAndErrors(
+                    "financial_year", css_class="mt-2 form-control"),
+                css_class="mb-2"
+            ),
+            Div(
+                TableFormset(
+                    [
+                        {"label": "", "css_class": "d-none"},
+                        "Period",
+                        ""
+                    ],
+                    "periods"
+                )
+            ),
+            Div(
+                HTML(
+                    "<button class='btn btn-primary add-period-btn'>Add Period</button>"
+                ),
+                css_class="my-5"
+            ),
+            Div(
+                HTML(
+                    "<a class='btn btn-secondary mr-2' href='{% url 'settings:index' %}'>Cancel</a>"
+                ),
+                Submit(
+                    'Save',
+                    'Save',
+                    css_class="btn btn-success"
+                ),
+                css_class="mt-5 d-flex justify-content-between"
             ),
         )

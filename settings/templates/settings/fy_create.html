@@ -1,0 +1,133 @@
+{% extends 'accountancy/single_object_detail_with_audit.html' %}
+
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+    <style>
+
+        table.dataTable td {
+            padding-left: 0.75rem !important;
+            vertical-align: middle !important;
+        }
+
+        .table thead th {
+            border-bottom: 0;
+        }
+
+        table.dataTable thead {
+            background-color: #f5f5f5;
+        }
+
+        div.dataTables_length label {
+            margin: 0;
+        }
+
+        table.perms_table th {
+            border-top: none !important;
+        }
+
+    </style>
+<style>
+
+    table.dataTable tr.dtrg-group.dtrg-level-0 td {
+        background-color: #a0d5f9 !important;
+    }
+
+    .dtrg-group.dtrg-level-1 {
+        font-weight: 600;
+    }
+
+    tr.even,
+    tr.odd {
+        background-color: white;
+    }
+
+    label {
+        margin: 0 !important;
+    }
+
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" integrity="sha512-3JRrEUwaCkFUBLK1N8HehwQgu8e23jTH4np5NHOmQOobuC4ROQxFwFgBLTnhcnQRMs84muMh0PnnwXlPq5MGjg==" crossorigin="anonymous" />
+{% endblock extra_head %}
+
+{% block content %}
+<div class="cont">
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-center">
+                <div class="border data-grid p-4" style="width: 400px;">
+                    <div>
+                        <div class="d-none text-right mb-3">
+                            <button class="btn btn-primary auto-fill-btn">Auto Fill</button>
+                        </div>
+                        <div>
+                            {% crispy form %}
+                        </div>
+                        <div class="mt-3 d-none audit_section p-3 border rounded">
+                            <h2 class="h4 font-weight-bold">Audit</h2>
+                            {% include 'accountancy/audit.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block module_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js" integrity="sha512-k6/Bkb8Fxf/c1Tkyl39yJwcOZ1P4cRrJu77p83zJjN2Z55prbFHxPs9vN7q3l3+tSMGPDdoH51AEU8Vgo1cgAA==" crossorigin="anonymous"></script>
+<script>
+    $(document).ready(function(){
+        
+        var add_period_btn = $("button.add-period-btn");
+        add_period_btn.on("click", function(e){
+            e.preventDefault();
+            var new_form = $("div.empty_form").children().eq(0).clone();
+            var total_forms = $("div.formset").find("input[name='period-TOTAL_FORMS']").val();
+            new_form = new_form.wrap("<p/>").parent().html();
+            new_form = new_form.replace(/__prefix__/g, total_forms);
+            new_form = $(new_form);
+            new_form.find("input").each(function () {
+                $(this).val("");
+            });
+            new_form
+            .find("label")
+            .filter(function(index){ 
+                var for_attr = $(this).attr("for");
+                var reg = new RegExp("id_period" + '-\\d+-' + "period");
+                return for_attr.match(reg)
+            })
+            .text("P" + (+total_forms + 1))
+            $("div.formset").append(new_form);
+            $("form").find("input[name='period-TOTAL_FORMS']").val(+total_forms + 1);
+        });
+
+
+        function auto_fill(){
+            var format = "YYYY-MM-DD";
+            var p1 = $(".datepicker:visible").eq(0);
+            var previous = p1.datetimepicker("viewDate"); // moment js object
+            $(".datepicker:visible:not(:first)").each(function(index, d){
+                var d = $(d);
+                var month_from_now = previous.add(1, "M").endOf("month");
+                month_from_now.format("DD-MM-YYYY");
+                d.datetimepicker("date", month_from_now);
+                previous = month_from_now;
+            });
+        }
+
+
+        $("button.auto-fill-btn").on("click", auto_fill);
+
+
+        $(document).on("focusout", ".datepicker", function(e){
+            $("button.auto-fill-btn").parents().eq(0).removeClass("d-none");
+        });
+
+    });
+</script>
+{% endblock module_js %}

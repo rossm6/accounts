@@ -31,6 +31,7 @@ pylint = "*"
 autopep8 = "*"
 pylint-django = "*"
 deepdiff = "*"
+python-dateutil = "*"
 
 [requires]
 python_version = "3.8"

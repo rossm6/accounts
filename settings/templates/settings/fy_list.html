@@ -1,0 +1,15 @@
+{% extends 'settings/list.html' %}
+
+{% block header %}Financial Years{% endblock header %}
+
+{% block actions %}
+<div>
+    <a href="{% url 'settings:fy_create' %}" class="btn-primary btn">Create Financial Year</a>
+</div>
+{% endblock actions %}
+
+{% block object %}
+    <a href="{% url 'settings:fy_view' pk=object.pk %}" class="list-group-item list-group-item-action">
+        <div class="text-primary">{{ object.financial_year }}</div>
+    </a>
+{% endblock object %}

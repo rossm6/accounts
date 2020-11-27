@@ -82,7 +82,7 @@ INSTALLED_APPS = [
     'nominals.apps.NominalsConfig',
     'purchases.apps.PurchasesConfig',
     'sales.apps.SalesConfig',
-    'settings',
+    'settings.apps.SettingsConfig',
     'users',
     'vat.apps.VatConfig'
 ]
@@ -189,9 +189,14 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_L10N = True
+USE_L10N = False
+# GMT is the default time zone.  Format is YYYY-MM-DD
+# User should be able to select their timezone
+# With this set django will out of the box format it correctly
 
 USE_TZ = True
+
+DATE_INPUT_FORMATS = ['%d-%m-%Y']
 
 
 LOGIN_URL = '/users/signin'
