@@ -1,14 +1,16 @@
-from accountancy.layouts import LabelAndFieldOnly
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 ModelMultipleChoiceFieldChooseIterator)
-from accountancy.layouts import (Delete, Div, LabelAndFieldAndErrors,
+from accountancy.layouts import (Delete, Div, FieldAndErrors,
+                                 LabelAndFieldAndErrors, LabelAndFieldOnly,
                                  PlainField, PlainFieldErrors, Td, Tr)
 from cashbook.models import CashBook, CashBookHeader
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Fieldset, Hidden, Layout, Submit
+from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib.auth.models import ContentType, Group, Permission
 from django.db.models import Q
+from django.utils.translation import ugettext_lazy as _
 from nominals.models import Nominal, NominalHeader
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -226,7 +228,6 @@ class PeriodForm(forms.ModelForm):
                 "input_group": False
             }
         ),
-        required=False
     )
 
     class Meta:
@@ -254,7 +255,7 @@ class PeriodForm(forms.ModelForm):
                     css_class="bg-primary text-white col-auto col-close-icon border border-primary rounded d-flex justify-content-center align-items-center small"
                 ),
                 Div(
-                    PlainField(
+                    FieldAndErrors(
                         'month_end', css_class="w-100 form-control"),
                     css_class="col px-2"
                 ),
@@ -275,8 +276,8 @@ class PeriodFormSet(forms.BaseInlineFormSet):
 
     def _construct_form(self, i, **kwargs):
         form = super()._construct_form(i, **kwargs)
-        label = form.fields["period"].label
-        form.fields["period"].label = f"P{i + 1}"
+        label = form.fields["period"].label = i + 1
+        form.fields["period"].initial = i + 1
         return form
 
 
@@ -287,17 +288,6 @@ FinancialYearInlineFormSetCreate = forms.inlineformset_factory(
     formset=PeriodFormSet,
     fields=["period", "month_end"],
     extra=12,
-    can_delete=True,
-)
-
-
-FinancialYearInlineFormSetEdit = forms.inlineformset_factory(
-    FinancialYear,
-    Period,
-    form=PeriodForm,
-    formset=PeriodFormSet,
-    fields=["period", "month_end"],
-    extra=0,
     can_delete=True,
 )
 
@@ -345,3 +335,27 @@ class FinancialYearForm(forms.ModelForm):
                 css_class="mt-5 d-flex justify-content-between"
             ),
         )
+
+    def clean_financial_year(self):
+        financial_year = self.cleaned_data.get("financial_year")
+        if financial_year:
+            q = FinancialYear.objects.all()
+            if self.instance.pk:
+                q = q.exclude(pk=self.instance.pk)
+            all_fys = [fy.financial_year for fy in q]
+            all_fys.append(financial_year)
+            all_fys.sort()
+            if not(
+                all(
+                    all_fys[i] + 1 == all_fys[i + 1]
+                    for i in range(len(all_fys) - 1)
+                )
+            ):
+                raise forms.ValidationError(
+                    _(
+                        "Financial years must be consecutive.  So this financial year you are either creating or editing "
+                        "must be either a year earlier than the current earliest, or a year later than the current latest."
+                    ),
+                    code="invalid-fy"
+                )
+        return financial_year

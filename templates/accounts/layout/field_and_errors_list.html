@@ -1,0 +1,15 @@
+{% load crispy_forms_field %}
+
+{% crispy_field field %}
+{% if field.help_text %}
+    <small id="hint_{{ field.auto_id }}" class="form-text text-muted small">{{ field.help_text|safe }}</small>
+{% endif %}
+{% if field.errors %}
+    <div class="invalid-feedback d-block">
+        <ul class="list-unstyled">
+        {% for error in field.errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+{% endif %}

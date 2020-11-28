@@ -23,7 +23,12 @@ class PlainField(Field):
 
 class PlainFieldErrors(Field):
     # no label; field and errors only
+    # but errors are kind used in grid where it just highlights the corner of the input
     template = "accounts/layout/plain_field_errors.html"
+
+
+class FieldAndErrors(Field):
+    template = "accounts/layout/field_and_errors_list.html"
 
 
 class DataTableTdField(Field):

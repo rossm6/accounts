@@ -2,7 +2,6 @@ from itertools import chain
 
 from accountancy.mixins import (ResponsivePaginationMixin,
                                 SingleObjectAuditDetailViewMixin)
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group, User
@@ -17,8 +16,7 @@ from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 
 from settings.forms import (UI_PERMISSIONS, FinancialYearForm,
-                            FinancialYearInlineFormSetCreate,
-                            FinancialYearInlineFormSetEdit, GroupForm,
+                            FinancialYearInlineFormSetCreate, GroupForm,
                             PeriodForm, UserForm)
 from settings.helpers import PermissionUI
 from settings.models import FinancialYear, Period
@@ -169,7 +167,7 @@ class FinancialYearList(ListView):
     template_name = "settings/fy_list.html"
 
 
-class FinancialYearCreateEditMixin:
+class FinancialYearCreate(CreateView):
     model = FinancialYear
     template_name = 'settings/fy_create.html'
     form_class = FinancialYearForm
@@ -178,22 +176,6 @@ class FinancialYearCreateEditMixin:
     @transaction.atomic
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
-
-
-def change_fy():
-    """
-    This should work recursively.  These testing.
-    """
-    pass
-
-def extend_fy(all_periods, fy_extended, number_of_periods):
-    pass
-
-def distend_fy(all_periods, fy_distended, number_of_periods):
-    pass
-
-
-class FinancialYearCreate(FinancialYearCreateEditMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
@@ -211,14 +193,17 @@ class FinancialYearCreate(FinancialYearCreateEditMixin, CreateView):
         if periods.is_valid():
             fy = form.save()
             self.object = fy
+            periods.instance = fy
             periods.save(commit=False)
+            period_instances = [p.instance for p in periods]
+            period_instances.sort(key=lambda p: p.month_end)
             i = 1
-            for period in periods:
-                period.instance.period = f"{fy.financial_year}{str(i).rjust(2, '0')}"
-                period.instance.fy = fy
+            for period in period_instances:
+                period.fy_and_period = f"{fy.financial_year}{str(i).rjust(2, '0')}"
+                period.period = str(i).rjust(2, '0')
                 i = i + 1
             bulk_create_with_history(
-                [period.instance for period in periods],
+                [*period_instances],
                 Period
             )
             return HttpResponseRedirect(self.get_success_url())
@@ -234,42 +219,3 @@ class FinancialYearDetail(DetailView):
         periods = self.object.periods.all()
         context_data["periods"] = periods
         return context_data
-
-
-class FinancialYearEdit(FinancialYearCreateEditMixin, UpdateView):
-
-    def get_context_data(self, **kwargs):
-        context_data = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context_data["periods"] = FinancialYearInlineFormSetEdit(
-                self.request.POST, prefix="period", instance=self.object)
-        else:
-            context_data["periods"] = FinancialYearInlineFormSetEdit(
-                prefix="period", instance=self.object)
-        return context_data
-
-    def form_valid(self, form):
-        context_data = self.get_context_data()
-        periods = context_data["periods"]
-        if periods.is_valid():
-            fy = form.save()
-            self.object = fy
-            periods.save(commit=False)
-            i = 1
-            for period in periods:
-                period.instance.period = f"{fy.financial_year}{str(i).rjust(2, '0')}"
-                period.instance.fy = fy
-                i = i + 1
-            bulk_create_with_history(
-                [period for period in periods.new_objects],
-                Period,
-            )
-            to_update = [
-                period.instance for period in periods if period.instance not in periods.new_objects]
-            bulk_update_with_history(
-                [period for period in to_update],
-                Period,
-                ["month_end", "period", "fy"]
-            )
-            return HttpResponseRedirect(self.get_success_url())
-        return self.render_to_response(context_data)

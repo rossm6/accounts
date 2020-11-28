@@ -1,7 +1,6 @@
 from django.urls import path
 
-from settings.views import (FinancialYearCreate, FinancialYearDetail,
-                            FinancialYearEdit, FinancialYearList, GroupDetail,
+from settings.views import (FinancialYearCreate, FinancialYearDetail, FinancialYearList, GroupDetail,
                             GroupsList, GroupUpdate, SettingsView, UserDetail,
                             UserEdit, UsersList)
 
@@ -10,8 +9,6 @@ urlpatterns = [
     path("", SettingsView.as_view(), name="index"),
     path("financial_year/", FinancialYearList.as_view(), name="fy_list"),
     path("financial_year/create", FinancialYearCreate.as_view(), name="fy_create"),
-    path("financial_year/edit/<int:pk>",
-         FinancialYearEdit.as_view(), name="fy_edit"),
     path("financial_year/view/<int:pk>",
          FinancialYearDetail.as_view(), name="fy_view"),
     path("groups/", GroupsList.as_view(), name="groups"),
