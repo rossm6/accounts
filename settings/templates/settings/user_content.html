@@ -1,0 +1,63 @@
+<div class="tab-content border border-top-0 p-3">
+    <div class="tab-pane fade show active" id="collapse_main">
+        {% block main %}
+            <div class="my-3">
+                <small><span class="font-weight-bold">Last logged in:</span> {{ user.last_login }}</small>
+            </div>
+            <div class="form-row form-group">
+                <div class="col-6">
+                    <p class="p-2 w-100 border rounded">{{ user.first_name }}</p>
+                </div>
+                <div class="col-6">
+                    <p class="p-2 w-100 border rounded">{{ user.last_name }}</p>
+                </div>
+            </div>
+            <div class="form-row form-group">
+                <div class="col-12">
+                    <p class="p-2 w-100 border rounded">{{ user.email }}</p>
+                </div>
+            </div>
+            <div class="form-row form-group">
+                <div class="col-6">
+                    <input type="password" class="form-control bg-white" value="{{ user.password }}" disabled>
+                </div>
+                <div class="col-6">
+                    <input type="password" class="form-control bg-white" value="{{ user.password }}" disabled>
+                </div>
+            </div>
+            <div>
+                <h2 class="h6 font-weight-bold mt-4">User's Groups</h2>
+                <ul class="list-unstyled">
+                    <li><a href="#">Purchase Ledger Clerk</a></li>
+                    <li><a href="#">Manager</a></li>
+                </ul>
+            </div>
+        {% endblock main %}
+    </div>
+    <div class="tab-pane fade" id="collapse_permission">
+        {% block permissions %}
+            <table class="mt-4 table w-100 perms_table">
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Abstract</th>
+                        <th></th>
+                        <th style="text-align: center; width: 100px;">Create</th>
+                        <th style="text-align: center; width: 100px;">Edit</th>
+                        <th style="text-align: center; width: 100px;">View</th>
+                        <th style="text-align: center; width: 100px;">Delete | Void</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% block tbody %}
+                        {% autoescape off %}
+                            {% for row in perm_table_rows %}
+                                {% include 'settings/perm_object_detail.html' %}
+                            {% endfor %}
+                        {% endautoescape %}
+                    {% endblock tbody %}
+                </tbody>
+            </table>
+        {% endblock permissions %}
+    </div>
+</div>

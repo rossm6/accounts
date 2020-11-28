@@ -1,0 +1,11 @@
+{% extends 'settings/user_content.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block main %}
+    {% crispy form %}
+{% endblock main %}
+
+{% block tbody %}
+    {{ form.user_permissions }}
+{% endblock tbody %}

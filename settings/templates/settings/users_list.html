@@ -2,6 +2,12 @@
 
 {% block header %}Users{% endblock header %}
 
+{% block actions %}
+<div>
+    <a class="btn btn-success" href="{% url 'settings:user_create' %}">Create</a>
+</div>
+{% endblock actions %}
+
 {% block object %}
     <a href="{% url 'settings:user_view' pk=object.pk %}" class="d-flex justify-content-between list-group-item list-group-item-action">
         <div class="text-primary">{{ object.username }}</div>

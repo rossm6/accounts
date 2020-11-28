@@ -68,7 +68,7 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'password')
+        fields = ('username', 'first_name', 'last_name', 'email', 'password')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -93,6 +93,14 @@ class UserProfileForm(forms.ModelForm):
             ),
             Div(
                 Div(
+                    Div(
+                        Div(
+                            LabelAndFieldAndErrors(
+                                'username', css_class="form-control w-100"),
+                            css_class="form-group col-md-6"
+                        ),
+                        css_class="form-row"
+                    ),
                     Div(
                         Div(
                             LabelAndFieldAndErrors(

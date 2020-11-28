@@ -10,7 +10,7 @@ class PermissionUI:
 
     def create_checkbox(self, perm):
         if perm:
-            if perm in self.group_perms:
+            if self.group_perms and perm in self.group_perms:
                 checked = True
             else:
                 checked = False

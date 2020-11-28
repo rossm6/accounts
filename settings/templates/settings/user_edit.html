@@ -2,10 +2,9 @@
 
 {% load crispy_forms_tags %}
 
-{% block main %}
-    {% crispy form %}
-{% endblock main %}
-
-{% block tbody %}
-    {{ form.user_permissions }}
-{% endblock tbody %}
+{% block user_content %}
+    <form method="POST" action="">
+        {% csrf_token %}
+        {% include 'settings/user_content_for_edit.html' %}
+    </form>
+{% endblock user_content %}

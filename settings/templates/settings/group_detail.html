@@ -1,0 +1,14 @@
+{% extends 'settings/group_base.html' %}
+
+{% block content_header %}
+    <h1 class="h4 font-weight-bold mb-4">{% block header %}{{ group.name }}{% endblock header %}</h1>
+    <div>
+        <button class="btn btn-primary btn audit-btn">Audit</button>
+        <a href="{% url 'settings:group_edit' pk=group.pk %}" class="btn btn-primary">Edit</a>
+        <a href="{% url 'settings:group_edit' pk=group.pk %}" class="btn btn-danger">Delete</a>
+    </div>
+{% endblock content_header %}
+
+{% block group_content %}
+    {% include 'settings/group_content.html' %}
+{% endblock group_content %}

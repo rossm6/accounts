@@ -20,6 +20,7 @@ from settings.forms import (UI_PERMISSIONS, FinancialYearForm,
                             PeriodForm, UserForm)
 from settings.helpers import PermissionUI
 from settings.models import FinancialYear, Period
+from settings.widgets import CheckboxSelectMultipleWithDataAttr
 
 
 class SettingsView(LoginRequiredMixin, TemplateView):
@@ -58,7 +59,7 @@ class GroupDetail(
         IndividualMixin,
         DetailView):
     model = Group
-    template_name = "settings/detail.html"
+    template_name = "settings/group_detail.html"
     edit = False
 
     def get_perms(self):
@@ -71,10 +72,17 @@ class GroupUpdate(
         IndividualMixin,
         UpdateView):
     model = Group
-    template_name = "settings/edit.html"
+    template_name = "settings/group_edit.html"
     success_url = reverse_lazy("settings:groups")
     form_class = GroupForm
     edit = True
+
+
+class GroupCreate(LoginRequiredMixin, CreateView):
+    model = Group
+    template_name = "settings/group_edit.html"
+    success_url = reverse_lazy("settings:groups")
+    form_class = GroupForm
 
 
 class UsersList(LoginRequiredMixin, ListView):
@@ -158,8 +166,24 @@ class UserEdit(
         form.save()  # hit db
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        return super().form_invalid(form)
+
+class UserCreate(LoginRequiredMixin, CreateView):
+    model = User
+    form_class = UserForm
+    template_name = "settings/user_edit.html"
+    success_url = reverse_lazy("settings:users")
+
+    def get_form(self):
+        self.form_class.declared_fields["user_permissions"].widget = CheckboxSelectMultipleWithDataAttr(
+            attrs={
+                "data-option-attrs": [
+                    "codename",
+                    "content_type__app_label",
+                ],
+            }
+        )
+        form = super().get_form()
+        return form
 
 
 class FinancialYearList(ListView):
@@ -173,7 +197,7 @@ class FinancialYearCreate(CreateView):
     form_class = FinancialYearForm
     success_url = reverse_lazy("settings:index")
 
-    @transaction.atomic
+    @ transaction.atomic
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 

@@ -132,12 +132,23 @@ class GroupForm(forms.ModelForm):
                 "content_type__app_label",
             ],
         }),
-        iterator=ModelChoiceIteratorWithFields
+        iterator=ModelChoiceIteratorWithFields,
+        required=False
     )
 
     class Meta:
         model = Group
-        fields = ("permissions",)
+        fields = ("name", "permissions",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.layout = Layout(
+            Div(
+                LabelAndFieldAndErrors('name', css_class="form-control w-100")
+            )
+        )
 
 
 class UserForm(UserProfileForm):
@@ -149,7 +160,8 @@ class UserForm(UserProfileForm):
                 "content_type__app_label",
             ],
         }),
-        iterator=ModelChoiceIteratorWithFields
+        iterator=ModelChoiceIteratorWithFields,
+        required=False
     )
 
     class Meta(UserProfileForm.Meta):
@@ -164,6 +176,14 @@ class UserForm(UserProfileForm):
                 HTML(
                     "<small><span class='font-weight-bold'>Last logged in:</span> {{ user.last_login }}</small>"),
                 css_class="my-3"
+            ),
+            Div(
+                Div(
+                    LabelAndFieldAndErrors(
+                        'username', css_class="form-control"),
+                    css_class="col-6"
+                ),
+                css_class="form-row form-group"
             ),
             Div(
                 Div(
@@ -213,7 +233,6 @@ class UserForm(UserProfileForm):
                 css_class="d-flex justify-content-end"
             ),
         )
-
 
 class PeriodForm(forms.ModelForm):
     month_end = forms.DateField(
