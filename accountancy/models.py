@@ -5,6 +5,7 @@ from itertools import groupby
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from controls.models import Period
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 
@@ -170,8 +171,7 @@ class TransactionHeader(AuditMixin, TransactionBase, models.Model):
     date = models.DateField()
     # payments do not require due dates
     due_date = models.DateField(null=True, blank=True)
-    # example 202001, 202002.  This way we can sort easily.
-    period = models.CharField(max_length=6)
+    period = models.ForeignKey(Period, on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=2, choices=statuses, default="c")
     created = models.DateTimeField(auto_now_add=True)
 
@@ -375,8 +375,7 @@ class MatchedHeaders(AuditMixin, models.Model):
         blank=True,
         default=0
     )
-    # example 202001, 202002.  This way we can sort easily.
-    period = models.CharField(max_length=6)
+    period = models.ForeignKey(Period, on_delete=models.SET_NULL, null=True)
     # type field must be added to the subclass which has same choices as type field on header
     # this field is needed for UI presentation.  Without it we need to always remember to select_related
     # header for each line query which isn't ideal, or may be even, possible on occasion.
@@ -404,7 +403,6 @@ class MatchedHeaders(AuditMixin, models.Model):
             "due": header.ui_due,
             "value": value
         }
-
 
     @staticmethod
     def ui_match_value(transaction_header, match_value):
@@ -464,7 +462,7 @@ class MultiLedgerTransactions(models.Model):
     line = models.PositiveIntegerField()
     # but sometimes there won't be any lines e.g. a payment.  So the line will have to be set manually
     ref = models.CharField(max_length=100)  # CHECK LENGTH
-    period = models.CharField(max_length=6)
+    period = models.ForeignKey(Period, on_delete=models.SET_NULL, null=True)
     date = models.DateField()
     created = models.DateTimeField(auto_now=True)
     # User should never see this

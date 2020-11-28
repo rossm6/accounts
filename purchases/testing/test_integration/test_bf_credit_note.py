@@ -1,14 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from json import loads
-
-from django.contrib.auth import get_user_model
-from django.shortcuts import reverse
-from django.test import RequestFactory, TestCase
-from django.utils import timezone
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from controls.models import FinancialYear, Period
+from django.contrib.auth import get_user_model
+from django.shortcuts import reverse
+from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from nominals.models import Nominal, NominalTransaction
 from purchases.helpers import (create_credit_note_with_lines,
                                create_credit_note_with_nom_entries,
@@ -26,6 +26,8 @@ LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
 PERIOD = '202007'  # the calendar month i made the change !
 PL_MODULE = "PL"
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 
 def match(match_by, matched_to):
@@ -41,7 +43,7 @@ def match(match_by, matched_to):
                 matched_by=match_by,
                 matched_to=match_to,
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -53,7 +55,7 @@ def match(match_by, matched_to):
     return match_by, headers_to_update
 
 
-def create_cancelling_headers(n, supplier, ref_prefix, type, value):
+def create_cancelling_headers(n, supplier, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -75,7 +77,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -91,7 +93,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return PurchaseHeader.objects.bulk_create(headers)
@@ -102,7 +104,10 @@ class CreateBroughtForwardCreditNote(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.url = reverse("purchases:create")
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_user(
+            username="dummy", password="dummy")
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     # CORRECT USAGE
     # Can request create brought forward invoice view with t=bi GET parameter
@@ -141,12 +146,18 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime('%Y-%m-%d')
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_user(
+            username="dummy", password="dummy")
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     # CORRECT USAGE
     # Lines can be entered for brought forward transactions
@@ -159,7 +170,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -268,7 +280,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -277,7 +290,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         )
         data.update(header_data)
         headers_to_match_against = create_cancelling_headers(
-            2, self.supplier, "match", "pi", 100)
+            2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [to_dict(header)
                             for header in headers_to_match_against]
@@ -380,7 +393,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -389,7 +403,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         )
         data.update(header_data)
         headers_to_match_against = create_cancelling_headers(
-            2, self.supplier, "match", "pi", 100)
+            2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [to_dict(header)
                             for header in headers_to_match_against]
@@ -435,7 +449,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -443,7 +458,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, -2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -575,7 +590,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -583,7 +599,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, -2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -701,7 +717,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -710,7 +727,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         )
         data.update(header_data)
         invoice_to_match = create_invoices(
-            self.supplier, "invoice to match", 1, -2000)[0]
+            self.supplier, "invoice to match", 1, self.period, -2000)[0]
         headers_as_dicts = [to_dict(invoice_to_match)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -778,7 +795,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -787,7 +805,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         )
         data.update(header_data)
         payment = create_payments(
-            self.supplier, "invoice to match", 1, -2500)[0]
+            self.supplier, "invoice to match", 1, self.period, -2500)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -856,7 +874,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -864,7 +883,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, -2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1001,7 +1020,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1096,7 +1116,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1198,7 +1219,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1206,7 +1228,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1338,7 +1360,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1346,7 +1369,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1465,7 +1488,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1474,7 +1498,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         )
         data.update(header_data)
         invoice_to_match = create_invoices(
-            self.supplier, "invoice to match", 1, 2000)[0]
+            self.supplier, "invoice to match", 1, self.period, 2000)[0]
         headers_as_dicts = [to_dict(invoice_to_match)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1542,7 +1566,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1551,7 +1576,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         )
         data.update(header_data)
         payment = create_payments(
-            self.supplier, "invoice to match", 1, 2500)[0]
+            self.supplier, "invoice to match", 1, self.period, 2500)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1621,7 +1646,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1629,7 +1655,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1758,14 +1784,25 @@ class EditBroughtForwardCreditNote(TestCase):
 
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
-        current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
-        cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        current_assets = Nominal.objects.create(
+            parent=assets, name="Current Assets")
+        cls.nominal = Nominal.objects.create(
+            parent=current_assets, name="Bank Account")
+        cls.vat_code = Vat.objects.create(
+            code="1", name="standard rate", rate=20)
+        cls.user = get_user_model().objects.create_user(
+            username="dummy", password="dummy")
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+
 
     # CORRECT USAGE
     def test_get_request(self):
@@ -1774,11 +1811,12 @@ class EditBroughtForwardCreditNote(TestCase):
             type="pbc",
             supplier=self.supplier,
             ref="ref",
-            date=self.date,
-            due_date=self.due_date,
+            date=self.model_date,
+            due_date=self.model_date,
             total=120,
             goods=100,
-            vat=20
+            vat=20,
+            period=self.period
         )
         url = reverse("purchases:edit", kwargs={"pk": transaction.pk})
         response = self.client.get(url)
@@ -1786,15 +1824,15 @@ class EditBroughtForwardCreditNote(TestCase):
         self.assertContains(
             response,
             '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
-                '<option value="">---------</option>'
-                '<option value="pbi">Brought Forward Invoice</option>'
-                '<option value="pbc" selected>Brought Forward Credit Note</option>'
-                '<option value="pbp">Brought Forward Payment</option>'
-                '<option value="pbr">Brought Forward Refund</option>'
-                '<option value="pp">Payment</option>'
-                '<option value="pr">Refund</option>'
-                '<option value="pi">Invoice</option>'
-                '<option value="pc">Credit Note</option>'
+            '<option value="">---------</option>'
+            '<option value="pbi">Brought Forward Invoice</option>'
+            '<option value="pbc" selected>Brought Forward Credit Note</option>'
+            '<option value="pbp">Brought Forward Payment</option>'
+            '<option value="pbr">Brought Forward Refund</option>'
+            '<option value="pp">Payment</option>'
+            '<option value="pr">Refund</option>'
+            '<option value="pi">Invoice</option>'
+            '<option value="pc">Credit Note</option>'
             '</select>',
             html=True
         )
@@ -1813,15 +1851,24 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
         cls.description = "a line description"
-        cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.vat_code = Vat.objects.create(
+            code="1", name="standard rate", rate=20)
+        cls.user = get_user_model().objects.create_user(
+            username="dummy", password="dummy")
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
 
     # CORRECT USAGE
     # Basic edit here in so far as we just change a line value
+
     def test_no_nominals_created_for_lines_with_goods_and_vat_above_zero(self):
         self.client.force_login(self.user)
         # function will still work for credit notes
@@ -1830,15 +1877,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
             },
             [
                 {
-                    
+
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -1846,9 +1893,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             ] * 20,
         )
 
-
         headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = sort_multiple(headers, *[(lambda h: h.pk, False)])
 
         lines = PurchaseLine.objects.all()
         self.assertEqual(
@@ -1856,7 +1902,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
 
         self.assertEqual(
             len(headers),
@@ -1886,7 +1932,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -1920,13 +1966,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "ref": header.ref,
                 "date": header.date,
                 "due_date": header.due_date,
-                "total": (-1 * header.total) - 60 # we half the goods and vat for a line
+                # we half the goods and vat for a line
+                "total": (-1 * header.total) - 60
             }
         )
         data.update(header_data)
 
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_forms[-1]["goods"] = -50
         line_forms[-1]["vat"] = -10
@@ -1973,7 +2021,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             len(lines),
             20
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
         lines = list(lines)
 
         unedited_lines = list(lines)[:-1]
@@ -1981,7 +2029,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2005,7 +2053,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.line_no, i + 1)
         self.assertEqual(edited_line.header, header)
-        
+
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, -50)
         self.assertEqual(edited_line.nominal, None)
@@ -2044,15 +2092,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
             },
             [
                 {
-                    
+
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -2061,7 +2109,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = sort_multiple(headers, *[(lambda h: h.pk, False)])
 
         lines = PurchaseLine.objects.all()
         self.assertEqual(
@@ -2069,7 +2117,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
 
         self.assertEqual(
             len(headers),
@@ -2099,7 +2147,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2133,13 +2181,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "ref": header.ref,
                 "date": header.date,
                 "due_date": header.due_date,
-                "total": ( -1 * header.total) + 120 # we half the goods and vat for a line
+                # we half the goods and vat for a line
+                "total": (-1 * header.total) + 120
             }
         )
         data.update(header_data)
 
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -2175,7 +2225,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         nom_trans = NominalTransaction.objects.all()
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        nom_trans = sort_multiple(nom_trans, *[(lambda n: n.pk, False)])
         self.assertEqual(
             len(nom_trans),
             0
@@ -2187,13 +2237,13 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             len(lines),
             21
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
         lines = list(lines)
 
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2237,15 +2287,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
             },
             [
                 {
-                    
+
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -2254,7 +2304,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = sort_multiple(headers, *[(lambda h: h.pk, False)])
 
         lines = PurchaseLine.objects.all()
         self.assertEqual(
@@ -2262,7 +2312,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
 
         self.assertEqual(
             len(headers),
@@ -2292,7 +2342,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2326,13 +2376,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "ref": header.ref,
                 "date": header.date,
                 "due_date": header.due_date,
-                "total": ( -1 * header.total) - 100 # we set goods = 0 when previously was 100
+                # we set goods = 0 when previously was 100
+                "total": (-1 * header.total) - 100
             }
         )
         data.update(header_data)
 
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = -20
@@ -2379,7 +2431,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             len(lines),
             20
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
         lines = list(lines)
 
         unedited_lines = list(lines)[:-1]
@@ -2387,7 +2439,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2411,7 +2463,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        
+
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, 0)
         self.assertEqual(edited_line.nominal, None)
@@ -2451,15 +2503,14 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -2468,7 +2519,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = sort_multiple(headers, *[(lambda h: h.pk, False)])
 
         lines = PurchaseLine.objects.all()
         self.assertEqual(
@@ -2476,7 +2527,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
 
         self.assertEqual(
             len(headers),
@@ -2506,7 +2557,6 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2540,13 +2590,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "ref": header.ref,
                 "date": header.date,
                 "due_date": header.due_date,
-                "total": (-1 * header.total) - 20 # we set vat = 0 when previously was 20
+                # we set vat = 0 when previously was 20
+                "total": (-1 * header.total) - 20
             }
         )
         data.update(header_data)
 
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_forms[-1]["goods"] = -100
         line_forms[-1]["vat"] = -0
@@ -2592,7 +2644,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             len(lines),
             20
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
         lines = list(lines)
 
         unedited_lines = list(lines)[:-1]
@@ -2600,7 +2652,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2624,7 +2676,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         edited_line = lines[-1]
         self.assertEqual(edited_line.header, header)
         self.assertEqual(edited_line.line_no, i + 1)
-        
+
         self.assertEqual(edited_line.description, self.description)
         self.assertEqual(edited_line.goods, -100)
         self.assertEqual(edited_line.nominal, None)
@@ -2665,15 +2717,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
             },
             [
                 {
-                    
+
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -2682,7 +2734,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = sort_multiple(headers, *[(lambda h: h.pk, False)])
 
         lines = PurchaseLine.objects.all()
         self.assertEqual(
@@ -2690,7 +2742,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
 
         self.assertEqual(
             len(headers),
@@ -2720,7 +2772,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2754,13 +2806,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "ref": header.ref,
                 "date": header.date,
                 "due_date": header.due_date,
-                "total": (-1 * header.total) - 120 # we set vat = 0 when previously was 20
+                # we set vat = 0 when previously was 20
+                "total": (-1 * header.total) - 120
             }
         )
         data.update(header_data)
 
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_forms[-1]["goods"] = 0
         line_forms[-1]["vat"] = 0
@@ -2798,15 +2852,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
             },
             [
                 {
-                    
+
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -2815,7 +2869,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         headers = PurchaseHeader.objects.all()
-        headers = sort_multiple(headers, *[ (lambda h : h.pk, False) ])
+        headers = sort_multiple(headers, *[(lambda h: h.pk, False)])
 
         lines = PurchaseLine.objects.all()
         self.assertEqual(
@@ -2823,7 +2877,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             20
         )
 
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
 
         self.assertEqual(
             len(headers),
@@ -2853,7 +2907,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2887,13 +2941,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "ref": header.ref,
                 "date": header.date,
                 "due_date": header.due_date,
-                "total": ( -1 * header.total) - 120 # we set vat = 0 when previously was 20
+                # we set vat = 0 when previously was 20
+                "total": (-1 * header.total) - 120
             }
         )
         data.update(header_data)
 
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id',  'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_forms[-1]["goods"] = -100
         line_forms[-1]["vat"] = -20
@@ -2929,7 +2985,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         nom_trans = NominalTransaction.objects.all()
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        nom_trans = sort_multiple(nom_trans, *[(lambda n: n.pk, False)])
         self.assertEqual(
             len(nom_trans),
             0
@@ -2941,15 +2997,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             len(lines),
             19
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
         lines = list(lines)
 
         unedited_lines = list(lines)[:-1]
 
         for i, line in enumerate(unedited_lines):
             self.assertEqual(line.header, header)
-            self.assertEqual(line.line_no , i + 1)
-            
+            self.assertEqual(line.line_no, i + 1)
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2988,8 +3044,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -3039,7 +3095,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -3078,8 +3134,9 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
 
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id', 'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         for form in line_forms:
             form["DELETE"] = "yes"
@@ -3088,13 +3145,18 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         data.update(line_data)
 
         # WE HAVE TO MATCH OTHERWISE IT WILL ERROR
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(
+            2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
-        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        headers_as_dicts = [to_dict(header)
+                            for header in headers_to_match_against]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
-        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {
+                                                  "id": "matched_to"}, {"value": -100})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
 
@@ -3130,7 +3192,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             len(lines),
             0
         )
-    
+
         matches = PurchaseMatching.objects.all()
         self.assertEqual(
             len(matches),
@@ -3147,7 +3209,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         self.assertEqual(
             matches[0].value,
             100
-        )   
+        )
         self.assertEqual(
             matches[1].matched_by,
             headers[0]
@@ -3159,7 +3221,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         self.assertEqual(
             matches[1].value,
             -100
-        )  
+        )
 
         self.assertEqual(
             len(VatTransaction.objects.all()),
@@ -3174,8 +3236,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "goods": 0,
                 "vat": 0,
                 "total": 0,
@@ -3184,8 +3246,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             }
         )
 
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
-        match(header, [ (headers_to_match_against[0], 100), (headers_to_match_against[1], -100) ] )
+        headers_to_match_against = create_cancelling_headers(
+            2, self.supplier, "match", "pi", 100, self.period)
+        match(header, [(headers_to_match_against[0], 100),
+                       (headers_to_match_against[1], -100)])
 
         headers = PurchaseHeader.objects.all().order_by("pk")
         self.assertEqual(
@@ -3221,7 +3285,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         self.assertEqual(
             matches[0].value,
             100
-        )   
+        )
         self.assertEqual(
             matches[1].matched_by,
             headers[0]
@@ -3233,7 +3297,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         self.assertEqual(
             matches[1].value,
             -100
-        ) 
+        )
 
         header = headers[0]
 
@@ -3244,35 +3308,38 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": header.type,
                 "supplier": header.supplier.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 2400
             }
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': 100,
-                    'vat': 20
-                }
+            {
+                'description': self.description,
+                'goods': 100,
+                'vat': 20
+            }
         ] * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
 
         # WE HAVE TO MATCH OTHERWISE IT WILL ERROR
         headers_to_match_against_orig = headers_to_match_against
-        headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        headers_as_dicts = [to_dict(header)
+                            for header in headers_to_match_against]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 100})
-        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {"id": "matched_to"}, {"value": -100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 100})
+        matching_forms += add_and_replace_objects([headers_to_match_against[1]], {
+                                                  "id": "matched_to"}, {"value": -100})
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
-
         url = reverse("purchases:edit", kwargs={"pk": header.pk})
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
@@ -3319,7 +3386,6 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             0
         )
 
-
         lines = PurchaseLine.objects.all().order_by("pk")
         self.assertEqual(
             len(lines),
@@ -3335,7 +3401,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.line_no, i + 1)
             self.assertEqual(line.header, header)
-            
+
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -3370,7 +3436,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         self.assertEqual(
             matches[0].value,
             100
-        )   
+        )
         self.assertEqual(
             matches[1].matched_by,
             headers[0]
@@ -3403,7 +3469,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3412,11 +3479,11 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': 100.01,
-                    'vat': 20
-                }
+            {
+                'description': self.description,
+                'goods': 100.01,
+                'vat': 20
+            }
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
@@ -3435,7 +3502,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbi",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3444,11 +3512,11 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': 100.00,
-                    'vat': 20
-                }
+            {
+                'description': self.description,
+                'goods': 100.00,
+                'vat': 20
+            }
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
@@ -3472,7 +3540,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3481,11 +3550,11 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': -0.01,
-                    'vat': 0
-                }
+            {
+                'description': self.description,
+                'goods': -0.01,
+                'vat': 0
+            }
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
@@ -3571,7 +3640,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3580,15 +3650,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': 100.01,
-                    'vat': 20
-                }
+            {
+                'description': self.description,
+                'goods': 100.01,
+                'vat': 20
+            }
         ]
         line_forms[0]["id"] = lines[0].pk
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        line_data["line-INITIAL_FORMS"] = 1 
+        line_data["line-INITIAL_FORMS"] = 1
         data.update(line_data)
 
         matching_forms = []
@@ -3607,7 +3677,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
-        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        response = self.client.post(
+            reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
         self.assertEqual(
             response.status_code,
             200
@@ -3631,7 +3702,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3640,11 +3712,11 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': 100.01,
-                    'vat': 20
-                }
+            {
+                'description': self.description,
+                'goods': 100.01,
+                'vat': 20
+            }
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
@@ -3662,7 +3734,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbi",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3671,11 +3744,11 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': 100.00,
-                    'vat': 20
-                }
+            {
+                'description': self.description,
+                'goods': 100.00,
+                'vat': 20
+            }
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
@@ -3699,7 +3772,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3708,11 +3782,11 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': -0.01,
-                    'vat': 0
-                }
+            {
+                'description': self.description,
+                'goods': -0.01,
+                'vat': 0
+            }
         ]
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
@@ -3798,7 +3872,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier": self.supplier.pk,
+                "supplier":self.supplier.pk,
+				"period":self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3807,15 +3882,15 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
         data.update(header_data)
         line_forms = [
-                {
-                    'description': self.description,
-                    'goods': 100.01,
-                    'vat': 20
-                }
+            {
+                'description': self.description,
+                'goods': 100.01,
+                'vat': 20
+            }
         ]
         line_forms[0]["id"] = lines[0].pk
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
-        line_data["line-INITIAL_FORMS"] = 1 
+        line_data["line-INITIAL_FORMS"] = 1
         data.update(line_data)
 
         matching_forms = []
@@ -3834,7 +3909,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
-        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
+        response = self.client.post(
+            reverse("purchases:edit", kwargs={"pk": headers[0].pk}), data)
         self.assertEqual(
             response.status_code,
             200
@@ -3854,8 +3930,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                 "type": "pbc",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -3942,8 +4018,9 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id', 'description', 'goods', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(
+            line, ['id', 'description', 'goods', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         last_line_form = line_forms[-1].copy()
         last_line_form["id"] = ""
@@ -3981,7 +4058,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
         nom_trans = NominalTransaction.objects.all()
-        nom_trans = sort_multiple(nom_trans, *[ (lambda n : n.pk, False) ])
+        nom_trans = sort_multiple(nom_trans, *[(lambda n: n.pk, False)])
         self.assertEqual(
             len(nom_trans),
             0
@@ -3993,7 +4070,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             len(lines),
             20
         )
-        lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
+        lines = sort_multiple(lines, *[(lambda l: l.pk, False)])
         lines = list(lines)
 
         for i, line in enumerate(lines):

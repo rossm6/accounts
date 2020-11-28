@@ -1,0 +1,18 @@
+{% extends 'controls/list.html' %}
+
+{% block header %}Users{% endblock header %}
+
+{% block actions %}
+<div>
+    <a class="btn btn-success" href="{% url 'controls:user_create' %}">Create</a>
+</div>
+{% endblock actions %}
+
+{% block object %}
+    <a href="{% url 'controls:user_view' pk=object.pk %}" class="d-flex justify-content-between list-group-item list-group-item-action">
+        <div class="text-primary">{{ object.username }}</div>
+        <div>
+            <small class="text-muted">Last logged in at : {{ object.last_login }}</small>
+        </div>
+    </a>
+{% endblock object %}

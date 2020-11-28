@@ -1,0 +1,25 @@
+{% extends 'controls/perm_object_detail.html' %}
+
+{% block create_field %}
+    {% if row.create_field %}
+        {% include "django/forms/widgets/input.html" with widget=row.create_field %}
+    {% endif %}
+{% endblock create_field %}
+
+{% block edit_field %}
+    {% if row.edit_field %}
+        {% include "django/forms/widgets/input.html" with widget=row.edit_field %}
+    {% endif %}
+{% endblock edit_field %}
+
+{% block view_field %}
+    {% if row.view_field %}
+        {% include "django/forms/widgets/input.html" with widget=row.view_field %}
+    {% endif %}
+{% endblock view_field %}
+
+{% block void_field %}
+    {% if row.void_field %}
+        {% include "django/forms/widgets/input.html" with widget=row.void_field %}
+    {% endif %}
+{% endblock void_field %}

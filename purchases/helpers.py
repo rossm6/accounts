@@ -169,7 +169,7 @@ def create_lines(header, lines):
     return PurchaseLine.objects.bulk_create(tmp)
 
 
-def create_invoices(supplier, ref_prefix, n, value=100):
+def create_invoices(supplier, ref_prefix, n, period, value=100):
     date = timezone.now()
     due_date = date + timedelta(days=31)
     invoices = []
@@ -185,7 +185,7 @@ def create_invoices(supplier, ref_prefix, n, value=100):
             date=date,
             due_date=due_date,
             type="pi",
-            period=PERIOD
+            period=period
         )
         invoices.append(i)
     return PurchaseHeader.objects.bulk_create(invoices)
@@ -209,7 +209,7 @@ def create_credit_note_with_lines(header, lines):
     return header, lines
 
 
-def create_payments(supplier, ref_prefix, n, value=100):
+def create_payments(supplier, ref_prefix, n, period, value=100):
     date = timezone.now()
     due_date = date + timedelta(days=31)
     payments = []
@@ -222,7 +222,7 @@ def create_payments(supplier, ref_prefix, n, value=100):
             due=-1 * value,
             date=date,
             type="pp",
-            period=PERIOD
+            period=period
         )
         payments.append(p)
     return PurchaseHeader.objects.bulk_create(payments)

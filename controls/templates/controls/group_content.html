@@ -1,0 +1,22 @@
+<table class="mt-4 table perms_table">
+    <thead>
+        <tr>
+            <th>Module</th>
+            <th>Abstract</th>
+            <th></th>
+            <th style="text-align: center; width: 100px;">Create</th>
+            <th style="text-align: center; width: 100px;">Edit</th>
+            <th style="text-align: center; width: 100px;">View</th>
+            <th style="text-align: center; width: 100px;">Delete | Void</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% block tbody %}
+            {% autoescape off %}
+                {% for row in perm_table_rows %}
+                    {% include 'controls/perm_object_detail.html' %}
+                {% endfor %}
+            {% endautoescape %}
+        {% endblock %}
+    </tbody>
+</table>

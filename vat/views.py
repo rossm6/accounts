@@ -20,7 +20,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         ("module", "Module"),
         ("header", "Internal Ref"),
         ("ref", "Ref"),
-        ("period", "Period"),
+        ("period__fy_and_period", "Period"),
         ("date", "Date"),
         ("vat_type", "Vat Type"),
         ("goods__sum", "Goods"),
@@ -32,6 +32,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     filter_form_class = VatTransactionSearchForm
     template_name = "vat/transactions.html"
     column_transformers = {
+        "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t]
     }
     row_identifier = "header"
@@ -46,6 +47,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     def get_queryset(self, **kwargs):
         q = (
             VatTransaction.objects
+            .select_for_update('period__fy_and_period')
             .all()
             .values(
                 *[field[0] for field in self.fields[:-2]]

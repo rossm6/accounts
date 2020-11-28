@@ -82,7 +82,7 @@ INSTALLED_APPS = [
     'nominals.apps.NominalsConfig',
     'purchases.apps.PurchasesConfig',
     'sales.apps.SalesConfig',
-    'settings.apps.SettingsConfig',
+    'controls.apps.ControlsConfig',
     'users',
     'vat.apps.VatConfig'
 ]
@@ -197,6 +197,7 @@ USE_L10N = False
 USE_TZ = True
 
 DATE_INPUT_FORMATS = ['%d-%m-%Y']
+DATE_FORMAT = ['%d-%m-%Y']
 
 
 LOGIN_URL = '/users/signin'

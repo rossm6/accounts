@@ -149,7 +149,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     fields = [
         ("customer__name", "Customer"),
         ("ref", "Reference"),
-        ("period", "Period"),
+        ("period__fy_and_period", "Period"),
         ("date", "Date"),
         ("due_date", "Due Date"),
         ("total", "Total"),
@@ -160,6 +160,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
         "reference": "ref"
     }
     column_transformers = {
+        "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "date": lambda d: d.strftime('%d %b %Y'),
         "due_date": lambda d: d.strftime('%d %b %Y') if d else "" # payment trans do not have due dates
     }
@@ -181,6 +182,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
         return (
             self.get_querysets()
             .select_related('customer__name')
+            .select_related('period__fy_and_period')
             .all()
             .values(
                 'id',

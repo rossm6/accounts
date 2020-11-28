@@ -1,0 +1,14 @@
+{% extends 'controls/user_base.html' %}
+
+{% block actions %}
+<div>
+    <div>
+        <button class="btn btn-primary btn-sm audit-btn">Audit</button>
+        <a href="{% url 'controls:user_edit' pk=user.pk %}" class="btn btn-sm btn-primary">Edit</a>
+    </div>
+</div>
+{% endblock actions %}
+
+{% block user_content %}
+    {% include 'controls/user_content.html' %}
+{% endblock user_content %}

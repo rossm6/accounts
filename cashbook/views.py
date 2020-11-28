@@ -104,7 +104,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         ("header", "Internal Ref"),
         ("ref", "Ref"),
         ("cash_book__name", "Cash Book"),
-        ("period", "Period"),
+        ("period__fy_and_period", "Period"),
         ("date", "Date"),
         ("total", "Total"),
     ]
@@ -114,6 +114,9 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     filter_form_class = CashBookTransactionSearchForm
     template_name = "cashbook/transactions.html"
     row_identifier = "header"
+    column_transformers = {
+        "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
+    }
 
     def load_page(self):
         context_data = super().load_page()
@@ -141,6 +144,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         return (
             CashBookTransaction.objects
             .select_related('cash_book__name')
+            .select_related('period__fy_and_period')
             .all()
             .values(
                 *[field[0] for field in self.fields[:-1]]
