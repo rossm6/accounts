@@ -27,7 +27,7 @@ services:
             - proj.env
         volumes:
             - postgres_data:/var/lib/postgresql/data/
-
+        command: ["postgres", "-c", "log_statement=all"]
 
     pgadmin:
         image: dpage/pgadmin4

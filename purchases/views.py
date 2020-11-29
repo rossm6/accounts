@@ -17,6 +17,7 @@ from contacts.views import LoadContacts
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.postgres.search import TrigramSimilarity
+from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import (Http404, HttpResponse, HttpResponseBadRequest,
                          JsonResponse)
@@ -114,6 +115,7 @@ class EditTransaction(LoginRequiredMixin, SupplierMixin, EditPurchaseOrSalesTran
     cash_book_transaction_model = CashBookTransaction
     vat_transaction_model = VatTransaction
 
+
 class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     model = PurchaseHeader
     line_model = PurchaseLine
@@ -124,6 +126,7 @@ class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     void_form = BaseVoidTransactionForm
     template_name = "purchases/view.html"
     edit_view_name = "purchases:edit"
+
 
 class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = PurchaseHeader
@@ -171,7 +174,8 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     column_transformers = {
         "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "date": lambda d: d.strftime('%d %b %Y'),
-        "due_date": lambda d: d.strftime('%d %b %Y') if d else "" # payment trans do not have due dates
+        # payment trans do not have due dates
+        "due_date": lambda d: d.strftime('%d %b %Y') if d else ""
     }
     filter_form_class = PurchaseTransactionSearchForm
     contact_name = "supplier"

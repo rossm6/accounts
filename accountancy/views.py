@@ -603,7 +603,6 @@ class BaseTransaction(
         ContextMixin,
         View):
 
-    @transaction.atomic
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
@@ -643,6 +642,7 @@ class BaseTransaction(
         return super().get_context_data(**kwargs)
 
     def get(self, request, *args, **kwargs):
+        print("get")
         return self.render_to_response(self.get_context_data())
 
 
@@ -1014,13 +1014,16 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
 class EditMatchingMixin(CreateMatchingMixin):
 
     def get_match_formset_queryset(self):
-        return (
+        q = (
             self.get_match_model()
             .objects
             .filter(Q(matched_by=self.main_header) | Q(matched_to=self.main_header))
             .select_related('matched_by')
             .select_related('matched_to')
         )
+        if self.request.method == "POST":
+            q = q.select_for_update()
+        return q
 
     def get_match_formset(self, header=None):
         header = self.main_header

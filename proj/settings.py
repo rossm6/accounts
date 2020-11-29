@@ -152,7 +152,8 @@ DATABASES = {
         'USER': 'dspace',  # maps to the POSTGRES POSTGRES_USER ENV
         'PASSWORD': 'dspace',  # maps to the POSTGRES POSTGRES_PASSWORD ENV
         'HOST': '127.0.0.1',  # maps to the POSTGRES DB SERVICE NAME IN DOCKER
-        'PORT': 5432
+        'PORT': 5432,
+        'ATOMIC_REQUESTS': True
     }
 }
 
