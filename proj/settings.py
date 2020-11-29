@@ -199,7 +199,6 @@ USE_TZ = True
 DATE_INPUT_FORMATS = ['%d-%m-%Y']
 DATE_FORMAT = ['%d-%m-%Y']
 
-
 LOGIN_URL = '/users/signin'
 LOGIN_REDIRECT_URL = '/users/profile'
 LOGOUT_REDIRECT_URL = '/users/signin'

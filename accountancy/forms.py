@@ -343,7 +343,6 @@ class SaleAndPurchaseLineFormset(BaseLineFormset):
             if not form.empty_permitted or (form.empty_permitted and form.has_changed()):
                 if not form.cleaned_data.get("DELETE"):
                     form.instance.type = self.header.type
-                    print(form.instance.__dict__)
                     # The type is actually reassigned in accountancy.views.RESTBaseCreateTransactionMixin
                     # But we need to it here early so that the ui_goods and ui_vat descriptor logic works
                     # We can't remove the assignment in the aforementioned view because the nominal app relies on this

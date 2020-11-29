@@ -1876,6 +1876,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -1963,9 +1964,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 # we half the goods and vat for a line
                 "total": (-1 * header.total) - 60
             }
@@ -2091,6 +2093,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2178,9 +2181,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 # we half the goods and vat for a line
                 "total": (-1 * header.total) + 120
             }
@@ -2286,6 +2290,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2342,7 +2347,6 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         for i, line in enumerate(lines):
             self.assertEqual(line.header, header)
             self.assertEqual(line.line_no, i + 1)
-
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, -100)
             self.assertEqual(line.nominal, None)
@@ -2373,9 +2377,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 # we set goods = 0 when previously was 100
                 "total": (-1 * header.total) - 100
             }
@@ -2502,6 +2507,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2587,9 +2593,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 # we set vat = 0 when previously was 20
                 "total": (-1 * header.total) - 20
             }
@@ -2716,6 +2723,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2803,9 +2811,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 # we set vat = 0 when previously was 20
                 "total": (-1 * header.total) - 120
             }
@@ -2851,6 +2860,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2938,9 +2948,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 # we set vat = 0 when previously was 20
                 "total": (-1 * header.total) - 120
             }
@@ -3043,6 +3054,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -3126,9 +3138,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 0
             }
         )
@@ -3235,6 +3248,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             **{
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -3307,6 +3321,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -3929,6 +3944,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -4011,9 +4027,10 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total * -1
             }
         )
