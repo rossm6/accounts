@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from json import loads
 
 from accountancy.helpers import sort_multiple
@@ -17,13 +17,14 @@ from sales.helpers import (create_credit_note_with_lines,
                            create_receipts, create_refund_with_nom_entries)
 from sales.models import Customer, SaleHeader, SaleLine, SaleMatching
 from vat.models import Vat, VatTransaction
+from controls.models import FinancialYear, Period
 
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
-PERIOD = '202007'  # the calendar month i made the change !
 SL_MODULE = "SL"
-
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 def match(match_by, matched_to):
     headers_to_update = []
@@ -38,7 +39,7 @@ def match(match_by, matched_to):
                 matched_by=match_by,
                 matched_to=match_to,
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -50,7 +51,7 @@ def match(match_by, matched_to):
     return match_by, headers_to_update
 
 
-def create_cancelling_headers(n, customer, ref_prefix, type, value):
+def create_cancelling_headers(n, customer, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -72,7 +73,7 @@ def create_cancelling_headers(n, customer, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -88,7 +89,7 @@ def create_cancelling_headers(n, customer, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return SaleHeader.objects.bulk_create(headers)
@@ -107,11 +108,12 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime('%Y-%m-%d')
-
-        
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
         cls.url = reverse("sales:create")
 
@@ -127,6 +129,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -233,6 +236,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -240,7 +244,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -304,6 +308,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -347,6 +352,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -354,7 +360,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, 2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 2400)[0]
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -485,6 +491,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -492,7 +499,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, 2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 2400)[0]
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -612,6 +619,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -619,7 +627,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        invoice_to_match = create_invoices(self.customer, "invoice to match", 1, 2000)[0]
+        invoice_to_match = create_invoices(self.customer, "invoice to match", 1, self.period, 2000)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -689,6 +697,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -696,7 +705,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "invoice to match", 1, 2500)[0]
+        receipt = create_receipts(self.customer, "invoice to match", 1, self.period, 2500)[0]
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -764,6 +773,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -771,7 +781,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, 2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 2400)[0]
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -907,6 +917,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1003,6 +1014,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1106,6 +1118,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1113,7 +1126,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, -2400)[0] # NEGATIVE PAYMENT
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, -2400)[0] # NEGATIVE PAYMENT
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1243,6 +1256,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1250,7 +1264,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, -2400)[0] # NEGATIVE PAYMENT
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, -2400)[0] # NEGATIVE PAYMENT
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1366,6 +1380,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1373,7 +1388,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        invoice_to_match = create_invoices(self.customer, "invoice to match", 1, -2000)[0]
+        invoice_to_match = create_invoices(self.customer, "invoice to match", 1, self.period, -2000)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1439,6 +1454,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1446,7 +1462,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "invoice to match", 1, -2500)[0]
+        receipt = create_receipts(self.customer, "invoice to match", 1, self.period, -2500)[0]
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1513,6 +1529,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1520,7 +1537,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, -2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, -2400)[0]
         headers_as_dicts = [ to_dict(receipt) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1651,12 +1668,13 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
 
 
@@ -1669,9 +1687,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1757,9 +1776,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 60 # we half the goods and vat for a line
             }
         )
@@ -1880,9 +1900,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1967,9 +1988,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total + 120 # we half the goods and vat for a line
             }
         )
@@ -2070,9 +2092,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2157,9 +2180,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 100 # we set goods = 0 when previously was 100
             }
         )
@@ -2281,9 +2305,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2368,9 +2393,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 20 # we set vat = 0 when previously was 20
             }
         )
@@ -2492,9 +2518,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2579,9 +2606,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 120 # we set vat = 0 when previously was 20
             }
         )
@@ -2622,9 +2650,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2709,9 +2738,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 120 # we set vat = 0 when previously was 20
             }
         )
@@ -2809,9 +2839,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2892,9 +2923,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 0
             }
         )
@@ -2910,7 +2942,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         data.update(line_data)
 
         # WE HAVE TO MATCH OTHERWISE IT WILL ERROR
-        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2995,9 +3027,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             **{
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "goods": 0,
                 "vat": 0,
                 "total": 0,
@@ -3006,7 +3039,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             }
         )
 
-        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100, self.period)
         match(header, [ (headers_to_match_against[0], 100), (headers_to_match_against[1], -100) ] )
 
         headers = SaleHeader.objects.all().order_by("pk")
@@ -3065,9 +3098,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 2400
             }
         )
@@ -3227,6 +3261,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3259,6 +3294,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbc",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3297,6 +3333,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3396,6 +3433,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3458,6 +3496,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3490,6 +3529,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbc",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3528,6 +3568,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3627,6 +3668,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3681,9 +3723,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -3763,9 +3806,10 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": self.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total
             }
         )

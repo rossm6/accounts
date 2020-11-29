@@ -1042,7 +1042,7 @@ def create_lines(header, lines):
     return SaleLine.objects.bulk_create(tmp)
 
 
-def create_invoices(customer, ref_prefix, n, value=100):
+def create_invoices(customer, ref_prefix, n, period, value=100):
     date = timezone.now()
     due_date = date + timedelta(days=31)
     invoices = []
@@ -1058,7 +1058,7 @@ def create_invoices(customer, ref_prefix, n, value=100):
             date=date,
             due_date=due_date,
             type="si",
-            period=PERIOD
+            period=period
         )
         invoices.append(i)
     return SaleHeader.objects.bulk_create(invoices)
@@ -1082,7 +1082,7 @@ def create_credit_note_with_lines(header, lines):
     return header, lines
 
 
-def create_receipts(customer, ref_prefix, n, value=100):
+def create_receipts(customer, ref_prefix, n, period, value=100):
     date = timezone.now()
     due_date = date + timedelta(days=31)
     payments = []
@@ -1095,7 +1095,7 @@ def create_receipts(customer, ref_prefix, n, value=100):
             due=-1 * value,
             date=date,
             type="sp",
-            period=PERIOD
+            period=period
         )
         payments.append(p)
     return SaleHeader.objects.bulk_create(payments)

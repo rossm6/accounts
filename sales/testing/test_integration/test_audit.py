@@ -5,8 +5,7 @@ from django.db import models
 from django.test import TestCase
 from sales.models import Customer, SaleHeader, SaleLine, SaleMatching
 from simple_history.models import HistoricalRecords
-
-PERIOD = "202007"
+from controls.models import FinancialYear, Period
 
 
 class CustomerAuditTests(TestCase):
@@ -331,6 +330,8 @@ class SaleMatchingAuditTests(TestCase):
     """
 
     def test_audit_is_created(self):
+        fy = FinancialYear.objects.create(financial_year=2020)
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         s = Customer.objects.create(code="1", name="11")
         h1 = SaleHeader.objects.create(
             customer=s,
@@ -345,7 +346,7 @@ class SaleMatchingAuditTests(TestCase):
         m = SaleMatching.objects.create(
             matched_by=h1,
             matched_to=h2,
-            period=PERIOD,
+            period=period,
             matched_by_type=h1.type,
             matched_to_type=h2.type
         )
@@ -357,6 +358,8 @@ class SaleMatchingAuditTests(TestCase):
         )
 
     def test_audit_is_updated(self):
+        fy = FinancialYear.objects.create(financial_year=2020)
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         s = Customer.objects.create(code="1", name="11")
         h1 = SaleHeader.objects.create(
             customer=s,
@@ -371,11 +374,10 @@ class SaleMatchingAuditTests(TestCase):
         m = SaleMatching.objects.create(
             matched_by=h1,
             matched_to=h2,
-            period=PERIOD,
+            period=period,
             matched_by_type=h1.type,
             matched_to_type=h2.type
         )
-        m.period = "202008"
         m.save()
         self.assertEqual(
             len(
@@ -385,6 +387,8 @@ class SaleMatchingAuditTests(TestCase):
         )
 
     def test_instance_deleted(self):
+        fy = FinancialYear.objects.create(financial_year=2020)
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         s = Customer.objects.create(code="1", name="11")
         h1 = SaleHeader.objects.create(
             customer=s,
@@ -399,7 +403,7 @@ class SaleMatchingAuditTests(TestCase):
         m = SaleMatching.objects.create(
             matched_by=h1,
             matched_to=h2,
-            period=PERIOD,
+            period=period,
             matched_by_type=h1.type,
             matched_to_type=h2.type
         )
@@ -412,6 +416,8 @@ class SaleMatchingAuditTests(TestCase):
         )
 
     def test_queryset_deleted(self):
+        fy = FinancialYear.objects.create(financial_year=2020)
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         s = Customer.objects.create(code="1", name="11")
         h1 = SaleHeader.objects.create(
             customer=s,
@@ -426,7 +432,7 @@ class SaleMatchingAuditTests(TestCase):
         m = SaleMatching.objects.create(
             matched_by=h1,
             matched_to=h2,
-            period=PERIOD,
+            period=period,
             matched_by_type=h1.type,
             matched_to_type=h2.type
         )

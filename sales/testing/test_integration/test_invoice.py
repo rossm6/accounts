@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -22,9 +23,9 @@ from vat.models import Vat, VatTransaction
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
-PERIOD = '202007'  # the calendar month i made the change !
 SL_MODULE = "SL"
-
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 def match(match_by, matched_to):
     headers_to_update = []
@@ -39,7 +40,7 @@ def match(match_by, matched_to):
                 matched_by=match_by,
                 matched_to=match_to,
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -51,7 +52,7 @@ def match(match_by, matched_to):
     return match_by, headers_to_update
 
 
-def create_cancelling_headers(n, customer, ref_prefix, type, value):
+def create_cancelling_headers(n, customer, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -73,7 +74,7 @@ def create_cancelling_headers(n, customer, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -89,7 +90,7 @@ def create_cancelling_headers(n, customer, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return SaleHeader.objects.bulk_create(headers)
@@ -103,12 +104,14 @@ class CreateInvoiceNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime('%Y-%m-%d')
-
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -118,7 +121,6 @@ class CreateInvoiceNominalEntries(TestCase):
         cls.sale_control = Nominal.objects.create(
             parent=current_assets, name="Sales Ledger Control"
         )
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(
@@ -143,6 +145,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -282,7 +285,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -320,7 +323,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -358,7 +361,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -454,6 +457,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -591,7 +595,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -629,7 +633,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -724,6 +728,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -862,7 +867,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -900,7 +905,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -996,6 +1001,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1004,7 +1010,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         headers_to_match_against = create_cancelling_headers(
-            2, self.customer, "match", "si", 100)
+            2, self.customer, "match", "si", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [to_dict(header)
                             for header in headers_to_match_against]
@@ -1232,7 +1238,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -1274,7 +1280,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -1317,7 +1323,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -1359,7 +1365,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -1456,6 +1462,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1464,7 +1471,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         headers_to_match_against = create_cancelling_headers(
-            2, self.customer, "match", "si", 100)
+            2, self.customer, "match", "si", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [to_dict(header)
                             for header in headers_to_match_against]
@@ -1558,6 +1565,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1566,7 +1574,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         headers_to_match_against = create_cancelling_headers(
-            2, self.customer, "match", "si", 100)
+            2, self.customer, "match", "si", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [to_dict(header)
                             for header in headers_to_match_against]
@@ -1615,6 +1623,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1622,7 +1631,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, 2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1778,7 +1787,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -1816,7 +1825,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -1854,7 +1863,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -1964,6 +1973,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1971,7 +1981,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, 2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -2126,7 +2136,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -2164,7 +2174,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -2202,7 +2212,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -2298,6 +2308,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2306,7 +2317,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         invoice_to_match = create_invoices(
-            self.customer, "invoice to match", 1, 2000)[0]
+            self.customer, "invoice to match", 1, self.period, 2000)[0]
         headers_as_dicts = [to_dict(invoice_to_match)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -2382,6 +2393,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2390,7 +2402,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         receipt = create_receipts(
-            self.customer, "invoice to match", 1, 2500)[0]
+            self.customer, "invoice to match", 1, self.period, 2500)[0]
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -2465,6 +2477,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2472,7 +2485,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, 2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -2627,7 +2640,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -2665,7 +2678,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -2703,7 +2716,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -2818,6 +2831,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2957,7 +2971,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -2995,7 +3009,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3033,7 +3047,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3124,6 +3138,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3264,7 +3279,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3302,7 +3317,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3340,7 +3355,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3435,6 +3450,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3443,7 +3459,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         receipt = create_receipts(
-            self.customer, "receipt", 1, -2400)[0]  # NEGATIVE PAYMENT
+            self.customer, "receipt", 1, self.period, -2400)[0]  # NEGATIVE PAYMENT
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -3599,7 +3615,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3637,7 +3653,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3675,7 +3691,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3784,6 +3800,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3792,7 +3809,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         receipt = create_receipts(
-            self.customer, "receipt", 1, -2400)[0]  # NEGATIVE PAYMENT
+            self.customer, "receipt", 1, self.period, -2400)[0]  # NEGATIVE PAYMENT
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -3947,7 +3964,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -3985,7 +4002,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -4023,7 +4040,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -4123,6 +4140,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4131,7 +4149,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         invoice_to_match = create_invoices(
-            self.customer, "invoice to match", 1, -2000)[0]
+            self.customer, "invoice to match", 1, self.period, -2000)[0]
         headers_as_dicts = [to_dict(invoice_to_match)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -4206,6 +4224,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4214,7 +4233,7 @@ class CreateInvoiceNominalEntries(TestCase):
         )
         data.update(header_data)
         receipt = create_receipts(
-            self.customer, "invoice to match", 1, -2500)[0]
+            self.customer, "invoice to match", 1, self.period, -2500)[0]
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -4290,6 +4309,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4297,7 +4317,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        receipt = create_receipts(self.customer, "receipt", 1, -2400)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(receipt)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -4452,7 +4472,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -4490,7 +4510,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -4528,7 +4548,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 tran.date,
@@ -4641,12 +4661,14 @@ class EditInvoiceNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
@@ -4672,9 +4694,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -4897,9 +4920,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 60 # we half the goods and vat for a line
             }
         )
@@ -5203,9 +5227,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -5429,9 +5454,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total + 120 # we half the goods and vat for a line
             }
         )
@@ -5657,9 +5683,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -5881,9 +5908,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 100 # we set goods = 0 when previously was 100
             }
         )
@@ -6174,9 +6202,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -6399,9 +6428,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 20 # we set vat = 0 when previously was 20
             }
         )
@@ -6694,9 +6724,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -6920,9 +6951,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 120 # we set vat = 0 when previously was 20
             }
         )
@@ -6961,9 +6993,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -7187,9 +7220,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 120 # we set vat = 0 when previously was 20
             }
         )
@@ -7426,9 +7460,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -7651,9 +7686,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 0
             }
         )
@@ -7669,7 +7705,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(line_data)
 
         # WE HAVE TO MATCH OTHERWISE IT WILL ERROR
-        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -7764,9 +7800,10 @@ class EditInvoiceNominalEntries(TestCase):
             **{
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "goods": 0,
                 "vat": 0,
                 "total": 0,
@@ -7775,7 +7812,7 @@ class EditInvoiceNominalEntries(TestCase):
             }
         )
 
-        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.customer, "match", "si", 100, self.period)
         match(header, [ (headers_to_match_against[0], 100), (headers_to_match_against[1], -100) ] )
 
         headers = SaleHeader.objects.all().order_by("pk")
@@ -7840,9 +7877,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 2400
             }
         )
@@ -8139,6 +8177,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8174,6 +8213,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "sc",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8215,6 +8255,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8317,6 +8358,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8378,6 +8420,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8413,6 +8456,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "sc",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8454,6 +8498,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8556,6 +8601,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -8610,9 +8656,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -8835,9 +8882,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total
             }
         )
@@ -9064,15 +9112,16 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
                 "goods": 2000,
                 "vat": 400,
-                "period": PERIOD
+                "period": self.period
             },
             [
                 {
@@ -9121,7 +9170,7 @@ class EditInvoiceNominalEntries(TestCase):
         )
         self.assertEqual(
             headers[0].period,
-            PERIOD
+            self.period
         )
 
         nom_trans = NominalTransaction.objects.all()
@@ -9178,7 +9227,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 vat_tran.period,
-                PERIOD
+                self.period
             )
             self.assertEqual(
                 vat_tran.date,
@@ -9246,7 +9295,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
 
         for i, tran in enumerate(vat_nom_trans):
@@ -9268,7 +9317,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
 
         for i, tran in enumerate(total_nom_trans):
@@ -9290,7 +9339,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )
 
         matches = SaleMatching.objects.all()
@@ -9299,17 +9348,20 @@ class EditInvoiceNominalEntries(TestCase):
             0
         )
 
+        new_period = Period.objects.create(fy=self.fy, period="08", fy_and_period="202008", month_end=date(2020,2,29))
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
                 "customer": header.customer.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total,
-                "period": "202008"
+                "period": new_period.pk
             }
         )
         data.update(header_data)
@@ -9345,7 +9397,7 @@ class EditInvoiceNominalEntries(TestCase):
         )
         self.assertEqual(
             headers[0].period,
-            "202008"
+            new_period
         )
 
         nom_trans = NominalTransaction.objects.all()
@@ -9419,7 +9471,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202008"
+                new_period
             )
 
         for tran in vat_nom_trans:
@@ -9437,7 +9489,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202008"
+                new_period
             )
 
         for tran in total_nom_trans:
@@ -9455,7 +9507,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202008"
+                new_period
             )
 
         matches = SaleMatching.objects.all()
@@ -9491,7 +9543,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 vat_tran.period,
-                "202008"
+                new_period
             )
             self.assertEqual(
                 vat_tran.date,

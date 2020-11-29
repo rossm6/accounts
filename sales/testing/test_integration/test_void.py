@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -24,6 +25,8 @@ LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
 PERIOD = '202007'  # the calendar month i made the change !
 SL_MODULE = "SL"
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 
 def match(match_by, matched_to):
@@ -39,7 +42,7 @@ def match(match_by, matched_to):
                 matched_by=match_by,
                 matched_to=match_to,
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -51,7 +54,7 @@ def match(match_by, matched_to):
     return match_by, headers_to_update
 
 
-def create_cancelling_headers(n, customer, ref_prefix, type, value):
+def create_cancelling_headers(n, customer, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -73,7 +76,7 @@ def create_cancelling_headers(n, customer, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -89,7 +92,7 @@ def create_cancelling_headers(n, customer, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return SaleHeader.objects.bulk_create(headers)
@@ -103,8 +106,13 @@ class VoidTransactionsTest(TestCase):
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -130,9 +138,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -140,7 +149,6 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -305,9 +313,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -554,9 +563,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -576,7 +586,7 @@ class VoidTransactionsTest(TestCase):
         )
 
 
-        receipt =create_receipts(self.customer, "receipt", 1, 600)[0]
+        receipt =create_receipts(self.customer, "receipt", 1, self.period, 600)[0]
         match(invoice, [ (receipt, -600) ] )
 
         headers = SaleHeader.objects.all().order_by("pk")
@@ -871,9 +881,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "si",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -893,7 +904,7 @@ class VoidTransactionsTest(TestCase):
         )
 
 
-        receipt = create_receipts(self.customer, "receipt", 1, 600)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 600)[0]
         match(receipt, [ (invoice, 600) ] )
 
         headers = SaleHeader.objects.all().order_by("pk")
@@ -1188,9 +1199,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -1362,9 +1374,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1535,9 +1548,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1553,7 +1567,7 @@ class VoidTransactionsTest(TestCase):
         )
 
         invoice = header
-        receipt = create_receipts(self.customer, "receipt", 1, 600)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 600)[0]
         match(invoice, [(receipt, -600)])
 
         headers = SaleHeader.objects.all().order_by("pk")
@@ -1759,9 +1773,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "sbi",
                 "customer": self.customer,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1777,7 +1792,7 @@ class VoidTransactionsTest(TestCase):
         )
 
         invoice = header
-        receipt = create_receipts(self.customer, "receipt", 1, 600)[0]
+        receipt = create_receipts(self.customer, "receipt", 1, self.period, 600)[0]
         match(receipt, [(invoice, 600)])
 
         headers = SaleHeader.objects.all().order_by("pk")
