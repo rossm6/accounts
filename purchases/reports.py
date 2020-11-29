@@ -5,10 +5,10 @@ from .models import PurchaseHeader, PurchaseMatching
 
 
 def creditors(period):
-    headers = PurchaseHeader.objects.filter(period__lte=period).order_by("pk")
+    headers = PurchaseHeader.objects.filter(period__fy_and_period__lte=period.fy_and_period).order_by("pk")
 
     matches = (PurchaseMatching.objects
-               .filter(period__gt=period)
+               .filter(period__fy_and_period__gt=period.fy_and_period)
                .filter(
                    Q(matched_by__in=headers) | Q(matched_to__in=headers)
                ))

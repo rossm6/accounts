@@ -43,7 +43,6 @@ def create_header(prefix, form):
     data = {}
     for field in form:
         data[prefix + "-" + field] = form[field]
-    # data[prefix + "-" + "period"] = form.get("period", PERIOD)
     return data
 
 def create_formset_data(prefix, forms):

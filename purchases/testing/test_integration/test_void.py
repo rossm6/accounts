@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -24,8 +25,9 @@ from vat.models import Vat, VatTransaction
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
-PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 def match(match_by, matched_to):
     headers_to_update = []
@@ -40,7 +42,7 @@ def match(match_by, matched_to):
                 matched_by=match_by, 
                 matched_to=match_to, 
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -50,7 +52,7 @@ def match(match_by, matched_to):
     PurchaseMatching.objects.bulk_create(matches)
     return match_by, headers_to_update
 
-def create_cancelling_headers(n, supplier, ref_prefix, type, value):
+def create_cancelling_headers(n, supplier, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -72,7 +74,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -88,7 +90,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return PurchaseHeader.objects.bulk_create(headers) 
@@ -101,28 +103,28 @@ class VoidTransactionsTest(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         # Cash book
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         # we will force login anyway so the user is just for this
 
 
@@ -134,9 +136,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -325,9 +328,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -580,9 +584,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -602,7 +607,7 @@ class VoidTransactionsTest(TestCase):
         )
 
 
-        payment = create_payments(self.supplier, "payment", 1, 600)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 600)[0]
         match(invoice, [ (payment, -600) ] )
 
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -901,9 +906,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -923,7 +929,7 @@ class VoidTransactionsTest(TestCase):
         )
 
 
-        payment = create_payments(self.supplier, "payment", 1, 600)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 600)[0]
         match(payment, [ (invoice, 600) ] )
 
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -1219,9 +1225,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pbi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -1229,7 +1236,6 @@ class VoidTransactionsTest(TestCase):
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'vat': 20
@@ -1395,9 +1401,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pbi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1572,9 +1579,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pbi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1590,7 +1598,7 @@ class VoidTransactionsTest(TestCase):
         )
 
         invoice = header
-        payment = create_payments(self.supplier, "payment", 1, 600)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 600)[0]
         match(invoice, [(payment, -600)])
 
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -1802,9 +1810,10 @@ class VoidTransactionsTest(TestCase):
             {
                 "type": "pbi",
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -1820,7 +1829,7 @@ class VoidTransactionsTest(TestCase):
         )
 
         invoice = header
-        payment = create_payments(self.supplier, "payment", 1, 600)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 600)[0]
         match(payment, [(invoice, 600)])
 
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -2038,8 +2047,9 @@ class VoidTransactionsTest(TestCase):
                 "type": "pp",
                 "cash_book": self.cash_book,
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
+                "date": self.model_date,
                 "total": -2400,
                 "paid": 0,
                 "due": -2400,
@@ -2153,8 +2163,9 @@ class VoidTransactionsTest(TestCase):
                 "type": "pp",
                 "cash_book": self.cash_book,
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
+                "date": self.model_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2307,8 +2318,9 @@ class VoidTransactionsTest(TestCase):
                 "type": "pp",
                 "cash_book": self.cash_book,
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
+                "date": self.model_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2317,7 +2329,7 @@ class VoidTransactionsTest(TestCase):
             self.nominal
         )
 
-        invoice = create_invoices(self.supplier, "inv", 1, 600)[0]
+        invoice = create_invoices(self.supplier, "inv", 1, self.period, 600)[0]
 
         match(payment, [(invoice, 600)])
 
@@ -2518,8 +2530,9 @@ class VoidTransactionsTest(TestCase):
                 "type": "pp",
                 "cash_book": self.cash_book,
                 "supplier": self.supplier,
+				"period": self.period,
                 "ref": self.ref,
-                "date": self.date,
+                "date": self.model_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400
@@ -2528,7 +2541,7 @@ class VoidTransactionsTest(TestCase):
             self.nominal
         )
 
-        invoice = create_invoices(self.supplier, "inv", 1, 600)[0]
+        invoice = create_invoices(self.supplier, "inv", 1, self.period, 600)[0]
 
         match(invoice, [(payment, -600)])
 
@@ -2723,7 +2736,7 @@ class VoidTransactionsTest(TestCase):
     def test_voiding_a_brought_forward_payment_without_matching(self):
         self.client.force_login(self.user)
 
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
 
         headers = PurchaseHeader.objects.all()
 
@@ -2813,9 +2826,9 @@ class VoidTransactionsTest(TestCase):
     def test_voiding_a_brought_forward_payment_with_matching_where_payment_is_matched_by(self):
         self.client.force_login(self.user)
 
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
 
-        invoice = create_invoices(self.supplier, "inv", 1, 600)[0]
+        invoice = create_invoices(self.supplier, "inv", 1, self.period, 600)[0]
 
         match(payment, [(invoice, 600)])
 
@@ -2957,9 +2970,9 @@ class VoidTransactionsTest(TestCase):
     def test_voiding_a_brought_forward_payment_with_matching_where_payment_is_matched_to(self):
         self.client.force_login(self.user)
 
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
 
-        invoice = create_invoices(self.supplier, "inv", 1, 600)[0]
+        invoice = create_invoices(self.supplier, "inv", 1, self.period, 600)[0]
 
         match(invoice, [(payment, -600)])
 

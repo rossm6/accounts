@@ -379,7 +379,7 @@ class PurchaseMatchingAuditTests(TestCase):
             matched_by_type=h1.type,
             matched_to_type=h2.type
         )
-        m.period = "202008"
+        m.period = period # not changed but still simple_history creates another audit
         m.save()
         self.assertEqual(
             len(

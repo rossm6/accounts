@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -23,8 +24,9 @@ from vat.models import Vat, VatTransaction
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
-PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 def match(match_by, matched_to):
     headers_to_update = []
@@ -39,7 +41,7 @@ def match(match_by, matched_to):
                 matched_by=match_by, 
                 matched_to=match_to, 
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -49,7 +51,7 @@ def match(match_by, matched_to):
     PurchaseMatching.objects.bulk_create(matches)
     return match_by, headers_to_update
 
-def create_cancelling_headers(n, supplier, ref_prefix, type, value):
+def create_cancelling_headers(n, supplier, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -71,7 +73,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -87,7 +89,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return PurchaseHeader.objects.bulk_create(headers)
@@ -132,8 +134,14 @@ class CreateRefundNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31))
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -160,6 +168,7 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -244,7 +253,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -281,7 +290,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -350,6 +359,7 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -357,7 +367,7 @@ class CreateRefundNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -458,6 +468,7 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
@@ -541,7 +552,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -578,7 +589,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -651,12 +662,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  -100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -737,7 +749,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -774,7 +786,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -861,13 +873,14 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  -100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -948,7 +961,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -985,7 +998,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -1061,12 +1074,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  -200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1143,12 +1157,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1224,12 +1239,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  -100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1331,7 +1347,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -1368,7 +1384,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -1460,12 +1476,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1546,7 +1563,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -1583,7 +1600,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -1670,12 +1687,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1756,7 +1774,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -1793,7 +1811,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -1868,12 +1886,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1950,12 +1969,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  -200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -2031,12 +2051,13 @@ class CreateRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1,self.period,  100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -2138,7 +2159,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2175,7 +2196,7 @@ class CreateRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2265,8 +2286,14 @@ class EditRefundNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31))
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -2292,12 +2319,12 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 120,
                 "due": 120,
                 "paid": 0,
-                "period": PERIOD
+                "period": self.period
             },
             self.purchase_control,
             self.nominal
@@ -2374,7 +2401,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2411,7 +2438,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2464,6 +2491,7 @@ class EditRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2549,7 +2577,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2586,7 +2614,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2654,12 +2682,12 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 120,
                 "due": 120,
                 "paid": 0,
-                "period": PERIOD
+                "period": self.period
             },
             self.purchase_control,
             self.nominal
@@ -2736,7 +2764,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2773,7 +2801,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -2826,6 +2854,7 @@ class EditRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2833,7 +2862,7 @@ class EditRefundNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2911,19 +2940,18 @@ class EditRefundNominalEntries(TestCase):
     # CORRECT USAGE
     def test_zero_payment_is_changed_to_non_zero(self):
         self.client.force_login(self.user)
-
         create_refund_with_nom_entries(
             {
                 "cash_book": self.cash_book,
                 "type": "pr",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 0,
                 "due": 0,
                 "paid": 0,
-                "period": PERIOD
+                "period": self.period
             },
             self.purchase_control,
             self.nominal
@@ -2987,6 +3015,7 @@ class EditRefundNominalEntries(TestCase):
                 "cash_book": self.cash_book.pk,
                 "type": "pr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3072,7 +3101,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -3109,7 +3138,7 @@ class EditRefundNominalEntries(TestCase):
         )
         self.assertEqual(
             tran.period,
-            PERIOD
+            self.period
         )     
         self.assertEqual(
             tran.date,
@@ -3186,6 +3215,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -3208,6 +3238,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pp",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.00
@@ -3236,6 +3267,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -0.01
@@ -3319,6 +3351,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -3370,6 +3403,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -3392,6 +3426,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pp",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.00
@@ -3420,6 +3455,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -0.01
@@ -3503,6 +3539,7 @@ class EditRefundNominalEntries(TestCase):
                 "type": "pr",
                 "cash_book": self.cash_book.pk,
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -3543,8 +3580,14 @@ class EditRefund(TestCase):
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31))
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))     
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
@@ -3557,9 +3600,10 @@ class EditRefund(TestCase):
         transaction = PurchaseHeader.objects.create(
             type="pr",
             supplier=self.supplier,
+            period=self.period,
             ref="ref",
-            date=self.date,
-            due_date=self.due_date,
+            date=self.model_date,
+            due_date=self.model_due_date,
             total=120,
             goods=100,
             vat=20

@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -24,8 +25,9 @@ from vat.models import Vat, VatTransaction
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
-PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 def match(match_by, matched_to):
     headers_to_update = []
@@ -40,7 +42,7 @@ def match(match_by, matched_to):
                 matched_by=match_by, 
                 matched_to=match_to, 
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -50,7 +52,7 @@ def match(match_by, matched_to):
     PurchaseMatching.objects.bulk_create(matches)
     return match_by, headers_to_update
 
-def create_cancelling_headers(n, supplier, ref_prefix, type, value):
+def create_cancelling_headers(n, supplier, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -72,7 +74,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -88,7 +90,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return PurchaseHeader.objects.bulk_create(headers)
@@ -102,26 +104,27 @@ class CreateInvoice(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     """
 
@@ -156,6 +159,7 @@ class CreateInvoice(TestCase):
             {
             "type": "pi",
             "supplier": self.supplier.pk,
+				"period": self.period.pk,
             "ref": self.ref,
             "date": self.date,
             "due_date": self.due_date,
@@ -163,7 +167,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -297,6 +301,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -452,6 +457,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -662,7 +668,7 @@ class CreateInvoice(TestCase):
                 'vat_code': '',
                 'vat': ''
             }]) * 10
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -694,6 +700,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -774,6 +781,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -868,6 +876,7 @@ class CreateInvoice(TestCase):
             {
             "type": "pi",
             "supplier": self.supplier.pk,
+				"period": self.period.pk,
             "ref": self.ref,
             "date": self.date,
             "due_date": self.due_date,
@@ -875,7 +884,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -937,6 +946,7 @@ class CreateInvoice(TestCase):
             {
             "type": "pi",
             "supplier": self.supplier.pk,
+				"period": self.period.pk,
             "ref": self.ref,
             "date": self.date,
             "due_date": self.due_date,
@@ -944,7 +954,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(10, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -998,6 +1008,7 @@ class CreateInvoice(TestCase):
             {
             "type": "pi",
             "supplier": self.supplier.pk,
+				"period": self.period.pk,
             "ref": self.ref,
             "date": self.date,
             "due_date": self.due_date,
@@ -1039,6 +1050,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1121,6 +1133,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1128,7 +1141,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 10, -100) # Invoices of -1000 are on the account therefore to match against
+        headers_to_match_against = create_invoices(self.supplier, "inv", 10, self.period, -100) # Invoices of -1000 are on the account therefore to match against
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1232,6 +1245,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1239,7 +1253,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 24, -100) # Invoices of -1000 are on the account therefore to match against
+        headers_to_match_against = create_invoices(self.supplier, "inv", 24, self.period, -100) # Invoices of -1000 are on the account therefore to match against
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1344,6 +1358,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1351,7 +1366,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 25, -100)
+        headers_to_match_against = create_invoices(self.supplier, "inv", 25, self.period, -100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1399,6 +1414,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1406,7 +1422,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 1, 100)
+        headers_to_match_against = create_invoices(self.supplier, "inv", 1, self.period, 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1455,6 +1471,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1536,6 +1553,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1589,6 +1607,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1670,6 +1689,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1677,7 +1697,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 10, 100) # Invoices of 1000 are on the account therefore to match against
+        headers_to_match_against = create_invoices(self.supplier, "inv", 10, self.period, 100) # Invoices of 1000 are on the account therefore to match against
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1781,6 +1801,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+			    "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1788,7 +1809,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 24, 100) # Invoices of -1000 are on the account therefore to match against
+        headers_to_match_against = create_invoices(self.supplier, "inv", 24, self.period, 100) # Invoices of -1000 are on the account therefore to match against
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1891,6 +1912,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1898,7 +1920,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 25, 100)
+        headers_to_match_against = create_invoices(self.supplier, "inv", 25, self.period, 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1946,6 +1968,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1953,7 +1976,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 1, -100)
+        headers_to_match_against = create_invoices(self.supplier, "inv", 1, self.period, -100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2005,6 +2028,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2086,6 +2110,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2151,6 +2176,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2158,7 +2184,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 1, 100)
+        headers_to_match_against = create_invoices(self.supplier, "inv", 1, self.period, 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2206,6 +2232,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2213,7 +2240,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 1, 100)
+        headers_to_match_against = create_invoices(self.supplier, "inv", 1, self.period, 100)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2260,6 +2287,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2267,7 +2295,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 1, -100) # So -120.00 is the due
+        headers_to_match_against = create_invoices(self.supplier, "inv", 1, self.period, -100) # So -120.00 is the due
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2314,6 +2342,7 @@ class CreateInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2321,7 +2350,7 @@ class CreateInvoice(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_invoices(self.supplier, "inv", 1, -100) # So -120.00 is the due
+        headers_to_match_against = create_invoices(self.supplier, "inv", 1, self.period, -100) # So -120.00 is the due
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -2369,25 +2398,26 @@ class CreateInvoiceNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     # CORRECT USAGE
     # Each line has a goods value above zero and the vat is 20% of the goods
@@ -2400,6 +2430,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2538,7 +2569,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -2576,7 +2607,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -2614,7 +2645,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -2702,6 +2733,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -2843,7 +2875,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -2881,7 +2913,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -2928,6 +2960,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3073,7 +3106,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -3111,7 +3144,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -3158,6 +3191,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3165,7 +3199,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -3397,7 +3431,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -3439,7 +3473,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -3482,7 +3516,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -3524,7 +3558,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -3670,6 +3704,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3677,7 +3712,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -3768,6 +3803,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3775,7 +3811,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -3823,6 +3859,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3830,7 +3867,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -3987,7 +4024,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4025,7 +4062,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4063,7 +4100,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4164,6 +4201,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4171,7 +4209,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -4331,7 +4369,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4369,7 +4407,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4407,7 +4445,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4497,6 +4535,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4504,7 +4543,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        invoice_to_match = create_invoices(self.supplier, "invoice to match", 1, 2000)[0]
+        invoice_to_match = create_invoices(self.supplier, "invoice to match", 1, self.period, 2000)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -4577,6 +4616,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4584,7 +4624,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "invoice to match", 1, 2500)[0]
+        payment = create_payments(self.supplier, "invoice to match", 1, self.period, 2500)[0]
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -4658,6 +4698,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4665,7 +4706,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, 2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -4825,7 +4866,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4863,7 +4904,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -4901,7 +4942,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5007,6 +5048,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -5151,7 +5193,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5189,7 +5231,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5227,7 +5269,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5310,6 +5352,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -5454,7 +5497,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5492,7 +5535,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5530,7 +5573,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5617,6 +5660,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -5624,7 +5668,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, -2400)[0] # NEGATIVE PAYMENT
+        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0] # NEGATIVE PAYMENT
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -5781,7 +5825,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5819,7 +5863,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5857,7 +5901,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -5958,6 +6002,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -5965,7 +6010,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, -2400)[0] # NEGATIVE PAYMENT
+        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0] # NEGATIVE PAYMENT
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -6122,7 +6167,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -6160,7 +6205,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -6198,7 +6243,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -6234,6 +6279,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -6241,7 +6287,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        invoice_to_match = create_invoices(self.supplier, "invoice to match", 1, -2000)[0]
+        invoice_to_match = create_invoices(self.supplier, "invoice to match", 1, self.period, -2000)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -6315,6 +6361,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -6322,7 +6369,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "invoice to match", 1, -2500)[0]
+        payment = create_payments(self.supplier, "invoice to match", 1, self.period, -2500)[0]
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -6397,6 +6444,7 @@ class CreateInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -6404,7 +6452,7 @@ class CreateInvoiceNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, -2400)[0]
+        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [ to_dict(payment) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -6561,7 +6609,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -6599,7 +6647,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -6637,7 +6685,7 @@ class CreateInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                PERIOD
+                self.period
             )     
             self.assertEqual(
                 tran.date,
@@ -6739,23 +6787,25 @@ class EditInvoice(TestCase):
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')        
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
 
     # CORRECT USAGE
@@ -6765,9 +6815,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -6783,7 +6833,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -6843,8 +6893,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1200
             }
         )
@@ -6927,10 +6978,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -6946,7 +6997,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -6998,8 +7049,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1200
             }
         )
@@ -7067,9 +7119,10 @@ class EditInvoice(TestCase):
         transaction = PurchaseHeader.objects.create(
             type="pi",
             supplier=self.supplier,
+            period=self.period,
             ref="ref",
-            date=self.date,
-            due_date=self.due_date,
+            date=self.model_date,
+            due_date=self.model_due_date,
             total=120,
             goods=100,
             vat=20
@@ -7102,7 +7155,7 @@ class EditInvoice(TestCase):
     def test_line_no_changed(self):
         self.client.force_login(self.user)
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -7151,8 +7204,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1200
             }
         )
@@ -7232,7 +7286,7 @@ class EditInvoice(TestCase):
     def test_line_delete_line(self):
         self.client.force_login(self.user)
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -7281,8 +7335,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -7353,9 +7408,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -7371,7 +7426,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -7428,7 +7483,7 @@ class EditInvoice(TestCase):
                 "type": "pi",
                 "supplier": 999999999999,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2400
             }
         )
@@ -7518,9 +7573,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -7536,7 +7591,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -7592,8 +7647,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2400
             }
         )
@@ -7679,9 +7735,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -7697,7 +7753,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -7753,8 +7809,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -7840,9 +7897,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -7858,7 +7915,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -7914,8 +7971,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -7994,9 +8052,9 @@ class EditInvoice(TestCase):
     def test_4(self):
         self.client.force_login(self.user)
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -8012,7 +8070,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -8068,8 +8126,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -8115,9 +8174,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -8133,7 +8192,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -8189,8 +8248,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2200
             }
         )
@@ -8283,9 +8343,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -8301,7 +8361,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -8357,8 +8417,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2200
             }
         )
@@ -8450,9 +8511,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -8468,7 +8529,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -8522,8 +8583,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -8606,9 +8668,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -8624,7 +8686,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -8678,8 +8740,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -8763,9 +8826,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -8781,7 +8844,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -8837,8 +8900,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2100
             }
         )
@@ -8927,9 +8991,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -8945,7 +9009,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -8999,8 +9063,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -9082,9 +9147,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -9100,7 +9165,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -9156,8 +9221,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -9235,9 +9301,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -9253,7 +9319,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -9309,8 +9375,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -9398,9 +9465,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -9416,7 +9483,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -9472,8 +9539,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -9550,9 +9618,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -9568,7 +9636,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -9624,8 +9692,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -9714,9 +9783,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -9732,7 +9801,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -9788,8 +9857,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -9870,9 +9940,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -9888,7 +9958,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -9944,8 +10014,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -10029,9 +10100,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -10047,7 +10118,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -10107,8 +10178,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2200
             }
         )
@@ -10218,9 +10290,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -10236,7 +10308,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -10296,8 +10368,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2200
             }
         )
@@ -10407,9 +10480,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -10424,7 +10497,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -10482,8 +10555,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -10584,9 +10658,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -10602,7 +10676,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -10660,8 +10734,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -10761,9 +10836,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -10779,7 +10854,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -10839,8 +10914,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 2100
             }
         )
@@ -10943,9 +11019,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -10961,7 +11037,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -11019,8 +11095,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -11116,9 +11193,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -11134,7 +11211,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -11194,8 +11271,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -11288,9 +11366,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -11306,7 +11384,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -11366,8 +11444,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -11471,9 +11550,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -11489,7 +11568,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -11549,8 +11628,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -11643,9 +11723,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -11661,7 +11741,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -11721,8 +11801,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -11827,9 +11908,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -11845,7 +11926,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -11905,8 +11986,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1080
             }
         )
@@ -11999,9 +12081,9 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # SET UP
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -12017,7 +12099,7 @@ class EditInvoice(TestCase):
             * 10
         )
         lines = sort_multiple(lines, *[ (lambda l : l.pk, False) ])
-        invoices += create_invoices(self.supplier, "invoice", 2, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 2, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
 
         match(invoices[0], [ (invoices[1], -600), (payment, -600) ] )
@@ -12077,8 +12159,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": "invoice1",
-                "date": invoices[0].date,
+                "date": invoices[0].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -12178,10 +12261,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -12197,7 +12280,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -12257,8 +12340,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1200
             }
         )
@@ -12333,10 +12417,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -12352,7 +12436,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -12404,8 +12488,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1200
             }
         )
@@ -12481,10 +12566,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -12500,7 +12585,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -12552,8 +12637,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1320
             }
         )
@@ -12639,10 +12725,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -12658,7 +12744,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -12710,8 +12796,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -12797,10 +12884,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -12816,7 +12903,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -12868,8 +12955,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -12953,10 +13041,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -12972,7 +13060,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -13024,8 +13112,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -13108,10 +13197,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -13127,7 +13216,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -13179,8 +13268,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -13267,10 +13357,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -13286,7 +13376,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -13339,7 +13429,7 @@ class EditInvoice(TestCase):
                 "type": "pi",
                 "supplier": 999999999, # INVALID SUPPLIER PRIMARY KEY VALUE
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -13426,10 +13516,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -13445,7 +13535,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -13497,8 +13587,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -13585,10 +13676,10 @@ class EditInvoice(TestCase):
         self.client.force_login(self.user)
 
         # create the payment
-        payment = create_payments(self.supplier, 'payment', 1, value=1000)[0]
+        payment = create_payments(self.supplier, 'payment', 1, self.period, value=1000)[0]
         # create the invoice - THIS IS WHAT WE ARE EDITING
         invoices = []
-        invoices += create_invoices(self.supplier, "invoice", 1, 1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, 1000)
         lines = create_lines(
             invoices[0], 
             [
@@ -13604,7 +13695,7 @@ class EditInvoice(TestCase):
             * 10
         )
         # SECOND INVOICE
-        invoices += create_invoices(self.supplier, "invoice", 1, -1000)
+        invoices += create_invoices(self.supplier, "invoice", 1, self.period, -1000)
         invoices = sort_multiple(invoices, *[ (lambda i : i.pk, False) ])
         match_by, match_to = match(invoices[0], [ (invoices[1], -200) ] ) # FIRST MATCH
         invoices[0] = match_by
@@ -13656,8 +13747,9 @@ class EditInvoice(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": headers[1].ref,
-                "date": headers[1].date,
+                "date": headers[1].date.strftime(DATE_INPUT_FORMAT),
                 "total": 1140
             }
         )
@@ -13750,8 +13842,6 @@ class EditInvoiceNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -13764,7 +13854,15 @@ class EditInvoiceNominalEntries(TestCase):
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         cls.url = reverse("purchases:create")
-
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     # CORRECT USAGE
     # Basic edit here in so far as we just change a line value
@@ -13775,9 +13873,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -14000,9 +14099,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 60 # we half the goods and vat for a line
             }
         )
@@ -14305,9 +14405,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -14531,9 +14632,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total + 120 # we half the goods and vat for a line
             }
         )
@@ -14761,9 +14863,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -14987,9 +15090,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 100 # we set goods = 0 when previously was 100
             }
         )
@@ -15276,9 +15380,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -15500,9 +15605,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 20 # we set vat = 0 when previously was 20
             }
         )
@@ -15793,9 +15899,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -16016,9 +16123,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 120 # we set vat = 0 when previously was 20
             }
         )
@@ -16057,9 +16165,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -16281,9 +16390,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total - 120 # we set vat = 0 when previously was 20
             }
         )
@@ -16514,9 +16624,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -16737,9 +16848,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 0
             }
         )
@@ -16755,7 +16867,7 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(line_data)
 
         # WE HAVE TO MATCH OTHERWISE IT WILL ERROR
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -16842,9 +16954,10 @@ class EditInvoiceNominalEntries(TestCase):
             **{
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "goods": 0,
                 "vat": 0,
                 "total": 0,
@@ -16853,7 +16966,7 @@ class EditInvoiceNominalEntries(TestCase):
             }
         )
 
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         match(header, [ (headers_to_match_against[0], 100), (headers_to_match_against[1], -100) ] )
 
         headers = PurchaseHeader.objects.all().order_by("pk")
@@ -16912,9 +17025,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": 2400
             }
         )
@@ -17209,6 +17323,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17244,6 +17359,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pc",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17285,6 +17401,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17387,6 +17504,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17450,6 +17568,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17485,6 +17604,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pc",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17526,6 +17646,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17624,6 +17745,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17684,6 +17806,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17719,6 +17842,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pc",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17760,6 +17884,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17858,6 +17983,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17918,6 +18044,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17953,6 +18080,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pc",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -17994,6 +18122,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -18092,6 +18221,7 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -18146,9 +18276,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": "pi",
                 "supplier": self.supplier,
+                "period": self.period,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
@@ -18371,9 +18502,10 @@ class EditInvoiceNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
+				"period": header.period.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total
             }
         )
@@ -18599,14 +18731,14 @@ class EditInvoiceNominalEntries(TestCase):
                 "type": "pi",
                 "supplier": self.supplier,
                 "ref": self.ref,
-                "date": self.date,
-                "due_date": self.due_date,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
                 "total": 2400,
                 "paid": 0,
                 "due": 2400,
                 "goods": 2000,
                 "vat": 400,
-                "period": PERIOD
+                "period": self.period
             },
             [
                 {
@@ -18654,7 +18786,7 @@ class EditInvoiceNominalEntries(TestCase):
         )
         self.assertEqual(
             headers[0].period,
-            "202007"
+            self.period
         )
 
         nom_trans = NominalTransaction.objects.all()
@@ -18779,7 +18911,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202007"
+                self.period
             )
 
         for i, tran in enumerate(vat_nom_trans):
@@ -18801,7 +18933,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202007"
+                self.period
             )
 
         for i, tran in enumerate(total_nom_trans):
@@ -18823,7 +18955,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202007"
+                self.period
             )
 
         matches = PurchaseMatching.objects.all()
@@ -18832,6 +18964,8 @@ class EditInvoiceNominalEntries(TestCase):
             0
         )
 
+        new_period = Period.objects.create(fy=self.fy, period="09", fy_and_period="202009", month_end=date(2020,9,30))
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -18839,10 +18973,10 @@ class EditInvoiceNominalEntries(TestCase):
                 "type": header.type,
                 "supplier": header.supplier.pk,
                 "ref": header.ref,
-                "date": header.date,
-                "due_date": header.due_date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
+                "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
                 "total": header.total,
-                "period": "202008" # CHANGE THE PERIOD ONLY IN THIS EDIT
+                "period": new_period.pk
             }
         )
         data.update(header_data)
@@ -18878,7 +19012,7 @@ class EditInvoiceNominalEntries(TestCase):
         )
         self.assertEqual(
             headers[0].period,
-            "202008"
+            new_period
         )
 
         nom_trans = NominalTransaction.objects.all()
@@ -18951,7 +19085,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202008"
+                new_period
             )
 
         for tran in vat_nom_trans:
@@ -18969,7 +19103,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202008"
+                new_period
             )
 
         for tran in total_nom_trans:
@@ -18987,7 +19121,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 tran.period,
-                "202008"
+                new_period
             )
 
         matches = PurchaseMatching.objects.all()
@@ -19023,7 +19157,7 @@ class EditInvoiceNominalEntries(TestCase):
             )
             self.assertEqual(
                 vat_tran.period,
-                "202008"
+                new_period
             )
             self.assertEqual(
                 vat_tran.date,

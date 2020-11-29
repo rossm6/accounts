@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -25,6 +26,8 @@ LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
 PERIOD = '202007' # the calendar month i made the change !
 PL_MODULE = "PL"
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 def match(match_by, matched_to):
     headers_to_update = []
@@ -39,7 +42,7 @@ def match(match_by, matched_to):
                 matched_by=match_by, 
                 matched_to=match_to, 
                 value=match_value,
-                period=PERIOD
+                period=match_by.period
             )
         )
         headers_to_update.append(match_to)
@@ -49,7 +52,7 @@ def match(match_by, matched_to):
     PurchaseMatching.objects.bulk_create(matches)
     return match_by, headers_to_update
 
-def create_cancelling_headers(n, supplier, ref_prefix, type, value):
+def create_cancelling_headers(n, supplier, ref_prefix, type, value, period):
     """
     Create n headers which cancel out with total = value
     Where n is an even number
@@ -71,7 +74,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     for i in range(n):
@@ -87,7 +90,7 @@ def create_cancelling_headers(n, supplier, ref_prefix, type, value):
             date=date,
             due_date=due_date,
             type=type,
-            period=PERIOD
+            period=period
         )
         headers.append(i)
     return PurchaseHeader.objects.bulk_create(headers)
@@ -135,28 +138,27 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
 
     # CORRECT USAGE
@@ -169,6 +171,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -244,6 +247,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -251,7 +255,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -350,6 +354,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
@@ -430,12 +435,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, -100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -548,12 +554,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, -100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -654,12 +661,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, -200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -735,12 +743,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, 200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -815,12 +824,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, -100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -937,12 +947,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, 100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1056,12 +1067,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, 100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1141,12 +1153,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, 200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1222,12 +1235,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, -200)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, -200)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1302,12 +1316,13 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120
             }
         )
-        invoice_to_match = create_invoices(self.supplier, "inv", 1, 100)[0]
+        invoice_to_match = create_invoices(self.supplier, "inv", 1, self.period, 100)[0]
         headers_as_dicts = [ to_dict(invoice_to_match) ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
         matching_forms = []
@@ -1425,25 +1440,26 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         cls.ref = "test matching"
         cls.date = datetime.now().strftime('%Y-%m-%d')
         cls.due_date = (datetime.now() + timedelta(days=31)).strftime('%Y-%m-%d')
-
-        
         cls.description = "a line description"
-
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.purchase_control = Nominal.objects.create(parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
         cls.url = reverse("purchases:create")
-
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     # CORRECT USAGE
     # A non-zero payment is reduced
@@ -1452,15 +1468,15 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         PurchaseHeader.objects.create(**{
             "type": "pbr",
             "supplier": self.supplier,
+            "period": self.period,
             "ref": self.ref,
-            "date": self.date,
-            "due_date": self.due_date,
+            "date": self.model_date,
+            "due_date": self.model_due_date,
             "total": 120,
             "due": 120,
             "paid": 0,
             "goods": 0,
-            "vat": 0,
-            "period": PERIOD            
+            "vat": 0,          
         })
 
         headers = PurchaseHeader.objects.all()
@@ -1512,6 +1528,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1585,15 +1602,15 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         PurchaseHeader.objects.create(**{
             "type": "pbr",
             "supplier": self.supplier,
+            "period": self.period,
             "ref": self.ref,
-            "date": self.date,
-            "due_date": self.due_date,
+            "date": self.model_date,
+            "due_date": self.model_due_date,
             "total": 120,
             "due": 120,
             "paid": 0,
             "goods": 0,
-            "vat": 0,
-            "period": PERIOD            
+            "vat": 0,          
         })
 
         headers = PurchaseHeader.objects.all()
@@ -1645,6 +1662,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1652,7 +1670,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             }
         )
         data.update(header_data)
-        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100)
+        headers_to_match_against = create_cancelling_headers(2, self.supplier, "match", "pi", 100, self.period)
         headers_to_match_against_orig = headers_to_match_against
         headers_as_dicts = [ to_dict(header) for header in headers_to_match_against ]
         headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
@@ -1725,15 +1743,15 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         PurchaseHeader.objects.create(**{
             "type": "pbr",
             "supplier": self.supplier,
+            "period": self.period,
             "ref": self.ref,
-            "date": self.date,
-            "due_date": self.due_date,
+            "date": self.model_date,
+            "due_date": self.model_due_date,
             "total": 0,
             "due": 0,
             "paid": 0,
             "goods": 0,
             "vat": 0,
-            "period": PERIOD
         })
 
         headers = PurchaseHeader.objects.all()
@@ -1785,6 +1803,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1869,6 +1888,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -1890,6 +1910,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbp",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.00
@@ -1917,6 +1938,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -0.01
@@ -1999,6 +2021,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -2048,6 +2071,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -2069,6 +2093,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbp",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.00
@@ -2096,6 +2121,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -0.01
@@ -2178,6 +2204,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -2225,6 +2252,14 @@ class EditBroughtForwardRefund(TestCase):
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     # CORRECT USAGE
     def test_get_request(self):
@@ -2232,9 +2267,10 @@ class EditBroughtForwardRefund(TestCase):
         transaction = PurchaseHeader.objects.create(
             type="pbr",
             supplier=self.supplier,
+            period=self.period,
             ref="ref",
-            date=self.date,
-            due_date=self.due_date,
+            date=self.model_date,
+            due_date=self.model_due_date,
             total=120,
             goods=100,
             vat=20
