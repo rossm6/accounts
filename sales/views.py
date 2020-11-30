@@ -178,9 +178,9 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
         pk = obj["id"]
         return reverse_lazy("sales:view", kwargs={"pk": pk})
 
-    def get_queryset(self):
+    def get_queryset(self, **kwargs):
         return (
-            self.get_querysets()
+            self.get_querysets(**kwargs)
             .select_related('customer__name')
             .select_related('period__fy_and_period')
             .all()
@@ -191,13 +191,13 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
             .order_by(*self.order_by())
         )
 
-    def apply_advanced_search(self, cleaned_data):
-        queryset = super().apply_advanced_search(cleaned_data)
+    def apply_advanced_search(self, queryset, cleaned_data):
+        queryset = super().apply_advanced_search(queryset, cleaned_data)
         if customer := cleaned_data.get("customer"):
             queryset = queryset.filter(customer=customer)
         return queryset
 
-    def get_querysets(self):
+    def get_querysets(self, **kwargs):
         group = self.request.GET.get("group", 'a')
         # add querysets to the instance
         # in context_data get the summed value for each

@@ -232,22 +232,21 @@ class CreditorsForm(BaseAjaxFormMixin, forms.Form):
                 ),
                 Div(
                     LabelAndFieldAndErrors(
-                        "period", css_class="input w-100"),
+                        "period", css_class="w-100 form-control"),
                     css_class="col"
                 ),
                 css_class="row"
             ),
             Div(
                 Div(
-                    LabelAndFieldAndErrors(
-                        "show_transactions", css_class=""),
+                    LabelAndFieldAndErrors("show_transactions"),
                     css_class="col"
                 ),
                 Hidden('adv_search_form', True),
                 css_class="mt-4 row"
             ),
             Div(
-                HTML("<button class='btn btn-sm btn-primary'>Report</button>"),
+                HTML("<button class='btn btn-primary'>Report</button>"),
                 css_class="text-right mt-3"
             )
         )

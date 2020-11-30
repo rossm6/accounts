@@ -55,15 +55,15 @@ class NominalForm(forms.ModelForm):
                 ),
                 Div(
                     LabelAndFieldAndErrors(
-                        'name', css_class="w-100 input can-highlight"),
+                        'name', css_class="w-100 form-control"),
                     css_class="mt-2"
                 ),
                 css_class="modal-body"
             ),
             Div(
                 HTML(
-                    '<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
-                HTML('<button type="submit" class="btn btn-sm btn-success">Save</button>'),
+                    '<a href="{% url \"nominals:nominals_list\" %}" role="button" class="btn btn-secondary cancel" data-dismiss="modal">Cancel</a>'),
+                HTML('<button type="submit" class="btn btn-success">Save</button>'),
                 css_class="modal-footer"
             )
         )
@@ -79,8 +79,6 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
         super().__init__(*args, **kwargs)
         self.fields["total"].help_text = "<span class='d-block'>The total value of the debit side of the journal<span class='d-block'>i.e. the total of the positive values</span></span>"
         self.helper = create_journal_header_helper()
-
-# A lot of this is common to the other modules so should be factored out
 
 
 line_css_classes = {
@@ -229,18 +227,18 @@ class TrialBalanceForm(forms.Form):
             Div(
                 Div(
                     LabelAndFieldAndErrors(
-                        "from_period", css_class="input"),
+                        "from_period", css_class="form-control"),
                     css_class="col-2"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
-                        "to_period", css_class="input"),
+                        "to_period", css_class="form-control"),
                     css_class="col-2"
                 ),
                 css_class="row"
             ),
             Div(
-                HTML("<button class='btn btn-sm btn-primary'>Report</button>"),
+                HTML("<button class='btn btn-primary'>Report</button>"),
                 css_class="text-right mt-3"
             )
         )

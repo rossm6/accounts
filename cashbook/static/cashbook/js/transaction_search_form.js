@@ -3,7 +3,7 @@
 }(window, function(){
 
     function form_init() {
-        cashbook_selectize($("select[name='cashbook']"));
+        cashbook_selectize($("select[name='cash_book']"));
     }
 
     return form_init;

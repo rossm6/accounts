@@ -29,27 +29,28 @@ class VatForm(forms.ModelForm):
         self.helper.layout = Layout(
             Div(
                 Div(
-                    LabelAndFieldAndErrors('code', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('code', css_class="form-control w-100"),
                     css_class="mt-2"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('name', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('name', css_class="form-control w-100"),
                     css_class="mt-2"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('rate', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('rate', css_class="form-control w-100"),
                     css_class="mt-2"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('registered'),
+                    LabelAndFieldAndErrors('form-control registered'),
                     css_class="mt-3"
                 ),
                 css_class="modal-body"
             ),
             Div(
                 HTML(
-                    '<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
-                HTML('<button type="submit" class="btn btn-sm btn-success">Save</button>'),
+                    '<a href="{% url \'vat:vat_list\' %}" role="button" class="btn btn-secondary cancel">Cancel</a>'
+                    '<button type="submit" class="btn btn-success">Save</button>'
+                ),
                 css_class="modal-footer"
             )
         )

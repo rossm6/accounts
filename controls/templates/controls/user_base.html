@@ -5,7 +5,7 @@
 {% block extra_head %}
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowgroup/1.1.2/css/rowGroup.dataTables.min.css">
     <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
-    <link rel="stylesheet" href="{% static 'settings/css/perms_table.css' %}">
+    <link rel="stylesheet" href="{% static 'controls/css/perms_table.css' %}">
 {% endblock extra_head %}
 
 {% block content %}
@@ -44,7 +44,7 @@
 {% block module_js %}
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowgroup/1.1.2/js/dataTables.rowGroup.min.js"></script>
 <script src="{% static 'js/selectize.min.js' %}"></script>
-<script src="{% static 'settings/js/perms_table.js' %}"></script>
+<script src="{% static 'controls/js/perms_table.js' %}"></script>
 <script>
     $('#id_groups').selectize({
         maxItems: null,

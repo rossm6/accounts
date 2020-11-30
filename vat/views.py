@@ -47,7 +47,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     def get_queryset(self, **kwargs):
         q = (
             VatTransaction.objects
-            .select_for_update('period__fy_and_period')
+            .select_related('period__fy_and_period')
             .all()
             .values(
                 *[field[0] for field in self.fields[:-2]]

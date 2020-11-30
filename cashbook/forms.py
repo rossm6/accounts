@@ -60,7 +60,7 @@ class CashBookForm(BaseAjaxFormMixin, forms.ModelForm):
         self.helper.layout = Layout(
             Div(
                 Div(
-                    LabelAndFieldAndErrors('name', css_class="w-100 input"),
+                    LabelAndFieldAndErrors('name', css_class="w-100 form-control"),
                     css_class="mt-2"
                 ),
                 Div(
@@ -72,8 +72,8 @@ class CashBookForm(BaseAjaxFormMixin, forms.ModelForm):
             ),
             Div(
                 HTML(
-                    '<button type="button" class="btn btn-sm btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
-                HTML('<button type="submit" class="btn btn-sm btn-success">Save</button>'),
+                    '<button type="button" class="btn btn-secondary cancel" data-dismiss="modal">Cancel</button>'),
+                HTML('<button type="submit" class="btn btn-success">Save</button>'),
                 css_class="modal-footer"
             )
         )
@@ -171,11 +171,11 @@ enter_lines.include_empty_form = True
 
 
 class CashBookTransactionSearchForm(BaseTransactionSearchForm):
-    cashbook = forms.ModelChoiceField(
+    cash_book = forms.ModelChoiceField(
         queryset=CashBook.objects.all(),
         required=False
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.helper.layout = create_transaction_enquiry_layout("cashbook")
+        self.helper.layout = create_transaction_enquiry_layout("cash_book")

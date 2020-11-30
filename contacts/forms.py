@@ -30,21 +30,21 @@ class ContactForm(forms.ModelForm):
             Div(
                 LabelAndFieldAndErrors(
                     'code',
-                    css_class="form-control form-control-sm w-100"
+                    css_class="form-control w-100"
                 ),
                 css_class="form-group"
             ),
             Div(
                 LabelAndFieldAndErrors(
                     'name',
-                    css_class="form-control form-control-sm w-100"
+                    css_class="form-control w-100"
                 ),
                 css_class="form-group"
             ),
             Div(
                 LabelAndFieldAndErrors(
                     'email',
-                    css_class="form-control form-control-sm w-100"
+                    css_class="form-control w-100"
                 ),
                 css_class="form-group"
             ),
@@ -71,21 +71,21 @@ class ModalContactForm(ContactForm):
                 Div(
                     LabelAndFieldAndErrors(
                         'code',
-                        css_class="form-control form-control-sm w-100"
+                        css_class="form-control w-100"
                     ),
                     css_class="form-group"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
                         'name',
-                        css_class="form-control form-control-sm w-100"
+                        css_class="form-control w-100"
                     ),
                     css_class="form-group"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
                         'email',
-                        css_class="form-control form-control-sm w-100"
+                        css_class="form-control w-100"
                     ),
                     css_class="form-group"
                 ),

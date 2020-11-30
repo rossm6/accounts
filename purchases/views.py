@@ -191,7 +191,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
         pk = obj["id"]
         return reverse_lazy("purchases:view", kwargs={"pk": pk})
 
-    def get_queryset(self):
+    def get_queryset(self, **kwargs):
         return (
             self.get_querysets()
             .select_related('supplier__name')

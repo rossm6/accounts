@@ -133,14 +133,14 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         module_name = modules[module]
         return reverse_lazy(module_name + ":view", kwargs={"pk": header})
 
-    def apply_advanced_search(self, cleaned_data):
-        queryset = super().apply_advanced_search(cleaned_data)
+    def apply_advanced_search(self, queryset, cleaned_data):
+        queryset = super().apply_advanced_search(queryset, cleaned_data)
         if cashbook := cleaned_data.get("cashbook"):
             queryset = queryset.filter(cashbook=cashbook)
         return queryset
 
     # this should belong to the parent class
-    def get_queryset(self):
+    def get_queryset(self, **kwargs):
         return (
             CashBookTransaction.objects
             .select_related('cash_book__name')

@@ -18,13 +18,10 @@
 {{ header_form.media }}
 <script>
 
-    $(document).ready(function(){
-        $(".datepicker").removeClass("form-control");
-    });
 
     {% if create or edit %}
 
-    $(".transaction-type-select").selectize();
+        $(".transaction-type-select").selectize();
 
     {% endif %}
 
@@ -37,16 +34,6 @@
         });
 
     {% endif %}
-
-    {% comment %} 
-    
-    the standard example of loading from a remote source for the selectize.js library uses
-    jsonp which was new to me.  JSONP was only created for loading from another domain so is not needed here.
-    It was also created back in 2005 so not sure it is needed at all anymore.
-
-    Here we just use json.  Callback is obviously a function passed in from the library itself.
-    
-    {% endcomment %}
 
     {% if create or edit %}
 
@@ -65,6 +52,14 @@
         });
 
         $(".cashbook-select").selectize();
+
+        // modal form html is sometimes used in non modal form contexts
+        // where cancel button will want to use the href
+        // this overrides this behaviour
+        $("a.cancel").on("click", function(e){
+            e.preventDefault();
+            $(this).parents(".modal").eq(0).modal('hide');
+        });
 
     {% endif %}
 

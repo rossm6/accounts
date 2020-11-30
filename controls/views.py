@@ -242,4 +242,5 @@ class FinancialYearDetail(DetailView):
         context_data = super().get_context_data(**kwargs)
         periods = self.object.periods.all()
         context_data["periods"] = periods
+        print([p.__dict__ for p in periods])
         return context_data

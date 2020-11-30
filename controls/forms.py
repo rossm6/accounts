@@ -271,7 +271,7 @@ class PeriodForm(forms.ModelForm):
                     Div(
                         LabelAndFieldOnly('period'),
                     ),
-                    css_class="bg-primary text-white col-auto col-close-icon border border-primary rounded d-flex justify-content-center align-items-center small"
+                    css_class="bg-primary text-white col-auto col-close-icon border border-primary rounded d-flex justify-content-center align-items-center"
                 ),
                 Div(
                     FieldAndErrors(

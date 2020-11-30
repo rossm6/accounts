@@ -9,11 +9,11 @@
                 <div class="border rounded w-75 p-4 mt-5">
                     <h1 class="h4 font-weight-bold">Contact Details</h1>
                     <div class="d-flex justify-content-end mt-3">
-                        <button class="btn btn-primary btn-sm mr-2 audit-btn">Audit</button>
-                        <a href="{{ edit_href }}" class="btn btn-success btn-sm" role="button">Edit</a>
+                        <button class="btn btn-primary mr-2 audit-btn">Audit</button>
+                        <a href="{% url 'contacts:edit' pk=contact.pk %}" class="btn btn-success" role="button">Edit</a>
                     </div>
                     <div>
-                        <div class="small border rounded p-4 my-2 contact-details">
+                        <div class="border rounded p-4 my-2 contact-details">
                             <div class="row no-gutters">
                                 <div class="col-sm-3 col-md-2 col-5">
                                     <label style="font-weight:bold;">Code</label>
