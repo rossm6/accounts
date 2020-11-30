@@ -642,7 +642,6 @@ class BaseTransaction(
         return super().get_context_data(**kwargs)
 
     def get(self, request, *args, **kwargs):
-        print("get")
         return self.render_to_response(self.get_context_data())
 
 

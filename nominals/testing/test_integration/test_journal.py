@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from itertools import chain
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import create_formset_data, create_header
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -23,8 +24,8 @@ The testing of these general classes is done in the purchase ledger.
 HEADER_FORM_PREFIX = "header"
 LINE_FORM_PREFIX = "line"
 match_form_prefix = "match"
-PERIOD = '202007'  # the calendar month i made the change !
-
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 class CreateJournal(TestCase):
 
@@ -33,10 +34,14 @@ class CreateJournal(TestCase):
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.ref = "test journal"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime('%Y-%m-%d')
-
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -52,7 +57,6 @@ class CreateJournal(TestCase):
             parent=liabilities, name="Current Liabilities")
         cls.vat_nominal = Nominal.objects.create(
             parent=current_assets, name="Vat")
-
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
         cls.url = reverse("nominals:create")
@@ -102,7 +106,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120,
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -146,7 +150,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.goods,
@@ -270,7 +274,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[0].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[0].type,
@@ -303,7 +307,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[1].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[1].type,
@@ -336,7 +340,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[2].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[2].type,
@@ -369,7 +373,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[3].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[3].type,
@@ -447,7 +451,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120,
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -491,7 +495,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.goods,
@@ -611,7 +615,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[0].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[0].type,
@@ -644,7 +648,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[1].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[1].type,
@@ -724,7 +728,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120,
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -768,7 +772,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.goods,
@@ -888,7 +892,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[0].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[0].type,
@@ -921,7 +925,7 @@ class CreateJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[1].period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             nominal_transactions[1].type,
@@ -1002,7 +1006,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": '',
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -1061,7 +1065,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120,
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -1121,7 +1125,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": '',
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -1162,7 +1166,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120,
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -1203,7 +1207,7 @@ class CreateJournal(TestCase):
                 "ref": self.ref,
                 "date": self.date,
                 "total": -120,
-                "period": PERIOD,
+                "period": self.period.pk,
                 "vat_type": "o"
             }
         )
@@ -1240,10 +1244,15 @@ class EditJournal(TestCase):
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.ref = "test journal"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime('%Y-%m-%d')
-
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -1272,8 +1281,8 @@ class EditJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 120,
                 "vat_type": "o"
             },
@@ -1315,7 +1324,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.vat_type,
@@ -1538,8 +1547,8 @@ class EditJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 120,
                 "vat_type": "o"
             },
@@ -1581,7 +1590,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -1869,9 +1878,9 @@ class EditJournal(TestCase):
             {
                 "type": header.type,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 60,
-                "period": header.period,
+                "period": header.period.pk,
                 "vat_type": "o"
             }
         )
@@ -1922,7 +1931,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -2210,8 +2219,8 @@ class EditJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 120,
                 "vat_type": "o"
             },
@@ -2252,7 +2261,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -2484,9 +2493,9 @@ class EditJournal(TestCase):
             {
                 "type": header.type,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 240,
-                "period": header.period,
+                "period": header.period.pk,
                 "vat_type": "o"
             }
         )
@@ -2558,7 +2567,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -3069,8 +3078,8 @@ class EditJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 240,
                 "vat_type": "o"
             },
@@ -3128,7 +3137,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -3234,9 +3243,9 @@ class EditJournal(TestCase):
             {
                 "type": header.type,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 240,
-                "period": header.period,
+                "period": header.period.pk,
                 "vat_type": header.vat_type
             }
         )
@@ -3302,8 +3311,8 @@ class EditJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 120,
                 "vat_type": "o"
             },
@@ -3361,7 +3370,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -3523,9 +3532,9 @@ class EditJournal(TestCase):
             {
                 "type": header.type,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 120,
-                "period": header.period,
+                "period": header.period.pk,
                 "vat_type": header.vat_type
             }
         )
@@ -3597,7 +3606,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -3767,8 +3776,8 @@ class EditJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 120,
                 "vat_type": "o"
             },
@@ -3810,7 +3819,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -4091,15 +4100,17 @@ class EditJournal(TestCase):
                 lines[i].vat
             )
 
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 120,
-                "period": "202008", # NEW PERIOD
+                "period": new_period.pk,
                 "vat_type": "o"
             }
         )
@@ -4133,7 +4144,6 @@ class EditJournal(TestCase):
         self.assertEqual(response.status_code, 302)
 
         # POST EDIT ...
-
         header = NominalHeader.objects.all()
         self.assertEqual(
             len(header),
@@ -4150,7 +4160,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            "202008"
+            new_period
         )
         self.assertEqual(
             header.total,
@@ -4267,7 +4277,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[0].period,
-            "202008"
+            new_period
         )
         self.assertEqual(
             nominal_transactions[0].type,
@@ -4300,7 +4310,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[1].period,
-            "202008"
+            new_period
         )
         self.assertEqual(
             nominal_transactions[1].type,
@@ -4334,7 +4344,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[2].period,
-            "202008"
+            new_period
         )
         self.assertEqual(
             nominal_transactions[2].type,
@@ -4367,7 +4377,7 @@ class EditJournal(TestCase):
         )
         self.assertEqual(
             nominal_transactions[3].period,
-            "202008"
+            new_period
         )
         self.assertEqual(
             nominal_transactions[3].type,
@@ -4393,7 +4403,7 @@ class EditJournal(TestCase):
             )
             self.assertEqual(
                 vat_tran.period,
-                "202008"
+                new_period
             )
             self.assertEqual(
                 vat_tran.date,
@@ -4435,10 +4445,14 @@ class VoidJournal(TestCase):
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         cls.ref = "test journal"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime('%Y-%m-%d')
-
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -4467,8 +4481,8 @@ class VoidJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 120,
                 "status": "v",
                 "vat_type": "o"
@@ -4510,7 +4524,7 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -4619,7 +4633,7 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -4709,8 +4723,8 @@ class VoidJournal(TestCase):
             "header": {
                 "type": "nj",
                 "ref": "test journal",
-                "period": PERIOD,
-                "date": timezone.now(),
+                "period": self.period,
+                "date": self.model_date,
                 "total": 120,
                 "vat_type": "o"
             },
@@ -4752,7 +4766,7 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
@@ -5019,7 +5033,7 @@ class VoidJournal(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.total,
