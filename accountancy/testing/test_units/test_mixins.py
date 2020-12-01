@@ -1,15 +1,32 @@
-from accountancy.mixins import ControlAccountInvoiceTransactionMixin
-from datetime import date
+from datetime import date, datetime, timedelta
 
 import mock
-from accountancy.mixins import VatTransactionMixin
+from accountancy.mixins import (ControlAccountInvoiceTransactionMixin,
+                                VatTransactionMixin)
+from controls.models import FinancialYear, Period
 from django.test import TestCase
+from nominals.models import Nominal
 from vat.models import Vat, VatTransaction
 
-PERIOD = "202007"
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 
 class VatTransactionMixinTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31)
+        )
 
     def test_create_vat_transaction_for_line(self):
 
@@ -23,7 +40,7 @@ class VatTransactionMixinTests(TestCase):
 
         mock_self.header_obj.pk = 1
         mock_self.header_obj.ref = "ref"
-        mock_self.header_obj.period = PERIOD
+        mock_self.header_obj.period = self.period
         mock_self.header_obj.date = TODAY
         mock_self.header_obj.type = "pi"
 
@@ -66,7 +83,7 @@ class VatTransactionMixinTests(TestCase):
         )
         self.assertEqual(
             vat_tran.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             vat_tran.date,
@@ -113,13 +130,14 @@ class VatTransactionMixinTests(TestCase):
     def test_edit_vat_transaction_for_line_without_vat_code(self):
 
         TODAY = date.today()
+        self.period = mock.Mock()
 
         mock_self = mock.Mock()
         mock_self.header_obj = mock.Mock()
         mock_self.vat_type = "i"
 
         mock_self.header_obj.ref = "ref"
-        mock_self.header_obj.period = PERIOD
+        mock_self.header_obj.period = self.period
         mock_self.header_obj.date = TODAY
 
         vat_code = Vat(code="1", name="1", rate=20)
@@ -145,13 +163,14 @@ class VatTransactionMixinTests(TestCase):
     def test_edit_vat_transaction_for_line_with_vat_code(self):
 
         TODAY = date.today()
+        self.period = mock.Mock()
 
         mock_self = mock.Mock()
         mock_self.header_obj = mock.Mock()
         mock_self.vat_type = "i"
 
         mock_self.header_obj.ref = "ref"
-        mock_self.header_obj.period = PERIOD
+        mock_self.header_obj.period = self.period
         mock_self.header_obj.date = TODAY
 
         vat_code = Vat(code="1", name="1", rate=20)
@@ -172,10 +191,21 @@ class VatTransactionMixinTests(TestCase):
         # i.e. nothing returned means nothing to delete
 
 
-from nominals.models import Nominal
-
-
 class ControlAccountInvoiceTransactionMixinTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31)
+        )
 
     def test_get_vat_nominal_with_name(self):
         nominal = Nominal(name="Vat Control")

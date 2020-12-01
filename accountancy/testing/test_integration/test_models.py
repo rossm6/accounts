@@ -1,13 +1,26 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 
+from controls.models import FinancialYear, Period
 from django.test import TestCase
 from nominals.models import (Nominal, NominalHeader, NominalLine,
                              NominalTransaction)
 
-PERIOD = "202007"
-
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 class NonAuditQuerySetTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     def test_bulk_update(self):
         nominal = Nominal(name="duh")
@@ -18,21 +31,33 @@ class NonAuditQuerySetTests(TestCase):
             line=1,
             value=0,
             date=date.today(),
-            period=PERIOD,
+            period=self.period,
             field="t",
             nominal=nominal
         )
         tran.save()
-        tran.period = "202008"
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+        tran.period = new_period
         NominalTransaction.objects.bulk_update([tran])
         tran.refresh_from_db()
         self.assertEqual(
             tran.period,
-            "202008"
+            new_period
         )
 
 
 class AuditQuerySetTests(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
 
     def test_audited_bulk_create_empty(self):
         # check it handles empty list
@@ -54,7 +79,7 @@ class AuditQuerySetTests(TestCase):
         d = date.today()
         h = NominalHeader(
             ref="1",
-            period=PERIOD,
+            period=self.period,
             date=d,
         )
         objs = [h]
@@ -71,7 +96,7 @@ class AuditQuerySetTests(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.date,
@@ -102,7 +127,7 @@ class AuditQuerySetTests(TestCase):
         d = date.today()
         h = NominalHeader(
             ref="1",
-            period=PERIOD,
+            period=self.period,
             date=d,
         )
         h.save()
@@ -121,7 +146,7 @@ class AuditQuerySetTests(TestCase):
         )
         self.assertEqual(
             header.period,
-            PERIOD
+            self.period
         )
         self.assertEqual(
             header.date,
@@ -137,7 +162,7 @@ class AuditQuerySetTests(TestCase):
         d = date.today()
         h = NominalHeader(
             ref="1",
-            period=PERIOD,
+            period=self.period,
             date=d,
         )
         h.save()

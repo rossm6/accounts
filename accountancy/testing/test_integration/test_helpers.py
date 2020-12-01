@@ -1,15 +1,18 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from accountancy.helpers import (AuditTransaction, Period,
                                  get_all_historical_changes)
 from cashbook.models import CashBook
 from contacts.models import Contact
+from controls.models import FinancialYear, Period
 from django.test import TestCase
 from nominals.models import Nominal
 from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
                               Supplier)
 from vat.models import Vat
 
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 class GetAllHistoricalChangesTest(TestCase):
 
@@ -233,6 +236,19 @@ class AuditTransactionTest(TestCase):
     Test with PL header, line, matching
     """
 
+    @classmethod
+    def setUpTestData(cls):
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+
+
     def test_no_lines(self):
         cash_book = CashBook.objects.create(
             nominal=None,
@@ -254,7 +270,7 @@ class AuditTransactionTest(TestCase):
             supplier=supplier,
             paid=0,
             due=0,
-            period="202006"
+            period=self.period
         )
         self.assertEqual(
             len(PurchaseHeader.history.all()),
@@ -363,12 +379,12 @@ class AuditTransactionTest(TestCase):
             str(h.due_date),
         )
         self.assertEqual(
-            create["period"]["old"],
+            create["period_id"]["old"],
             "",
         )
         self.assertEqual(
-            create["period"]["new"],
-            str(h.period),
+            create["period_id"]["new"],
+            str(self.period.pk),
         )
         self.assertEqual(
             create["status"]["old"],
@@ -451,7 +467,7 @@ class AuditTransactionTest(TestCase):
             supplier=supplier,
             paid=0,
             due=0,
-            period="202006"
+            period=self.period
         )
 
         nominal = Nominal.objects.create(
@@ -589,12 +605,12 @@ class AuditTransactionTest(TestCase):
             str(h.due_date),
         )
         self.assertEqual(
-            create["period"]["old"],
+            create["period_id"]["old"],
             "",
         )
         self.assertEqual(
-            create["period"]["new"],
-            str(h.period),
+            create["period_id"]["new"],
+            str(self.period.pk),
         )
         self.assertEqual(
             create["status"]["old"],
@@ -771,7 +787,7 @@ class AuditTransactionTest(TestCase):
             supplier=supplier,
             paid=0,
             due=0,
-            period="202006"
+            period=self.period
         )
         h = PurchaseHeader.objects.create(
             type="pi",  # payment
@@ -784,7 +800,7 @@ class AuditTransactionTest(TestCase):
             supplier=supplier,
             paid=0,
             due=0,
-            period="202006"
+            period=self.period
         )
         nominal = Nominal.objects.create(
             name="something",
@@ -807,7 +823,7 @@ class AuditTransactionTest(TestCase):
         match = PurchaseMatching.objects.create(
             matched_by=h,
             matched_to=to_match_against,
-            period="202006",
+            period=self.period,
             value=-100
         )
         self.assertEqual(
@@ -940,12 +956,12 @@ class AuditTransactionTest(TestCase):
             str(h.due_date),
         )
         self.assertEqual(
-            create["period"]["old"],
+            create["period_id"]["old"],
             "",
         )
         self.assertEqual(
-            create["period"]["new"],
-            str(h.period),
+            create["period_id"]["new"],
+            str(self.period.pk),
         )
         self.assertEqual(
             create["status"]["old"],
@@ -1124,12 +1140,12 @@ class AuditTransactionTest(TestCase):
             "-100.00",
         )
         self.assertEqual(
-            create["period"]["old"],
+            create["period_id"]["old"],
             "",
         )
         self.assertEqual(
-            create["period"]["new"],
-            str(match.period),
+            create["period_id"]["new"],
+            str(self.period.pk),
         )
         self.assertEqual(
             create["meta"]["AUDIT_action"],

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from json import loads
 
 from accountancy.helpers import sort_multiple
@@ -6,6 +6,7 @@ from accountancy.testing.helpers import *
 from cashbook.helpers import *
 from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
@@ -14,7 +15,8 @@ from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = 'header'
 LINE_FORM_PREFIX = 'line'
-
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 class CreateReceipt(TestCase):
 
@@ -22,7 +24,16 @@ class CreateReceipt(TestCase):
     def setUpTestData(cls):
         cls.description = "duh"
         cls.ref = "test"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, 
+            period="01", 
+            fy_and_period="202001", 
+            month_end=date(2020,1,31)
+        )
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -78,6 +89,7 @@ class CreateReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cr",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -369,6 +381,7 @@ class CreateReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cr",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -397,6 +410,7 @@ class CreateReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cr",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -810,6 +824,7 @@ class CreateReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cr",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1098,6 +1113,7 @@ class CreateReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cr",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1510,7 +1526,16 @@ class EditReceipt(TestCase):
     def setUpTestData(cls):
         cls.description = "duh"
         cls.ref = "test"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, 
+            period="01", 
+            fy_and_period="202001", 
+            month_end=date(2020,1,31)
+        )
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -1542,9 +1567,10 @@ class EditReceipt(TestCase):
 
         header = CashBookHeader.objects.create(**{
             "type": "cr",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": 120,
             "goods": 100,
             "vat": 20,
@@ -1786,9 +1812,10 @@ class EditReceipt(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cr",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": 120,
             "goods": 100,
             "vat": 20,
@@ -2017,9 +2044,10 @@ class EditReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 240,
                 "vat_type": "o"
             }
@@ -2306,9 +2334,10 @@ class EditReceipt(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cr",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": 120,
             "goods": 100,
             "vat": 20,
@@ -2537,9 +2566,10 @@ class EditReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 360,
                 "vat_type": header.vat_type
             }
@@ -2955,9 +2985,10 @@ class EditReceipt(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cr",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": -120,
             "goods": -100,
             "vat": -20,
@@ -3186,9 +3217,10 @@ class EditReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": -240,
                 "vat_type": "o"
             }
@@ -3475,9 +3507,10 @@ class EditReceipt(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cr",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": -120,
             "goods": -100,
             "vat": -20,
@@ -3706,9 +3739,10 @@ class EditReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": -360,
                 "vat_type": "o"
             }
@@ -4129,9 +4163,10 @@ class EditReceipt(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cr",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": 120,
             "goods": 100,
             "vat": 20
@@ -4344,9 +4379,10 @@ class EditReceipt(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 0
             }
         )
@@ -4394,9 +4430,10 @@ class EditReceipt(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cr",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": 120,
             "goods": 100,
             "vat": 20,
@@ -4620,17 +4657,20 @@ class EditReceipt(TestCase):
             header.type
         )
 
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 120,
                 "vat_type": "o",
-                "period": "202008" # DIFFERENT PERIOD
+                "period": new_period.pk
             }
         )
         data.update(header_data)
@@ -4683,7 +4723,7 @@ class EditReceipt(TestCase):
         )
         self.assertEqual(
             header.period,
-            "202008"
+            new_period
         )
 
         lines = CashBookLine.objects.all().order_by("pk")
@@ -4769,7 +4809,7 @@ class EditReceipt(TestCase):
         )
         self.assertEqual(
             nom_trans[0].period,
-            "202008"
+            new_period
         )
 
         self.assertEqual(
@@ -4802,7 +4842,7 @@ class EditReceipt(TestCase):
         )
         self.assertEqual(
             nom_trans[1].period,
-            "202008"
+            new_period
         )  
 
         self.assertEqual(
@@ -4835,7 +4875,7 @@ class EditReceipt(TestCase):
         )
         self.assertEqual(
             nom_trans[2].period,
-            "202008"
+            new_period
         )
 
         cash_book_trans = CashBookTransaction.objects.all()
@@ -4874,7 +4914,7 @@ class EditReceipt(TestCase):
         )
         self.assertEqual(
             cash_book_trans[0].period,
-            "202008"
+            new_period
         )
 
         for i, vat_tran in enumerate(vat_transactions):
@@ -4896,7 +4936,7 @@ class EditReceipt(TestCase):
             )
             self.assertEqual(
                 vat_tran.period,
-                "202008"
+                new_period
             )
             self.assertEqual(
                 vat_tran.date,

@@ -1,21 +1,35 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 
 import mock
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceIterator,
                                 RootAndLeavesModelChoiceIterator)
+from controls.models import FinancialYear, Period
 from django.test import TestCase
 from nominals.models import Nominal
 from purchases.models import PurchaseHeader, PurchaseMatching, Supplier
 from vat.models import Vat
 
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 class UIDecimalFieldTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
         cls.supplier = Supplier.objects.create(code="1", name="1")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31)
+        )
 
     """
     UI decimal field tests for positive trans
@@ -28,7 +42,7 @@ class UIDecimalFieldTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         goods = PurchaseHeader.objects.first().__dict__["goods"]
         self.assertEqual(
@@ -43,7 +57,7 @@ class UIDecimalFieldTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -58,7 +72,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -73,7 +87,7 @@ class UIDecimalFieldTests(TestCase):
             goods=0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -88,7 +102,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -103,7 +117,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -118,7 +132,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -133,7 +147,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -148,7 +162,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -163,7 +177,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -181,7 +195,7 @@ class UIDecimalFieldTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -196,7 +210,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -211,7 +225,7 @@ class UIDecimalFieldTests(TestCase):
             goods=0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -226,7 +240,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -241,7 +255,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -256,7 +270,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -271,7 +285,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -286,7 +300,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -301,7 +315,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -319,7 +333,7 @@ class UIDecimalFieldTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         goods = PurchaseHeader.objects.first().__dict__["goods"]
         self.assertEqual(
@@ -334,7 +348,7 @@ class UIDecimalFieldTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -349,7 +363,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -364,7 +378,7 @@ class UIDecimalFieldTests(TestCase):
             goods=0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -379,7 +393,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -394,7 +408,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -409,7 +423,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -424,7 +438,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -439,7 +453,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -454,7 +468,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.goods),
@@ -468,7 +482,7 @@ class UIDecimalFieldTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -483,7 +497,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -498,7 +512,7 @@ class UIDecimalFieldTests(TestCase):
             goods=0.00,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -513,7 +527,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -528,7 +542,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -543,7 +557,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -558,7 +572,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.1,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -573,7 +587,7 @@ class UIDecimalFieldTests(TestCase):
             goods=-1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -588,7 +602,7 @@ class UIDecimalFieldTests(TestCase):
             goods=1.11,
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             str(p.ui_goods),
@@ -604,6 +618,17 @@ class AccountsDecimalFieldTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.supplier = Supplier.objects.create(code="1", name="1")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31)
+        )
 
     def test_set_is_not_none(self):
         matched_by = PurchaseHeader(
@@ -611,7 +636,7 @@ class AccountsDecimalFieldTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=120,
             paid=0,
         )
@@ -620,7 +645,7 @@ class AccountsDecimalFieldTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=-120,
             paid=0,
         )
@@ -628,7 +653,7 @@ class AccountsDecimalFieldTests(TestCase):
             matched_by=matched_by,
             matched_to=matched_to,
             value=None,
-            period="202007",
+            period=self.period,
             matched_by_type="pi",
             matched_to_type="pc"
         )
@@ -643,7 +668,7 @@ class AccountsDecimalFieldTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=120,
             paid=0,
         )
@@ -652,7 +677,7 @@ class AccountsDecimalFieldTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=-120,
             paid=0,
         )
@@ -660,7 +685,7 @@ class AccountsDecimalFieldTests(TestCase):
             matched_by=matched_by,
             matched_to=matched_to,
             value=-0,
-            period="202007",
+            period=self.period,
             matched_by_type="pi",
             matched_to_type="pc"
         )
@@ -675,7 +700,7 @@ class AccountsDecimalFieldTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=120,
             paid=0,
         )
@@ -684,7 +709,7 @@ class AccountsDecimalFieldTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=-120,
             paid=0,
         )
@@ -692,7 +717,7 @@ class AccountsDecimalFieldTests(TestCase):
             matched_by=matched_by,
             matched_to=matched_to,
             value=5.65,
-            period="202007",
+            period=self.period,
             matched_by_type="pi",
             matched_to_type="pc"
         )

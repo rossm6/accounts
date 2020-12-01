@@ -41,7 +41,7 @@ class VatForm(forms.ModelForm):
                     css_class="mt-2"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('form-control registered'),
+                    LabelAndFieldAndErrors('registered'),
                     css_class="mt-3"
                 ),
                 css_class="modal-body"

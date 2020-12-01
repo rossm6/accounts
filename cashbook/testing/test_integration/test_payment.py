@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from json import loads
 
 from accountancy.helpers import sort_multiple
@@ -6,6 +6,7 @@ from accountancy.testing.helpers import *
 from cashbook.helpers import *
 from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
+from controls.models import FinancialYear, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
@@ -14,7 +15,8 @@ from vat.models import Vat, VatTransaction
 
 HEADER_FORM_PREFIX = 'header'
 LINE_FORM_PREFIX = 'line'
-
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 class CreatePayment(TestCase):
 
@@ -22,8 +24,13 @@ class CreatePayment(TestCase):
     def setUpTestData(cls):
         cls.description = "duh"
         cls.ref = "test"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_user(
+            username="dummy", password="dummy")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -96,6 +103,7 @@ class CreatePayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cp",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -386,6 +394,7 @@ class CreatePayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cp",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -414,6 +423,7 @@ class CreatePayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cp",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -826,6 +836,7 @@ class CreatePayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cp",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1115,6 +1126,7 @@ class CreatePayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "cp",
+				"period": self.period.pk,
                 "cash_book": self.cash_book.pk,
                 "ref": self.ref,
                 "date": self.date,
@@ -1529,7 +1541,11 @@ class EditPayment(TestCase):
     def setUpTestData(cls):
         cls.description = "duh"
         cls.ref = "test"
-        cls.date = datetime.now().strftime('%Y-%m-%d')
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -1563,9 +1579,10 @@ class EditPayment(TestCase):
 
         header = CashBookHeader.objects.create(**{
             "type": "cp",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": -120,
             "goods": -100,
             "vat": -20,
@@ -1811,9 +1828,10 @@ class EditPayment(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": -120,
             "goods": -100,
             "vat": -20,
@@ -2042,9 +2060,10 @@ class EditPayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 240,
                 "vat_type": "o"
             }
@@ -2332,9 +2351,10 @@ class EditPayment(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": -120,
             "goods": -100,
             "vat": -20,
@@ -2563,9 +2583,10 @@ class EditPayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 360,
                 "vat_type": header.vat_type
             }
@@ -2984,9 +3005,10 @@ class EditPayment(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": 120,
             "goods": 100,
             "vat": 20,
@@ -3215,9 +3237,10 @@ class EditPayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": -240,
                 "vat_type": "o"
             }
@@ -3505,9 +3528,10 @@ class EditPayment(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": 120,
             "goods": 100,
             "vat": 20,
@@ -3736,9 +3760,10 @@ class EditPayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": -360,
                 "vat_type": "o"
             }
@@ -4158,9 +4183,10 @@ class EditPayment(TestCase):
         self.client.force_login(self.user)
         header = CashBookHeader.objects.create(**{
             "type": "cp",
+			"period": self.period,
             "cash_book": self.cash_book,
             "ref": self.ref,
-            "date": self.date,
+            "date": self.model_date,
             "total": -120,
             "goods": -100,
             "vat": -20
@@ -4373,9 +4399,10 @@ class EditPayment(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": header.type,
+				"period": header.period.pk,
                 "cash_book": header.cash_book.pk,
                 "ref": header.ref,
-                "date": header.date,
+                "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "total": 0
             }
         )

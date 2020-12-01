@@ -1,15 +1,19 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import mock
 from accountancy.models import (AccountsDecimalField, NonAuditQuerySet,
                                 Transaction, TransactionHeader,
                                 TransactionLine)
 from cashbook.models import CashBook, CashBookHeader
+from controls.models import FinancialYear, Period
 from django.test import TestCase
 from nominals.models import Nominal, NominalHeader, NominalTransaction
 from purchases.models import (PurchaseHeader, PurchaseLine, PurchaseMatching,
                               Supplier)
 from sales.models import SaleHeader
+
+DATE_INPUT_FORMAT = '%d-%m-%Y'
+MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
 
 class NonAuditQuerySetTest(TestCase):
@@ -91,6 +95,17 @@ class TransactionHeaderTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.supplier = Supplier.objects.create(code="1", name="1")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31)
+        )
 
     def test_statuses(self):
         statuses = TransactionHeader.statuses
@@ -109,7 +124,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             pi.get_nominal_transaction_factor(),
@@ -123,7 +138,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             pc.get_nominal_transaction_factor(),
@@ -137,7 +152,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             si.get_nominal_transaction_factor(),
@@ -151,7 +166,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             sc.get_nominal_transaction_factor(),
@@ -164,7 +179,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
         )
         self.assertEqual(
             nj.ui_status(),
@@ -182,7 +197,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
             cash_book=cashbook
         )
         self.assertEqual(
@@ -197,7 +212,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=100
         )
@@ -213,7 +228,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today() - timedelta(days=1),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90
         )
@@ -229,7 +244,7 @@ class TransactionHeaderTests(TestCase):
             ref="1",
             date=date.today(),
             due_date=date.today() + timedelta(days=1),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90
         )
@@ -244,7 +259,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90
         )
@@ -259,7 +274,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -275,7 +290,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -290,7 +305,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -305,7 +320,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -320,7 +335,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -335,7 +350,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -350,7 +365,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -365,7 +380,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -380,7 +395,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -395,7 +410,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -410,7 +425,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -425,7 +440,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -440,7 +455,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -455,7 +470,7 @@ class TransactionHeaderTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
             status="v"
@@ -624,6 +639,17 @@ class TransactionLineTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.supplier = Supplier.objects.create(code="1", name="1")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31)
+        )
 
     def test_add_nominal_transactions(self):
         nominal = Nominal(name="nominal")
@@ -632,7 +658,7 @@ class TransactionLineTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=100,
             paid=90,
         )
@@ -691,7 +717,7 @@ class TransactionLineTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=120,
             paid=0,
         )
@@ -713,7 +739,7 @@ class TransactionLineTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=120,
             paid=0,
         )
@@ -735,7 +761,7 @@ class TransactionLineTests(TestCase):
             supplier=self.supplier,
             ref="1",
             date=date.today(),
-            period="202007",
+            period=self.period,
             total=120,
             paid=0,
         )
@@ -757,6 +783,18 @@ class MatchedHeadersTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         supplier = Supplier.objects.create(code="1", name="12")
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.due_date = (datetime.now() + timedelta(days=31)
+                        ).strftime(DATE_INPUT_FORMAT)
+        cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
+        cls.model_due_date = (datetime.now() + timedelta(days=31)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
+        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy
+        cls.period = period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31)
+        )
+
         cls.mb = mb = PurchaseHeader.objects.create(
             type="pi",
             supplier=supplier,
@@ -779,11 +817,12 @@ class MatchedHeadersTests(TestCase):
             matched_by=mb,
             matched_to=mt,
             value=-100,
-            period="202007",
+            period=period,
             matched_by_type="pi",
             matched_to_type="pc"
         )
-        cls.match = PurchaseMatching.objects.select_related("matched_by", "matched_to").first()
+        cls.match = PurchaseMatching.objects.select_related(
+            "matched_by", "matched_to").first()
 
     def test_show_match_in_UI_for_matched_by(self):
         ui_match = PurchaseMatching.show_match_in_UI(self.mb, self.match)
