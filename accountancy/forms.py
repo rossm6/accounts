@@ -782,7 +782,7 @@ class BaseVoidTransactionForm(forms.Form):
 
     def clean(self):
         try:
-            self.instance = self.header_model.objects.exclude(status="v").get(
+            self.instance = self.header_model.objects.select_for_update().exclude(status="v").get(
                 pk=self.cleaned_data.get("id"))
         except:
             raise forms.ValidationError(

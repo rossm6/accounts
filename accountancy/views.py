@@ -880,15 +880,20 @@ class RESTIndividualTransactionMixin:
         return kwargs
 
     def get_line_formset_queryset(self):
-        return self.get_line_model().objects.filter(header=self.main_header)
-
+        q = self.get_line_model().objects.filter(header=self.main_header)
+        if self.request.method == "POST":
+            q = q.select_for_update()
+        return q
 
 class IndividualTransactionMixin:
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
         pk = kwargs.get('pk')
-        header = get_object_or_404(self.get_header_model(), pk=pk)
+        q = self.get_header_model()
+        if request.method == "POST":
+            q = q.objects.select_for_update()
+        header = get_object_or_404(q, pk=pk)
         self.main_header = header
 
     def get_context_data(self, **kwargs):
@@ -1240,6 +1245,7 @@ class BaseVoidTransaction(IndividualTransactionMixin, View):
                 )
                 .select_related("matched_to")
                 .select_related("matched_by")
+                .select_for_update()
             )
             for match in matches:
                 if match.matched_by == transaction_to_void:
