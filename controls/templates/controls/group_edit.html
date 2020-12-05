@@ -3,6 +3,7 @@
 {% load crispy_forms_tags %}
 
 {% block group_content %}
+    {% include 'accountancy/crispy_form_non_field_errors.html' %}
     <form method="POST" action="">
     {% csrf_token %}
     {% crispy form %}

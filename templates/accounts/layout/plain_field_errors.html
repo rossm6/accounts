@@ -1,5 +1,5 @@
 {% load crispy_forms_field %}
-<div class="h-100 {% if field.errors %} has_errors {% endif %}">
+<div class="h-100 p-1 {% if field.errors %} has_errors {% endif %}">
     {% crispy_field field %}
     {% if field.errors %}
         <div class="d-none error-tooltip">

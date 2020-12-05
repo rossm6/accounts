@@ -6,7 +6,7 @@
 {% block head %}
     <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.css"/>
     <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
     <style>
         .data-grid {
@@ -105,9 +105,7 @@
 {% block js %}
     {% block extra_js %}
     {% load static %}
-    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
     <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
     <script>
         {% include "accountancy/audit.js" %}
@@ -118,10 +116,7 @@
             var existing_matched_transactions_table = $("table.existing_matched_transactions").DataTable({
                 dom: "t",
                 bPaginate: false,
-                columnDefs: [
-                    { className: "dt-center", "targets": "_all" }
-                ],
-                scrollY: "200px",
+                scrollY: 300,
                 scrollCollapse: true,
                 paging: false,
                 language: {

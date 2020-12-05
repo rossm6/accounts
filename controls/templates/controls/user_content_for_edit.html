@@ -3,7 +3,7 @@
 {% load crispy_forms_tags %}
 
 {% block main %}
-    {% crispy form %}
+    {% include 'accountancy/crispy_form_template.html' with form=form %}
 {% endblock main %}
 
 {% block tbody %}

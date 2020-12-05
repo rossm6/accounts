@@ -66,7 +66,7 @@ def create_transaction_enquiry_time_fields(search_within=False):
         Div(
             LabelAndFieldAndErrors(
                 'period',
-                css_class="w-100 form-control",
+                css_class="w-100 form-control form-control-sm",
             ),
             css_class="col-2"
         )
@@ -74,7 +74,7 @@ def create_transaction_enquiry_time_fields(search_within=False):
     if search_within:
         row += [
             Div(
-                LabelAndFieldAndErrors('search_within'),
+                LabelAndFieldAndErrors('search_within', css_class="form-control form-control-sm"),
                 css_class="col-2"
             )
         ]
@@ -82,14 +82,14 @@ def create_transaction_enquiry_time_fields(search_within=False):
         Div(
             LabelAndFieldAndErrors(
                 'start_date',
-                css_class="w-100 form-control",
+                css_class="w-100 form-control form-control-sm",
             ),
             css_class="col-2"
         ),
         Div(
             LabelAndFieldAndErrors(
                 'end_date',
-                css_class="w-100 form-control",
+                css_class="w-100 form-control form-control-sm",
             ),
             css_class="col-2"
         )
@@ -106,20 +106,21 @@ def create_transaction_enquiry_layout(main_choice, search_within=False):
                 Div(
                     LabelAndFieldAndErrors(
                         main_choice,
+                        css_class="form-control form-control-sm"
                     ),
                     css_class="col"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
                         'reference',
-                        css_class="w-100 form-control",
+                        css_class="w-100 form-control form-control-sm",
                     ),
                     css_class="col-5"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
                         'total',
-                        css_class="w-100 form-control",
+                        css_class="w-100 form-control form-control-sm",
                     ),
                     css_class="col-2"
                 ),
@@ -162,13 +163,13 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                     Div(
                         # this field does not show errrors but there shouldn't ever be any errors for this field
                         PlainField(generic_to_fields_map.get("type", "type"), css_class=(
-                            "input input-disabled text-left border" if read_only else "transaction-type-select")),
+                            "input input-disabled text-left border" if read_only else "form-control form-control-sm transaction-type-select")),
                         css_class="form-group mr-2"
                     ),
                     (
                         Div(
                             LabelAndFieldAndErrors('cash_book', css_class=(
-                                "input input-disabled text-left border" if read_only else "cashbook-select")),
+                                "input input-disabled text-left border" if read_only else "cashbook-select form-control form-control-sm")),
                             css_class="form-group mr-2"
                         )
                         if payment_form
@@ -180,27 +181,27 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                             Div(
                                 Div(
                                     LabelAndFieldAndErrors(generic_to_fields_map.get("contact", "contact"), css_class=(
-                                        "input input-disabled text-left border" if read_only else "contact-select w-100")),
+                                        "input input-disabled text-left border" if read_only else "contact-select form-control form-control-sm")),
                                     css_class="col-2"
                                 ),
                                 Div(
                                     LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                        "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                        "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                     css_class="col-2"
                                 ),
                                 Div(
                                     LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                        "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                        "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                     css_class="col-2 position-relative"
                                 ),
                                 Div(
                                     LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                        "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                        "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                     css_class="col-2 position-relative"
                                 ),
                                 Div(
                                     LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                        "due_date", "due_date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                        "due_date", "due_date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                     css_class="col-2 position-relative" + \
                                     (" d-none" if (payment_form or payment_brought_forward_form) else "")
                                 ),
@@ -211,7 +212,7 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                         Div(
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                    "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                    "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="form-group"
                             ),
                             css_class="col-2"
@@ -248,35 +249,35 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
                     Div(
                         # this field does not show errrors but there shouldn't ever be any errors for this field
                         PlainField(generic_to_fields_map.get("type", "type"), css_class=(
-                            "input input-disabled text-left border" if read_only else "transaction-type-select")),
+                            "input input-disabled text-left border" if read_only else "transaction-type-select form-control form-control-sm")),
                         css_class="form-group mr-2"
                     ),
                     Div(
                         Div(
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                    "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                    "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="col mr-2"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                    "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                    "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="col position-relative"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                    "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                    "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="col position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors("vat_type"),
+                                LabelAndFieldAndErrors("vat_type", css_class="vat_type_selectize form-control form-control-sm"),
                                 css_class="col position-relative"
                             ),
                             css_class="form-row"
                         ),
                         Div(
                             LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                             css_class="form-group"
                         ),
                         css_class="mb-4 d-flex justify-content-between"
@@ -311,41 +312,41 @@ def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False):
                     Div(
                         # this field does not show errrors but there shouldn't ever be any errors for this field
                         PlainField(generic_to_fields_map.get("type", "type"), css_class=(
-                            "input input-disabled text-left border" if read_only else "transaction-type-select")),
+                            "input input-disabled text-left border" if read_only else "transaction-type-select form-control form-control-sm")),
                         css_class="form-group mr-2"
                     ),
                     Div(
                         # this field does not show errrors but there shouldn't ever be any errors for this field
                         PlainField(generic_to_fields_map.get("cash_book", "cash_book"), css_class=(
-                            "input input-disabled text-left border" if read_only else "cashbook-select")),
+                            "input input-disabled text-left border" if read_only else "cashbook-select form-control form-control-sm")),
                         css_class="form-group mr-2"
                     ),
                     Div(
                         Div(
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                    "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                    "ref", "ref"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="col mr-2"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                    "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                    "period", "period"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="col position-relative"
                             ),
                             Div(
                                 LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                    "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                    "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="col position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors("vat_type"),
-                                css_class="col position-relative"
+                                LabelAndFieldAndErrors("vat_type", css_class="vat_type_selectize form-control form-control-sm"),
+                                css_class="col-3 position-relative"
                             ),
                             css_class="form-row"
                         ),
                         Div(
                             LabelAndFieldAndErrors(generic_to_fields_map.get(
-                                "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control"),
+                                "total", "total"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                             css_class="form-group"
                         ),
                         css_class="mb-4 d-flex justify-content-between"

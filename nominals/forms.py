@@ -50,7 +50,7 @@ class NominalForm(forms.ModelForm):
         self.helper.layout = Layout(
             Div(
                 Div(
-                    LabelAndFieldAndErrors('parent', css_class="w-100"),
+                    LabelAndFieldAndErrors('parent', css_class="w-100 form-control"),
                     css_class="mt-2"
                 ),
                 Div(
@@ -83,11 +83,11 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
 
 line_css_classes = {
     "Td": {
-        "description": "can_highlight h-100 w-100 border-0",
-        "goods": "can_highlight h-100 w-100 border-0",
-        "nominal": "can_highlight input-grid-selectize-unfocussed",
-        "vat_code": "can_highlight input-grid-selectize-unfocussed",
-        "vat": "can_highlight w-100 h-100 border-0"
+        "description": "can_highlight h-100 w-100 form-control border-0",
+        "goods": "can_highlight h-100 w-100 form-control border-0",
+        "nominal": "can_highlight input-grid-selectize-unfocussed form-control border-0",
+        "vat_code": "can_highlight input-grid-selectize-unfocussed form-control border-0",
+        "vat": "can_highlight w-100 h-100 form-control border-0"
     }
 }
 
@@ -227,12 +227,12 @@ class TrialBalanceForm(forms.Form):
             Div(
                 Div(
                     LabelAndFieldAndErrors(
-                        "from_period", css_class="form-control"),
+                        "from_period", css_class="form-control form-control-sm"),
                     css_class="col-2"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
-                        "to_period", css_class="form-control"),
+                        "to_period", css_class="form-control form-control-sm"),
                     css_class="col-2"
                 ),
                 css_class="row"
@@ -255,7 +255,7 @@ class TrialBalanceForm(forms.Form):
             if to_period < from_period:
                 raise forms.ValidationError(
                     _(
-                        "Please correct the period range so that the `to_period` is not before the `from_period`"
+                        "Please correct the period range so that 'To Period' is not before 'From Period'"
                     ),
                     code=f"invalid period range"
                 )

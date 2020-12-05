@@ -22,6 +22,24 @@ from accountancy.signals import audit_post_delete
 DELETED_HISTORY_TYPE = "-"
 
 
+class JSONBlankDate(date):
+    """
+    
+    The serializer used by Django when encoding into Json for JsonResponse
+    is `DjangoJSONEncoder`
+    Per - https://docs.djangoproject.com/en/3.1/topics/serialization/
+    And this serializer uses the isoformat method on the date object
+    for getting the value for the json.  Per - https://github.com/django/django/blob/master/django/core/serializers/json.py
+    This subclass just returns an empty string for the json response.  
+    
+    It is used with the creditor and debtor reports.
+    A date object is needed to sort the objects based on this but the database value is ''.
+    """
+
+    def isoformat(self):
+        return ""
+
+
 def get_action(history_type):
     if history_type == "+":
         return "Create"

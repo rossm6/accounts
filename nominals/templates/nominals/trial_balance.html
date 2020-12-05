@@ -6,8 +6,8 @@
     <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/input_dropdown.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowgroup/1.1.2/css/rowGroup.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowgroup/1.1.2/css/rowGroup.bootstrap4.min.css">
     <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
     <style>
 
@@ -46,7 +46,7 @@
             <div>
                 <div class="border data-grid p-4 position-relative">
                     <div class="form_and_errors_wrapper">
-                        {% include 'accountancy/aged_matching_report_form.html' %}
+                        {% include 'accountancy/crispy_form_template.html' %}
                     </div>
                     <div class="mt-4 d-flex justify-content-center">
                         <table class="report" style="min-width: 800px;">
@@ -103,7 +103,7 @@
 
 
 {% block js %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/rowgroup/1.1.2/js/dataTables.rowGroup.min.js"></script>
 <script>
     $(document).ready(function(){

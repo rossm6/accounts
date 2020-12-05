@@ -222,17 +222,17 @@ class CreditorsForm(BaseAjaxFormMixin, forms.Form):
             Div(
                 Div(
                     LabelAndFieldAndErrors(
-                        self.from_contact_field, css_class="w-100"),
+                        self.from_contact_field, css_class="w-100 form-control form-control-sm"),
                     css_class="col"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
-                        self.to_contact_field, css_class="w-100"),
+                        self.to_contact_field, css_class="w-100 form-control form-control-sm"),
                     css_class="col"
                 ),
                 Div(
                     LabelAndFieldAndErrors(
-                        "period", css_class="w-100 form-control"),
+                        "period", css_class="w-100 form-control form-control-sm"),
                     css_class="col"
                 ),
                 css_class="row"

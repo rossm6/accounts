@@ -365,11 +365,11 @@ class SaleAndPurchaseLineFormset(BaseLineFormset):
 
 line_css_classes = {
     "Td": {
-        "description": "can_highlight h-100 w-100 border-0",
-        "goods": "can_highlight h-100 w-100 border-0",
-        "nominal": "can_highlight input-grid-selectize-unfocussed",
-        "vat_code": "can_highlight input-grid-selectize-unfocussed",
-        "vat": "can_highlight w-100 h-100 border-0"
+        "description": "can_highlight h-100 w-100 form-control border-0",
+        "goods": "can_highlight h-100 w-100 form-control border-0",
+        "nominal": "can_highlight input-grid-selectize-unfocussed form-control border-0 ",
+        "vat_code": "can_highlight input-grid-selectize-unfocussed form-control border-0",
+        "vat": "can_highlight w-100 h-100 form-control border-0"
     }
 }
 
@@ -882,7 +882,7 @@ def aged_matching_report_factory(
                     ),
                     Div(
                         LabelAndFieldAndErrors(
-                            "period", css_class="input w-100"),
+                            "period", css_class="w-100"),
                         css_class="col"
                     ),
                     css_class="row"

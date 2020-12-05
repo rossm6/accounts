@@ -1,5 +1,5 @@
 {% load static %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
 <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
@@ -32,7 +32,6 @@
             columnDefs: [
                 { orderDataType: 'dom-text', targets: [ 7 ] }, // this requires a plugin - see above and https://datatables.net/plug-ins/sorting/custom-data-source/dom-text
                 { className: 'd-none', targets: [ 5, 6, 8 ] },
-                { className: "dt-center", "targets": "_all" }
             ],
             scrollY: "200px",
             scrollCollapse: true,
@@ -54,7 +53,6 @@
             management_form: $("div.matching_transactions_formset"), // FIX ME - rename the class of this div
             empty_form_identifier: ".empty-form",
         });
-
 
 
         {% if create or edit %}
@@ -126,7 +124,7 @@
                     {
                         'data': 'due',
                         'render': function (data, type, full, meta) {
-                            return '<span data-order="' + data + '">' + data + '</span>';
+                            return '<span class="text-center" data-order="' + data + '">' + data + '</span>';
                         }
                     },
                     { 
@@ -142,7 +140,7 @@
                     },
                 ],
                 columnDefs: [
-                    {"className": "dt-center", "targets": "_all"},
+                    {"className": "dt-center", targets: [5]}
                 ],
                 dom: 't',
                 scrollY: 500,

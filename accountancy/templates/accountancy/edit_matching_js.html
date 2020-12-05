@@ -39,11 +39,13 @@
             columnDefs: [
                 { orderDataType: 'dom-text', targets: [ 7 ] }, // this requires a plugin - see above and https://datatables.net/plug-ins/sorting/custom-data-source/dom-text
                 { className: 'd-none', targets: [ 5, 6, 8 ] },
-                { className: "dt-center", "targets": "_all" }
             ],
             scrollY: "200px",
             scrollCollapse: true,
-            paging: false
+            paging: false,
+            language: {
+                emptyTable: "This transaction isn't matched to anything yet"
+            }
         });
 
         // this must be set up before the outstanding transactions datatable
@@ -144,7 +146,7 @@
                 },
             ],
             columnDefs: [
-                {"className": "dt-center", "targets": "_all"}
+                {"className": "dt-center", "targets": [5]}
             ],
             dom: 't',
             scrollY: 500,

@@ -7,9 +7,8 @@
     <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/input_dropdown.css' %}">
     <link rel="stylesheet" href="{% static 'accountancy/css/input_trans_grid.css' %}">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.2/css/buttons.dataTables.min.css">
-    <link rel="stylesheet" href"https://cdn.datatables.net/scroller/2.0.2/css/scroller.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.css"/>
+     <link rel="stylesheet" href"https://cdn.datatables.net/scroller/2.0.3/css/scroller.bootstrap4.min.css">
     <link rel="stylesheet" href="{% static 'accountancy/css/matching.css' %}">
     {% block extra_head %}
     {% endblock extra_head %}
@@ -23,7 +22,7 @@
             <div>
                 <div class="border data-grid p-4 position-relative">
                     <div class="form_and_errors_wrapper">
-                        {% include 'accountancy/aged_matching_report_form.html' %}
+                        {% include 'accountancy/crispy_form_template.html' %}
                     </div>
                     <div class="mt-4 d-flex justify-content-center">
                         <table class="report">
@@ -67,7 +66,7 @@
 
 
 {% block js %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
 <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
 <script src="{% static 'js/selectize.min.js' %}"></script>
 <script src="{% static 'js/modal_form.js' %}"></script>

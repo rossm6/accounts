@@ -4,7 +4,6 @@ var existing_matched_transactions_table = $("table.existing_matched_transactions
     columnDefs: [
         { orderDataType: 'dom-text', targets: [ 7 ] }, // this requires a plugin - see above and https://datatables.net/plug-ins/sorting/custom-data-source/dom-text
         { className: 'd-none', targets: [ 5, 6, 8 ] },
-        { className: "dt-center", "targets": "_all" }
     ],
     scrollY: "200px",
     scrollCollapse: true,

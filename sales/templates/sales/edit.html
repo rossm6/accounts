@@ -47,7 +47,7 @@
             {{ match_formset.management_form|crispy }}
         </div>
         <div class="matched_transactions_wrapper">
-            <table class="existing_matched_transactions">
+            <table class="table existing_matched_transactions">
                 {% crispy match_formset %}
             </table>
         </div>
@@ -59,7 +59,7 @@
         <small class="form-text text-muted">These transactions you've matched have not yet been saved</small>
     </div>
     <div>
-        <table class="new_matched_transactions">
+        <table class="table new_matched_transactions">
             <thead>
                 <tr>
                     <th>

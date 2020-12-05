@@ -8,7 +8,7 @@
     width: 100%;
     background-color: white;
     border: 0;
-    text-align: center;
+    padding: 0;
 }
 
 select.input-disabled {
@@ -16,6 +16,7 @@ select.input-disabled {
     -moz-appearance: none;
     text-indent: 1px;
     text-overflow: '';
+    direction: ltl;
 }
 
 table.dataTable {
@@ -23,7 +24,7 @@ table.dataTable {
 }
 
 select.input-disabled {
-    text-align-last: center;
+    text-align-last: left;
 }
 
 .dataTables_scrollBody {

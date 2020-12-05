@@ -26,7 +26,7 @@
             {{ match_formset.management_form|crispy }}
         </div>
         <div class="new_matched_transactions_wrapper">
-            <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="new_matched_transactions">
+            <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="table new_matched_transactions">
                 {% crispy match_formset %}
                 {% crispy match_formset.empty_form match_formset.empty_form.helpers.empty_form %}
             </table>

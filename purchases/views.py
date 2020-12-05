@@ -239,7 +239,6 @@ class AgeCreditorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
     model = PurchaseHeader
     match_model = PurchaseMatching
     filter_form_class = CreditorsForm
-    form_template = "accountancy/aged_matching_report_form.html"
     template_name = "accountancy/aged_matching_report.html"
     contact_range_field_names = ['from_supplier', 'to_supplier']
     contact_field_name = "supplier"
