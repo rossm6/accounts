@@ -19,6 +19,7 @@ from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from mptt.utils import get_cached_trees
+from users.mixins import LockDuringEditMixin, LockTransactionDuringEditMixin
 from vat.forms import VatForm
 from vat.models import VatTransaction
 
@@ -54,7 +55,7 @@ class CreateTransaction(LoginRequiredMixin, BaseCreateTransaction):
     default_type = "nj"
 
 
-class EditTransaction(LoginRequiredMixin, BaseEditTransaction):
+class EditTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, BaseEditTransaction):
     header = {
         "model": NominalHeader,
         "form": NominalHeaderForm,
@@ -82,7 +83,7 @@ class ViewTransaction(LoginRequiredMixin, BaseViewTransaction):
     model = NominalHeader
     line_model = NominalLine
     module = 'NL'
-    void_form_action = reverse_lazy("nominals:void")
+    void_form_action = "nominals:void"
     void_form = BaseVoidTransactionForm
     template_name = "nominals/view.html"
     edit_view_name = "nominals:edit"
@@ -146,7 +147,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         )
 
 
-class VoidTransaction(LoginRequiredMixin, BaseVoidTransaction):
+class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, BaseVoidTransaction):
     header_model = NominalHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
@@ -358,7 +359,7 @@ class NominalDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, Detail
     template_name = "nominals/nominal_detail.html"
 
 
-class NominalEdit(LoginRequiredMixin, UpdateView):
+class NominalEdit(LoginRequiredMixin, LockDuringEditMixin, UpdateView):
     model = Nominal
     form_class = NominalForm
     template_name = "nominals/nominal_create_and_edit.html"

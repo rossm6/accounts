@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Group, User
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sessions.models import Session
 from django.db import models
 from simple_history import register
 
@@ -9,6 +10,13 @@ register(User, app=__package__)
 """
 Unlike all the other models, bulk_delete will not work here.  This shouldn't be a problem.
 """
+
+
+class UserSession(models.Model):
+    # See - http://gavinballard.com/associating-django-users-sessions/
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+
 
 class Lock(models.Model):
     """
@@ -20,7 +28,5 @@ class Lock(models.Model):
     content_type = models.ForeignKey(
         ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
-    # user = models.ForeignKey(User, on_delete=CASCADE)
-    # will need to link to a new model which links the session created during login to the user
-    # see - http://gavinballard.com/associating-django-users-sessions/
+    user_session = models.ForeignKey(UserSession, on_delete=models.CASCADE)
     edited_at = models.DateTimeField(auto_now_add=True)

@@ -3,6 +3,7 @@ from accountancy.models import MultiLedgerTransactions
 from django.apps import apps
 from django.db import models
 from simple_history import register
+from django.shortcuts import reverse
 
 
 class Vat(AuditMixin, models.Model):
@@ -18,7 +19,9 @@ class Vat(AuditMixin, models.Model):
     def __str__(self):
         return f"{self.code} - {self.name} - {self.rate}%"
 
-
+    def get_absolute_url(self):
+        return reverse("vat:vat_detail", kwargs={"pk": self.pk})
+    
 class ModuleTypes:
     def __iter__(self):
         model = apps.get_model(app_label="nominals",

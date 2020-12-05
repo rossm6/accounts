@@ -1,8 +1,9 @@
-from accountancy.mixins import (CashBookPaymentTransactionMixin,
-                                VatTransactionMixin, AuditMixin)
+from accountancy.mixins import (AuditMixin, CashBookPaymentTransactionMixin,
+                                VatTransactionMixin)
 from accountancy.models import (MultiLedgerTransactions, Transaction,
                                 TransactionHeader, TransactionLine)
 from django.db import models
+from django.shortcuts import reverse
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
 from simple_history import register
@@ -17,6 +18,9 @@ class CashBook(AuditMixin, models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse("cashbook:cashbook_detail", kwargs={"pk": self.pk})
+    
 
 class CashBookTransaction(Transaction):
     module = "CB"
@@ -132,6 +136,9 @@ class CashBookHeader(ModuleTransactionBase, TransactionHeader):
             return Payment(header=self)
         if self.type == "cr":
             return Refund(header=self)
+
+    def get_absolute_url(self):
+        return reverse("cashbook:view", kwargs={"pk": self.pk})
 
 
 class CashBookLine(ModuleTransactionBase, TransactionLine):

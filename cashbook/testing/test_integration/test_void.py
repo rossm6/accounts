@@ -284,7 +284,7 @@ class VoidTransaction(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("cashbook:void"), data)
+        response = self.client.post(reverse("cashbook:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)

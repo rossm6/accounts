@@ -9,6 +9,7 @@ from accountancy.models import (MatchedHeaders, Transaction, TransactionHeader,
 from contacts.models import Contact
 from django.conf import settings
 from django.db import models
+from django.shortcuts import reverse
 from simple_history import register
 from vat.models import Vat
 
@@ -211,6 +212,9 @@ class SaleHeader(ModuleTransactionBase, TransactionHeader):
             return Receipt(header=self)
         if self.type == "sr":
             return Refund(header=self)
+
+    def get_absolute_url(self):
+        return reverse("sales:view", kwargs={"pk": self.pk})
 
 
 class SaleLine(ModuleTransactionBase, TransactionLine):

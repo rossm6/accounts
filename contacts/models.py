@@ -5,6 +5,7 @@ from accountancy.helpers import \
 from accountancy.mixins import AuditMixin
 from accountancy.signals import audit_post_delete
 from django.db import models
+from django.shortcuts import reverse
 from simple_history import register
 
 
@@ -17,3 +18,6 @@ class Contact(AuditMixin, models.Model):
 
     def __str__(self):
         return self.code
+
+    def get_absolute_url(self):
+        return reverse("contacts:detail", kwargs={"pk": self.pk})

@@ -28,6 +28,7 @@ from django.views.generic import ListView
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from querystring_parser import parser
+from users.mixins import LockTransactionDuringEditMixin
 from vat.forms import VatForm
 from vat.models import Vat, VatTransaction
 
@@ -85,7 +86,11 @@ class CreateTransaction(LoginRequiredMixin, SupplierMixin, CreatePurchaseOrSales
     default_type = "pi"
 
 
-class EditTransaction(LoginRequiredMixin, SupplierMixin, EditPurchaseOrSalesTransaction):
+class EditTransaction(
+        LoginRequiredMixin,
+        LockTransactionDuringEditMixin,
+        SupplierMixin,
+        EditPurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
@@ -122,13 +127,13 @@ class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     match_model = PurchaseMatching
     nominal_transaction_model = NominalTransaction
     module = 'PL'
-    void_form_action = reverse_lazy("purchases:void")
+    void_form_action = "purchases:void"
     void_form = BaseVoidTransactionForm
     template_name = "purchases/view.html"
     edit_view_name = "purchases:edit"
 
 
-class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
     nominal_transaction_model = NominalTransaction

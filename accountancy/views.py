@@ -1145,12 +1145,12 @@ class BaseViewTransaction(
     def get_void_form(self, header=None):
         return self.void_form(
             self.model,
-            self.get_void_form_action(),
+            self.get_void_form_action(header=header),
             **self.get_void_form_kwargs(header=header)
         )
 
-    def get_void_form_action(self):
-        return self.void_form_action
+    def get_void_form_action(self, header):
+        return reverse(self.void_form_action, kwargs={"pk": header.pk})
 
     def get_edit_view_name(self):
         return self.edit_view_name
@@ -1217,7 +1217,7 @@ class SaleAndPurchaseViewTransaction(
     pass
 
 
-class BaseVoidTransaction(View):
+class BaseVoidTransaction(IndividualTransactionMixin, View):
     http_method_names = ['post']
 
     def get_success_url(self):
@@ -1292,6 +1292,9 @@ class BaseVoidTransaction(View):
     def get_matching_model(self):
         if hasattr(self, "matching_model"):
             return self.matching_model
+
+    def get_header_model(self):
+        return self.header_model
 
     def get_form_prefix(self):
         return self.form_prefix

@@ -10,6 +10,7 @@ from accountancy.models import (MultiLedgerTransactions, Transaction,
 from cashbook.models import CashBookHeader
 from django.conf import settings
 from django.db import models
+from django.shortcuts import reverse
 from mptt.models import MPTTModel, TreeForeignKey
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -25,6 +26,8 @@ class Nominal(AuditMixin, MPTTModel):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse("nominals:nominal_detail", kwargs={"pk": self.pk})
 
 class NominalTransaction(Transaction):
     module = "NL"
@@ -86,6 +89,8 @@ class NominalHeader(ModuleTransactionBase, TransactionHeader):
         if self.type == "nj":
             return Journal(header=self)
 
+    def get_absolute_url(self):
+        return reverse("nominals:view", kwargs={"pk": self.pk})
 
 class NominalLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)

@@ -4,12 +4,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import (LoginView, PasswordResetConfirmView,
                                        PasswordResetView)
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import render
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, UpdateView
+from django.views.generic import CreateView, DeleteView, UpdateView
 
 from users.forms import (SignInForm, SignUpForm, UserPasswordResetForm,
                          UserProfileForm, UserSetPasswordForm)
+from users.mixins import LockDuringEditMixin
+from users.models import Lock
 
 
 class SignUp(CreateView):
@@ -28,7 +31,7 @@ class SignIn(LoginView):
     form_class = SignInForm
 
 
-class Profile(LoginRequiredMixin, UpdateView):
+class Profile(LoginRequiredMixin, LockDuringEditMixin, UpdateView):
     model = User
     form_class = UserProfileForm
     template_name = "registration/profile.html"
@@ -49,3 +52,10 @@ class UserPasswordResetView(PasswordResetView):
 
 class UserPasswordResetConfirmView(PasswordResetConfirmView):
     form_class = UserSetPasswordForm
+
+
+def unlock(request, pk):
+    if request.method == "POST":
+        lock = Lock.objects.filter(pk=pk).delete()
+        return HttpResponse('')
+    return HttpResponseNotAllowed(["POST"])

@@ -235,7 +235,7 @@ class VoidTransactionsTest(TestCase):
         data = {}
         data["void-id"] = header.pk
         self.client.force_login(self.user)
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -494,7 +494,7 @@ class VoidTransactionsTest(TestCase):
         data = {}
         data["void-id"] = header.pk
         self.client.force_login(self.user)
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -788,7 +788,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1109,7 +1109,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1309,7 +1309,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1486,7 +1486,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1699,7 +1699,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1932,7 +1932,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -2102,7 +2102,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -2258,7 +2258,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -2452,7 +2452,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = payment.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -2663,7 +2663,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = payment.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -2777,7 +2777,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -2903,7 +2903,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = payment.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": payment.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -3047,7 +3047,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = payment.pk
-        response = self.client.post(reverse("purchases:void"), data)
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": payment.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)

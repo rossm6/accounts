@@ -1,0 +1,13 @@
+<!-- Modal -->
+<div class="modal fade" id="edited_by_another_modal" tabindex="-1" aria-labelledby="edited_by_another_modal_label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+      <div class="modal-body">
+        You cannot edit this because <b>{{ locked_by_another.user }}</b> is already editing it.
+      </div>
+      <div class="modal-footer">
+        <a href="{% firstof object.get_absolute_url main_header.get_absolute_url %}" role="button" class="btn btn-primary text-capitalize">read only</a>
+      </div>
+    </div>
+  </div>
+</div>

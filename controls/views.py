@@ -14,6 +14,7 @@ from django.views.generic import (CreateView, DetailView, ListView,
                                   TemplateView, UpdateView)
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
+from users.mixins import LockDuringEditMixin
 
 from controls.forms import (UI_PERMISSIONS, FinancialYearForm,
                             FinancialYearInlineFormSetCreate, GroupForm,
@@ -68,6 +69,7 @@ class GroupDetail(
 
 class GroupUpdate(
         LoginRequiredMixin,
+        LockDuringEditMixin,
         SingleObjectAuditDetailViewMixin,
         IndividualMixin,
         UpdateView):
@@ -126,6 +128,7 @@ class UserDetail(
 
 class UserEdit(
         LoginRequiredMixin,
+        LockDuringEditMixin,
         SingleObjectAuditDetailViewMixin,
         IndividualMixin,
         UpdateView):
@@ -242,5 +245,4 @@ class FinancialYearDetail(DetailView):
         context_data = super().get_context_data(**kwargs)
         periods = self.object.periods.all()
         context_data["periods"] = periods
-        print([p.__dict__ for p in periods])
         return context_data

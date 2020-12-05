@@ -10,6 +10,7 @@ from contacts.models import Contact
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django.shortcuts import reverse
 from simple_history import register
 from vat.models import Vat
 
@@ -203,6 +204,8 @@ class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
         if self.type == "pr":
             return Refund(header=self)
 
+    def get_absolute_url(self):
+        return reverse("purchases:view", kwargs={"pk": self.pk})
 
 class PurchaseLine(ModuleTransactionBase, TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)

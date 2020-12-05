@@ -83,7 +83,7 @@ INSTALLED_APPS = [
     'purchases.apps.PurchasesConfig',
     'sales.apps.SalesConfig',
     'controls.apps.ControlsConfig',
-    'users',
+    'users.apps.UsersConfig',
     'vat.apps.VatConfig'
 ]
 

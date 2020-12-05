@@ -9,6 +9,7 @@ from django.http import JsonResponse
 from django.template.context_processors import csrf
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from users.mixins import LockDuringEditMixin
 
 from vat.forms import VatForm, VatTransactionSearchForm
 from vat.models import Vat, VatTransaction
@@ -99,7 +100,7 @@ class VatDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView
     template_name = "vat/vat_detail.html"
 
 
-class VatUpdate(LoginRequiredMixin, UpdateView):
+class VatUpdate(LoginRequiredMixin, LockDuringEditMixin, UpdateView):
     model = Vat
     form_class = VatForm
     template_name = "vat/vat_create_and_edit.html"

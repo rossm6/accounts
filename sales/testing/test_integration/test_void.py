@@ -228,7 +228,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -473,7 +473,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -764,7 +764,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1082,7 +1082,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1288,7 +1288,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1463,7 +1463,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1671,7 +1671,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)
@@ -1898,7 +1898,7 @@ class VoidTransactionsTest(TestCase):
 
         data = {}
         data["void-id"] = header.pk
-        response = self.client.post(reverse("sales:void"), data)
+        response = self.client.post(reverse("sales:void", kwargs={"pk": header.pk}), data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
         json_content = loads(content)

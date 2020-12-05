@@ -4607,7 +4607,7 @@ class VoidJournal(TestCase):
 
         data = {}
         data["void-id"] = header.id
-        url = reverse("nominals:void")
+        url = reverse("nominals:void", kwargs={"pk": header.pk})
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")
@@ -5001,7 +5001,7 @@ class VoidJournal(TestCase):
 
         data = {}
         data["void-id"] = header.id
-        url = reverse("nominals:void")
+        url = reverse("nominals:void", kwargs={"pk": header.pk})
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf")

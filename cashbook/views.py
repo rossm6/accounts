@@ -14,6 +14,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
+from users.mixins import LockDuringEditMixin, LockTransactionDuringEditMixin
 from vat.forms import VatForm
 from vat.models import VatTransaction
 
@@ -50,7 +51,10 @@ class CreateTransaction(LoginRequiredMixin, CreateCashBookTransaction):
     default_type = "cp"
 
 
-class EditTransaction(LoginRequiredMixin, EditCashBookTransaction):
+class EditTransaction(
+        LoginRequiredMixin,
+        LockTransactionDuringEditMixin,
+        EditCashBookTransaction):
     header = {
         "model": CashBookHeader,
         "form": CashBookHeaderForm,
@@ -80,13 +84,13 @@ class ViewTransaction(LoginRequiredMixin, NominalTransactionsMixin, BaseViewTran
     line_model = CashBookLine
     nominal_transaction_model = NominalTransaction
     module = 'CB'
-    void_form_action = reverse_lazy("cashbook:void")
+    void_form_action = "cashbook:void"
     void_form = BaseVoidTransactionForm
     template_name = "cashbook/view.html"
     edit_view_name = "cashbook:edit"
 
 
-class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = CashBookHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
@@ -139,7 +143,6 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
             queryset = queryset.filter(cashbook=cashbook)
         return queryset
 
-    # this should belong to the parent class
     def get_queryset(self, **kwargs):
         return (
             CashBookTransaction.objects
@@ -209,7 +212,11 @@ class CashBookDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, Detai
     template_name = "cashbook/cashbook_detail.html"
 
 
-class CashBookEdit(LoginRequiredMixin, CreateAndEditMixin, UpdateView):
+class CashBookEdit(
+        LoginRequiredMixin,
+        LockDuringEditMixin,
+        CreateAndEditMixin,
+        UpdateView):
     model = CashBook
     form_class = CashBookForm
     template_name = "cashbook/cashbook_create_and_edit.html"

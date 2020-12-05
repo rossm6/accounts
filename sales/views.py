@@ -15,6 +15,7 @@ from django.utils import timezone
 from nominals.forms import NominalForm
 from nominals.models import Nominal, NominalTransaction
 from purchases.views import AgeCreditorsReport
+from users.mixins import LockTransactionDuringEditMixin
 from vat.forms import VatForm
 from vat.models import VatTransaction
 
@@ -72,7 +73,11 @@ class CreateTransaction(LoginRequiredMixin, CustomerMixin, CreatePurchaseOrSales
     vat_transaction_model = VatTransaction
 
 
-class EditTransaction(LoginRequiredMixin, CustomerMixin, EditPurchaseOrSalesTransaction):
+class EditTransaction(
+        LoginRequiredMixin,
+        LockTransactionDuringEditMixin,
+        CustomerMixin,
+        EditPurchaseOrSalesTransaction):
     header = {
         "model": SaleHeader,
         "form": SaleHeaderForm,
@@ -109,13 +114,13 @@ class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     match_model = SaleMatching
     nominal_transaction_model = NominalTransaction
     module = 'SL'
-    void_form_action = reverse_lazy("sales:void")
+    void_form_action = "sales:void"
     void_form = BaseVoidTransactionForm
     template_name = "sales/view.html"
     edit_view_name = "sales:edit"
 
 
-class VoidTransaction(LoginRequiredMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
     header_model = SaleHeader
     matching_model = SaleMatching
     nominal_transaction_model = NominalTransaction
@@ -144,6 +149,7 @@ class LoadCustomers(LoginRequiredMixin, LoadContacts):
         q = super().get_queryset()
         return q.filter(customer=True)
 
+
 class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = SaleHeader
     fields = [
@@ -162,7 +168,8 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     column_transformers = {
         "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "date": lambda d: d.strftime('%d %b %Y'),
-        "due_date": lambda d: d.strftime('%d %b %Y') if d else "" # payment trans do not have due dates
+        # payment trans do not have due dates
+        "due_date": lambda d: d.strftime('%d %b %Y') if d else ""
     }
     filter_form_class = SaleTransactionSearchForm
     contact_name = "customer"

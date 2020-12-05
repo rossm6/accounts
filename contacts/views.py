@@ -17,6 +17,7 @@ from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from purchases.models import Supplier
 from querystring_parser import parser
 from sales.models import Customer
+from users.mixins import LockDuringEditMixin
 
 from contacts.forms import ContactForm, ModalContactForm
 from contacts.models import Contact
@@ -134,13 +135,20 @@ class CreateContact(LoginRequiredMixin, CreateAndUpdateMixin, CreateView):
         return super().render_to_response(context, **response_kwargs)
 
 
-class ContactDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
+class ContactDetail(
+        LoginRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
+        DetailView):
     model = Contact
     template_name = "contacts/contact_detail.html"
     context_object_name = "contact"
 
 
-class ContactUpdate(LoginRequiredMixin, CreateAndUpdateMixin, UpdateView):
+class ContactUpdate(
+        LoginRequiredMixin,
+        LockDuringEditMixin,
+        CreateAndUpdateMixin,
+        UpdateView):
     model = Contact
     form_class = ContactForm
     template_name = "contacts/contact_create_and_edit.html"

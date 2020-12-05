@@ -87,12 +87,19 @@
                         return window.location.href = data.href;
                     }
                     else{
+                        console.log(data);
                         show_error(data.error_message);
                     }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
-                    show_error();
+                    console.log(jqXHR.responseJSON);
+                    if(jqXHR.responseJSON && jqXHR.responseJSON.error_message){
+                        show_error(jqXHR.responseJSON.error_message);
+                    }
+                    else{
+                        show_error();
+                    }
                 }
             });
         });
