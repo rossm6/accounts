@@ -1,0 +1,87 @@
+{% load crispy_forms_tags %}
+{% load crispy_forms_utils %}
+{% load crispy_forms_field %}
+
+<div class="my-4" data-audit-aspect-section="match">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">Existing Matching</h2>
+        <small class="form-text text-muted">These transactions are already matched</small>
+    </div>
+    <div>
+        <div class="d-none matching_transactions_formset">
+            {{ formset.management_form|crispy }}
+        </div>
+        <div class="matched_transactions_wrapper">
+            <table class="table existing_matched_transactions">
+                {% specialspaceless %}
+                    <thead>
+                        {% crispy formset.empty_form formset.empty_form.helpers.thead %}
+                    </thead>
+                    <tbody class="table-bordered">
+                        {% for form in formset %}
+                            {% if form.instance.pk %}
+                                {% crispy form form.helpers.tbody %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if formset.include_empty_form %}
+                            {% crispy formset.empty_form formset.empty_form.helpers.empty_form %}
+                        {% endif %}
+                    </tbody>
+                {% endspecialspaceless %}
+            </table>
+        </div>
+    </div>
+</div>
+<div class="my-4">
+    <div class="mb-2">
+        <h2 class="h6 font-weight-bold">New Matching Transactions</h2>
+        <small class="form-text text-muted">These transactions you've matched have not yet been saved</small>
+    </div>
+    <div>
+        <table class="table new_matched_transactions">
+            <thead>
+                <tr>
+                    <th>
+                        Type
+                    </th>
+                    <th>
+                        Ref
+                    </th>
+                    <th>
+                        Total
+                    </th>
+                    <th>
+                        Paid
+                    </th>
+                    <th>
+                        Due
+                    </th>
+                    <th>
+                        Matched by
+                    </th>
+                    <th>
+                        Matched to
+                    </th>
+                    <th>
+                        Value
+                    </th>
+                    <th>
+                        Id
+                    </th>
+                </tr>
+            </thead>
+            {% specialspaceless %}
+            <tbody>
+                {% for form in formset %}
+                    {% if not form.instance.pk %}
+                        {% crispy form form.helpers.tbody %}
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+            <tbody>
+                {% crispy match_formset.empty_form match_formset.empty_form.helpers.empty_form %}
+            </tbody>
+            {% endspecialspaceless %}
+        </table>     
+    </div>
+</div>

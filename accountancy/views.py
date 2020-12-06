@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import date
 from itertools import chain, groupby
 
+from crispy_forms.helper import FormHelper
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
 from django.contrib import messages
@@ -734,6 +735,7 @@ class CreateCashBookTransaction(CreateCashBookEntriesMixin, BaseCreateTransactio
 
 
 class BaseMatchingMixin:
+    matching_formset_template = "accounts/whole_uni_formset.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -769,7 +771,10 @@ class BaseMatchingMixin:
                 return self.match_formset
             else:
                 formset_class = self.match.get('formset')
-                return formset_class(**self.get_match_formset_kwargs(header))
+                f = formset_class(**self.get_match_formset_kwargs(header))
+                f.helper = FormHelper()
+                f.helper.template = self.matching_formset_template
+                return f
 
     def matching_is_invalid(self):
         self.match_formset = self.get_match_formset()
@@ -1016,6 +1021,7 @@ class BaseEditTransaction(RESTBaseEditTransactionMixin,
 
 
 class EditMatchingMixin(CreateMatchingMixin):
+    matching_formset_template = "accounts/edit_matching_formset.html"
 
     def get_match_formset_queryset(self):
         q = (

@@ -135,7 +135,6 @@ enter_lines = forms.modelformset_factory(
 
 enter_lines.include_empty_form = True
 
-
 class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
     type = forms.ChoiceField(choices=PurchaseHeader.types, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
@@ -154,7 +153,6 @@ match = forms.modelformset_factory(
 )
 
 match.include_empty_form = False
-
 
 class CreditorsForm(BaseAjaxFormMixin, forms.Form):
     from_contact_field = "from_supplier"

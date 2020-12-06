@@ -1,5 +1,5 @@
 {% load static %}
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/scroller/2.0.2/js/dataTables.scroller.min.js"></script>
 <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/custom-data-source/dom-text.js"></script>
@@ -12,8 +12,6 @@
 
         var contact_field = $("select[data-contact-field]").eq(0); // should only be one anyway
         // in the future other fields may determine the matching queryset also
-
-        console.log(contact_field);
 
         // Ordering was a bit tricky.
         // There are two problems -
@@ -32,7 +30,6 @@
 
         {% include 'accountancy/existing_matched_transactions.js' %}
 
-
         var new_matched_transacions_table = $("table.new_matched_transactions").DataTable({
             dom: "t",
             bPaginate: false,
@@ -44,7 +41,7 @@
             scrollCollapse: true,
             paging: false,
             language: {
-                emptyTable: "This transaction isn't matched to anything yet"
+                emptyTable: "Nothing new yet matched"
             }
         });
 

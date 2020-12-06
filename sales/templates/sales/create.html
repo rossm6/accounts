@@ -28,7 +28,14 @@
         <div class="new_matched_transactions_wrapper">
             <table{% if form_id %} id="{{ form_id }}_table"{% endif %} class="table new_matched_transactions">
                 {% crispy match_formset %}
-                {% crispy match_formset.empty_form match_formset.empty_form.helpers.empty_form %}
+                <tbody>
+                    {% crispy match_formset.empty_form match_formset.empty_form.helpers.empty_form %}
+                </tbody>
+                {% comment %} 
+                The second line which creates the empty_form after the formset is a just a row.
+                The browser looks to then create a surrounding tbody.  To be clearer though I'll define this myself.
+                Multiple tbody elements inside a single table is valid HTML.
+                {% endcomment %}
             </table>
         </div>
     </div>
