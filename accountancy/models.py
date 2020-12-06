@@ -365,6 +365,81 @@ class TransactionLine(AuditMixin, TransactionBase, models.Model):
 class MatchedHeaders(AuditMixin, models.Model):
     """
     Subclass must add the transaction_1 and transaction_2 foreign keys
+
+    This is the most confusing part of the software so here goes ...
+
+    This model represents the link between two transactions (e.g PL header or SL header)
+
+    E.g.
+
+    A payment of 120.00 is matched to an invoice for 120.00
+
+    If the invoice was on the system already and the payment was being created / edited when the match 
+    was created then -
+
+    matched_by is the payment
+    matched_to is the invoice
+
+    matched_by is ALWAYS the transaction being created or edited
+
+    value is the amount that is paid by matched_to.  It is the amount that was deducted from the outstanding
+    value of the matched_to header, and the amount added to the paid value of the matched_to header, when the match
+    was created.
+
+    So for the same example
+
+    matched_by = payment
+    matched_to = invoice
+    value = 120
+
+    Thus, invoice outstanding and paid now both equal 0
+
+    This is example is the most basic.
+
+    There are other kinds of matching though which look a bit odd.
+
+    E.g.
+
+    A refund (1r) for 120.01 is created
+    A payment (1p) for 120.00 is created
+    
+    Then, a refund (2r) for -0.01 is created and the two above trans are matched.
+
+    Two match records are therefore created.
+
+    1.
+        matched_by = refund (2r)
+        matched_to = payment (1p)
+        value = -120 *
+
+        * this is -120 because a payment is saved to the db as -120 total.  Only in the UI
+          does it show as 120.00
+
+    2. 
+
+        matched_by = refund (2r)
+        matched_to = refund (1r)
+        value = 120
+
+
+    This is sound.  Indeed all of the three transactions are now fully matched / paid i.e. none are
+    outstanding.
+
+    If we looked at the refund (2r) through the browser we'd see the following -
+
+        match 1 -> payment of 120.00 -> match value -> +120.00
+        match 2 > refund of 120.01 -> match value -> +120.01
+
+    This is clear enough.
+
+    Admittedly though from certain views it may seem a bit confusing.
+
+    If we looekd at the payment (1p) through the browser we'd see -
+
+        match 1 -> refund (2r) of -0.01 -> match value -> -120.00
+
+    It has to be this way given the rules defined at the start but it may look a bit odd.
+
     """
     # transaction_1 = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="first_transaction")
     # transaction_2 = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="second_transaction")
@@ -406,13 +481,6 @@ class MatchedHeaders(AuditMixin, models.Model):
 
     @staticmethod
     def ui_match_value(transaction_header, match_value):
-        """
-        If the transaction_header is the matched_by in the match record,
-        then match_value is the value of the value field in the same
-        match record.  Else if matched_to is the transaction header
-        in the same match record, then the match_value is the value of
-        the value field in the match record multiplied by -1.
-        """
         if transaction_header.is_negative_type():
             value = match_value * -1
         else:

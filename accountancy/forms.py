@@ -361,7 +361,7 @@ class SaleAndPurchaseLineFormset(BaseLineFormset):
         self.header.goods = goods
         self.header.vat = vat
         self.header.total = total
-
+        self.header.due = self.header.total - self.header.paid
 
 line_css_classes = {
     "Td": {
@@ -557,87 +557,33 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         # header.total would be -120.00
         value = self.Meta.model.ui_match_value(header, ui_value)
         if header:
+            value_change = (value - initial_value)
+            due_would_be = header.due - value_change
+            f = -1 if header.is_negative_type() else 1 
             if header.total > 0:
-                if value < 0:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
-                            ),
-                            code="invalid-match"
-                        )
-                    )
-                elif value > header.due + initial_value:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
-                            ),
-                            code="invalid-match"
-                        )
+                if  due_would_be > header.total or due_would_be < 0:
+                    raise forms.ValidationError(
+                        _(
+                            f"Invalid value.  Doing this would mean the due is {f * due_would_be} when the total is {header.ui_total}"
+                        ),
+                        code="invalid match"
                     )
             elif header.total < 0:
-                if value > 0:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
-                            ),
-                            code="invalid-match"
-                        )
+                if due_would_be < header.total or due_would_be > 0:
+                    raise forms.ValidationError(
+                        _(
+                            f"Invalid value.  Doing this would mean the due is {f * due_would_be} when the total is {header.ui_total}"
+                        ),
+                        code="invalid match"
                     )
-                elif value < header.due + initial_value:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"Value must be between 0 and { header.ui_due + ui_initial_value}"
-                            ),
-                            code="invalid-match"
-                        )
-                    )
-            would_be_due = header.due + (initial_value - value)
-            if header.total > 0:
-                if would_be_due < 0:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"This isn't possible because of the matching transaction"
-                            )
-                        )
-                    )
-                elif would_be_due > header.total:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"This isn't possible because of the matching transaction"
-                            )
-                        )
-                    )
-            elif header.total < 0:
-                if would_be_due > 0:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"This isn't possible because of the matching transaction"
-                            )
-                        )
-                    )
-                if would_be_due < header.total:
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                f"This isn't possible because of the matching transaction"
-                            )
-                        )
-                    )
+            else:
+                if due_would_be != 0:
+                    raise forms.ValidationError(
+                        _(
+                            f"Invalid value.  Doing this would mean the due is {f * due_would_be} when the total is {header.ui_total}"
+                        ),
+                        code="invalid match"
+                    )                    
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -688,10 +634,37 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
         super().clean()
         if(any(self.errors) or not hasattr(self, 'tran_being_created_or_edited')):
             return
-        # undo the effects of matching to date
-        self.tran_being_created_or_edited.due = self.tran_being_created_or_edited.total
-        self.tran_being_created_or_edited.paid = 0
-        total_matching_value = 0 # a bit confusing.  see note below
+        """
+        It is critical that we consider only the change.  Why?
+
+        Suppose the following matches -
+
+            matched_by = refund 2
+            matched_to = payment 1
+            value = -120
+
+            matched_by = refund 2
+            matched_to = refund 1
+            value = 120.01
+
+            Where refund 2 is -0.01.  All are fully matched.
+
+        If we reset the due and only consider those matches submitted when refund 1 is being edited this is possible -
+
+            matched_by = refund 1
+            matched_to = invoice 1
+            value = 120
+
+            Because -
+
+                -120.00 + 120.01 = 0.01
+
+                So 0.01 is paid for refund 1.  This is totally wrong!
+
+        So we must look at the change.
+        """
+        change_in_match_value = 0
+        total_value_as_matched_to = 0
         self.headers = []
         for form in self.forms:
             initial_value = form.initial_value
@@ -700,31 +673,28 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
                 header_to_update = form.instance.matched_to
                 value = MatchedHeaders.ui_match_value(
                     header_to_update, ui_value)
+                # value is value of matched_to
                 diff = value - initial_value
                 header_to_update.due -= diff
                 header_to_update.paid += diff
                 form.instance.value = value
-                total_matching_value += value # a bit confusing
+                change_in_match_value += (-1 * diff)
             else:
                 header_to_update = form.instance.matched_by
                 value = MatchedHeaders.ui_match_value(
                     header_to_update, ui_value)
+                # value is value of matched_by
                 diff = value - initial_value
                 header_to_update.due -= diff
                 header_to_update.paid += diff
-                value = value * -1
-                form.instance.value = value
-                total_matching_value += (-1 * value) # a bit confusing
+                form.instance.value = value * -1 # because value entered in UI is for the matched_by
+                change_in_match_value += (-1 * diff)
             self.headers.append(header_to_update)
-        """
-        total_match_value is the sum of values for all matches where the value is the value of the header in the match
-        which is not the tran_being_created_or_edited.
-        """
         if self.tran_being_created_or_edited.total == 0:
-            if total_matching_value != 0:
+            if change_in_match_value != 0:
                 raise forms.ValidationError(
                     _(
-                        f"You are trying to match a total value of { total_matching_value }.  "
+                        f"You are trying to match a total value of { change_in_match_value }.  "
                         "Because you are entering a zero value transaction the total amount to match must be zero also."
                     ),
                     code="invalid-match"
@@ -739,10 +709,9 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
                 )
         elif self.tran_being_created_or_edited.total > 0:
             if self.forms:
-                self.tran_being_created_or_edited.due += total_matching_value
+                self.tran_being_created_or_edited.due -= change_in_match_value
                 if self.tran_being_created_or_edited.due >= 0 and self.tran_being_created_or_edited.due <= self.tran_being_created_or_edited.total:
-                    self.tran_being_created_or_edited.paid += (-1 *
-                                                               total_matching_value)
+                    self.tran_being_created_or_edited.paid += change_in_match_value
                 else:
                     raise forms.ValidationError(
                         _(
@@ -752,16 +721,20 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
                     )
         elif self.tran_being_created_or_edited.total < 0:
             if self.forms:
-                self.tran_being_created_or_edited.due += total_matching_value
+                self.tran_being_created_or_edited.due -= change_in_match_value
                 if self.tran_being_created_or_edited.due <= 0 and self.tran_being_created_or_edited.due >= self.tran_being_created_or_edited.total:
-                    self.tran_being_created_or_edited.paid += (-1 *
-                                                               total_matching_value)
+                    self.tran_being_created_or_edited.paid += change_in_match_value
                 else:
                     raise forms.ValidationError(
                         _(
                             f"Please ensure the total of the transactions you are matching is between 0 and { self.tran_being_created_or_edited.total }"
                         )
                     )
+
+        
+
+        
+
 
 
 class BaseVoidTransactionForm(forms.Form):

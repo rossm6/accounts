@@ -834,6 +834,7 @@ class CreateMatchingMixin(BaseMatchingMixin):
                 match = form.save(commit=False)
                 match.matched_by_type = match.matched_by.type
                 match.matched_to_type = match.matched_to.type
+                match.period = self.header_obj.period
                 if match.value != 0:
                     matches.append(match)
         if matches:
@@ -1041,24 +1042,32 @@ class EditMatchingMixin(CreateMatchingMixin):
 
     def matching_is_valid(self):
         self.match_formset.save(commit=False)
-        new_matches = [
-            match for match in self.match_formset.new_objects if match.value]
-        changed_objects = [obj for obj, *
-                           other in self.match_formset.changed_objects]
-        for match in new_matches + changed_objects:
+        to_create = [ 
+            m.instance 
+            for m in self.match_formset 
+            if not m.instance.pk and m.instance.value
+        ]
+        to_update = [ 
+            m.instance
+            for m in self.match_formset 
+            if m.instance.pk and m.instance.value 
+        ]
+        to_delete = [ 
+            m.instance
+            for m in self.match_formset 
+            if m.instance.pk and not m.instance.value 
+        ]
+        for match in to_create + to_update:
             if match.matched_by_id == self.header_obj.pk:
                 match.matched_by_type = self.header_obj.type
                 match.matched_to_type = match.matched_to.type
+                match.period = self.header_obj.period
             else:
                 match.matched_by_type = match.matched_by.type
                 match.matched_to_type = self.header_obj.type
-        self.get_match_model().objects.audited_bulk_create(new_matches)
-        to_update = filter(
-            lambda o: True if o.value else False, changed_objects)
-        to_delete = filter(
-            lambda o: True if not o.value else False, changed_objects)
+        self.get_match_model().objects.audited_bulk_create(to_create)
         self.get_match_model().objects.audited_bulk_update(
-            to_update, ['value', 'matched_by_type', 'matched_to_type'])
+            to_update, ['value', 'matched_by_type', 'matched_to_type', 'period'])
         bulk_delete_with_history(
             to_delete,
             self.get_match_model()
