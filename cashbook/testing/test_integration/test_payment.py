@@ -67,7 +67,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="form-control form-control-sm transaction-type-select" required id="id_header-type">'
             '<option value="">---------</option>'
             '<option value="cbp">Brought Forward Payment</option>'
             '<option value="cbr">Brought Forward Receipt</option>'
@@ -86,7 +86,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="form-control form-control-sm transaction-type-select" required id="id_header-type">'
             '<option value="">---------</option>'
             '<option value="cbp">Brought Forward Payment</option>'
             '<option value="cbr">Brought Forward Receipt</option>'
@@ -1814,7 +1814,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required disabled id="id_header-type">'
+            '<select name="header-type" class="form-control form-control-sm transaction-type-select" required disabled id="id_header-type">'
             '<option value="">---------</option>'
             '<option value="cbp">Brought Forward Payment</option>'
             '<option value="cbr">Brought Forward Receipt</option>'

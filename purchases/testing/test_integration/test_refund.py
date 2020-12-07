@@ -111,7 +111,7 @@ class CreateRefund(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="form-control form-control-sm transaction-type-select" required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'
@@ -3367,8 +3367,8 @@ class EditRefundNominalEntries(TestCase):
             "paid": headers[2].paid,
             "due": headers[2].due,
             "matched_by": headers[2].pk,
-            "matched_to": headers[1].pk,
-            "value": '110.01',
+            "matched_to": headers[0].pk,
+            "value": '-110.01',
             "id": matches[1].pk
         })
         matching_data = create_formset_data(match_form_prefix, matching_forms)
@@ -3555,8 +3555,8 @@ class EditRefundNominalEntries(TestCase):
             "paid": headers[2].paid,
             "due": headers[2].due,
             "matched_by": headers[2].pk,
-            "matched_to": headers[1].pk,
-            "value": '120.02',
+            "matched_to": headers[0].pk,
+            "value": '-120.02',
             "id": matches[1].pk
         })
         matching_data = create_formset_data(match_form_prefix, matching_forms)
@@ -3613,7 +3613,7 @@ class EditRefund(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
+            '<select name="header-type" class="form-control form-control-sm transaction-type-select" disabled required id="id_header-type">'
                 '<option value="">---------</option>'
                 '<option value="pbi">Brought Forward Invoice</option>'
                 '<option value="pbc">Brought Forward Credit Note</option>'

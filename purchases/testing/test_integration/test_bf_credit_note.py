@@ -117,7 +117,7 @@ class CreateBroughtForwardCreditNote(TestCase):
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" required id="id_header-type">'
+            '<select name="header-type" class="form-control form-control-sm transaction-type-select" required id="id_header-type">'
             '<option value="">---------</option>'
             '<option value="pbi">Brought Forward Invoice</option>'
             '<option value="pbc" selected>Brought Forward Credit Note</option>'
@@ -1825,7 +1825,7 @@ class EditBroughtForwardCreditNote(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select" disabled required id="id_header-type">'
+            '<select name="header-type" class="form-control form-control-sm transaction-type-select" disabled required id="id_header-type">'
             '<option value="">---------</option>'
             '<option value="pbi">Brought Forward Invoice</option>'
             '<option value="pbc" selected>Brought Forward Credit Note</option>'

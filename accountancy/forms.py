@@ -559,12 +559,12 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         if header:
             value_change = (value - initial_value)
             due_would_be = header.due - value_change
-            f = -1 if header.is_negative_type() else 1 
+            f = -1 if header.is_negative_type() else 1
             if header.total > 0:
                 if  due_would_be > header.total or due_would_be < 0:
                     raise forms.ValidationError(
                         _(
-                            f"Invalid value.  Doing this would mean the due is {f * due_would_be} when the total is {header.ui_total}"
+                            f"Value must be between 0 and {f  * (header.due + initial_value)}"
                         ),
                         code="invalid match"
                     )
@@ -572,7 +572,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                 if due_would_be < header.total or due_would_be > 0:
                     raise forms.ValidationError(
                         _(
-                            f"Invalid value.  Doing this would mean the due is {f * due_would_be} when the total is {header.ui_total}"
+                            f"Value must be between 0 and {f * (header.due + initial_value)}"
                         ),
                         code="invalid match"
                     )
@@ -580,7 +580,7 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                 if due_would_be != 0:
                     raise forms.ValidationError(
                         _(
-                            f"Invalid value.  Doing this would mean the due is {f * due_would_be} when the total is {header.ui_total}"
+                            f"Value must be between 0 and {f * (header.due + initial_value)}"
                         ),
                         code="invalid match"
                     )                    
@@ -694,7 +694,7 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
             if change_in_match_value != 0:
                 raise forms.ValidationError(
                     _(
-                        f"You are trying to match a total value of { change_in_match_value }.  "
+                        f"You are trying to match a total value of { -1 * change_in_match_value }.  "
                         "Because you are entering a zero value transaction the total amount to match must be zero also."
                     ),
                     code="invalid-match"
