@@ -561,29 +561,89 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
             due_would_be = header.due - value_change
             f = -1 if header.is_negative_type() else 1
             if header.total > 0:
-                if  due_would_be > header.total or due_would_be < 0:
-                    raise forms.ValidationError(
-                        _(
-                            f"Value must be between 0 and {f  * (header.due + initial_value)}"
-                        ),
-                        code="invalid match"
-                    )
+                # change initial value just for logic.  do not save this
+                # see test -
+                # purchases.testing.test_integration.test_matching.EditTransactionMatching.test_decrease_match_value_legal_31
+                initial_value_1 = -1 * initial_value if initial_value < 0 else initial_value
+                if  not (due_would_be >= 0 and due_would_be <= header.due + initial_value_1):
+                    if header.due + initial_value_1 == 0:
+                        raise forms.ValidationError(
+                            _(
+                                "This transaction is not outstanding."
+                            ),
+                            code="invalid match"
+                        )
+                    else:
+                        # due_would_be can be zero
+                        # due_would_be can be header.due + initial_value_1
+                        # due_would_be can be any value in between
+                        # due_would_be = header.due - value + initial_value 
+                        # so solve these -
+                        # header.due - value + initial_value = 0
+                        # header.due - value + initial_value = header.due + initial_value_1
+                        lower = header.due + initial_value
+                        upper = initial_value - initial_value_1
+                        lower *= f
+                        if lower == 0:
+                            lower = 0
+                        upper *= f
+                        if upper == 0:
+                            upper = 0
+                        if lower > upper:
+                            t = lower
+                            lower = upper
+                            upper = t
+                        raise forms.ValidationError(
+                            _(
+                                f"Value must be between {lower} and {upper}"
+                            ),
+                            code="invalid match"
+                        )
             elif header.total < 0:
-                if due_would_be < header.total or due_would_be > 0:
-                    raise forms.ValidationError(
-                        _(
-                            f"Value must be between 0 and {f * (header.due + initial_value)}"
-                        ),
-                        code="invalid match"
-                    )
+                # change initial value just for logic.  do not save this
+                initial_value_1 = -1 * initial_value if initial_value > 0 else initial_value
+                if not (due_would_be <= 0 and due_would_be >= header.due + initial_value_1):
+                    if header.due + initial_value_1 == 0:
+                        raise forms.ValidationError(
+                            _(
+                                "This transaction is not outstanding."
+                            ),
+                            code="invalid match"
+                        )
+                    else:
+                        # due_would_be can be zero
+                        # due_would_be can be header.due + initial_value_1
+                        # due_would_be can be any value in between
+                        # due_would_be = header.due - value + initial_value 
+                        # so solve these -
+                        # header.due - value + initial_value = 0
+                        # header.due - value + initial_value = header.due + initial_value_1
+                        lower = header.due + initial_value
+                        upper = initial_value - initial_value_1
+                        lower *= f
+                        if lower == 0:
+                            lower = 0
+                        upper *= f
+                        if upper == 0:
+                            upper = 0
+                        if lower > upper:
+                            t = lower
+                            lower = upper
+                            upper = t
+                        raise forms.ValidationError(
+                            _(
+                                f"Value must be between {lower} and {upper}"
+                            ),
+                            code="invalid match"
+                        )
             else:
-                if due_would_be != 0:
-                    raise forms.ValidationError(
-                        _(
-                            f"Value must be between 0 and {f * (header.due + initial_value)}"
-                        ),
-                        code="invalid match"
-                    )                    
+                raise forms.ValidationError(
+                    _(
+                        "You are trying to match a transaction which has a total of zero.  This is disallowed always because it should "
+                        "be fully matched already."
+                    ),
+                    code="invalid match"
+                )                
 
     def save(self, commit=True):
         instance = super().save(commit=False)

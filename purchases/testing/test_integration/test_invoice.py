@@ -6822,7 +6822,6 @@ class EditInvoice(TestCase):
             invoices[0], 
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
@@ -13885,7 +13884,6 @@ class EditInvoiceNominalEntries(TestCase):
             },
             [
                 {
-                    
                     'description': self.description,
                     'goods': 100,
                     'nominal': self.nominal,
