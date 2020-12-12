@@ -2192,7 +2192,6 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": -10})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
-                
                 'description': self.description,
                 'goods': -100,
                 'nominal': self.nominal.pk,
@@ -2202,7 +2201,6 @@ class CreateInvoice(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(matching_data)
         data.update(line_data)
-        # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -2303,7 +2301,6 @@ class CreateInvoice(TestCase):
         matching_forms += add_and_replace_objects(headers_to_match_against, {"id": "matched_to"}, {"value": 10})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         line_forms = ([{
-                
                 'description': self.description,
                 'goods': 100,
                 'nominal': self.nominal.pk,
@@ -2330,7 +2327,7 @@ class CreateInvoice(TestCase):
         )
         self.assertContains(
             response,
-			'<li class="py-1">Value must be between 0 and -120.00</li>',
+			'<li class="py-1">Value must be between -120.00 and 0</li>',
             html=True
         )
 
@@ -2385,7 +2382,7 @@ class CreateInvoice(TestCase):
         )
         self.assertContains(
             response,
-			'<li class="py-1">Value must be between 0 and -120.00</li>',
+			'<li class="py-1">Value must be between -120.00 and 0</li>',
             html=True
         )
 
@@ -13185,7 +13182,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Value must be between 0 and 1000.00</li>',
+            '<li class="py-1">Not allowed because it would mean a due of 1100.00 for this transaction when the total is 1000.00</li>',
             html=True
         )
 
@@ -13824,7 +13821,7 @@ class EditInvoice(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Value must be between 0 and 1000.00</li>',
+            '<li class="py-1">Not allowed because it would mean a due of -1000.00 for this transaction when the total is 1000.00</li>',
             html=True
         )
 
@@ -18371,7 +18368,6 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    
                     'description': self.description,
                     'goods': -0.01,
                     'nominal': self.nominal.pk,
@@ -18453,7 +18449,7 @@ class EditInvoiceNominalEntries(TestCase):
             1
         )
 
-        # create new invoice for -10.00
+        # create new invoice
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
@@ -18511,7 +18507,6 @@ class EditInvoiceNominalEntries(TestCase):
         data.update(header_data)
         line_forms = [
                 {
-                    
                     'description': self.description,
                     'goods': 100.01,
                     'nominal': self.nominal.pk,
@@ -18542,7 +18537,7 @@ class EditInvoiceNominalEntries(TestCase):
             "total": headers[3].total,
             "paid": headers[3].paid,
             "due": headers[3].due,
-            "matched_by": headers[3].pk,
+            "matched_by": headers[0].pk,
             "matched_to": headers[3].pk,
             "value": '10.00',
         })
@@ -18554,7 +18549,7 @@ class EditInvoiceNominalEntries(TestCase):
         self.assertEqual(
             response.status_code,
             200
-        ) # test should fail.  passes at the moment.  need to fix bug.
+        )
 
 
     # INCORRECT USAGE

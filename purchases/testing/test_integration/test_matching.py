@@ -5067,7 +5067,7 @@ class EditTransactionMatching(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Value must be between 0 and 1200"
+            "Not allowed because it would mean a due of -600.00 for this transaction when the total is 2400.00"
         )
 
         invoice.refresh_from_db()
@@ -5423,6 +5423,10 @@ class EditTransactionMatching(TestCase):
             self.purchase_control
         )
 
+
+        # 2400 invoice matched to a 1200 payment gives 1200 outstanding
+        # match a payment for -3600 gives outstanding of 4800.  Nonsense !
+
         invoice = PurchaseHeader.objects.first()
         payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
         payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
@@ -5545,7 +5549,7 @@ class EditTransactionMatching(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Value must be between -1200.00 and 1200.00"
+            "Not allowed because it would mean a due of 4800.00 for this transaction when the total is 2400.00"
         )
 
         invoice.refresh_from_db()
@@ -5630,17 +5634,535 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
+    # INVALID
+    # This time the match value means the due would be between 0 and the current due and the initial
+    # value but it does NOT respect the total
+    # This one is for a positive total (but shows in UI as negative)
+    def test_decrease_match_value_illegal_32a_positive(self):
+
+        self.client.force_login(self.user)
+        payment = create_payments(self.supplier, "payment", 1, self.period, -1.00)[0]
+        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1201)[0]
+        payment2 = create_payments(self.supplier, "payment", 1, self.period, -1200)[0]
+        match(payment, [(payment1, -1201), (payment2, 1200)])
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            1.00
+        )
+        self.assertEqual(
+            payment.total,
+            1.00
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1201
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1201
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+
+        url = reverse("purchases:edit", kwargs={"pk": payment1.pk})
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": cashbook.pk,
+                "type": payment1.type,
+                "supplier": payment1.supplier.pk,
+				"period": payment1.period.pk,
+                "ref": payment1.ref,
+                "date": payment1.date.strftime(DATE_INPUT_FORMAT),
+                "total": payment1.total * -1
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        matching_trans = [payment]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -1199.99})
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        matching_forms[0]["id"] = matches[0].pk
+        matching_forms[0]["matched_to"] = payment1.pk
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Not allowed because it would mean a due of -1.01 for this transaction when the total is -1.00"
+        )
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            1.00
+        )
+        self.assertEqual(
+            payment.total,
+            1.00
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1201
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1201.00
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200.00
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
 
 
+    def test_decrease_match_value_illegal_32a_negative(self):
+        pass
 
-    
+
     """
     Add new match transaction.  Tran being edited is still the matched_to in at least one of the matches
     """
 
     # VALID
-    def test_add_tran_legal_33(self):
-        pass
+    def test_add_tran_so_nothing_outstanding_on_tran_being_edited_legal_33(self):
+        self.client.force_login(self.user)
+
+        create_invoice_with_nom_entries(
+            {
+                "type": "pi",
+                "supplier": self.supplier,
+                "period": self.period,
+                "ref": self.ref,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
+                "total": 2400,
+                "paid": 0,
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
+            },
+            [
+                {
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ] * 20,
+            self.vat_nominal,
+            self.purchase_control
+        )
+
+        invoice = PurchaseHeader.objects.first()
+        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        match(invoice, [(payment1, -1200), (payment2, 600)])
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1800
+        )
+        self.assertEqual(
+            invoice.paid,
+            600
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        self.assertEqual(
+            payment2.due,
+            4400
+        )
+        self.assertEqual(
+            payment2.paid,
+            600
+        )
+        self.assertEqual(
+            payment2.total,
+            5000
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            600
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+
+        # create new invoice to match
+        create_invoice_with_nom_entries(
+            {
+                "type": "pi",
+                "supplier": self.supplier,
+                "period": self.period,
+                "ref": self.ref,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
+                "total": -4400,
+                "paid": 0,
+                "due": -4400,
+                "goods": -4000,
+                "vat": -400
+            },
+            [
+                {
+                    'description': self.description,
+                    'goods': -400,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': -40
+                }
+            ] * 10,
+            self.vat_nominal,
+            self.purchase_control
+        )
+
+
+        new_invoice = PurchaseHeader.objects.filter(type="pi").last()
+
+        url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": cashbook.pk,
+                "type": payment2.type,
+                "supplier": payment2.supplier.pk,
+				"period": payment2.period.pk,
+                "ref": payment2.ref,
+                "date": payment2.date.strftime(DATE_INPUT_FORMAT),
+                "total": payment2.total * -1
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        matching_trans = [invoice, new_invoice]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -600})
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        matching_forms[0]["id"] = matches[1].pk
+        matching_forms[0]["matched_to"] = payment2.pk
+        matching_forms[1]["matched_by"] = payment2.pk
+        matching_forms[1]["matched_to"] = new_invoice.pk
+        matching_forms[1]["value"] = -4400
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+        new_invoice.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1800
+        )
+        self.assertEqual(
+            invoice.paid,
+            600
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            5000
+        )
+        self.assertEqual(
+            payment2.total,
+            5000
+        )
+
+        self.assertEqual(
+            new_invoice.due,
+            0
+        )
+        self.assertEqual(
+            new_invoice.paid,
+            -4400
+        )
+        self.assertEqual(
+            new_invoice.total,
+            -4400
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            3
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+
+
+        self.assertEqual(
+            matches[1].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            600
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+
+        self.assertEqual(
+            matches[2].matched_by,
+            payment2
+        )
+        self.assertEqual(
+            matches[2].matched_to,
+            new_invoice
+        )
+        self.assertEqual(
+            matches[2].value,
+            -4400
+        )
+        self.assertEqual(
+            matches[2].period,
+            self.period
+        )
+
+
+    """
+    Need two tests.  One which hits both branches of the code.
+    """
 
     # INVALID
     # Adding the new match would mean an invalid paid / outstanding for the tran being edited
@@ -5653,4 +6175,255 @@ class EditTransactionMatching(TestCase):
     # Obviously this is nonsense though because the invoice for 500 is fully matched to the payment for 1000.
     # So the outstanding cannot be changed to 100.
     def test_add_tran_illegal_34(self):
-        pass
+        self.client.force_login(self.user)
+
+        create_invoice_with_nom_entries(
+            {
+                "type": "pi",
+                "supplier": self.supplier,
+                "period": self.period,
+                "ref": self.ref,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
+                "total": 2400,
+                "paid": 0,
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
+            },
+            [
+                {
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ] * 20,
+            self.vat_nominal,
+            self.purchase_control
+        )
+
+        invoice = PurchaseHeader.objects.first()
+        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        match(invoice, [(payment1, -1200), (payment2, 600)])
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1800
+        )
+        self.assertEqual(
+            invoice.paid,
+            600
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        self.assertEqual(
+            payment2.due,
+            4400
+        )
+        self.assertEqual(
+            payment2.paid,
+            600
+        )
+        self.assertEqual(
+            payment2.total,
+            5000
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            600
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+
+        payment3 = create_payments(self.supplier, "payment", 1, self.period, -600)[0]
+
+        url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": cashbook.pk,
+                "type": payment2.type,
+                "supplier": payment2.supplier.pk,
+				"period": payment2.period.pk,
+                "ref": payment2.ref,
+                "date": payment2.date.strftime(DATE_INPUT_FORMAT),
+                "total": payment2.total * -1
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        matching_trans = [invoice, payment3]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -600})
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        matching_forms[0]["id"] = matches[1].pk
+        matching_forms[0]["matched_to"] = payment2.pk
+        matching_forms[1]["matched_by"] = payment2.pk
+        matching_forms[1]["matched_to"] = payment3.pk
+        matching_forms[1]["value"] = -600
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+        payment3.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1800
+        )
+        self.assertEqual(
+            invoice.paid,
+            600
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        self.assertEqual(
+            payment2.due,
+            4400
+        )
+        self.assertEqual(
+            payment2.paid,
+            600
+        )
+        self.assertEqual(
+            payment2.total,
+            5000
+        )
+
+        self.assertEqual(
+            payment3.due,
+            600
+        )
+        self.assertEqual(
+            payment3.paid,
+            0
+        )
+        self.assertEqual(
+            payment3.total,
+            600
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+
+
+        self.assertEqual(
+            matches[1].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            600
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )

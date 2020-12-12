@@ -16,6 +16,19 @@ header.header-nav div.dropdown-menu {
     margin-top: 10px;
 }
 
+div.non_field_matching_error thead {
+    background-color: #f79696 !important;
+    background: #f79696 !important;;
+}
+
+div.non_field_matching_error thead th {
+    border: 0;
+}
+
+div.non_field_matching_error td {
+    background-color: #ffdede !important;
+}
+
 .cont {
     position: relative;
 }

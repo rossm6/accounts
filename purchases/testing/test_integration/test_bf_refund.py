@@ -2618,8 +2618,6 @@ class MatchingTests(TestCase):
         )
         data.update(header_data)
 
-        print(matches[0].__dict__)
-
         matching_forms = []
         matching_forms.append({
             "type": headers[2].type,
@@ -2629,7 +2627,7 @@ class MatchingTests(TestCase):
             "due": headers[2].due,
             "matched_by": headers[2].pk,
             "matched_to": headers[0].pk,
-            "value": headers[0].total,
+            "value": headers[0].total * -1,
             "id": matches[0].pk
         })
         matching_data = create_formset_data(match_form_prefix, matching_forms)
@@ -2643,7 +2641,7 @@ class MatchingTests(TestCase):
             302
         )
 
-        matches = PurchaseMatching.objects.all()
+        matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
             len(matches),
             2

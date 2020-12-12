@@ -1,0 +1,45 @@
+<div class="non_field_matching_error">
+    <div><b>Invalid matching</b></div>
+    <p>This doesn't add up because of the following two reasons, A and B.<p>
+    <div>
+        <p><b>A</b> {{ total_matched_to_value_ui }} is used for matching the following:</p>
+        <table class="table" style="width: auto;">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Ref</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for header in headers_from_matched_to_forms %}
+                    <tr>
+                        <td>{{ header.type }}</td>
+                        <td>{{ header.ref }}</td>
+                        <td>{{ header.value }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p><b>B</b> This means the total of the remaining matches must be between 0 and {{ main_header_due_ui }}.
+        Yet you are are trying to match a remaining {{ total_matched_by_value_ui }} for the following-</p>
+        <table class="table" style="width: auto;">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Ref</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for header in headers_from_matched_by_forms %}
+                    <tr>
+                        <td>{{ header.type }}</td>
+                        <td>{{ header.ref }}</td>
+                        <td>{{ header.value }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

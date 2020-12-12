@@ -1179,7 +1179,6 @@ class CreatePayment(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(matching_data)
         data.update(line_data)
-        # WE ARE CREATING A NEW INVOICE FOR 2400.00 and matching against -1000 worth of invoices (across 10 invoices)
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -1196,7 +1195,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Value must be between 0 and -100.00</li>',
+            '<li class="py-1">Value must be between -100.00 and 0</li>',
             html=True
         )
         self.assertEqual(
@@ -1248,7 +1247,7 @@ class CreatePayment(TestCase):
         )
         self.assertContains(
             response,
-            '<li class="py-1">Value must be between 0 and -100.00</li>',
+            '<li class="py-1">Value must be between -100.00 and 0</li>',
             html=True
         )
 
@@ -5895,7 +5894,7 @@ class EditPayment(TestCase):
 
         self.assertContains(
             response,
-            '<li class="py-1">Value must be between 0 and 1200.00</li>',
+            '<li class="py-1">Not allowed because it would mean a due of 1600.00 for this transaction when the total is 1200.00</li>',
             html=True
         )
 
