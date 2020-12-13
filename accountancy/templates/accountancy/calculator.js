@@ -7,7 +7,10 @@ $(document).ready(function () {
 
     function calculate_vat(goods, vat_rate) {
         if (goods && vat_rate) {
-            return ((+goods * 100 * +vat_rate) / (100 * 100)).toFixed(2);
+            var v = ((+goods * 100 * +vat_rate) / (100 * 100));
+            v += 0; // avoid negative zero
+            v = v.toFixed(2)
+            return v;
         }
         return "";
     }
@@ -101,15 +104,21 @@ $(document).ready(function () {
             matched_total *= -1
         }
         matched_total = matched_total / 100;
+        matched_total += 0;
         var due = total - matched_total;
+        goods += 0; // avoid negative zero
         goods = goods.toFixed(2);
+        vat += 0;
         vat = vat.toFixed(2);
+        total += 0;
         total = total.toFixed(2);
         $("td.goods-total-lines").text(goods);
         $("td.vat-total-lines").text(vat);
         $("td.total-lines").text(total);
+        matched_total += 0;
         matched_total = matched_total.toFixed(2);
-        due = due.toFixed(2)
+        due += 0;
+        due = due.toFixed(2);
         var matched_total_elem = $("td.matched-total");
         var due_total_elem = $("td.due-total");
         matched_total_elem.text(matched_total);

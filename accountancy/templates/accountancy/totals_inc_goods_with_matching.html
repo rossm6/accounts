@@ -5,23 +5,23 @@
         <tbody>
             <tr>
                 <td>Goods</td>
-                <td class="goods-total-lines">{% firstof header.ui_goods %}</td>
+                <td class="goods-total-lines">{{ header.ui_goods }}</td>
             </tr>
             <tr>
                 <td>Vat</td>
-                <td class="vat-total-lines">{% firstof header.ui_vat %}</td>
+                <td class="vat-total-lines">{{ header.ui_vat }}</td>
             </tr>
             <tr class="top-and-bottom-dotted-border font-weight-bold">
                 <td class="text-uppercase">total</td>
-                <td class="total-lines">{% firstof header.ui_total %}</td>
+                <td class="total-lines">{{ header.ui_total }}</td>
             </tr>
             <tr>
                 <td class="text-primary">Matched</td>
-                <td class="matched-total">{% firstof header.ui_paid %}</td>
+                <td class="matched-total">{{ header.ui_paid }}</td>
             </tr>
             <tr class="top-solid-border bottom-double-border font-weight-bold">
                 <td>Due</td>
-                <td class="due-total">{% firstof header.ui_due %}</td>
+                <td class="due-total">{{ header.ui_due }}</td>
             </tr>
         </tbody>
         </table>

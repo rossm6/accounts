@@ -548,6 +548,14 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                 tran_being_created_or_edited_is_matched_by = True
                 header = matched_to
                 self.initial_value = initial_value = 0
+                if (self.tran_being_created_or_edited.pk
+                        and self.tran_being_created_or_edited.pk == matched_to.pk):
+                    raise forms.ValidationError(
+                        _(
+                            "Cannot match a transaction to itself."
+                        ),
+                        code="invalid-match"
+                    )
             else:
                 if self.tran_being_created_or_edited.pk == self.instance.matched_by_id:
                     tran_being_created_or_edited_is_matched_by = True
@@ -566,7 +574,6 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         value = self.Meta.model.ui_match_value(header, ui_value)
         if header:
             value_change = (value - initial_value)
-
             due_would_be = header.due - value_change
             f = -1 if header.is_negative_type() else 1
             if header.total > 0:
@@ -574,101 +581,85 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                 # see test -
                 # purchases.testing.test_integration.test_matching.EditTransactionMatching.test_decrease_match_value_legal_31
                 initial_value_1 = -1 * initial_value if initial_value < 0 else initial_value
-                if not (due_would_be >= 0 and due_would_be <= header.due + initial_value_1 and due_would_be <= header.total):
-                    if header.due + initial_value_1 == 0:
-                        raise forms.ValidationError(
-                            _(
-                                "This transaction is not outstanding."
-                            ),
-                            code="invalid match"
-                        )
-                    else:
-                        if tran_being_created_or_edited_is_matched_by:
-                            # due_would_be can be zero
-                            # due_would_be can be header.due + initial_value_1
-                            # due_would_be can be any value in between because still less than or equal to total
-                            # due_would_be = header.due - value + initial_value
-                            # so solve these -
-                            # header.due - value + initial_value = 0
-                            # header.due - value + initial_value = header.due + initial_value_1
-                            lower = header.due + initial_value
-                            upper = initial_value - initial_value_1
-                            lower *= f
-                            if lower == 0:
-                                lower = 0
-                            upper *= f
-                            if upper == 0:
-                                upper = 0
-                            if lower > upper:
-                                t = lower
-                                lower = upper
-                                upper = t
-                            raise forms.ValidationError(
-                                _(
-                                    f"Value must be between {lower} and {upper}"
-                                ),
-                                code="invalid match"
-                            )
-                        else:
-                            raise forms.ValidationError(
-                                _(
-                                    f'Not allowed because it would mean a due of {f * due_would_be} for this transaction when the total is {f * header.total}'
-                                ),
-                                code="invalid match"
-                            )
             elif header.total < 0:
                 # change initial value just for logic.  do not save this
                 initial_value_1 = -1 * initial_value if initial_value > 0 else initial_value
-                if not (due_would_be <= 0 and due_would_be >= header.due + initial_value_1 and due_would_be >= header.total):
-                    if header.due + initial_value_1 == 0:
-                        raise forms.ValidationError(
+            else:
+                self.add_error(
+                    "value",
+                    forms.ValidationError(
+                        _(
+                            "You are trying to match a transaction which has a total of zero.  This is disallowed always because it should "
+                            "be fully matched already."
+                        ),
+                        code="invalid match"
+                    )
+                )
+            if (
+                (
+                    header.total > 0
+                    and
+                    not (due_would_be >= 0 and due_would_be <= header.due +
+                         initial_value_1 and due_would_be <= header.total)
+                )
+                or
+                (
+                    header.total < 0
+                    and
+                    not (due_would_be <= 0 and due_would_be >= header.due +
+                         initial_value_1 and due_would_be >= header.total)
+                )
+            ):
+                if header.due + initial_value_1 == 0:
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
                             _(
                                 "This transaction is not outstanding."
                             ),
                             code="invalid match"
                         )
-                    else:
-                        if tran_being_created_or_edited_is_matched_by:
-                            # due_would_be can be zero
-                            # due_would_be can be header.due + initial_value_1
-                            # due_would_be can be any value in between
-                            # due_would_be = header.due - value + initial_value
-                            # so solve these -
-                            # header.due - value + initial_value = 0
-                            # header.due - value + initial_value = header.due + initial_value_1
-                            lower = header.due + initial_value
-                            upper = initial_value - initial_value_1
-                            lower *= f
-                            if lower == 0:
-                                lower = 0
-                            upper *= f
-                            if upper == 0:
-                                upper = 0
-                            if lower > upper:
-                                t = lower
-                                lower = upper
-                                upper = t
-                            raise forms.ValidationError(
+                    )
+                else:
+                    if tran_being_created_or_edited_is_matched_by:
+                        # due_would_be can be zero
+                        # due_would_be can be header.due + initial_value_1
+                        # due_would_be can be any value in between because still less than or equal to total
+                        # due_would_be = header.due - value + initial_value
+                        # so solve these -
+                        # header.due - value + initial_value = 0
+                        # header.due - value + initial_value = header.due + initial_value_1
+                        lower = header.due + initial_value
+                        upper = initial_value - initial_value_1
+                        lower *= f
+                        if lower == 0:
+                            lower = 0  # avoid negative zero
+                        upper *= f
+                        if upper == 0:
+                            upper = 0  # avoid negative zero
+                        if lower > upper:
+                            t = lower
+                            lower = upper
+                            upper = t
+                        self.add_error(
+                            "value",
+                            forms.ValidationError(
                                 _(
                                     f"Value must be between {lower} and {upper}"
                                 ),
                                 code="invalid match"
                             )
-                        else:
-                            raise forms.ValidationError(
+                        )
+                    else:
+                        self.add_error(
+                            "value",
+                            forms.ValidationError(
                                 _(
                                     f'Not allowed because it would mean a due of {f * due_would_be} for this transaction when the total is {f * header.total}'
                                 ),
                                 code="invalid match"
                             )
-            else:
-                raise forms.ValidationError(
-                    _(
-                        "You are trying to match a transaction which has a total of zero.  This is disallowed always because it should "
-                        "be fully matched already."
-                    ),
-                    code="invalid match"
-                )
+                        )
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -726,7 +717,8 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
             value = form.instance.value
             t = form.instance.matched_by.get_type_display()
             ref = form.instance.matched_by.ref
-        value = MatchedHeaders.ui_match_value(self.tran_being_created_or_edited, value)
+        value = MatchedHeaders.ui_match_value(
+            self.tran_being_created_or_edited, value)
         return {
             "type": t,
             "ref": ref,
@@ -744,7 +736,6 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
                 matched_to_forms.append(form)
         headers_from_matched_to_forms = [
             self.get_header_details_for_match_form(form) for form in matched_to_forms]
-        print(headers_from_matched_to_forms)
         headers_from_matched_by_forms = [
             self.get_header_details_for_match_form(form) for form in matched_by_forms]
         html_string = render_to_string("accountancy/non_field_matching_error.html", {

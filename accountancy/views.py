@@ -578,6 +578,7 @@ class RESTBaseTransactionMixin:
             self.non_field_errors = True
 
     def invalid_forms(self):
+        self.forms_invalid = True
         self.header_is_invalid()
         if self.requires_lines(self.get_header_form()):
             self.lines_are_invalid()
@@ -631,6 +632,9 @@ class BaseTransaction(
                 kwargs["line_form_prefix"] = self.get_line_prefix()
             if 'line_formset' not in kwargs:
                 kwargs["line_formset"] = self.get_line_formset()
+        if 'forms_invalid' not in kwargs:
+            if hasattr(self, 'forms_invalid'):
+                kwargs['forms_invalid'] = self.forms_invalid
         if 'non_field_errors' not in kwargs:
             if hasattr(self, 'non_field_errors'):
                 kwargs['non_field_errors'] = self.non_field_errors
@@ -1222,7 +1226,7 @@ class MatchingViewTransactionMixin:
                     "total": match.matched_by.ui_total,
                     "paid": match.matched_by.ui_paid,
                     "due": match.matched_by.ui_due,
-                    "value": match.ui_match_value(match.matched_to, -1 * match.value)
+                    "value": match.ui_match_value(match.matched_by, -1 * match.value)
                 }
             match_objs.append(match_obj)
         context["matches"] = match_objs

@@ -81,7 +81,7 @@ class LoadVatCodes(LoginRequiredMixin, ListView):
         for vat in context["page_obj"].object_list:
             v = {
                 "rate": vat.rate,
-                'code': vat.code,
+                'code': str(vat),
                 "id": vat.id
             }
             vats.append(v)

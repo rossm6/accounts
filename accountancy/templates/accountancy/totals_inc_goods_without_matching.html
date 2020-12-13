@@ -5,15 +5,15 @@
         <tbody>
             <tr>
                 <td>Goods</td>
-                <td class="goods-total-lines">{% firstof header.ui_goods %}</td>
+                <td class="goods-total-lines">{{ header.ui_goods }}</td>
             </tr>
             <tr>
                 <td>Vat</td>
-                <td class="vat-total-lines">{% firstof header.ui_vat %}</td>
+                <td class="vat-total-lines">{{ firstof header.ui_vat }}</td>
             </tr>
             <tr class="top-and-bottom-dotted-border font-weight-bold">
                 <td class="text-uppercase">total</td>
-                <td class="total-lines">{% firstof header.ui_total %}</td>
+                <td class="total-lines">{{ header.ui_total }}</td>
             </tr>
         </tbody>
         </table>
