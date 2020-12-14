@@ -149,19 +149,31 @@
                 });
             }
 
+            var unlocked = false;
+            var before_unload_began;
+
             function unlock() {
                 var unlock_form = $("form.unlock_form");
                 if(unlock_form.length){
                     $.ajax({
                         type: "POST",
                         url: unlock_form.attr("action"),
-                        data: unlock_form.serialize()
-                    });
+                        data: unlock_form.serialize(),
+                        success: function (data) {
+                            unlocked = true; // we assume
+                        }
+                    })
                 }
             }
 
-            window.addEventListener('beforeunload', (event) => {
-                setTimeout(unlock, 1);
+            window.addEventListener('beforeunload', function(event){
+                before_unload_began = Date.now();
+                unlock();
+                while(!unlocked){
+                    if(Date.now() - before_unload_began > 100){
+                        return; // never wait longer than 100 ms
+                    }
+                }
             });
 
         });

@@ -10,14 +10,29 @@ $(document).ready(function () {
     var line_aspect_audit_style_class = "line_aspect_audit";
     var match_aspect_audit_style_class = "match_aspect_audit";
 
+    function position_highlighter(el, highlighter){
+        var rect = el.get(0).getBoundingClientRect();
+        highlighter.css({
+            "left": rect.left,
+            "top": rect.top,
+            "width": rect.width,
+            "height": rect.height,
+            "position": "fixed"
+        });
+    }
+
+    function highlight_element (el, cls) {
+        var highlighter = $("<div>");
+        highlighter.addClass("audit_highlighter").addClass(cls);
+        position_highlighter(el, highlighter);
+        $("body").append(highlighter);
+        $(window).on("scroll", function(){
+            position_highlighter(el, highlighter);
+        });
+    }
+
     function removeAuditEffects() {
-        $("[data-audit-aspect-section=header]").removeClass(header_aspect_audit_style_class);
-        $("[data-audit-aspect-section=line]")
-            .find("tr")
-            .removeClass(line_aspect_audit_style_class);
-        $("[data-audit-aspect-section=match]")
-            .find("tr")
-            .removeClass(match_aspect_audit_style_class);
+        $("div.audit_highlighter").remove();
     }
 
     function find_line_or_match_item($elem, match_regex, object_pk){
@@ -58,13 +73,13 @@ $(document).ready(function () {
             removeAuditEffects();
 
             if (aspect == "header") {
-                var el = $("[data-audit-aspect-section=" + aspect + "]")
-                    .addClass(header_aspect_audit_style_class);
+                var el = $("[data-audit-aspect-section=" + aspect + "]");
                 if (el.length) {
                     // only do this if the element exists.
-                    // for header is this cannot not be but for line and match it could be because the line or
+                    // for header this cannot not be but for line and match it could be because the line or
                     // match could have been deleted
                     el.get(0).scrollIntoView();
+                    highlight_element(el, header_aspect_audit_style_class);
                 }
             } else if (aspect == "line") {
 
@@ -76,15 +91,14 @@ $(document).ready(function () {
                     )
                     .parents("tr")
                     .eq(0)
-                    .addClass(line_aspect_audit_style_class)
                 );
 
                 if(el.length){
                     el.get(0).scrollIntoView();
+                    highlight_element(el, line_aspect_audit_style_class);
                 }
 
             } else {
-
                 var el = (
                     find_line_or_match_item(
                         $("[data-audit-aspect-section=" + aspect + "]"),
@@ -93,11 +107,10 @@ $(document).ready(function () {
                     )
                     .parents("tr")
                     .eq(0)
-                    .addClass(match_aspect_audit_style_class)
                 );
-
                 if(el.length){
                     el.get(0).scrollIntoView();
+                    highlight_element(el, match_aspect_audit_style_class);
                 }
 
             }

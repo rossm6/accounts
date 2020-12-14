@@ -30,7 +30,9 @@
     <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     {% include 'accountancy/grid_js.html' with header_form=header_form %}
     <script src="{% static 'purchases/js/on_the_fly.js' %}"></script>
-    <script src="{% static 'accountancy/js/audit.js' %}"></script>
+    <script>
+        {% include "accountancy/audit.js" %}
+    </script>
     <script src="{% static 'accountancy/js/audit_transaction.js' %}"></script>
     <script>
         $(document).ready(function(){
