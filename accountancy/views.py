@@ -1582,7 +1582,8 @@ class AgeMatchingReportMixin(
 class LoadMatchingTransactions(
         JQueryDataTableScrollerMixin,
         JQueryDataTableMixin,
-        ListView):
+        TemplateResponseMixin,
+        View):
 
     def set_dt_row_data(self, obj, row):
         row["DT_RowData"] = {
@@ -1635,6 +1636,7 @@ class LoadMatchingTransactions(
                 queryset
                 .filter(**{contact_name: contact})
                 .exclude(due__exact=0)
+                .exclude(status="v")
             )
             if edit := self.request.GET.get("edit"):
                 matches = (

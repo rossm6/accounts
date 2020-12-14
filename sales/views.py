@@ -137,10 +137,6 @@ class LoadSaleMatchingTransactions(LoginRequiredMixin, LoadMatchingTransactions)
     match_model = SaleMatching
     contact_name = "customer"
 
-    def get_queryset(self):
-        q = super().get_queryset()
-        return q.filter(customer=True)
-
 
 class LoadCustomers(LoginRequiredMixin, LoadContacts):
     model = Customer
