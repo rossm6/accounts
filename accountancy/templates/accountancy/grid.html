@@ -94,13 +94,6 @@
 {% endblock content %}
 
 {% block js %}
-    <script>
-        $(document).ready(function(){
-            var field_errors = $("div.has_errors");
-            $("span.field_errors_total").text(field_errors.length);
-
-        });
-    </script>
     {% block extra_js %}
     {% endblock extra_js %}
     {% block module_js %}

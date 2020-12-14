@@ -41,7 +41,15 @@
                     Hover over the field to see the error at the bottom of the screen.</p>
                     <p><span class="field_errors_total"></span> field errors in total.</p>
                     <p class="font-weight-bold">Browse through the errors</p>
-                    <p><i class="bi bi-arrow-left-short"></i><span class="select_field_error_wrapper"></span></p>
+                    <p>
+                        <div class="input-group mb-3">
+                            <button class="btn field_errors_btn btn-danger form-control" style="max-width: 42px;"><i class="fa fa-arrow-left" aria-hidden="true"></i></button>
+                            <select class="field_errors_select form-control"></select>
+                            <span class="input-group-text border-left-0 border-right-0" style="max-width: 42px; border-radius: 0px;">of</span>
+                            <span class="text-center field_errors_total bg-white form-control" style="max-width: 42px;">1</span>
+                            <button class="btn field_errors_btn btn-danger form-control" style="max-width: 42px;"><span><i class="fa fa-arrow-right" aria-hidden="true"></i></span></button>
+                        </div>
+                    </p>
                 </div>
             </div>
         </div>

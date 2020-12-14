@@ -16,9 +16,18 @@ header.header-nav div.dropdown-menu {
     margin-top: 10px;
 }
 
+.field_errors_select {
+    max-width: 60px;
+}
+
+.input-group .field_errors_select .selectize-input {
+    border-radius: 0px;
+}
+
 div.non_field_matching_error thead {
     background-color: #f79696 !important;
-    background: #f79696 !important;;
+    background: #f79696 !important;
+    ;
 }
 
 div.non_field_matching_error thead th {
@@ -89,7 +98,9 @@ div.non_field_matching_error td {
     font-size: 1rem !important;
 }
 
+
 /* this is for the messages pop up */
+
 .fixed-centre {
     left: 50%;
     transform: translateX(-50%);
@@ -102,7 +113,8 @@ table.dataTable td {
     /* bootstrap aligns at the top */
 }
 
-th.dt-center, td.dt-center {
+th.dt-center,
+td.dt-center {
     text-align: center;
     /* unlike the default jquery datatable css, bootstrap css does not have the dt-center class */
 }
@@ -114,6 +126,7 @@ div.dataTables_info {
 .overflow-y-scroll {
     overflow-y: scroll;
 }
+
 
 /* input {
     padding-left: 5px;
@@ -155,6 +168,7 @@ div.dataTables_info {
     border-top: 1px solid #dee2e6;
     color: black;
 }
+
 
 /* formely tables.css */
 
@@ -262,7 +276,9 @@ div.has_errors::after {
     color: rgb(4, 143, 194);
 }
 
+
 /* inputs */
+
 
 /* .input {
     -webkit-font-smoothing: antialiased;
@@ -285,6 +301,7 @@ td.dataTables_empty {
 
 
 /* added to fix width of nominal transactions table */
+
 div.dataTables_scrollHeadInner {
     width: 100% !important;
 }
@@ -324,6 +341,7 @@ table.nominal_transactions {
 select.input-grid-selectize-unfocussed::-ms-expand {
     display: none;
 }
+
 select.input-grid-selectize-unfocussed::-ms-value {
     background: none;
 }

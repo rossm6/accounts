@@ -18,6 +18,52 @@
 {{ header_form.media }}
 <script>
 
+    var header_errors = $(".invalid-feedback");
+    var line_and_match_field_errors = $("div.has_errors");
+    var total_field_errors = header_errors.length + line_and_match_field_errors.length;
+    if(total_field_errors){
+        // this helps the user to see the field errors in the UI
+        $("span.field_errors_total").text(total_field_errors);
+        if(total_field_errors == 1){
+            $("button.field_errors_btn").attr("disabled", true);
+        }
+        var select_field_errors = $("select.field_errors_select");
+        var options = "";
+        for(var i = 0; i < total_field_errors; i++){
+            options += "<option value='" + i + "'>" + (i + 1) + "</option>";
+        }
+        options = $(options);
+        select_field_errors.append(options);
+
+        function go_to_error(error_index) {
+            var elem = $(".invalid-feedback, div.has_errors").eq(error_index);
+            elem.get(0).scrollIntoView();
+        }
+
+        select_field_errors.on("change", function(){
+            var error_index = $(this).val();
+            go_to_error(error_index);
+        });
+
+        var field_errors_select_selectized = $("select.field_errors_select").selectize()[0].selectize;
+
+        var previous_error_btn = $("button.field_errors_btn").eq(0);
+        var next_error_btn = $("button.field_errors_btn").eq(1);
+        previous_error_btn.on("click", function(){
+            var error_index = +field_errors_select_selectized.getValue() - 1;
+            if(error_index < 0){
+                error_index = 0;
+            }
+            field_errors_select_selectized.setValue(error_index, 0);
+        });
+        next_error_btn.on("click", function(){
+            var error_index = +select_field_errors.val() + 1;
+            if(error_index > total_field_errors - 1){
+                error_index = total_field_errors - 1;
+            }
+            field_errors_select_selectized.setValue(error_index, 0);
+        });
+    }
 
     {% if create or edit %}
 
