@@ -1095,6 +1095,7 @@ class NominalTransactionsMixin:
                 .values("nominal__name")
                 .annotate(total=Sum("value"))
         )
+        print(nom_trans)
         context["nominal_transactions"] = nom_trans
         return context
 

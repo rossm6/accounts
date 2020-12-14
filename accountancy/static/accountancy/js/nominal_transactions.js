@@ -2,11 +2,12 @@ $(document).ready(function() {
 
     var table = $("table.nominal_transactions").DataTable({
         dom: "t",
-        scrollY: "200px",
+        scrollY: "1000px",
         language: {
             emptyTable: "This transaction must be a brought forward."
         },
-        scrollCollapse: true
+        scrollCollapse: true,
+        paging: false
     });
 
     $('#nominalTransactions').on('show.bs.modal', function(e) {

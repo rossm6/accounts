@@ -1,7 +1,7 @@
 $(document).ready(function(){
 
     var table = $("table.perms_table").DataTable({
-        "paging": false,
+        paging: false,
         dom: "t",
         order: [
             [0, 'asc'],

@@ -2,6 +2,7 @@ $(document).ready(function () {
 
     var table = $("table.audits").DataTable({
         dom: "t",
+        paging: false
     });
 
     var edit_mode = "{{ edit_mode }}";
