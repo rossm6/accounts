@@ -115,6 +115,11 @@ class VatCreate(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("vat:vat_list")
     prefix = "vat"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["action"] = reverse_lazy("vat:vat_create")
+        return kwargs
+
     def form_valid(self, form):
         redirect_response = super().form_valid(form)
         if self.request.is_ajax():

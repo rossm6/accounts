@@ -317,6 +317,11 @@ class NominalCreate(LoginRequiredMixin, CreateView):
     template_name = "nominals/nominal_create_and_edit.html"
     prefix = "nominal"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["action"] = reverse_lazy("nominals:nominal_create")
+        return kwargs
+
     def form_valid(self, form):
         redirect_response = super().form_valid(form)
         if self.request.is_ajax():

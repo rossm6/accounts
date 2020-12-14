@@ -1,4 +1,4 @@
-$(document).ready(function(){
+$(document).ready(function() {
 
     var table = $("table.nominal_transactions").DataTable({
         dom: "t",
@@ -9,7 +9,7 @@ $(document).ready(function(){
         scrollCollapse: true
     });
 
-    $('#nominalTransactions').on('show.bs.modal', function (e) {
+    $('#nominalTransactions').on('show.bs.modal', function(e) {
         table.columns.adjust();
     });
 
