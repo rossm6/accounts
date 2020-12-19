@@ -1160,7 +1160,7 @@ class BaseViewTransaction(
     No REST BASE exists for view yet.  Remember to move permission_action
     to this class when it is created
     """
-    permission_action = 'create'
+    permission_action = 'view'
     context_object_name = "header"
 
     def setup(self, request, *args, **kwargs):
