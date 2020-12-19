@@ -577,6 +577,16 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         # header.total would be -120.00
         value = self.Meta.model.ui_match_value(header, ui_value)
         if header:
+            if header.is_void():
+                raise forms.ValidationError(
+                    _(
+                        "Cannot match to a void transaction"
+                    ),
+                    code="invalid-match"
+                )
+
+
+
             value_change = (value - initial_value)
             due_would_be = header.due - value_change
             f = -1 if header.is_negative_type() else 1
