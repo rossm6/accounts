@@ -1,0 +1,14 @@
+<script type="text/template" id="message_template">
+    {% verbatim  %}
+        <div class="position-absolute fixed-centre">
+            {{#messages}}
+                <div class="mt-1 fixed-centre alert {{ level }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {{/messages}}
+        </div>
+    {% endverbatim  %}
+</script>

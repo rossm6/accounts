@@ -51,23 +51,37 @@
 {% endblock modal_forms %}
 
 {% block module_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.1.0/mustache.min.js" integrity="sha512-HYiNpwSxYuji84SQbCU5m9kHEsRqwWypXgJMBtbRSumlx1iBB6QaxgEBZHSHEGM+fKyCX/3Kb5V5jeVXm0OglQ==" crossorigin="anonymous"></script>
 <script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
 <script>
 
-    function show_error(message){
-        if(message){
-            var message_html = $(message);
-            message_html.addClass("void-message-error").addClass("mt-5");
-            var content = message_html.find(".fixed-centre");
-            content.removeClass("alert-success")
-            content.addClass("alert-danger");
-            $("body").find(".void-message-error").remove();
-            $("body").append(message_html)
-            $(".void-modal").modal("hide");
+
+    function show_clientside_error(messages){
+        // sometimes we get a html error from the server, this is for when not
+        var template = $("#message_template").html();
+        var result = Mustache.render(template, {messages: messages});
+        $("body").find(".void-message-error").remove();
+        $("body").append(result);
+        $(".void-modal").modal("hide");
+    }
+
+    function show_server_side_error(message){
+        if(!message){
+            show_clientside_error([
+                {
+                    "level": "alert-danger",
+                    "message": "Something went wrong.  Please try again later."
+                }
+            ]);
         }
-        else{
-            alert("Something went wrong, please try again later.");
-        }
+        var message_html = $(message);
+        message_html.addClass("void-message-error").addClass("mt-5");
+        var content = message_html.find(".fixed-centre");
+        content.removeClass("alert-success")
+        content.addClass("alert-danger");
+        $("body").find(".void-message-error").remove();
+        $("body").append(message_html);
+        $(".void-modal").modal("hide");
     }
 
     $(document).ready(function() {
@@ -88,17 +102,31 @@
                     }
                     else{
                         console.log(data);
-                        show_error(data.error_message);
+                        show_server_side_error(data.error_message);
                     }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
                     console.log(jqXHR.responseJSON);
                     if(jqXHR.responseJSON && jqXHR.responseJSON.error_message){
-                        show_error(jqXHR.responseJSON.error_message);
+                        show_clientside_error([
+                            {
+                                "level": "alert-danger",
+                                "message": jqXHR.responseJSON.error_message
+                            },
+                        ]);
                     }
                     else{
-                        show_error();
+                        var message = "Something went wrong.  Please try again later.";
+                        if(jqXHR.status == 403){
+                            message = "Permission denied to void this particular kind of transaction."
+                        }
+                        show_clientside_error([
+                            {
+                                "level": "alert-danger",
+                                "message": message
+                            }
+                        ]);
                     }
                 }
             });
