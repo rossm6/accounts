@@ -238,7 +238,6 @@ ACCOUNTANCY_MODULES = {
     'VL': 'vat'
 }
 
-
 # DEFAULT_RENDERER_CLASSES = (
 #     'rest_framework.renderers.JSONRenderer',
 # )

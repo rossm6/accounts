@@ -7,7 +7,8 @@ from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
                                EditCashBookTransaction,
                                NominalTransactionsMixin)
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin)
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.urls import reverse_lazy
@@ -23,9 +24,10 @@ from cashbook.models import CashBook
 
 from .forms import CashBookHeaderForm, CashBookLineForm, enter_lines
 from .models import CashBookHeader, CashBookLine, CashBookTransaction
+from accountancy.contrib.mixins import TransactionPermissionMixin
 
 
-class CreateTransaction(LoginRequiredMixin, CreateCashBookTransaction):
+class CreateTransaction(LoginRequiredMixin, TransactionPermissionMixin, CreateCashBookTransaction):
     header = {
         "model": CashBookHeader,
         "form": CashBookHeaderForm,
@@ -53,6 +55,7 @@ class CreateTransaction(LoginRequiredMixin, CreateCashBookTransaction):
 
 class EditTransaction(
         LoginRequiredMixin,
+        TransactionPermissionMixin,
         LockTransactionDuringEditMixin,
         EditCashBookTransaction):
     header = {
@@ -79,7 +82,11 @@ class EditTransaction(
     module = "CB"
 
 
-class ViewTransaction(LoginRequiredMixin, NominalTransactionsMixin, BaseViewTransaction):
+class ViewTransaction(
+    LoginRequiredMixin, 
+    TransactionPermissionMixin,
+    NominalTransactionsMixin, 
+    BaseViewTransaction):
     model = CashBookHeader
     line_model = CashBookLine
     nominal_transaction_model = NominalTransaction
@@ -90,7 +97,12 @@ class ViewTransaction(LoginRequiredMixin, NominalTransactionsMixin, BaseViewTran
     edit_view_name = "cashbook:edit"
 
 
-class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(
+    LoginRequiredMixin, 
+    TransactionPermissionMixin,
+    LockTransactionDuringEditMixin, 
+    DeleteCashBookTransMixin, 
+    BaseVoidTransaction):
     header_model = CashBookHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
@@ -101,7 +113,11 @@ class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, Delete
     vat_transaction_model = VatTransaction
 
 
-class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
+class TransactionEnquiry(
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        CashBookAndNominalTransList
+    ):
     model = CashBookTransaction
     fields = [
         ("module", "Module"),
@@ -122,6 +138,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "date": lambda d: d.strftime('%d %b %Y'),
     }
+    permission_required = 'cashbook.view_transactions_enquiry'
 
     def load_page(self):
         context_data = super().load_page()
@@ -167,13 +184,18 @@ class CreateAndEditMixin:
         return context
 
 
-class CashBookCreate(LoginRequiredMixin, CreateAndEditMixin, CreateView):
+class CashBookCreate(
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        CreateAndEditMixin,
+        CreateView):
     model = CashBook
     form_class = CashBookForm
     # till we have a cash book list
     success_url = reverse_lazy("cashbook:transaction_enquiry")
     template_name = "cashbook/cashbook_create_and_edit.html"
     prefix = "cashbook"
+    permission_required = 'cashbook.add_cashbook'
 
     def form_valid(self, form):
         redirect_response = super().form_valid(form)
@@ -209,13 +231,19 @@ class CashBookList(LoginRequiredMixin, ListView):
     context_object_name = "cashbooks"
 
 
-class CashBookDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
+class CashBookDetail(
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
+        DetailView):
     model = CashBook
     template_name = "cashbook/cashbook_detail.html"
+    permission_required = 'cashbook.view_cashbook'
 
 
 class CashBookEdit(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         LockDuringEditMixin,
         CreateAndEditMixin,
         UpdateView):
@@ -224,3 +252,4 @@ class CashBookEdit(
     template_name = "cashbook/cashbook_create_and_edit.html"
     success_url = reverse_lazy("cashbook:cashbook_list")
     prefix = "cashbook"
+    permission_required = 'cashbook.change_cashbook'

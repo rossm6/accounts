@@ -651,6 +651,7 @@ class BaseTransaction(
 
 
 class RESTBaseCreateTransactionMixin:
+    permission_action = 'create'
 
     def get_default_type(self):
         return self.default_type
@@ -706,7 +707,9 @@ class RESTBaseCreateTransactionMixin:
         return kwargs
 
 
-class BaseCreateTransaction(RESTBaseCreateTransactionMixin, BaseTransaction):
+class BaseCreateTransaction(
+        RESTBaseCreateTransactionMixin,
+        BaseTransaction):
 
     def get_success_message(self):
         return "Transaction was created successfully."
@@ -895,6 +898,7 @@ class RESTIndividualTransactionMixin:
             q = q.select_for_update()
         return q
 
+
 class IndividualTransactionMixin:
 
     def setup(self, request, *args, **kwargs):
@@ -914,6 +918,7 @@ class IndividualTransactionMixin:
 
 
 class RESTBaseEditTransactionMixin:
+    permission_action = 'edit'
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({
@@ -1046,20 +1051,20 @@ class EditMatchingMixin(CreateMatchingMixin):
 
     def matching_is_valid(self):
         self.match_formset.save(commit=False)
-        to_create = [ 
-            m.instance 
-            for m in self.match_formset 
+        to_create = [
+            m.instance
+            for m in self.match_formset
             if not m.instance.pk and m.instance.value
         ]
-        to_update = [ 
+        to_update = [
             m.instance
-            for m in self.match_formset 
-            if m.instance.pk and m.instance.value 
+            for m in self.match_formset
+            if m.instance.pk and m.instance.value
         ]
-        to_delete = [ 
+        to_delete = [
             m.instance
-            for m in self.match_formset 
-            if m.instance.pk and not m.instance.value 
+            for m in self.match_formset
+            if m.instance.pk and not m.instance.value
         ]
         for match in to_create + to_update:
             if match.matched_by_id == self.header_obj.pk:
@@ -1149,10 +1154,24 @@ class EditPurchaseOrSalesTransaction(
 
 
 class BaseViewTransaction(
-        ViewTransactionAuditMixin,
-        DetailView):
-
+    ViewTransactionAuditMixin,
+    DetailView):
+    """
+    No REST BASE exists for view yet.  Remember to move permission_action
+    to this class when it is created
+    """
+    permission_action = 'create'
     context_object_name = "header"
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        self.main_header = self.object = self.get_object()  # need this before dispatch for
+        # TransactionPermissionMixin
+
+    def get(self, request, *args, **kwargs):
+        # self.object = self.get_object().  Set in setup instead.  See above.
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
 
     def get_header_model(self):
         return self.model
@@ -1241,8 +1260,11 @@ class SaleAndPurchaseViewTransaction(
     pass
 
 
-class BaseVoidTransaction(IndividualTransactionMixin, View):
+class BaseVoidTransaction(
+    IndividualTransactionMixin, 
+    View):
     http_method_names = ['post']
+    permission_action = "void"
 
     def get_success_url(self):
         return self.success_url

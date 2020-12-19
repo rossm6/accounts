@@ -65,7 +65,7 @@ class BroughtForwardRefund(SalesTransaction):
     pass
 
 
-class ModuleTransactionBase:
+class ModuleTransactions:
     # FIX ME - rename to "no_nominal_required"
     no_analysis_required = [
         ('sbi', 'Brought Forward Invoice'),
@@ -125,7 +125,7 @@ class ModuleTransactionBase:
     types = no_analysis_required + analysis_required
 
 
-class SaleHeader(ModuleTransactionBase, TransactionHeader):
+class SaleHeader(ModuleTransactions, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
     cash_book = models.ForeignKey(
@@ -133,7 +133,7 @@ class SaleHeader(ModuleTransactionBase, TransactionHeader):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=ModuleTransactionBase.types
+        choices=ModuleTransactions.types
     )
     matched_to = models.ManyToManyField(
         'self', through='SaleMatching', symmetrical=False)
@@ -217,7 +217,7 @@ class SaleHeader(ModuleTransactionBase, TransactionHeader):
         return reverse("sales:view", kwargs={"pk": self.pk})
 
 
-class SaleLine(ModuleTransactionBase, TransactionLine):
+class SaleLine(ModuleTransactions, TransactionLine):
     header = models.ForeignKey(SaleHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)

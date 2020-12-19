@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
             options={
                 'permissions': [('view_transactions_enquiry', 'Can view transactions'), ('view_trial_balance_report', 'Can view trial balance report'), ('create_journal_transaction', 'Can create journal'), ('edit_journal_transaction', 'Can edit journal'), ('view_journal_transaction', 'Can view journal'), ('void_journal_transaction', 'Can void journal')],
             },
-            bases=(nominals.models.ModuleTransactionBase, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
+            bases=(nominals.models.ModuleTransactions, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
         ),
         migrations.CreateModel(
             name='NominalTransaction',
@@ -98,7 +98,7 @@ class Migration(migrations.Migration):
             options={
                 'abstract': False,
             },
-            bases=(nominals.models.ModuleTransactionBase, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
+            bases=(nominals.models.ModuleTransactions, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
         ),
         migrations.CreateModel(
             name='HistoricalNominalLine',

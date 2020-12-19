@@ -42,7 +42,7 @@ class BroughtForwardRefund(CashBookTransaction):
     pass
 
 
-class ModuleTransactionBase:
+class ModuleTransactions:
     no_analysis_required = [
         ('cbp', 'Brought Forward Payment'),
         ('cbr', 'Brought Forward Receipt'),
@@ -83,7 +83,7 @@ class ModuleTransactionBase:
     types = no_analysis_required + analysis_required
 
 
-class CashBookHeader(ModuleTransactionBase, TransactionHeader):
+class CashBookHeader(ModuleTransactions, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
     vat_types = [
@@ -93,7 +93,7 @@ class CashBookHeader(ModuleTransactionBase, TransactionHeader):
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=ModuleTransactionBase.types
+        choices=ModuleTransactions.types
     )
     vat_type = models.CharField(
         max_length=2,
@@ -141,7 +141,7 @@ class CashBookHeader(ModuleTransactionBase, TransactionHeader):
         return reverse("cashbook:view", kwargs={"pk": self.pk})
 
 
-class CashBookLine(ModuleTransactionBase, TransactionLine):
+class CashBookLine(ModuleTransactions, TransactionLine):
     header = models.ForeignKey(CashBookHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)

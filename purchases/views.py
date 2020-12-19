@@ -2,6 +2,7 @@ from decimal import Decimal
 from functools import reduce
 from itertools import chain
 
+from accountancy.contrib.mixins import TransactionPermissionMixin
 from accountancy.forms import BaseVoidTransactionForm
 from accountancy.helpers import AuditTransaction
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
@@ -15,7 +16,8 @@ from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
 from contacts.views import LoadContacts
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin)
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db import transaction
 from django.db.models import Q, Sum
@@ -53,7 +55,11 @@ class SupplierMixin:
         return kwargs
 
 
-class CreateTransaction(LoginRequiredMixin, SupplierMixin, CreatePurchaseOrSalesTransaction):
+class CreateTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        SupplierMixin,
+        CreatePurchaseOrSalesTransaction):
     header = {
         "model": PurchaseHeader,
         "form": PurchaseHeaderForm,
@@ -88,6 +94,7 @@ class CreateTransaction(LoginRequiredMixin, SupplierMixin, CreatePurchaseOrSales
 
 class EditTransaction(
         LoginRequiredMixin,
+        TransactionPermissionMixin,
         LockTransactionDuringEditMixin,
         SupplierMixin,
         EditPurchaseOrSalesTransaction):
@@ -121,7 +128,7 @@ class EditTransaction(
     vat_transaction_model = VatTransaction
 
 
-class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
+class ViewTransaction(LoginRequiredMixin, TransactionPermissionMixin, SaleAndPurchaseViewTransaction):
     model = PurchaseHeader
     line_model = PurchaseLine
     match_model = PurchaseMatching
@@ -133,7 +140,12 @@ class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     edit_view_name = "purchases:edit"
 
 
-class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        LockTransactionDuringEditMixin,
+        DeleteCashBookTransMixin,
+        BaseVoidTransaction):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
     nominal_transaction_model = NominalTransaction
@@ -159,7 +171,7 @@ class LoadSuppliers(LoginRequiredMixin, LoadContacts):
         return q.filter(supplier=True)
 
 
-class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
+class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, SalesAndPurchasesTransList):
     model = PurchaseHeader
     fields = [
         ("supplier__name", "Supplier"),
@@ -185,6 +197,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     filter_form_class = PurchaseTransactionSearchForm
     contact_name = "supplier"
     template_name = "purchases/transactions.html"
+    permission_required = 'purchases.view_transactions_enquiry'
 
     def load_page(self):
         context_data = super().load_page()
@@ -236,13 +249,14 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
             return self.paid_queryset
 
 
-class AgeCreditorsReport(LoginRequiredMixin, AgeMatchingReportMixin):
+class AgeCreditorsReport(LoginRequiredMixin, PermissionRequiredMixin, AgeMatchingReportMixin):
     model = PurchaseHeader
     match_model = PurchaseMatching
     filter_form_class = CreditorsForm
     template_name = "accountancy/aged_matching_report.html"
     contact_range_field_names = ['from_supplier', 'to_supplier']
     contact_field_name = "supplier"
+    permission_required = 'purchases.view_age_creditors_report'
 
     def load_page(self, **kwargs):
         context = super().load_page(**kwargs)

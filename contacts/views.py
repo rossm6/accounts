@@ -5,7 +5,8 @@ from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (JQueryDataTableMixin,
                                get_trig_vectors_for_different_inputs)
 from crispy_forms.utils import render_crispy_form
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin)
 from django.contrib.postgres.search import TrigramSimilarity
 from django.forms import inlineformset_factory
 from django.http import JsonResponse
@@ -93,7 +94,10 @@ class CreateAndUpdateMixin:
         return context
 
 
-class CreateContact(LoginRequiredMixin, CreateAndUpdateMixin, CreateView):
+class CreateContact(
+        LoginRequiredMixin,
+        CreateAndUpdateMixin,
+        CreateView):
     model = Contact
     form_class = ContactForm
     ajax_form_class = ModalContactForm

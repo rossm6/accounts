@@ -2,7 +2,8 @@ from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import CashBookAndNominalTransList
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin)
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Sum
 from django.http import JsonResponse
@@ -15,7 +16,7 @@ from vat.forms import VatForm, VatTransactionSearchForm
 from vat.models import Vat, VatTransaction
 
 
-class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
+class VatTransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBookAndNominalTransList):
     model = VatTransaction
     fields = [
         ("module", "Module"),
@@ -38,6 +39,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         "date": lambda d: d.strftime('%d %b %Y'),
     }
     row_identifier = "header"
+    permission_required = 'vat.view_transactions_enquiry'
 
     def load_page(self, **kwargs):
         ctx = super().load_page(**kwargs)
@@ -101,25 +103,39 @@ class VatList(LoginRequiredMixin, ListView):
     context_object_name = "vats"
 
 
-class VatDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
+class VatDetail(
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
+        DetailView):
     model = Vat
     template_name = "vat/vat_detail.html"
+    permission_required = 'vat.view_vat'
 
 
-class VatUpdate(LoginRequiredMixin, LockDuringEditMixin, UpdateView):
+class VatUpdate(
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        LockDuringEditMixin,
+        UpdateView):
     model = Vat
     form_class = VatForm
     template_name = "vat/vat_create_and_edit.html"
     success_url = reverse_lazy("vat:vat_list")
     prefix = "vat"
+    permission_required = 'vat.change_vat'
 
 
-class VatCreate(LoginRequiredMixin, CreateView):
+class VatCreate(
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        CreateView):
     model = Vat
     form_class = VatForm
     template_name = "vat/vat_create_and_edit.html"
     success_url = reverse_lazy("vat:vat_list")
     prefix = "vat"
+    permission_required = 'vat.add_vat'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

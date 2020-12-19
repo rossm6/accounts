@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
             options={
                 'permissions': [('view_transactions_enquiry', 'Can view transactions'), ('create_brought_forward_payment_transaction', 'Can create brought forward payment'), ('create_brought_forward_receipt_transaction', 'Can create brought forward receipt'), ('create_payment_transaction', 'Can create payment'), ('create_receipt_transaction', 'Can create receipt'), ('edit_brought_forward_payment_transaction', 'Can edit brought forward payment'), ('edit_brought_forward_receipt_transaction', 'Can edit brought forward receipt'), ('edit_payment_transaction', 'Can edit payment'), ('edit_receipt_transaction', 'Can edit receipt'), ('view_brought_forward_payment_transaction', 'Can view brought forward payment'), ('view_brought_forward_receipt_transaction', 'Can view brought forward receipt'), ('view_payment_transaction', 'Can view payment'), ('view_receipt_transaction', 'Can view receipt'), ('void_brought_forward_payment_transaction', 'Can void brought forward payment'), ('void_brought_forward_receipt_transaction', 'Can void brought forward receipt'), ('void_payment_transaction', 'Can void payment'), ('void_receipt_transaction', 'Can void receipt')],
             },
-            bases=(cashbook.models.ModuleTransactionBase, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
+            bases=(cashbook.models.ModuleTransactions, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
         ),
         migrations.CreateModel(
             name='HistoricalCashBookLine',
@@ -173,7 +173,7 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ['line_no'],
             },
-            bases=(cashbook.models.ModuleTransactionBase, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
+            bases=(cashbook.models.ModuleTransactions, accountancy.mixins.AuditMixin, accountancy.models.TransactionBase, models.Model),
         ),
         migrations.AddConstraint(
             model_name='cashbooktransaction',

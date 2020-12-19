@@ -66,7 +66,7 @@ class BroughtForwardRefund(PurchaseTransaction):
     pass
 
 
-class ModuleTransactionBase:
+class ModuleTransactions:
     # FIX ME - rename to "no_nominal_required"
     no_analysis_required = [
         ('pbi', 'Brought Forward Invoice'),
@@ -126,7 +126,7 @@ class ModuleTransactionBase:
     types = no_analysis_required + analysis_required
 
 
-class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
+class PurchaseHeader(ModuleTransactions, TransactionHeader):
     # TO DO - issue an improperly configured warning if all the types are not all the
     # credit types plus the debit types
     cash_book = models.ForeignKey(
@@ -134,7 +134,7 @@ class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=3,
-        choices=ModuleTransactionBase.types
+        choices=ModuleTransactions.types
     )
     matched_to = models.ManyToManyField(
         'self', through='PurchaseMatching', symmetrical=False)
@@ -207,7 +207,7 @@ class PurchaseHeader(ModuleTransactionBase, TransactionHeader):
     def get_absolute_url(self):
         return reverse("purchases:view", kwargs={"pk": self.pk})
 
-class PurchaseLine(ModuleTransactionBase, TransactionLine):
+class PurchaseLine(ModuleTransactions, TransactionLine):
     header = models.ForeignKey(PurchaseHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(
         'nominals.Nominal', on_delete=models.CASCADE, null=True, blank=True)

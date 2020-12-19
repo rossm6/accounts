@@ -1,3 +1,4 @@
+from accountancy.contrib.mixins import TransactionPermissionMixin
 from accountancy.forms import BaseVoidTransactionForm
 from accountancy.views import (BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
@@ -9,7 +10,8 @@ from accountancy.views import (BaseVoidTransaction,
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
 from contacts.views import LoadContacts
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin)
 from django.urls import reverse_lazy
 from django.utils import timezone
 from nominals.forms import NominalForm
@@ -40,7 +42,11 @@ class CustomerMixin:
         return kwargs
 
 
-class CreateTransaction(LoginRequiredMixin, CustomerMixin, CreatePurchaseOrSalesTransaction):
+class CreateTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        CustomerMixin,
+        CreatePurchaseOrSalesTransaction):
     header = {
         "model": SaleHeader,
         "form": SaleHeaderForm,
@@ -75,6 +81,7 @@ class CreateTransaction(LoginRequiredMixin, CustomerMixin, CreatePurchaseOrSales
 
 class EditTransaction(
         LoginRequiredMixin,
+        TransactionPermissionMixin,
         LockTransactionDuringEditMixin,
         CustomerMixin,
         EditPurchaseOrSalesTransaction):
@@ -108,7 +115,7 @@ class EditTransaction(
     vat_transaction_model = VatTransaction
 
 
-class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
+class ViewTransaction(LoginRequiredMixin, TransactionPermissionMixin, SaleAndPurchaseViewTransaction):
     model = SaleHeader
     line_model = SaleLine
     match_model = SaleMatching
@@ -120,7 +127,12 @@ class ViewTransaction(LoginRequiredMixin, SaleAndPurchaseViewTransaction):
     edit_view_name = "sales:edit"
 
 
-class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, DeleteCashBookTransMixin, BaseVoidTransaction):
+class VoidTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        LockTransactionDuringEditMixin,
+        DeleteCashBookTransMixin,
+        BaseVoidTransaction):
     header_model = SaleHeader
     matching_model = SaleMatching
     nominal_transaction_model = NominalTransaction
@@ -145,7 +157,8 @@ class LoadCustomers(LoginRequiredMixin, LoadContacts):
         q = super().get_queryset()
         return q.filter(customer=True)
 
-class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
+
+class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, SalesAndPurchasesTransList):
     model = SaleHeader
     fields = [
         ("customer__name", "Customer"),
@@ -169,6 +182,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     filter_form_class = SaleTransactionSearchForm
     contact_name = "customer"
     template_name = "sales/transactions.html"
+    permission_required = 'sales.view_transactions_enquiry'
 
     def load_page(self):
         context_data = super().load_page()
@@ -225,3 +239,4 @@ class AgeDebtorsReport(AgeCreditorsReport):
     filter_form_class = DebtorsForm
     contact_range_field_names = ['from_customer', 'to_customer']
     contact_field_name = "customer"
+    permission_required = 'sales.view_aged_debtors_report'

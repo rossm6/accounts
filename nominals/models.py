@@ -41,7 +41,7 @@ class Journal(
     pass
 
 
-class ModuleTransactionBase:
+class ModuleTransactions:
     analysis_required = [
         ('nj', 'Journal')
     ]
@@ -56,14 +56,14 @@ class ModuleTransactionBase:
     types = analysis_required
 
 
-class NominalHeader(ModuleTransactionBase, TransactionHeader):
+class NominalHeader(ModuleTransactions, TransactionHeader):
     vat_types = [
         ("i", "Input"),
         ("o", "Output")
     ]
     type = models.CharField(
         max_length=2,
-        choices=ModuleTransactionBase.types
+        choices=ModuleTransactions.types
     )
     vat_type = models.CharField(
         max_length=2,
@@ -92,7 +92,7 @@ class NominalHeader(ModuleTransactionBase, TransactionHeader):
     def get_absolute_url(self):
         return reverse("nominals:view", kwargs={"pk": self.pk})
 
-class NominalLine(ModuleTransactionBase, TransactionLine):
+class NominalLine(ModuleTransactions, TransactionLine):
     header = models.ForeignKey(NominalHeader, on_delete=models.CASCADE)
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     vat_code = models.ForeignKey(

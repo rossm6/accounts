@@ -1,6 +1,7 @@
 import collections
 from json import loads
 
+from accountancy.contrib.mixins import TransactionPermissionMixin
 from accountancy.forms import BaseVoidTransactionForm
 from accountancy.helpers import FY, Period
 from accountancy.mixins import SingleObjectAuditDetailViewMixin
@@ -9,7 +10,8 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                CashBookAndNominalTransList)
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin)
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models import Sum
 from django.http import HttpResponse, JsonResponse
@@ -29,7 +31,10 @@ from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 
 
-class CreateTransaction(LoginRequiredMixin, BaseCreateTransaction):
+class CreateTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        BaseCreateTransaction):
     header = {
         "model": NominalHeader,
         "form": NominalHeaderForm,
@@ -55,7 +60,11 @@ class CreateTransaction(LoginRequiredMixin, BaseCreateTransaction):
     default_type = "nj"
 
 
-class EditTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, BaseEditTransaction):
+class EditTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        LockTransactionDuringEditMixin,
+        BaseEditTransaction):
     header = {
         "model": NominalHeader,
         "form": NominalHeaderForm,
@@ -79,7 +88,7 @@ class EditTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, BaseEd
     module = "NL"
 
 
-class ViewTransaction(LoginRequiredMixin, BaseViewTransaction):
+class ViewTransaction(LoginRequiredMixin, TransactionPermissionMixin, BaseViewTransaction):
     model = NominalHeader
     line_model = NominalLine
     module = 'NL'
@@ -89,7 +98,7 @@ class ViewTransaction(LoginRequiredMixin, BaseViewTransaction):
     edit_view_name = "nominals:edit"
 
 
-class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
+class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBookAndNominalTransList):
     model = NominalTransaction
     # ORDER OF FIELDS HERE IS IMPORTANT FOR GROUPING THE SQL QUERY
     # ATM -
@@ -113,6 +122,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "date": lambda d: d.strftime('%d %b %Y'),
     }
+    permission_required = 'nominals.view_transactions_enquiry'
 
     def load_page(self):
         context_data = super().load_page()
@@ -152,7 +162,11 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
         )
 
 
-class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, BaseVoidTransaction):
+class VoidTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        LockTransactionDuringEditMixin,
+        BaseVoidTransaction):
     header_model = NominalHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
@@ -162,7 +176,7 @@ class VoidTransaction(LoginRequiredMixin, LockTransactionDuringEditMixin, BaseVo
     vat_transaction_model = VatTransaction
 
 
-class TrialBalance(LoginRequiredMixin, ListView):
+class TrialBalance(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = "nominals/trial_balance.html"
     columns = [
         'Nominal',
@@ -173,6 +187,7 @@ class TrialBalance(LoginRequiredMixin, ListView):
         'YTD Debit',
         'YTD Credit'
     ]
+    permission_required = 'view_trial_balance_report'
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
@@ -315,12 +330,13 @@ class LoadNominal(LoginRequiredMixin, ListView):
         return JsonResponse(data)
 
 
-class NominalCreate(LoginRequiredMixin, CreateView):
+class NominalCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Nominal
     form_class = NominalForm
     success_url = reverse_lazy("nominals:nominals_list")
     template_name = "nominals/nominal_create_and_edit.html"
     prefix = "nominal"
+    permission_required = 'nominals.add_nominal'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -364,14 +380,24 @@ class NominalList(LoginRequiredMixin, ListView):
     context_object_name = "nominals"
 
 
-class NominalDetail(LoginRequiredMixin, SingleObjectAuditDetailViewMixin, DetailView):
+class NominalDetail(
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
+        DetailView):
     model = Nominal
     template_name = "nominals/nominal_detail.html"
+    permission_required = 'nominals.view_nominal'
 
 
-class NominalEdit(LoginRequiredMixin, LockDuringEditMixin, UpdateView):
+class NominalEdit(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    LockDuringEditMixin, 
+    UpdateView):
     model = Nominal
     form_class = NominalForm
     template_name = "nominals/nominal_create_and_edit.html"
     success_url = reverse_lazy("nominals:nominals_list")
     prefix = "nominal"
+    permission_required = 'nominals.change_nominal'
