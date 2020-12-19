@@ -22,7 +22,7 @@ class LoadingMatchingTransactions(TestCase):
 
     def test_returns_tran(self):
         header = SaleHeader.objects.create(
-            type="pi",
+            type="si",
             customer=self.customer,
             ref="1",
             period=self.period,

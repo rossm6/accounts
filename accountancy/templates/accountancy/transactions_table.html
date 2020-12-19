@@ -1,3 +1,5 @@
+{% load crispy_forms_tags %}
+
 <div>
     <div class="d-none mb-3 adv-search-form border p-2 rounded">
         <div class="clearfix">
@@ -8,6 +10,7 @@
             </div>
         </div>
         <div class="table_form_wrapper">
+            {% crispy form %}
         </div>
         <div class="d-flex align-items-center justify-content-end my-4">
             <button class="btn btn-primary search-btn">Search</button>

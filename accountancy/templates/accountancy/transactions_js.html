@@ -21,12 +21,10 @@ $(document).ready(function () {
 
     $(document).on("click", ".adv-search-form .clear-btn", function () {
         $(".adv-search-form form").get(0).reset();
-        $("#id_use_adv_search").val("");
         table.ajax.reload();
     });
 
     $(document).on("click", ".adv-search-form .search-btn", function (event) {
-        $("#id_use_adv_search").val("yes"); // any value will do
         // before the ajax request is sent we change this to the default value ''
         // the server then checks this to see whether advanced search should be applied
         table.ajax.reload();
@@ -115,6 +113,7 @@ $(document).ready(function () {
                 // I was using jQuery.serialize but this encodes the url
                 // Because jQuery datatables does also we get double encoding
                 var fields = $(".adv-search-form").find("form").find(":input");
+                console.log(fields);
                 for(var i = 0; i < fields.length; i++){
                     var field = $(fields[i]);
                     var name = field.attr("name");
@@ -132,6 +131,7 @@ $(document).ready(function () {
                         }
                     }
                 }
+                console.log(data);
                 $.ajax({
                     url:"",
                     type: "GET",

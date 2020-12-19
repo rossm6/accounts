@@ -34,9 +34,15 @@ class VatTransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     template_name = "vat/transactions.html"
     column_transformers = {
         "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
-        "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t]
+        "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t],
+        "date": lambda d: d.strftime('%d %b %Y'),
     }
     row_identifier = "header"
+
+    def load_page(self, **kwargs):
+        ctx = super().load_page(**kwargs)
+        ctx["form"] = self.get_filter_form()
+        return ctx
 
     def get_row_href(self, obj):
         module = obj["module"]

@@ -145,7 +145,6 @@ class LoadCustomers(LoginRequiredMixin, LoadContacts):
         q = super().get_queryset()
         return q.filter(customer=True)
 
-
 class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
     model = SaleHeader
     fields = [
@@ -175,6 +174,7 @@ class TransactionEnquiry(LoginRequiredMixin, SalesAndPurchasesTransList):
         context_data = super().load_page()
         context_data["contact_form"] = ModalContactForm(
             action=reverse_lazy("contacts:create"), prefix="contact")
+        context_data["form"] = self.get_filter_form()
         return context_data
 
     def get_row_href(self, obj):

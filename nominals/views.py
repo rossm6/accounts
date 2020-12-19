@@ -111,12 +111,14 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     row_identifier = "header"
     column_transformers = {
         "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
+        "date": lambda d: d.strftime('%d %b %Y'),
     }
 
     def load_page(self):
         context_data = super().load_page()
         context_data["nominal_form"] = NominalForm(action=reverse_lazy(
             "nominals:nominal_create"), prefix="nominal")
+        context_data["form"] = self.get_filter_form()
         return context_data
 
     def get_row_href(self, obj):
@@ -134,6 +136,9 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
 
     # this should belong to the parent class
     def get_queryset(self, **kwargs):
+        # from querystring_parser import parser
+        # d = parser.parse(self.request.GET.urlencode())
+        # print(d)
         return (
             NominalTransaction.objects
             .select_related('nominal__name')

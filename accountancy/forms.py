@@ -150,8 +150,12 @@ class BaseTransactionSearchForm(forms.Form):
     include_voided = forms.BooleanField(
         label="Include Voided Transactions", initial=False, required=False)
     # used in BaseTransactionList view
-    use_adv_search = forms.BooleanField(initial=False, required=False)
+    use_adv_search = forms.BooleanField(initial=True, required=False)
     # w/o this adv search is not applied
+    # clientside this should be set to true always
+    # originally i assumed a difference between the default query executed
+    # when the page loads and a blank adv search form.  now i do not so
+    # this might as well always be set.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -120,6 +120,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
     row_identifier = "header"
     column_transformers = {
         "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
+        "date": lambda d: d.strftime('%d %b %Y'),
     }
 
     def load_page(self):
@@ -128,6 +129,7 @@ class TransactionEnquiry(LoginRequiredMixin, CashBookAndNominalTransList):
             "cashbook:cashbook_create"), prefix="cashbook")
         context_data["nominal_form"] = NominalForm(action=reverse_lazy(
             "nominals:nominal_create"), prefix="nominal")
+        context_data["form"] = self.get_filter_form()
         return context_data
 
     def get_row_href(self, obj):
