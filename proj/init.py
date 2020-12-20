@@ -35,7 +35,7 @@ def init():
     Contact.history.all().delete() # because history does not exist on the Supplier and Customer proxy models
 
     get_user_model().objects.all().delete()
-    get_user_model().objects.create_user(username="ross", password="Test123!", is_superuser=True, is_staff=True)
+    get_user_model().objects.create_superuser(username="ross", password="Test123!")
     
     nl_create_default_data() # does not bulk_create so will create audits too
     pl_create_default_data()

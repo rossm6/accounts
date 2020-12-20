@@ -1,0 +1,33 @@
+<div class="non_field_matching_error">
+    <h1 class="font-weight-bold h5">Error</h1>
+    <p>This transaction cannot be void at the moment because doing so would mean the following transactions
+    would have invalid due and paid amounts.  Please correct the matching therefore first so this is avoided.</p>
+    <table class="table" style="width: auto;">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Ref</th>
+                <th>Total</th>
+                <th>Due</th>
+                <th>Paid</th>
+                <th>New Due</th>
+                <th>New Paid</th>
+                <th>Match Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for header in headers %}
+                <tr>
+                    <td>{{ header.type }}</td>
+                    <td>{{ header.ref }}</td>
+                    <td>{{ header.total }}</td>
+                    <td>{{ header.due }}</td>
+                    <td>{{ header.paid }}</td>
+                    <td>{{ header.would_be_due }}</td>
+                    <td>{{ header.would_be_paid }}</td>
+                    <td>{{ header.value }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -116,7 +116,7 @@ class VoidTransactionsTest(TestCase):
         # Cash book
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(DATE_INPUT_FORMAT)
@@ -126,7 +126,6 @@ class VoidTransactionsTest(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
         # we will force login anyway so the user is just for this
-
 
     # INCORRECT USAGE
     def test_voiding_an_invoice_already_voided(self):
@@ -3108,3 +3107,553 @@ class VoidTransactionsTest(TestCase):
 
         matches = PurchaseMatching.objects.all()
         self.assertEqual(len(matches), 0)
+
+
+    # INVALID
+    def test_voiding_a_positive_payment_so_outstanding_would_be_invalid(self):
+        self.client.force_login(self.user)
+        payment = create_payments(self.supplier, "payment", 1, self.period, -1.00)[0]
+        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1201)[0]
+        payment2 = create_payments(self.supplier, "payment", 1, self.period, -1200)[0]
+        match(payment, [(payment1, -1201), (payment2, 1200)])
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            1.00
+        )
+        self.assertEqual(
+            payment.total,
+            1.00
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1201
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1201
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        data = {}
+        data["void-id"] = payment1.pk
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": payment1.pk}), data)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf")
+        json_content = loads(content)
+        self.assertEqual(
+            json_content["success"],
+            False
+        )
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            1.00
+        )
+        self.assertEqual(
+            payment.total,
+            1.00
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1201
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1201
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+    # INVALID
+    def test_voiding_a_negative_payment_so_outstanding_would_be_invalid(self):
+        self.client.force_login(self.user)
+        payment = create_payments(self.supplier, "payment", 1, self.period, -1.00)[0]
+        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1201)[0]
+        payment2 = create_payments(self.supplier, "payment", 1, self.period, -1200)[0]
+        match(payment, [(payment1, -1201), (payment2, 1200)])
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            1.00
+        )
+        self.assertEqual(
+            payment.total,
+            1.00
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1201
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1201
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        data = {}
+        data["void-id"] = payment2.pk
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": payment2.pk}), data)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf")
+        json_content = loads(content)
+        self.assertEqual(
+            json_content["success"],
+            False
+        )
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            1.00
+        )
+        self.assertEqual(
+            payment.total,
+            1.00
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1201
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1201
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+    # INVALID
+    def test_voiding_a_zero_payment_INVALID(self):
+        self.client.force_login(self.user)
+        payment = create_payments(self.supplier, "payment", 1, self.period, 0)[0]
+        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1201)[0]
+        payment2 = create_payments(self.supplier, "payment", 1, self.period, -1200)[0]
+        match(payment, [(payment1, -1200), (payment2, 1200)])
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.total,
+            0
+        )
+
+        self.assertEqual(
+            payment1.due,
+            -1
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        data = {}
+        data["void-id"] = payment1.pk
+        response = self.client.post(reverse("purchases:void", kwargs={"pk": payment1.pk}), data)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf")
+        json_content = loads(content)
+        self.assertEqual(
+            json_content["success"],
+            False
+        )
+
+        payment.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            payment.due,
+            0
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.total,
+            0
+        )
+
+        self.assertEqual(
+            payment1.due,
+            -1
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1201
+        )
+
+        self.assertEqual(
+            payment2.due,
+            0
+        )
+        self.assertEqual(
+            payment2.paid,
+            1200
+        )
+        self.assertEqual(
+            payment2.total,
+            1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            payment
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            1200
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )

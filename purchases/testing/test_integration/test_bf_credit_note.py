@@ -103,7 +103,7 @@ class CreateBroughtForwardCreditNote(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.url = reverse("purchases:create")
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
@@ -158,7 +158,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         )
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
 
     # CORRECT USAGE
@@ -1800,7 +1800,7 @@ class EditBroughtForwardCreditNote(TestCase):
             parent=current_assets, name="Bank Account")
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
@@ -1862,7 +1862,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         cls.description = "a line description"
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
@@ -4154,7 +4154,7 @@ class MatchingTests(TestCase):
         )
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
 
 

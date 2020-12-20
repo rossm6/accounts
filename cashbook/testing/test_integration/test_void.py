@@ -23,7 +23,7 @@ class VoidTransaction(TestCase):
         cls.description = "duh"
         cls.ref = "test"
         cls.date = datetime.now().strftime('%Y-%m-%d')
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(

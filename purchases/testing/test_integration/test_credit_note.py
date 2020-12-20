@@ -106,7 +106,7 @@ class CreateCreditNote(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.url = reverse("purchases:create")
 
     # CORRECT USAGE
@@ -137,7 +137,7 @@ class CreateCreditNoteNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -4771,7 +4771,7 @@ class EditCreditNote(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.description = "a line description"
@@ -4833,7 +4833,7 @@ class EditCreditNoteNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"

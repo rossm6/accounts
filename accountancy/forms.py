@@ -1,7 +1,8 @@
-from django.template.loader import render_to_string
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 from django import forms
+from django.db.models import Q
+from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from tempus_dominus.widgets import DatePicker
@@ -584,9 +585,6 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                     ),
                     code="invalid-match"
                 )
-
-
-
             value_change = (value - initial_value)
             due_would_be = header.due - value_change
             f = -1 if header.is_negative_type() else 1
@@ -894,6 +892,84 @@ class BaseVoidTransactionForm(forms.Form):
                 ),
                 code="invalid-transaction-to-void"
             )
+
+
+def create_html_for_void_invalidating_matches(invalid_conseq):
+    return render_to_string(
+        "accountancy/non_field_void_matching_error.html",
+        {"headers": invalid_conseq}
+    )
+
+
+class SaleAndPurchaseVoidTransactionForm(BaseVoidTransactionForm):
+
+    def __init__(self, header_model, form_action, *args, **kwargs):
+        self.matching_model = kwargs.pop("matching_model")
+        super().__init__(header_model, form_action, *args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        invalid_consequences = []
+        matches = (
+            self.matching_model
+            .objects
+            .filter(
+                Q(matched_by=self.instance) | Q(matched_to=self.instance)
+            )
+            .select_related("matched_by")
+            .select_related("matched_to")
+        )
+        for match in matches:
+            if match.matched_by_id == self.instance.pk:
+                value = match.value
+                other_header = match.matched_to
+            else:
+                value = -1 * match.value
+                other_header = match.matched_by
+            if (
+                (other_header.total == 0)
+                or
+                (
+                    (other_header.total > 0)
+                    and
+                    not
+                    (
+                        (other_header.paid - value) >= 0 and (other_header.paid -
+                                                              value) <= other_header.total
+                    )
+                )
+                or (
+                    (other_header.total < 0)
+                    and
+                    not
+                    (
+                        (other_header.paid - value) <= 0 and (other_header.paid -
+                                                              value) >= other_header.total
+                    )
+                )
+            ):
+                o = {
+                    "type": other_header.get_type_display(),
+                    "ref": other_header.ref,
+                    "total": other_header.ui_total,
+                    "due": other_header.ui_due,
+                    "paid": other_header.ui_paid
+                }
+                other_header.due += value
+                other_header.paid -= value
+                o.update({
+                    "would_be_due": other_header.ui_due,
+                    "would_be_paid": other_header.ui_paid,
+                    "value": MatchedHeaders.ui_match_value(other_header, value)
+                })
+                invalid_consequences.append(o)
+        if invalid_consequences:
+            raise forms.ValidationError(
+                _(mark_safe(create_html_for_void_invalidating_matches(
+                    invalid_consequences))),
+                code="invalid void"
+            )
+        self.matches = matches
 
 
 def aged_matching_report_factory(

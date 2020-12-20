@@ -1269,66 +1269,35 @@ class BaseVoidTransaction(
     def get_success_url(self):
         return self.success_url
 
-    def form_is_valid(self):
-        self.success = True
-        transaction_to_void = self.form.instance
-        transaction_to_void.status = "v"
-        headers_to_update = []
-        headers_to_update.append(transaction_to_void)
-        if matching_model := self.get_matching_model():
-            matches = (
-                matching_model
-                .objects
-                .filter(
-                    Q(matched_to=transaction_to_void)
-                    |
-                    Q(matched_by=transaction_to_void)
-                )
-                .select_related("matched_to")
-                .select_related("matched_by")
-                .select_for_update()
-            )
-            for match in matches:
-                if match.matched_by == transaction_to_void:
-                    # value is the amount of the matched_to transaction that was matched
-                    # e.g. transaction_to_void is 120.00 payment and matched to 120.00 invoice
-                    # value = 120.00
-                    transaction_to_void.paid += match.value
-                    transaction_to_void.due -= match.value
-                    match.matched_to.paid -= match.value
-                    match.matched_to.due += match.value
-                    headers_to_update.append(match.matched_to)
-                else:
-                    # value is the amount of the transaction_to_void which was matched
-                    # matched_by is an invoice for 120.00 and matched_to is a payment for 120.00
-                    # value is -120.00
-                    transaction_to_void.paid -= match.value
-                    transaction_to_void.due += match.value
-                    match.matched_by.paid += match.value
-                    match.matched_by.due -= match.value
-                    headers_to_update.append(match.matched_by)
-            bulk_delete_with_history(
-                matches,
-                matching_model
-            )
+    def update_headers(self):
         self.header_model.objects.audited_bulk_update(
-            headers_to_update,
+            self.headers_to_update,
             ["paid", "due", "status"]
         )
+
+    def delete_related(self):
         (
             self.nominal_transaction_model
             .objects
             .filter(module=self.module)
-            .filter(header=transaction_to_void.pk)
+            .filter(header=self.transaction_to_void.pk)
             .delete()
         )
         (
             self.vat_transaction_model
             .objects
             .filter(module=self.module)
-            .filter(header=transaction_to_void.pk)
+            .filter(header=self.transaction_to_void.pk)
             .delete()
         )
+
+    def form_is_valid(self):
+        self.success = True
+        self.transaction_to_void = self.form.instance
+        self.transaction_to_void.status = "v"
+        self.headers_to_update = [self.transaction_to_void]
+        self.update_headers()
+        self.delete_related()
 
     def form_is_invalid(self):
         self.success = False
@@ -1336,11 +1305,10 @@ class BaseVoidTransaction(
         self.error_message = render_to_string(
             "messages.html", {"messages": [non_field_errors[0]]})
 
-    def get_matching_model(self):
-        if hasattr(self, "matching_model"):
-            return self.matching_model
-
     def get_header_model(self):
+        # we do not need this for the void views
+        # but other mixins rely on this
+        # TODO - remove these unpythonic getters
         return self.header_model
 
     def get_form_prefix(self):
@@ -1376,18 +1344,66 @@ class BaseVoidTransaction(
             )
 
 
-class DeleteCashBookTransMixin:
+class SaleAndPurchaseVoidTransaction(BaseVoidTransaction):
+    
+    def get_void_form_kwargs(self):
+        kwargs = super().get_void_form_kwargs()
+        kwargs.update({
+            "matching_model": self.matching_model
+        })
+        return kwargs
 
     def form_is_valid(self):
-        super().form_is_valid()
+        self.success = True
+        self.transaction_to_void = self.form.instance
+        self.transaction_to_void.status = "v"
+        self.headers_to_update = [self.transaction_to_void]
+        matches = self.form.matches
+        matching_model = self.matching_model
+        for match in matches:
+            if match.matched_by_id == self.transaction_to_void.pk:
+                # value is the amount of the matched_to transaction that was matched
+                # e.g. transaction_to_void is 120.00 payment and matched to 120.00 invoice
+                # value = 120.00
+                self.transaction_to_void.paid += match.value
+                self.transaction_to_void.due -= match.value
+                match.matched_to.paid -= match.value
+                match.matched_to.due += match.value
+                self.headers_to_update.append(match.matched_to)
+            else:
+                # value is the amount of the transaction_to_void which was matched
+                # matched_by is an invoice for 120.00 and matched_to is a payment for 120.00
+                # value is -120.00
+                self.transaction_to_void.paid -= match.value
+                self.transaction_to_void.due += match.value
+                match.matched_by.paid += match.value
+                match.matched_by.due -= match.value
+                self.headers_to_update.append(match.matched_by)
+        bulk_delete_with_history(
+            matches,
+            matching_model
+        )
+        self.update_headers()
+        self.delete_related()
+
+
+
+
+class DeleteCashBookTransMixin:
+
+    def delete_related(self):
+        super().delete_related()
         transaction_to_void = self.form.instance
         (
             self.cash_book_transaction_model
             .objects
             .filter(module=self.module)
-            .filter(header=transaction_to_void.pk)
+            .filter(header=self.transaction_to_void.pk)
             .delete()
         )
+
+
+
 
 
 class AgeMatchingReportMixin(

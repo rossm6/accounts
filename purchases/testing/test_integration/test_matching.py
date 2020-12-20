@@ -109,7 +109,7 @@ class CreateTransactionMatching(TestCase):
     def setUpTestData(cls):
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         cls.description = "a line description"
         # ASSETS
@@ -1259,7 +1259,7 @@ class EditTransactionMatching(TestCase):
     def setUpTestData(cls):
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         cls.description = "a line description"
         # ASSETS

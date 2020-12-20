@@ -31,7 +31,7 @@ class CreateJournal(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.ref = "test journal"
         cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
@@ -1242,7 +1242,7 @@ class EditJournal(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.ref = "test journal"
         cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)
@@ -4443,7 +4443,7 @@ class VoidJournal(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.ref = "test journal"
         cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)

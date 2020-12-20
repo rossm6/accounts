@@ -100,7 +100,7 @@ class CreateBroughtForwardRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.url = reverse("purchases:create")
 
     # CORRECT USAGE
@@ -134,7 +134,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -1434,7 +1434,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -2242,7 +2242,7 @@ class EditBroughtForwardRefund(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.date = datetime.now().strftime('%Y-%m-%d')
@@ -2307,7 +2307,7 @@ class MatchingTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"

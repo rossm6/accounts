@@ -100,7 +100,7 @@ class CreateCreditNoteNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"
@@ -4651,7 +4651,7 @@ class EditCreditNoteNominalEntries(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.factory = RequestFactory()
         cls.customer = Customer.objects.create(name="test_customer")
         cls.ref = "test matching"

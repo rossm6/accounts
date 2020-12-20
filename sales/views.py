@@ -1,11 +1,13 @@
 from accountancy.contrib.mixins import TransactionPermissionMixin
-from accountancy.forms import BaseVoidTransactionForm
+from accountancy.forms import (BaseVoidTransactionForm,
+                               SaleAndPurchaseVoidTransactionForm)
 from accountancy.views import (BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
                                DeleteCashBookTransMixin,
                                EditPurchaseOrSalesTransaction,
                                LoadMatchingTransactions,
                                SaleAndPurchaseViewTransaction,
+                               SaleAndPurchaseVoidTransaction,
                                SalesAndPurchasesTransList)
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
@@ -132,12 +134,12 @@ class VoidTransaction(
         TransactionPermissionMixin,
         LockTransactionDuringEditMixin,
         DeleteCashBookTransMixin,
-        BaseVoidTransaction):
+        SaleAndPurchaseVoidTransaction):
     header_model = SaleHeader
     matching_model = SaleMatching
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
-    form = BaseVoidTransactionForm
+    form = SaleAndPurchaseVoidTransactionForm
     success_url = reverse_lazy("sales:transaction_enquiry")
     module = 'SL'
     cash_book_transaction_model = CashBookTransaction

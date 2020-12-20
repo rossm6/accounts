@@ -24,7 +24,7 @@ class CreatePayment(TestCase):
     def setUpTestData(cls):
         cls.description = "duh"
         cls.ref = "test"
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
@@ -1546,7 +1546,7 @@ class EditPayment(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(

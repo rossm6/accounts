@@ -20,7 +20,7 @@ class TranEnquiryTests(TestCase):
             name="current",
         )
         cls.url = reverse("cashbook:transaction_enquiry")
-        cls.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         cls.fy = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(

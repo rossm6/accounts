@@ -34,7 +34,7 @@ class CreateReceipt(TestCase):
             fy_and_period="202001", 
             month_end=date(2020,1,31)
         )
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -1536,7 +1536,7 @@ class EditReceipt(TestCase):
             fy_and_period="202001", 
             month_end=date(2020,1,31)
         )
-        cls.user = get_user_model().objects.create_user(username="dummy", password="dummy")
+        cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(

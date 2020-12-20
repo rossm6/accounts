@@ -3,7 +3,8 @@ from functools import reduce
 from itertools import chain
 
 from accountancy.contrib.mixins import TransactionPermissionMixin
-from accountancy.forms import BaseVoidTransactionForm
+from accountancy.forms import (BaseVoidTransactionForm,
+                               SaleAndPurchaseVoidTransactionForm)
 from accountancy.helpers import AuditTransaction
 from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                CreatePurchaseOrSalesTransaction,
@@ -11,6 +12,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
                                EditPurchaseOrSalesTransaction,
                                JQueryDataTableMixin, LoadMatchingTransactions,
                                SaleAndPurchaseViewTransaction,
+                               SaleAndPurchaseVoidTransaction,
                                SalesAndPurchasesTransList)
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
@@ -145,12 +147,12 @@ class VoidTransaction(
         TransactionPermissionMixin,
         LockTransactionDuringEditMixin,
         DeleteCashBookTransMixin,
-        BaseVoidTransaction):
+        SaleAndPurchaseVoidTransaction):
     header_model = PurchaseHeader
     matching_model = PurchaseMatching
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
-    form = BaseVoidTransactionForm
+    form = SaleAndPurchaseVoidTransactionForm
     success_url = reverse_lazy("purchases:transaction_enquiry")
     module = 'PL'
     cash_book_transaction_model = CashBookTransaction
