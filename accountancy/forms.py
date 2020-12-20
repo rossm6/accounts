@@ -246,13 +246,12 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
 class SaleAndPurchaseHeaderFormMixin:
     def __init__(self, *args, **kwargs):
-        contact_model_name = kwargs.pop("contact_model_name")
+        self.contact_model_name = contact_model_name = kwargs.pop("contact_model_name")
         super().__init__(*args, **kwargs)
         if self.data:
             tran_type = self.data.get(self.prefix + "-" + "type")
         else:
             tran_type = self.initial.get('type')
-
         if tran_type in self._meta.model.payment_types:
             payment_form = True
             if tran_type in self._meta.model.get_types_requiring_analysis():
@@ -270,6 +269,17 @@ class SaleAndPurchaseHeaderFormMixin:
             payment_form=payment_form,
             payment_brought_forward_form=payment_brought_forward_form
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.contact_model_name in self.changed_data and self.instance.paid != 0:
+            raise forms.ValidationError(
+                _(
+                    f"You cannot change the {self.contact_model_name} if the transaction is matched to other transactions. "
+                    "Please remove the matches first."
+                ),
+                code="invalid contact change"
+            )
 
 
 class BaseTransactionModelFormSet(forms.BaseModelFormSet):
@@ -578,6 +588,22 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         # header.total would be -120.00
         value = self.Meta.model.ui_match_value(header, ui_value)
         if header:
+            if hasattr(header, "customer"):
+                if header.customer_id != self.tran_being_created_or_edited.customer_id:
+                    raise forms.ValidationError(
+                        _(
+                            "Cannot match to a transaction which belongs to another account"
+                        ),
+                        code="invalid-match"
+                    )
+            if hasattr(header, "supplier"):
+                if header.supplier_id != self.tran_being_created_or_edited.supplier_id:
+                   raise forms.ValidationError(
+                        _(
+                            "Cannot match to a transaction which belongs to another account"
+                        ),
+                        code="invalid-match"
+                    )
             if header.is_void():
                 raise forms.ValidationError(
                     _(

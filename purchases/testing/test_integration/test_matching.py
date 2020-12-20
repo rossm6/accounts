@@ -1249,6 +1249,68 @@ class CreateTransactionMatching(TestCase):
             0
         )
 
+    def test_cannot_match_to_a_transaction_on_another_account(self):
+        self.client.force_login(self.user)
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        line_forms = ([{
+                'description': self.description,
+                'goods': 100,
+                'nominal': self.nominal.pk,
+                'vat_code': self.vat_code.pk,
+                'vat': 20
+            }]) * 20
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        # invoice is for 2400
+        other_supplier = Supplier.objects.create(code="other", name="other")
+        payment = create_payments(other_supplier, "payment", 1, self.period, 2400)[0]
+        payment.status = "v"
+        payment.save()
+        headers_as_dicts = [ to_dict(payment) ]
+        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 200})
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Cannot match to a transaction which belongs to another account"
+        )
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        payment = headers[0]
+        self.assertEqual(
+            payment.total,
+            -2400
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.due,
+            -2400
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
 
 class EditTransactionMatching(TestCase):
     """
@@ -6874,4 +6936,163 @@ class EditTransactionMatching(TestCase):
         self.assertContains(
             response,
             "Cannot match to a void transaction"
+        )
+
+    def test_cannot_change_supplier_if_there_are_matches_38(self):
+        self.client.force_login(self.user)
+
+        create_invoice_with_nom_entries(
+            {
+                "type": "pi",
+                "supplier": self.supplier,
+                "period": self.period,
+                "ref": self.ref,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
+                "total": 2400,
+                "paid": 0,
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400,
+            },
+            [
+                {
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ] * 20,
+            self.vat_nominal,
+            self.purchase_control
+        )
+
+        invoice = PurchaseHeader.objects.first()
+        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        match(invoice, [(payment1, -1200), (payment2, 600)])
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1800
+        )
+        self.assertEqual(
+            invoice.paid,
+            600
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        # here we match with models only so matching is possible
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        self.assertEqual(
+            payment2.due,
+            4400
+        )
+        self.assertEqual(
+            payment2.paid,
+            600
+        )
+        self.assertEqual(
+            payment2.total,
+            5000
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            600
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+
+        new_supplier = Supplier.objects.create(name="new", code="new")
+
+        url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": cashbook.pk,
+                "type": payment2.type,
+                "supplier": new_supplier.pk,
+				"period": payment2.period.pk,
+                "ref": payment2.ref,
+                "date": payment2.date.strftime(DATE_INPUT_FORMAT),
+                "total": payment2.total * -1
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        matching_trans = [invoice]
+        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
+        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -600})
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        matching_forms[0]["id"] = matches[1].pk
+        matching_forms[0]["matched_to"] = payment2.pk
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "You cannot change the supplier if the transaction is matched to other transactions. Please remove the matches first."
         )
