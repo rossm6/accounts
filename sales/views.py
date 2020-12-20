@@ -12,6 +12,7 @@ from accountancy.views import (BaseVoidTransaction,
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
 from contacts.views import LoadContacts
+from controls.mixins import QueuePostsMixin
 from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin)
 from django.urls import reverse_lazy
@@ -47,6 +48,7 @@ class CustomerMixin:
 class CreateTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         CustomerMixin,
         CreatePurchaseOrSalesTransaction):
     header = {
@@ -84,6 +86,7 @@ class CreateTransaction(
 class EditTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         LockTransactionDuringEditMixin,
         CustomerMixin,
         EditPurchaseOrSalesTransaction):
@@ -132,6 +135,7 @@ class ViewTransaction(LoginRequiredMixin, TransactionPermissionMixin, SaleAndPur
 class VoidTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         LockTransactionDuringEditMixin,
         DeleteCashBookTransMixin,
         SaleAndPurchaseVoidTransaction):

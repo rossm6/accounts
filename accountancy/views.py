@@ -893,21 +893,14 @@ class RESTIndividualTransactionMixin:
         return kwargs
 
     def get_line_formset_queryset(self):
-        q = self.get_line_model().objects.filter(header=self.main_header)
-        if self.request.method == "POST":
-            q = q.select_for_update()
-        return q
-
+        return self.get_line_model().objects.filter(header=self.main_header)
 
 class IndividualTransactionMixin:
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
         pk = kwargs.get('pk')
-        q = self.get_header_model()
-        if request.method == "POST":
-            q = q.objects.select_for_update()
-        header = get_object_or_404(q, pk=pk)
+        header = get_object_or_404(self.get_header_model(), pk=pk)
         self.main_header = header
 
     def get_context_data(self, **kwargs):
@@ -1034,16 +1027,13 @@ class EditMatchingMixin(CreateMatchingMixin):
     matching_formset_template = "accounts/edit_matching_formset.html"
 
     def get_match_formset_queryset(self):
-        q = (
+        return (
             self.get_match_model()
             .objects
             .filter(Q(matched_by=self.main_header) | Q(matched_to=self.main_header))
             .select_related('matched_by')
             .select_related('matched_to')
         )
-        if self.request.method == "POST":
-            q = q.select_for_update()
-        return q
 
     def get_match_formset(self, header=None):
         header = self.main_header

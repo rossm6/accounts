@@ -10,10 +10,12 @@ from users.models import Lock, UserSession
 
 class LockDuringEditMixin:
     """
-    When a user requests a URL to edit an object, create a lock record.
+    This lock mechanism is for the browser.  A POST request through the browser presupposes first a GET request.
+    The GET request locks if another user has not already locked.  The POST request will be allowed if there is no lock or
+    the user owns the lock.  If another tries to GET in the browser then get a modal window error telling them they cannot.
 
-    Should another request (GET) return the same template but show a modal saying something like 
-    "Record is being locked by another user ..."
+    For an API we wouldn't ever want to check for locks for the GET request, or create.  For POST we would only want to check
+    if there is a lock and never create.
     """
     object_identifier = "object"
 
@@ -35,6 +37,19 @@ class LockDuringEditMixin:
             )
         )
         return lock_object, created
+
+    def get_lock(self, object_to_edit):
+        content_type = ContentType.objects.get_for_model(object_to_edit)
+        try:
+            lock = (
+                Lock.objects
+                .select_related("user_session")
+                .select_related("user_session__user")
+                .get(content_type=content_type, object_id=object_to_edit.pk)
+            )
+            return lock
+        except Lock.DoesNotExist:
+            return
 
     def can_edit(self, lock, created):
         if created:
@@ -61,16 +76,15 @@ class LockDuringEditMixin:
 
     def post(self, request, *args, **kwargs):
         if hasattr(self, self.object_identifier):
-            lock, created = self.get_or_create_lock(
-                getattr(self, self.object_identifier))
-            if not self.can_edit(lock, created):
-                error_message = render_to_string(
-                    "messages.html", 
-                    {
-                        "messages": [f"Username: {lock.user_session.user.username} is already editing this."]
-                    }
-                )
-                return JsonResponse({"error_message": error_message}, status=403)
+            if lock := self.get_lock(getattr(self, self.object_identifier)):
+                if not self.can_edit(lock, None):
+                    error_message = render_to_string(
+                        "messages.html", 
+                        {
+                            "messages": [f"Username: {lock.user_session.user.username} is already editing this."]
+                        }
+                    )
+                    return JsonResponse({"error_message": error_message}, status=403)
         return super().post(request, *args, **kwargs)
 
 

@@ -21,3 +21,19 @@ class Period(AuditMixin, models.Model):
         if self.fy_and_period:
             return self.fy_and_period
         return ""
+
+class QueuePosts(models.Model):
+    """
+    POST requests for each ledger should be queued to avoid concurrency when creating,
+    editing or voiding transactions.
+
+    Each view - create, edit and void - should SELECT_FOR_UPDATE the row which is the module / django app
+    the view belongs to before any work is done.  This way the POST requests per module are queued.
+    """
+    POST_MODULES = [
+        ('c', 'cashbook'),
+        ('n', 'nominals'),
+        ('p', 'purchases'),
+        ('s', 'sales'),
+    ]
+    module = models.CharField(max_length=1, choices=POST_MODULES)

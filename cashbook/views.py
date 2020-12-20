@@ -25,9 +25,14 @@ from cashbook.models import CashBook
 from .forms import CashBookHeaderForm, CashBookLineForm, enter_lines
 from .models import CashBookHeader, CashBookLine, CashBookTransaction
 from accountancy.contrib.mixins import TransactionPermissionMixin
+from controls.mixins import QueuePostsMixin
 
 
-class CreateTransaction(LoginRequiredMixin, TransactionPermissionMixin, CreateCashBookTransaction):
+class CreateTransaction(
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        QueuePostsMixin,
+        CreateCashBookTransaction):
     header = {
         "model": CashBookHeader,
         "form": CashBookHeaderForm,
@@ -56,6 +61,7 @@ class CreateTransaction(LoginRequiredMixin, TransactionPermissionMixin, CreateCa
 class EditTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         LockTransactionDuringEditMixin,
         EditCashBookTransaction):
     header = {
@@ -83,10 +89,10 @@ class EditTransaction(
 
 
 class ViewTransaction(
-    LoginRequiredMixin, 
-    TransactionPermissionMixin,
-    NominalTransactionsMixin, 
-    BaseViewTransaction):
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        NominalTransactionsMixin,
+        BaseViewTransaction):
     model = CashBookHeader
     line_model = CashBookLine
     nominal_transaction_model = NominalTransaction
@@ -98,11 +104,12 @@ class ViewTransaction(
 
 
 class VoidTransaction(
-    LoginRequiredMixin, 
-    TransactionPermissionMixin,
-    LockTransactionDuringEditMixin, 
-    DeleteCashBookTransMixin, 
-    BaseVoidTransaction):
+        LoginRequiredMixin,
+        TransactionPermissionMixin,
+        QueuePostsMixin,
+        LockTransactionDuringEditMixin,
+        DeleteCashBookTransMixin,
+        BaseVoidTransaction):
     header_model = CashBookHeader
     nominal_transaction_model = NominalTransaction
     form_prefix = "void"
@@ -114,10 +121,10 @@ class VoidTransaction(
 
 
 class TransactionEnquiry(
-        LoginRequiredMixin,
-        PermissionRequiredMixin,
-        CashBookAndNominalTransList
-    ):
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    CashBookAndNominalTransList
+):
     model = CashBookTransaction
     fields = [
         ("module", "Module"),

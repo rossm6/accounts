@@ -8,6 +8,7 @@ from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
                                CashBookAndNominalTransList)
+from controls.mixins import QueuePostsMixin
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
 from django.contrib.auth.mixins import (LoginRequiredMixin,
@@ -34,6 +35,7 @@ from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
 class CreateTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         BaseCreateTransaction):
     header = {
         "model": NominalHeader,
@@ -63,6 +65,7 @@ class CreateTransaction(
 class EditTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         LockTransactionDuringEditMixin,
         BaseEditTransaction):
     header = {
@@ -165,6 +168,7 @@ class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBookAn
 class VoidTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         LockTransactionDuringEditMixin,
         BaseVoidTransaction):
     header_model = NominalHeader
@@ -393,7 +397,7 @@ class NominalDetail(
 class NominalEdit(
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    LockDuringEditMixin, 
+    LockDuringEditMixin,
     UpdateView):
     model = Nominal
     form_class = NominalForm

@@ -17,6 +17,7 @@ from accountancy.views import (AgeMatchingReportMixin, BaseVoidTransaction,
 from cashbook.models import CashBookTransaction
 from contacts.forms import ModalContactForm
 from contacts.views import LoadContacts
+from controls.mixins import QueuePostsMixin
 from django.contrib import messages
 from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin)
@@ -60,6 +61,7 @@ class SupplierMixin:
 class CreateTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         SupplierMixin,
         CreatePurchaseOrSalesTransaction):
     header = {
@@ -97,6 +99,7 @@ class CreateTransaction(
 class EditTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         LockTransactionDuringEditMixin,
         SupplierMixin,
         EditPurchaseOrSalesTransaction):
@@ -145,6 +148,7 @@ class ViewTransaction(LoginRequiredMixin, TransactionPermissionMixin, SaleAndPur
 class VoidTransaction(
         LoginRequiredMixin,
         TransactionPermissionMixin,
+        QueuePostsMixin,
         LockTransactionDuringEditMixin,
         DeleteCashBookTransMixin,
         SaleAndPurchaseVoidTransaction):
