@@ -1,0 +1,2 @@
+class MissingPeriodError(Exception):
+    pass
