@@ -10,8 +10,7 @@ from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 
 from accountancy.fields import AccountsDecimalField, UIDecimalField
-from accountancy.helpers import (bulk_delete_with_history,
-                                 non_negative_zero_decimal)
+from accountancy.helpers import bulk_delete_with_history
 from accountancy.mixins import AuditMixin
 
 """
@@ -485,7 +484,10 @@ class MatchedHeaders(AuditMixin, models.Model):
             value = match_value * -1
         else:
             value = match_value
-        return non_negative_zero_decimal(value)
+        # TODO - value in match field ought to have model field to avoid negative zero
+        if value == 0:
+            value = 0 # avoid negative zero
+        return value
 
     @classmethod
     def get_not_fully_matched_at_period(cls, headers, period):

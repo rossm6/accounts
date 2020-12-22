@@ -308,17 +308,3 @@ def sort_multiple(sequence, *sort_order):
         reversed(sort_order),
         sequence
     )
-
-
-"""
-Temporary until forms and views are refactored
-"""
-
-
-def non_negative_zero_decimal(decimal):
-    """
-    Avoids negative zero
-    """
-    if decimal == Decimal(0.00):
-        return Decimal(0.00)
-    return decimal

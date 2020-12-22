@@ -22,13 +22,8 @@ from mptt.utils import get_cached_trees
 from nominals.models import Nominal
 from querystring_parser import parser
 
-from accountancy.helpers import (AuditTransaction, JSONBlankDate, Period,
-                                 bulk_delete_with_history,
-                                 non_negative_zero_decimal, sort_multiple)
-
-"""
-Remove non_negative_zero_decimal
-"""
+from accountancy.helpers import (AuditTransaction, JSONBlankDate,
+                                 bulk_delete_with_history, sort_multiple)
 
 
 def get_trig_vectors_for_different_inputs(model_attrs_and_inputs):

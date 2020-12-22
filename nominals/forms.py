@@ -6,7 +6,6 @@ from accountancy.forms import (BaseAjaxFormMixin,
                                BaseLineFormset, BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
                                BaseTransactionSearchForm)
-from accountancy.helpers import Period
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  PlainFieldErrors, TableHelper,
                                  create_journal_header_helper,
