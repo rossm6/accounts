@@ -3,6 +3,8 @@ from copy import deepcopy
 from datetime import date
 from itertools import chain, groupby
 
+from controls.exceptions import MissingPeriodError
+from controls.models import Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
@@ -1474,27 +1476,44 @@ class AgeMatchingReportMixin(
             report_tran["4 month"] = 0
         else:
             report_tran["unallocated"] = 0
-            period = Period(report_period)
-            if header.period == period:
+
+            if header.period == report_period:
                 report_tran["current"] = header.due
             else:
                 report_tran["current"] = 0
-            if header.period == period - 1:
-                report_tran["1 month"] = header.due
-            else:
+
+            try:
+                if header.period == report_period - 1:
+                    report_tran["1 month"] = header.due
+                else:
+                    report_tran["1 month"] = 0
+            except MissingPeriodError:
                 report_tran["1 month"] = 0
-            if header.period == period - 2:
-                report_tran["2 month"] = header.due
-            else:
+
+            try:
+                if header.period == report_period - 2:
+                    report_tran["2 month"] = header.due
+                else:
+                    report_tran["2 month"] = 0
+            except MissingPeriodError:
                 report_tran["2 month"] = 0
-            if header.period == period - 3:
-                report_tran["3 month"] = header.due
-            else:
+
+            try:
+                if header.period == report_period - 3:
+                    report_tran["3 month"] = header.due
+                else:
+                    report_tran["3 month"] = 0
+            except MissingPeriodError:
                 report_tran["3 month"] = 0
-            if header.period <= period - 4:
-                report_tran["4 month"] = header.due
-            else:
+
+            try:
+                if header.period <= report_period - 4:
+                    report_tran["4 month"] = header.due
+                else:
+                    report_tran["4 month"] = 0
+            except MissingPeriodError:
                 report_tran["4 month"] = 0
+
         return report_tran
 
     def aggregate_transactions(self, transactions):
@@ -1511,8 +1530,10 @@ class AgeMatchingReportMixin(
 
     def load_page(self):
         context = {}
+        current_period = Period.objects.first() 
+        # obviously this will need to look up the current period of the PL or SL eventually
         form = self.get_filter_form(
-            initial={"period": "202007", "show_transactions": True})
+            initial={"period": current_period, "show_transactions": True})
         context["form"] = form
         context["columns"] = columns = []
         show_trans_columns = self.show_trans_columns.copy()
@@ -1547,6 +1568,11 @@ class AgeMatchingReportMixin(
         return self.order_objects(filtered_transactions)
 
     def filter_form_valid(self, transactions, form):
+
+        u = self.request.GET.urlencode()
+        d = parser.parse(u)
+        print(d)
+
         from_contact_field, to_contact_field = self.get_contact_range_field_names()
         from_contact = form.cleaned_data.get(from_contact_field)
         to_contact = form.cleaned_data.get(to_contact_field)

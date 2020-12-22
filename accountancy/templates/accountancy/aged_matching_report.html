@@ -25,7 +25,7 @@
                         {% include 'accountancy/crispy_form_template.html' %}
                     </div>
                     <div class="mt-4 d-flex justify-content-center">
-                        <table class="report">
+                        <table class="table report">
                             <thead>
                                 <tr>
                                     {% for col in columns %}
@@ -170,7 +170,7 @@
                     }
                 ],
                 dom: 't',
-                scrollY: 250,
+                scrollY: 1000,
                 deferRender: true,
                 scroller: true,
                 serverSide: true,

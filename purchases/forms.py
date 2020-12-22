@@ -18,6 +18,7 @@ from accountancy.layouts import (AdvSearchField, DataTableTdField, Div, Field,
                                  create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
+from controls.models import Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout
 from django import forms
@@ -135,6 +136,7 @@ enter_lines = forms.modelformset_factory(
 
 enter_lines.include_empty_form = True
 
+
 class PurchaseMatchingForm(SaleAndPurchaseMatchingForm):
     type = forms.ChoiceField(choices=PurchaseHeader.types, widget=forms.Select(
         attrs={"disabled": True, "readonly": True}))
@@ -153,6 +155,7 @@ match = forms.modelformset_factory(
 )
 
 match.include_empty_form = False
+
 
 class CreditorsForm(BaseAjaxFormMixin, forms.Form):
     from_contact_field = "from_supplier"
@@ -186,7 +189,9 @@ class CreditorsForm(BaseAjaxFormMixin, forms.Form):
             }
         )
     )
-    period = forms.CharField(max_length=6)
+    period = forms.ModelChoiceField(
+        queryset=Period.objects.all()
+    )
     show_transactions = forms.BooleanField(required=False)
     use_adv_search = forms.BooleanField(required=True, initial=True)
 
