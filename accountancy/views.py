@@ -1399,7 +1399,6 @@ class AgeMatchingReportMixin(
         JQueryDataTableMixin,
         TemplateResponseMixin,
         View):
-
     show_trans_columns = [
         # add the subclasses' contact_field_name here
         'date',
@@ -1419,6 +1418,11 @@ class AgeMatchingReportMixin(
             'field': '4 month'
         }
     ]
+    column_transformers = {
+        "date": lambda d: d.strftime('%d %b %Y') if d and not isinstance(d, JSONBlankDate) else "",
+        # payment trans do not have due dates
+        "due_date": lambda d: d.strftime('%d %b %Y') if d and not isinstance(d, JSONBlankDate) else ""
+    }
 
     def filter_by_contact(self, transactions, from_contact, to_contact):
         """
@@ -1526,7 +1530,11 @@ class AgeMatchingReportMixin(
             x["3 month"] += y["3 month"]
             x["4 month"] += y["4 month"]
             return x
-        return functools.reduce(_aggregate_transactions, transactions)
+        aggregate = functools.reduce(_aggregate_transactions, transactions)
+        aggregate["ref"] = ''
+        aggregate["date"] = ''
+        aggregate["due_date"] = ''
+        return aggregate
 
     def load_page(self):
         context = {}
@@ -1559,7 +1567,9 @@ class AgeMatchingReportMixin(
         return
 
     def get_row(self, obj):
-        return obj  # this was done in filter_form_valid
+        for column, transformer in self.column_transformers.items():
+            obj[column] = transformer(obj[column])
+        return obj
 
     def queryset_count(self, filtered_and_ordered_transactions):
         return len(filtered_and_ordered_transactions)
@@ -1568,11 +1578,6 @@ class AgeMatchingReportMixin(
         return self.order_objects(filtered_transactions)
 
     def filter_form_valid(self, transactions, form):
-
-        u = self.request.GET.urlencode()
-        d = parser.parse(u)
-        print(d)
-
         from_contact_field, to_contact_field = self.get_contact_range_field_names()
         from_contact = form.cleaned_data.get(from_contact_field)
         to_contact = form.cleaned_data.get(to_contact_field)
@@ -1605,7 +1610,7 @@ class AgeMatchingReportMixin(
         to_contact = form.cleaned_data.get(to_contact_field)
         period = form.cleaned_data.get("period")
         # queryset is simply the whole set of PL or SL transactions
-        queryset = queryset.filter(period__lte=period).order_by(
+        queryset = queryset.exclude(status="v").filter(period__lte=period).order_by(
             contact_field_name)  # must order in case
         # we need to group by contact_field_name below
         transactions = self.match_model.get_not_fully_matched_at_period(
