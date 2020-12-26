@@ -8,6 +8,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
                                CashBookAndNominalTransList)
 from controls.mixins import QueuePostsMixin
+from controls.models import Period
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
 from django.contrib.auth.mixins import (LoginRequiredMixin,
@@ -199,29 +200,27 @@ class TrialBalance(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = {}
         context["columns"] = columns = [col for col in self.columns]
+        periods = list(Period.objects.all())  # TODO - get period from NL current period
+        from_period = first_period = periods[0]
+        to_period = last_period = periods[-1]
+        form_kwargs = {
+            "initial": {
+                "from_period": first_period,
+                "to_period": last_period
+            }
+        }
         if self.request.GET:
-            context["form"] = form = TrialBalanceForm(
-                data=self.request.GET,
-                initial={
-                    "from_period": "202001",
-                    "to_period": "202007"
-                }
-            )
+            form_kwargs.update({
+                "data": self.request.GET
+            })
+        context["form"] = form = TrialBalanceForm(**form_kwargs)
+        if self.request.GET:
             if form.is_valid():
                 from_period = form.cleaned_data.get("from_period")
                 to_period = form.cleaned_data.get("to_period")
             else:
                 self.object_list = context["report"] = []  # show empty table
                 return context
-        else:
-            from_period = "202001"
-            to_period = "202007"
-            context["form"] = TrialBalanceForm(
-                initial={
-                    "from_period": from_period,
-                    "to_period": to_period
-                }
-            )
         nominals = Nominal.objects.all().prefetch_related("children")
         # hits the DB but will cache result
         root_nominals = get_cached_trees(nominals)
@@ -235,7 +234,7 @@ class TrialBalance(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             .filter(period__lte=to_period)
         )
         # get the start of the financial year the to_period is in
-        from_period = FY(to_period).start()
+        from_period = first_period
         nominal_ytd_totals = (
             NominalTransaction.objects
             .values("nominal")
@@ -394,10 +393,10 @@ class NominalDetail(
 
 
 class NominalEdit(
-    LoginRequiredMixin,
-    PermissionRequiredMixin,
-    LockDuringEditMixin,
-    UpdateView):
+        LoginRequiredMixin,
+        PermissionRequiredMixin,
+        LockDuringEditMixin,
+        UpdateView):
     model = Nominal
     form_class = NominalForm
     template_name = "nominals/nominal_create_and_edit.html"

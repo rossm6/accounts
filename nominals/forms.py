@@ -2,8 +2,8 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceIterator,
                                 RootAndLeavesModelChoiceIterator)
-from accountancy.forms import (BaseAjaxFormMixin,
-                               BaseLineFormset, BaseTransactionHeaderForm,
+from accountancy.forms import (BaseAjaxFormMixin, BaseLineFormset,
+                               BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
                                BaseTransactionSearchForm)
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
@@ -12,6 +12,7 @@ from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
+from controls.models import Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout
 from django import forms
@@ -49,7 +50,8 @@ class NominalForm(forms.ModelForm):
         self.helper.layout = Layout(
             Div(
                 Div(
-                    LabelAndFieldAndErrors('parent', css_class="w-100 form-control"),
+                    LabelAndFieldAndErrors(
+                        'parent', css_class="w-100 form-control"),
                     css_class="mt-2"
                 ),
                 Div(
@@ -215,8 +217,12 @@ enter_lines.include_empty_form = True
 
 
 class TrialBalanceForm(forms.Form):
-    from_period = forms.CharField(max_length=6)
-    to_period = forms.CharField(max_length=6)
+    from_period = forms.ModelChoiceField(
+        queryset=Period.objects.all()
+    )
+    to_period = forms.ModelChoiceField(
+        queryset=Period.objects.all()
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -244,21 +250,27 @@ class TrialBalanceForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-
         from_period = cleaned_data.get("from_period")
         to_period = cleaned_data.get("to_period")
-
         if from_period and to_period:
-            from_period = Period(from_period)
-            to_period = Period(to_period)
-            if to_period < from_period:
+            from_period_fy = from_period.fy_id
+            to_period_fy = to_period.fy_id
+
+            if from_period_fy != to_period_fy:
                 raise forms.ValidationError(
                     _(
-                        "Please correct the period range so that 'To Period' is not before 'From Period'"
+                        "Period range must be within the same FY"
                     ),
-                    code=f"invalid period range"
+                    code="invalid period range"
                 )
 
+            if from_period > to_period:
+                raise forms.ValidationError(
+                    _(
+                        "Invalid period range.  Period From cannot be after Period To"
+                    ),
+                    code="invalid period range"
+                )
         return cleaned_data
 
 
