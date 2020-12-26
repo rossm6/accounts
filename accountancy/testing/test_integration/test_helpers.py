@@ -1,7 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from accountancy.helpers import (AuditTransaction, Period,
-                                 get_all_historical_changes)
+from accountancy.helpers import AuditTransaction, get_all_historical_changes
 from cashbook.models import CashBook
 from contacts.models import Contact
 from controls.models import FinancialYear, Period
@@ -13,6 +12,7 @@ from vat.models import Vat
 
 DATE_INPUT_FORMAT = '%d-%m-%Y'
 MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
+
 
 class GetAllHistoricalChangesTest(TestCase):
 
@@ -243,11 +243,11 @@ class AuditTransactionTest(TestCase):
                         ).strftime(DATE_INPUT_FORMAT)
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
-
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
 
     def test_no_lines(self):
         cash_book = CashBook.objects.create(

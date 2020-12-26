@@ -1,7 +1,8 @@
+from datetime import date
 from json import loads
 
+from controls.models import FinancialYear, Period
 from django.test import TestCase
-
 from purchases.forms import CreditorsForm
 from purchases.models import Supplier
 
@@ -13,7 +14,9 @@ class CreditorsFormTest(TestCase):
         cls.first_supplier = Supplier.objects.create(name="first")
         cls.second_supplier = Supplier.objects.create(name="second")
         cls.third_supplier = Supplier.objects.create(name="third")
-        cls.period = "202007"
+        cls.fy = fy = FinancialYear.objects.create(financial_year=2020)
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
 
     def test_valid_range(self):
         form = CreditorsForm({

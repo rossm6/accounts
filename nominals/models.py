@@ -19,9 +19,15 @@ from vat.models import Vat
 
 
 class Nominal(AuditMixin, MPTTModel):
+    NOMINAL_TYPES = [
+        ("pl", "profit and loss"),
+        ("b", "balance sheet")
+    ]
     name = models.CharField(max_length=50, unique=True)
     parent = TreeForeignKey('self', on_delete=models.CASCADE,
                             null=True, blank=True, related_name='children')
+    type = models.CharField(max_length=2, choices=NOMINAL_TYPES, null=True, blank=True)                        
+
 
     def __str__(self):
         return self.name
