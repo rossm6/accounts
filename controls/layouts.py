@@ -4,7 +4,7 @@ from django.template.loader import render_to_string
 
 
 class TableFormset(LayoutObject):
-    template_name = "controls/table_formset.html"
+    template_name = "controls/create_fy_formset.html"
 
     def __init__(self, thead, formset_name_in_context, template=None):
         th_labels = []

@@ -3,7 +3,7 @@ from django.urls import path
 from controls.views import (FinancialYearCreate, FinancialYearDetail,
                             FinancialYearList, GroupCreate, GroupDetail,
                             GroupsList, GroupUpdate, ControlsView, UserCreate,
-                            UserDetail, UserEdit, UsersList)
+                            UserDetail, UserEdit, UsersList, AdjustFinancialYear)
 
 app_name = "controls"
 urlpatterns = [
@@ -12,6 +12,7 @@ urlpatterns = [
     path("financial_year/create", FinancialYearCreate.as_view(), name="fy_create"),
     path("financial_year/view/<int:pk>",
          FinancialYearDetail.as_view(), name="fy_view"),
+    path("financial_year/adjust", AdjustFinancialYear.as_view(), name="fy_adjust"),
     path("groups/", GroupsList.as_view(), name="groups"),
     path("groups/create", GroupCreate.as_view(), name="group_create"),
     path("groups/edit/<int:pk>", GroupUpdate.as_view(), name="group_edit"),

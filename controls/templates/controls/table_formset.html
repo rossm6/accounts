@@ -1,10 +1,18 @@
 {% load crispy_forms_tags %}
 <div class="formset">
     {{ formset.management_form|crispy }}
-    <div class="d-none empty_form">
-        {% crispy formset.empty_form %}
-    </div>
-    {% for form in formset.forms %}
-        {% crispy form %}
-    {% endfor %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th>Calendar Month</th>
+                <th>Financial Year</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in formset.forms %}
+                {% crispy form %}
+            {% endfor %}
+        </tbody>
+    </table>
 </div>

@@ -12,7 +12,6 @@ from accountancy.descriptors import DecimalDescriptor, UIDecimalDescriptor
 MODEL FIELDS
 """
 
-
 class AccountsDecimalField(models.DecimalField):
     """
     I want decimal fields in forms to show as blank by default.

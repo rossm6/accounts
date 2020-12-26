@@ -4,12 +4,8 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
-    <style>
-        label {
-            margin: 0 !important;
-        }
-    </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" integrity="sha512-3JRrEUwaCkFUBLK1N8HehwQgu8e23jTH4np5NHOmQOobuC4ROQxFwFgBLTnhcnQRMs84muMh0PnnwXlPq5MGjg==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="{% static 'controls/css/fy.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" integrity="sha512-3JRrEUwaCkFUBLK1N8HehwQgu8e23jTH4np5NHOmQOobuC4ROQxFwFgBLTnhcnQRMs84muMh0PnnwXlPq5MGjg==" crossorigin="anonymous" />
 {% endblock extra_head %}
 
 {% block content %}
@@ -18,30 +14,24 @@
         <div class="container">
             <div class="d-flex justify-content-center">
                 <div class="border data-grid p-4" style="width: 400px;">
-                    <div>
-                        <h1 class="h5">Financial Year</h1>
+                    <div class="border-bottom">
                         <div>
-                            <div>
-                                <div class="bg-white border p-2 my-2 rounded">{{ object.financial_year }}</div>
+                            <div class="input-group" style="height: 48px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="fy-span" style="width:120px;">FY</span>
+                                </div>
+                                <div class="font-weight-bold div_input form-control">{{ financial_year.financial_year }}</div>
                             </div>
                             <div>
                                 {% for period in periods %}
-                                    <div class="row no-gutters my-1">
-                                        <div class="rounded bg-primary text-white col-auto col-close-icon border border-primary d-flex justify-content-center align-items-center small">
-                                            <div>
-                                                <div>{{ period.period }}</div>
-                                            </div>
+                                    <div class="input-group" style="height: 48px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text period-number" style="height: 48px; width:120px;">Period 1</span>
                                         </div>
-                                        <div class="ml-2 col">
-                                            <div class="border rounded p-2 bg-white w-100">{{ period.month_end }}</div>
-                                        </div>
+                                        <div class="div_input form-control">{{ period.month_end|date:"M Y" }}</div>
                                     </div>
                                 {% endfor %}
                             </div>
-                        </div>
-                        <div class="mt-3 d-none audit_section p-3 border rounded">
-                            <h2 class="h4 font-weight-bold">Audit</h2>
-                            {% include 'accountancy/audit.html' %}
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,54 @@
+.col-close-icon {
+    height: 35px;
+    max-height: 35px;
+}
+
+label {
+    margin: 0 !important;
+}
+
+.input-group-text {
+    border-radius: 0px !important;
+    border-bottom: 0px;
+    font-weight: bold;
+}
+
+.input-group input.form-control {
+    border-bottom: 0px;
+    height: 48px !important;
+}
+
+.fy.form-control {
+    border-radius: 0px;
+}
+
+.input-group-prepend .input-group-text {
+    background-color: #044068;
+    color: white;
+    font-size: 1rem !important;
+}
+
+div.datepicker-months table td {
+    white-space: inherit;
+}
+
+.div_input {
+    background-color: white;
+    width: 150px;
+    height: 48px !important;
+    border-radius: 0px;
+    border-bottom: 0px;
+    align-items: center;
+    display: flex;
+}
+
+.adjust-width {
+
+}
+
+.input-disabled {
+    height: 100%;
+    background-color: white;
+    border: 0px;
+    border-top: 1px solid gray;
+}

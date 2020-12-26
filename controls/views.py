@@ -1,3 +1,4 @@
+import re
 from itertools import chain
 
 from accountancy.mixins import (ResponsivePaginationMixin,
@@ -16,7 +17,8 @@ from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 from users.mixins import LockDuringEditMixin
 
-from controls.forms import (UI_PERMISSIONS, FinancialYearForm,
+from controls.forms import (UI_PERMISSIONS, AdjustFinancialYearFormset,
+                            FinancialYearForm,
                             FinancialYearInlineFormSetCreate, GroupForm,
                             PeriodForm, UserForm)
 from controls.helpers import PermissionUI
@@ -194,21 +196,32 @@ class FinancialYearList(ListView):
     template_name = "controls/fy_list.html"
 
 
+def convert_month_years_to_full_dates(post_data_copy):
+    for k, v in post_data_copy.items():
+        if re.search(r"month_end", k):
+            if v:
+                v = "01-" + v
+                if re.search(r"01-\d{2}-\d{4}", v):
+                    post_data_copy[k] = v
+    return post_data_copy
+
+
 class FinancialYearCreate(CreateView):
     model = FinancialYear
     template_name = 'controls/fy_create.html'
     form_class = FinancialYearForm
     success_url = reverse_lazy("controls:index")
 
-    @ transaction.atomic
+    @transaction.atomic
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         if self.request.POST:
+            d = convert_month_years_to_full_dates(self.request.POST.copy())
             context_data["periods"] = FinancialYearInlineFormSetCreate(
-                self.request.POST, prefix="period")
+                d, prefix="period")
         else:
             context_data["periods"] = FinancialYearInlineFormSetCreate(
                 prefix="period")
@@ -240,9 +253,31 @@ class FinancialYearCreate(CreateView):
 class FinancialYearDetail(DetailView):
     model = FinancialYear
     template_name = "controls/fy_detail.html"
+    context_object_name = "financial_year"
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         periods = self.object.periods.all()
         context_data["periods"] = periods
         return context_data
+
+
+class AdjustFinancialYear(UpdateView):
+    model = Period
+    template_name = "controls/fy_adjust.html"
+    form_class = AdjustFinancialYearFormset
+    success_url = reverse_lazy("controls:fy_list")
+
+    def get_object(self):
+        # form is in fact a formset
+        # so every period object can be edited
+        return None
+
+    def get_success_url(self):
+        return self.success_url
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop("instance")
+        kwargs["queryset"] = Period.objects.all()
+        return kwargs

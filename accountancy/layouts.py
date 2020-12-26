@@ -3,6 +3,12 @@ from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 
 # do we need to import Hidden ??
 
+class AdjustPeriod(Div):
+    """
+    Used for adjusting FYs
+    """
+    template = "accounts/layout/fy_adjust.html"
+
 class PeriodInputGroup(Div):
     template = "accounts/layout/period_input_group.html"
 

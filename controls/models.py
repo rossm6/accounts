@@ -13,6 +13,9 @@ class FinancialYear(AuditMixin, models.Model):
     class Meta:
         ordering = ['financial_year']
 
+    def __str__(self):
+        return str(self.financial_year)
+
 
 class Period(AuditMixin, models.Model):
     period = models.CharField(max_length=2)

@@ -1,0 +1,57 @@
+{% extends 'accountancy/single_object_detail_with_audit.html' %}
+
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
+    <link rel="stylesheet" href="{% static 'controls/css/fy.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" integrity="sha512-3JRrEUwaCkFUBLK1N8HehwQgu8e23jTH4np5NHOmQOobuC4ROQxFwFgBLTnhcnQRMs84muMh0PnnwXlPq5MGjg==" crossorigin="anonymous" />
+{% endblock extra_head %}
+
+{% block content %}
+<div class="cont">
+    <div>
+        <div class="container">
+            <div class="d-flex justify-content-center">
+                <div class="border data-grid p-4">
+                    <div>
+                        <div>
+                            <div>
+                            {% comment %} form is in fact a formset {% endcomment %}
+                            {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul class="list-unstyled m-0 p-0">
+                                                {% for f in form %}
+                                                    {% for field in f %}
+                                                        {% for error in field.errors %}
+                                                        <li>{{ error }}</li>
+                                                        {% endfor %}
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            </div>
+                            <form method="POST">
+                                {% csrf_token %}
+                                {% crispy form %}
+                            <div class="text-right">
+                                <button class="btn btn-success">Adjust</button>
+                            </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block module_js %}
+{% endblock module_js %}

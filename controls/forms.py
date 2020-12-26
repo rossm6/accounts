@@ -1,9 +1,9 @@
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 ModelMultipleChoiceFieldChooseIterator)
-from accountancy.layouts import (Delete, Div, FieldAndErrors, FYInputGroup,
-                                 LabelAndFieldAndErrors, LabelAndFieldOnly,
-                                 PeriodInputGroup, PlainField,
-                                 PlainFieldErrors, Td, Tr)
+from accountancy.layouts import (AdjustPeriod, Delete, Div, FieldAndErrors,
+                                 FYInputGroup, LabelAndFieldAndErrors,
+                                 LabelAndFieldOnly, PeriodInputGroup,
+                                 PlainField, PlainFieldErrors, Td, Tr)
 from cashbook.models import CashBook, CashBookHeader
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Fieldset, Hidden, Layout, Submit
@@ -240,13 +240,14 @@ class PeriodForm(forms.ModelForm):
     month_end = forms.DateField(
         widget=DatePicker(
             options={
-                "format": "MM/YYYY",
+                "format": "MM-YYYY",
             },
             attrs={
                 "icon_toggle": True,
                 "input_group": False
             }
         ),
+        required=True
     )
 
     class Meta:
@@ -267,13 +268,95 @@ class PeriodForm(forms.ModelForm):
         )
 
 
+class PeriodFormset(forms.BaseModelFormSet):
+    def clean(self):
+        if(any(self.errors)):
+            return
+        # check the periods ordered by month_end
+        # group by FY
+        # check period for each group and across groups
+        # that the month_end is consecutive
+
+    def save(self, commit=True):
+        # reset the periods and the fy_and_period based on the ordering
+        # and the fy
+        pass
+
+
+class PeriodInlineFormset(forms.BaseInlineFormSet):
+
+    def clean(self):
+        if(any(self.errors)):
+            # blank forms will not have been rejected at this point
+            return
+        for form in self.forms:
+            if form.empty_permitted and not form.has_changed():
+                raise forms.ValidationError(
+                    _(
+                        "All periods you wish to create must have a month selected.  Delete any unwanted periods otherwise"
+                    ),
+                    code="invalid period"
+                )
+        for i in range(len(self.forms) - 1):
+            if self.forms[i].instance.month_end + relativedelta(months=+1) != self.forms[i+1].instance.month_end:
+                raise forms.ValidationError(
+                    _(
+                        "Periods must be consecutive calendar months"
+                    )
+                )
+
+
+class AdjustFinancialYearForm(forms.ModelForm):
+    class Meta:
+        model = Period
+        fields = ('period', 'month_end', 'fy',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["period"].disabled = True
+        self.fields["month_end"].disabled = True
+        month_end = self.initial["month_end"]
+        self.fields["month_end"].label = month_end.strftime("%h %Y")
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.form_show_labels = False
+        self.helper.disable_csrf = True
+        self.helper.include_media = False
+        self.helper.layout = Layout(
+            Tr(
+                Td(
+                    PlainField('id'),
+                    PlainField('period'),
+                ),
+                Td(
+                    LabelAndFieldOnly('month_end', css_class="d-none"),
+                ),
+                Td(
+                    PlainField('fy', css_class="w-100"),
+                )
+            )
+        )
+
+
+AdjustFinancialYearFormset = forms.modelformset_factory(
+    model=Period,
+    form=AdjustFinancialYearForm,
+    formset=PeriodFormset,
+    extra=0,
+    can_delete=False,
+    can_order=False
+)
+AdjustFinancialYearFormset.helper = FormHelper()
+AdjustFinancialYearFormset.helper.template = "controls/table_formset.html"
+
+
 FinancialYearInlineFormSetCreate = forms.inlineformset_factory(
     FinancialYear,
     Period,
     form=PeriodForm,
-    fields=["period", "month_end"],
+    formset=PeriodInlineFormset,
+    fields=["month_end"],
     extra=12,
-    can_delete=True,
 )
 
 
@@ -322,21 +405,18 @@ class FinancialYearForm(forms.ModelForm):
         financial_year = self.cleaned_data.get("financial_year")
         if financial_year:
             q = FinancialYear.objects.all()
-            if self.instance.pk:
-                q = q.exclude(pk=self.instance.pk)
             all_fys = [fy.financial_year for fy in q]
-            all_fys.append(financial_year)
-            all_fys.sort()
+            saved_plus_unsaved = all_fys + [financial_year]
+            saved_plus_unsaved.sort()
             if not(
                 all(
-                    all_fys[i] + 1 == all_fys[i + 1]
-                    for i in range(len(all_fys) - 1)
+                    saved_plus_unsaved[i] + 1 == saved_plus_unsaved[i + 1]
+                    for i in range(len(saved_plus_unsaved) - 1)
                 )
             ):
                 raise forms.ValidationError(
                     _(
-                        "Financial years must be consecutive.  So this financial year you are either creating or editing "
-                        "must be either a year earlier than the current earliest, or a year later than the current latest."
+                        f"Financial years must be consecutive.  The earlier is {all_fys[0]} and the latest is {all_fys[-1]}"
                     ),
                     code="invalid-fy"
                 )
