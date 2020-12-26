@@ -5,8 +5,6 @@
         {% crispy formset.empty_form %}
     </div>
     {% for form in formset.forms %}
-        <div>
-            {% crispy form %}
-        </div>
+        {% crispy form %}
     {% endfor %}
 </div>

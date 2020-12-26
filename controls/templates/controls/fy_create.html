@@ -8,12 +8,37 @@
 <style>
 
     .col-close-icon {
-        height: 36px;
-        max-height: 36px;
+        height: 35px;
+        max-height: 35px;
     }
 
     label {
         margin: 0 !important;
+    }
+
+    .input-group-text {
+        border-radius: 0px !important;
+        border-bottom: 0px;
+        font-weight: bold;
+    }
+
+    .input-group input.form-control {
+        border-bottom: 0px;
+        height: 48px !important;
+    }
+
+    .fy.form-control {
+        border-radius: 0px;
+    }
+
+    .input-group-prepend .input-group-text {
+        background-color: #044068;
+        color: white;
+        font-size: 1rem !important;
+    }
+
+    div.datepicker-months table td {
+        white-space: inherit;
     }
 
 </style>
@@ -27,9 +52,6 @@
             <div class="d-flex justify-content-center">
                 <div class="border data-grid p-4" style="width: 400px;">
                     <div>
-                        <div class="d-none text-right mb-3">
-                            <button class="btn btn-primary auto-fill-btn">Auto Fill</button>
-                        </div>
                         <div>
                             {% crispy form %}
                         </div>
@@ -51,6 +73,14 @@
 <script>
     $(document).ready(function(){
         
+        function init () {
+            $("span.period-number:visible").each(function(index, el){
+                $(el).text("Period " + (index + 1))
+            });
+        }
+
+        init();
+
         var add_period_btn = $("button.add-period-btn");
         add_period_btn.on("click", function(e){
             e.preventDefault();
@@ -63,17 +93,11 @@
                 $(this).val("");
             });
             new_form
-            .find("label")
-            .filter(function(index){ 
-                var for_attr = $(this).attr("for");
-                var reg = new RegExp("id_period" + '-\\d+-' + "period");
-                return for_attr.match(reg)
-            })
-            .text("P" + (+total_forms + 1))
+            .find("span.period-number")
+            .text("Period " + (+total_forms + 1))
             $("div.formset").append(new_form);
             $("form").find("input[name='period-TOTAL_FORMS']").val(+total_forms + 1);
         });
-
 
         function auto_fill(){
             var format = "YYYY-MM-DD";
@@ -88,12 +112,20 @@
             });
         }
 
-
         $("button.auto-fill-btn").on("click", auto_fill);
 
-
         $(document).on("focusout", ".datepicker", function(e){
-            $("button.auto-fill-btn").parents().eq(0).removeClass("d-none");
+            $("button.auto-fill-btn").prop("disabled", false);
+        });
+
+        $(document).on("click", ".col-close-icon", function(){
+            var delete_btn = $(this);
+            var input_group = delete_btn.parents(".input-group").eq(0);
+            input_group.remove();
+            var total_forms_input = $("div.formset").find("input[name='period-TOTAL_FORMS']");
+            var total_periods = total_forms_input.val();
+            total_forms_input.val(+total_periods - 1);
+            init();
         });
 
     });

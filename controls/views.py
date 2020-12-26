@@ -24,7 +24,7 @@ from controls.models import FinancialYear, Period
 from controls.widgets import CheckboxSelectMultipleWithDataAttr
 
 
-class controlsView(LoginRequiredMixin, TemplateView):
+class ControlsView(LoginRequiredMixin, TemplateView):
     template_name = "controls/controls.html"
 
 

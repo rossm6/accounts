@@ -3,6 +3,11 @@ from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 
 # do we need to import Hidden ??
 
+class PeriodInputGroup(Div):
+    template = "accounts/layout/period_input_group.html"
+
+class FYInputGroup(Div):
+    template = "accounts/layout/fy_input_group.html"
 
 class Delete(Div):
     template = "accounts/layout/delete.html"

@@ -1,0 +1,12 @@
+{% load static %}
+<div class="input-group" style="height: 48px;">
+    <div class="input-group-prepend">
+        <span class="input-group-text period-number" style="height: 48px; width:120px;">Period 1</span>
+    </div>
+    {{ fields|safe }}
+    <div class="input-group-append">
+        <span class="input-group-text">
+            <img class="pointer col-close-icon" src="{% static 'images/close-icon.png' %}" height="36"/>
+        </span>
+    </div>
+</div>

@@ -1,8 +1,9 @@
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 ModelMultipleChoiceFieldChooseIterator)
-from accountancy.layouts import (Delete, Div, FieldAndErrors,
+from accountancy.layouts import (Delete, Div, FieldAndErrors, FYInputGroup,
                                  LabelAndFieldAndErrors, LabelAndFieldOnly,
-                                 PlainField, PlainFieldErrors, Td, Tr)
+                                 PeriodInputGroup, PlainField,
+                                 PlainFieldErrors, Td, Tr)
 from cashbook.models import CashBook, CashBookHeader
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Fieldset, Hidden, Layout, Submit
@@ -234,13 +235,12 @@ class UserForm(UserProfileForm):
             ),
         )
 
+
 class PeriodForm(forms.ModelForm):
     month_end = forms.DateField(
         widget=DatePicker(
             options={
-                "useCurrent": True,
-                "collapse": True,
-                "format": "DD-MM-YYYY"
+                "format": "MM/YYYY",
             },
             attrs={
                 "icon_toggle": True,
@@ -251,60 +251,26 @@ class PeriodForm(forms.ModelForm):
 
     class Meta:
         model = Period
-        fields = ("id", "period", "month_end")
-        widgets = {
-            "period": forms.widgets.HiddenInput
-        }
+        fields = ("id", "month_end")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["period"].required = False
         self.helper = FormHelper()
         self.helper.form_tag = False
+        self.helper.form_show_labels = False
         self.helper.include_media = False
         self.helper.layout = Layout(
-            Div(
-                PlainField(
-                    'id'
-                ),
-                Div(
-                    Div(
-                        LabelAndFieldOnly('period'),
-                    ),
-                    css_class="bg-primary text-white col-auto col-close-icon border border-primary rounded d-flex justify-content-center align-items-center"
-                ),
-                Div(
-                    FieldAndErrors(
-                        'month_end', css_class="w-100 form-control"),
-                    css_class="col px-2"
-                ),
-                Div(
-                    Div(
-                        PlainField(
-                            'DELETE', css_class="d-none col-close-icon"),
-                        Delete(),
-                    ),
-                    css_class="pointer col-auto col-close-icon border rounded col-close-icon"
-                ),
-                css_class="row no-gutters p-1"
+            PeriodInputGroup(
+                'id',
+                PlainField('month_end'),
             )
         )
-
-
-class PeriodFormSet(forms.BaseInlineFormSet):
-
-    def _construct_form(self, i, **kwargs):
-        form = super()._construct_form(i, **kwargs)
-        label = form.fields["period"].label = i + 1
-        form.fields["period"].initial = i + 1
-        return form
 
 
 FinancialYearInlineFormSetCreate = forms.inlineformset_factory(
     FinancialYear,
     Period,
     form=PeriodForm,
-    formset=PeriodFormSet,
     fields=["period", "month_end"],
     extra=12,
     can_delete=True,
@@ -322,11 +288,16 @@ class FinancialYearForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Div(
-                LabelAndFieldAndErrors(
-                    "financial_year", css_class="mt-2 form-control"),
+                HTML(
+                    "<button type='button' disabled class='btn btn-block btn-primary auto-fill-btn'>Auto Fill</button>"
+                    "<button class='btn btn-primary add-period-btn btn-block'>Add Period</button>"
+                ),
                 css_class="mb-2"
             ),
             Div(
+                FYInputGroup(
+                    PlainField('financial_year', css_class="form-control fy")
+                ),
                 TableFormset(
                     [
                         {"label": "", "css_class": "d-none"},
@@ -334,24 +305,16 @@ class FinancialYearForm(forms.ModelForm):
                         ""
                     ],
                     "periods"
-                )
+                ),
+                css_class="border-bottom"
             ),
             Div(
-                HTML(
-                    "<button class='btn btn-primary add-period-btn'>Add Period</button>"
-                ),
-                css_class="my-5"
-            ),
-            Div(
-                HTML(
-                    "<a class='btn btn-secondary mr-2' href='{% url 'controls:index' %}'>Cancel</a>"
-                ),
                 Submit(
                     'Save',
-                    'Save',
-                    css_class="btn btn-success"
+                    'Create FY',
+                    css_class="btn btn-success btn-block"
                 ),
-                css_class="mt-5 d-flex justify-content-between"
+                css_class="mt-2 d-flex justify-content-between"
             ),
         )
 
