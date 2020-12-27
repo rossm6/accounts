@@ -1,5 +1,8 @@
+from itertools import groupby
+
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 ModelMultipleChoiceFieldChooseIterator)
+from accountancy.helpers import sort_multiple
 from accountancy.layouts import (AdjustPeriod, Delete, Div, FieldAndErrors,
                                  FYInputGroup, LabelAndFieldAndErrors,
                                  LabelAndFieldOnly, PeriodInputGroup,
@@ -272,16 +275,26 @@ class PeriodFormset(forms.BaseModelFormSet):
     def clean(self):
         if(any(self.errors)):
             return
-        # check the periods ordered by month_end
-        # group by FY
-        # check period for each group and across groups
-        # that the month_end is consecutive
-
-    def save(self, commit=True):
-        # reset the periods and the fy_and_period based on the ordering
-        # and the fy
-        pass
-
+        instances = [form.instance for form in self.forms]
+        for i in range(len(instances) - 1):
+            if not(
+                instances[i].fy.financial_year == instances[i+1].fy.financial_year
+                or
+                instances[i].fy.financial_year + 1 == instances[i+1].fy.financial_year
+            ):
+                raise forms.ValidationError(
+                    _(
+                       f"A financial year must contain consecutive periods.  Here you selected calendar month "
+                       f"{instances[i].month_end.strftime('%h %Y')} to be FY {str(instances[i].fy)} and calendar month "
+                       f"{instances[i+1].month_end.strftime('%h %Y')} to be FY {str(instances[i+1].fy)}"
+                    ),
+                    code="invalid fy"
+                )
+        for fy_id, group in groupby([form.instance for form in self.forms], key=lambda i: i.fy_id):
+            for i, period in enumerate(list(group), 1):
+                p = str(i).rjust(2, "0")
+                period.fy_and_period = str(period.fy) + p
+                period.period = p
 
 class PeriodInlineFormset(forms.BaseInlineFormSet):
 
@@ -304,6 +317,24 @@ class PeriodInlineFormset(forms.BaseInlineFormSet):
                         "Periods must be consecutive calendar months"
                     )
                 )
+        # can only create.  cannot edit
+        # so forms cannot relate to periods already saved
+        periods = Period.objects.all()
+        old_and_new = list(periods) + [ form.instance for form in self.forms ]
+        old_and_new.sort(key=lambda p: p.month_end)
+        for i in range(len(old_and_new) - 1):
+            if old_and_new[i].month_end + relativedelta(months=+1) != old_and_new[i+1].month_end:
+                old = old_and_new[i] if old_and_new[i].pk else old_and_new[i+1]
+                new = old_and_new[i+1] if old_and_new[i].pk else old_and_new[i]
+                raise forms.ValidationError(
+                    _(
+                        f"Period {old.period} of FY {old.fy_and_period[:4]} is for calendar month {old.month_end.strftime('%h %Y')}.  "
+                        f"But you are trying to now create a period for calendar month {new.month_end.strftime('%h %Y')} again.  "
+                        "This is not allowed because periods must be consecutive calendar months across ALL financial years."
+                    )
+                )
+
+
 
 
 class AdjustFinancialYearForm(forms.ModelForm):
@@ -332,11 +363,11 @@ class AdjustFinancialYearForm(forms.ModelForm):
                     LabelAndFieldOnly('month_end', css_class="d-none"),
                 ),
                 Td(
-                    PlainField('fy', css_class="w-100"),
+                    FieldAndErrors('fy', css_class="w-100"),
                 )
             )
         )
-
+        
 
 AdjustFinancialYearFormset = forms.modelformset_factory(
     model=Period,
@@ -416,7 +447,7 @@ class FinancialYearForm(forms.ModelForm):
             ):
                 raise forms.ValidationError(
                     _(
-                        f"Financial years must be consecutive.  The earlier is {all_fys[0]} and the latest is {all_fys[-1]}"
+                        f"Financial years must be consecutive.  The earliest is {all_fys[0]} and the latest is {all_fys[-1]}"
                     ),
                     code="invalid-fy"
                 )

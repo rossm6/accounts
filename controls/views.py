@@ -1,5 +1,5 @@
 import re
-from itertools import chain
+from itertools import chain, groupby
 
 from accountancy.mixins import (ResponsivePaginationMixin,
                                 SingleObjectAuditDetailViewMixin)
@@ -267,6 +267,7 @@ class AdjustFinancialYear(UpdateView):
     template_name = "controls/fy_adjust.html"
     form_class = AdjustFinancialYearFormset
     success_url = reverse_lazy("controls:fy_list")
+    prefix = "period"
 
     def get_object(self):
         # form is in fact a formset
@@ -281,3 +282,25 @@ class AdjustFinancialYear(UpdateView):
         kwargs.pop("instance")
         kwargs["queryset"] = Period.objects.all()
         return kwargs
+
+    def form_invalid(self, formset):
+        if any([form.non_field_errors() for form in formset]):
+            formset.has_non_field_errors = True
+        if formset.non_form_errors():
+            formset.has_non_field_errors = True
+        return super().form_invalid(formset)
+
+    def form_valid(self, formset):
+        formset.save(commit=False)
+        instances = [form.instance for form in formset]
+        fy_period_counts = {}
+        for fy_id, periods in groupby(instances, key=lambda p: p.fy_id):
+            fy_period_counts[fy_id] = len(list(periods))
+        fys = FinancialYear.objects.all()
+        for fy in fys:
+            fy.number_of_periods = fy_period_counts[fy.pk]
+        # no point auditing this
+        FinancialYear.objects.bulk_update(fys, ["number_of_periods"])
+        bulk_update_with_history(
+            instances, Period, ["period", "fy_and_period", "fy"])
+        return HttpResponseRedirect(self.get_success_url())

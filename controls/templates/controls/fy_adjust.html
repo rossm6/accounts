@@ -19,16 +19,17 @@
                         <div>
                             <div>
                             {% comment %} form is in fact a formset {% endcomment %}
-                            {% if form.errors %}
+                            {% if form.has_non_field_errors %}
                                 <div class="alert alert-danger">
                                     <div class="row">
                                         <div class="col">
                                             <ul class="list-unstyled m-0 p-0">
+                                                {% for error in form.non_form_errors %}
+                                                    <li>{{ error }}</li>
+                                                {% endfor %}
                                                 {% for f in form %}
-                                                    {% for field in f %}
-                                                        {% for error in field.errors %}
+                                                    {% for error in f.non_field_errors %}
                                                         <li>{{ error }}</li>
-                                                        {% endfor %}
                                                     {% endfor %}
                                                 {% endfor %}
                                             </ul>
