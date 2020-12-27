@@ -6,7 +6,7 @@ from accountancy.helpers import sort_multiple
 from accountancy.layouts import (AdjustPeriod, Delete, Div, FieldAndErrors,
                                  FYInputGroup, LabelAndFieldAndErrors,
                                  LabelAndFieldOnly, PeriodInputGroup,
-                                 PlainField, PlainFieldErrors, Td, Tr)
+                                 PlainField, PlainFieldErrors, Td, Tr, Field)
 from cashbook.models import CashBook, CashBookHeader
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Fieldset, Hidden, Layout, Submit
@@ -23,7 +23,7 @@ from users.forms import UserProfileForm
 from vat.models import Vat, VatTransaction
 
 from controls.layouts import TableFormset
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from controls.widgets import (CheckboxSelectMultipleWithDataAttr,
                               CheckboxSelectMultipleWithDataAttr_UserEdit)
 
@@ -278,15 +278,17 @@ class PeriodFormset(forms.BaseModelFormSet):
         instances = [form.instance for form in self.forms]
         for i in range(len(instances) - 1):
             if not(
-                instances[i].fy.financial_year == instances[i+1].fy.financial_year
+                instances[i].fy.financial_year == instances[i +
+                                                            1].fy.financial_year
                 or
-                instances[i].fy.financial_year + 1 == instances[i+1].fy.financial_year
+                instances[i].fy.financial_year +
+                    1 == instances[i+1].fy.financial_year
             ):
                 raise forms.ValidationError(
                     _(
-                       f"A financial year must contain consecutive periods.  Here you selected calendar month "
-                       f"{instances[i].month_end.strftime('%h %Y')} to be FY {str(instances[i].fy)} and calendar month "
-                       f"{instances[i+1].month_end.strftime('%h %Y')} to be FY {str(instances[i+1].fy)}"
+                        f"A financial year must contain consecutive periods.  Here you selected calendar month "
+                        f"{instances[i].month_end.strftime('%h %Y')} to be FY {str(instances[i].fy)} and calendar month "
+                        f"{instances[i+1].month_end.strftime('%h %Y')} to be FY {str(instances[i+1].fy)}"
                     ),
                     code="invalid fy"
                 )
@@ -295,6 +297,7 @@ class PeriodFormset(forms.BaseModelFormSet):
                 p = str(i).rjust(2, "0")
                 period.fy_and_period = str(period.fy) + p
                 period.period = p
+
 
 class PeriodInlineFormset(forms.BaseInlineFormSet):
 
@@ -320,7 +323,7 @@ class PeriodInlineFormset(forms.BaseInlineFormSet):
         # can only create.  cannot edit
         # so forms cannot relate to periods already saved
         periods = Period.objects.all()
-        old_and_new = list(periods) + [ form.instance for form in self.forms ]
+        old_and_new = list(periods) + [form.instance for form in self.forms]
         old_and_new.sort(key=lambda p: p.month_end)
         for i in range(len(old_and_new) - 1):
             if old_and_new[i].month_end + relativedelta(months=+1) != old_and_new[i+1].month_end:
@@ -333,8 +336,6 @@ class PeriodInlineFormset(forms.BaseInlineFormSet):
                         "This is not allowed because periods must be consecutive calendar months across ALL financial years."
                     )
                 )
-
-
 
 
 class AdjustFinancialYearForm(forms.ModelForm):
@@ -367,7 +368,7 @@ class AdjustFinancialYearForm(forms.ModelForm):
                 )
             )
         )
-        
+
 
 AdjustFinancialYearFormset = forms.modelformset_factory(
     model=Period,
@@ -452,3 +453,46 @@ class FinancialYearForm(forms.ModelForm):
                     code="invalid-fy"
                 )
         return financial_year
+
+
+class ModuleSettingsForm(forms.ModelForm):
+    class Meta:
+        model = ModuleSettings
+        fields = ("cash_book_period", "nominals_period",
+                  "purchases_period", "sales_period")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        nominals_period_pk = self.initial["nominals_period"]
+        if nominals_period_pk:
+            nominals_period = Period.objects.select_related("fy").get(pk=nominals_period_pk)
+            for field in self.fields:
+                q = self.fields[field].queryset
+                q = q.filter(fy__financial_year__gte=nominals_period.fy.financial_year)
+                self.fields[field].queryset = q 
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            HTML(
+                "<h1 class='font-weight-bold h5'>Module Settings</h1>",
+            ),
+            Div(
+                Div(
+                    LabelAndFieldAndErrors('cash_book_period', css_class="w-100"), 
+                    css_class="my-1 col-12"
+                ),
+                Div(
+                    LabelAndFieldAndErrors('nominals_period', css_class="w-100"), 
+                    css_class="my-1 col-12"
+                ),
+                Div(
+                    LabelAndFieldAndErrors('purchases_period', css_class="w-100"), 
+                    css_class="my-1 col-12"
+                ),
+                Div(
+                    LabelAndFieldAndErrors('sales_period', css_class="w-100"), 
+                    css_class="my-1 col-12"
+                ),
+                css_class="row"
+            ),
+            Submit("save", "Save", css_class="mt-3")
+        )

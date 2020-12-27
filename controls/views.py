@@ -20,9 +20,9 @@ from users.mixins import LockDuringEditMixin
 from controls.forms import (UI_PERMISSIONS, AdjustFinancialYearFormset,
                             FinancialYearForm,
                             FinancialYearInlineFormSetCreate, GroupForm,
-                            PeriodForm, UserForm)
+                            ModuleSettingsForm, PeriodForm, UserForm)
 from controls.helpers import PermissionUI
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from controls.widgets import CheckboxSelectMultipleWithDataAttr
 
 
@@ -191,7 +191,7 @@ class UserCreate(LoginRequiredMixin, CreateView):
         return form
 
 
-class FinancialYearList(ListView):
+class FinancialYearList(LockDuringEditMixin, ListView):
     model = FinancialYear
     template_name = "controls/fy_list.html"
 
@@ -206,7 +206,7 @@ def convert_month_years_to_full_dates(post_data_copy):
     return post_data_copy
 
 
-class FinancialYearCreate(CreateView):
+class FinancialYearCreate(LoginRequiredMixin, CreateView):
     model = FinancialYear
     template_name = 'controls/fy_create.html'
     form_class = FinancialYearForm
@@ -250,7 +250,7 @@ class FinancialYearCreate(CreateView):
         return self.render_to_response(context_data)
 
 
-class FinancialYearDetail(DetailView):
+class FinancialYearDetail(LoginRequiredMixin, DetailView):
     model = FinancialYear
     template_name = "controls/fy_detail.html"
     context_object_name = "financial_year"
@@ -262,7 +262,7 @@ class FinancialYearDetail(DetailView):
         return context_data
 
 
-class AdjustFinancialYear(UpdateView):
+class AdjustFinancialYear(LoginRequiredMixin, UpdateView):
     model = Period
     template_name = "controls/fy_adjust.html"
     form_class = AdjustFinancialYearFormset
@@ -304,3 +304,16 @@ class AdjustFinancialYear(UpdateView):
         bulk_update_with_history(
             instances, Period, ["period", "fy_and_period", "fy"])
         return HttpResponseRedirect(self.get_success_url())
+
+
+class ModuleSettingsUpdate(
+        LoginRequiredMixin,
+        SingleObjectAuditDetailViewMixin,
+        UpdateView):
+    model = ModuleSettings
+    form_class = ModuleSettingsForm
+    template_name = "controls/module_settings.html"
+    success_url = reverse_lazy("controls:index")
+
+    def get_object(self):
+        return ModuleSettings.objects.first()

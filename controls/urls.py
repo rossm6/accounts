@@ -3,11 +3,12 @@ from django.urls import path
 from controls.views import (FinancialYearCreate, FinancialYearDetail,
                             FinancialYearList, GroupCreate, GroupDetail,
                             GroupsList, GroupUpdate, ControlsView, UserCreate,
-                            UserDetail, UserEdit, UsersList, AdjustFinancialYear)
+                            UserDetail, UserEdit, UsersList, AdjustFinancialYear, ModuleSettingsUpdate)
 
 app_name = "controls"
 urlpatterns = [
     path("", ControlsView.as_view(), name="index"),
+    path("module_settings/", ModuleSettingsUpdate.as_view(), name="module_settings"),
     path("financial_year/", FinancialYearList.as_view(), name="fy_list"),
     path("financial_year/create", FinancialYearCreate.as_view(), name="fy_create"),
     path("financial_year/view/<int:pk>",

@@ -5,6 +5,17 @@ from controls.exceptions import MissingPeriodError
 from controls.validators import is_fy_year
 
 
+class ModuleSettings(AuditMixin, models.Model):
+    cash_book_period = models.ForeignKey(
+        "Period", verbose_name="Cash Book Period", on_delete=models.SET_NULL, null=True, related_name="cash_book_period")
+    nominals_period = models.ForeignKey(
+        "Period", verbose_name="Nominals Period", on_delete=models.SET_NULL, null=True, related_name="nominals_period")
+    purchases_period = models.ForeignKey(
+        "Period", verbose_name="Purchases Period", on_delete=models.SET_NULL, null=True, related_name="purchases_period")
+    sales_period = models.ForeignKey(
+        "Period", verbose_name="Sales Period", on_delete=models.SET_NULL, null=True, related_name="sales_period")
+
+# When / if i come to do a UI audit for this i may need to remove AuditMixin
 class FinancialYear(AuditMixin, models.Model):
     financial_year = models.PositiveSmallIntegerField(
         validators=[is_fy_year], unique=True)
