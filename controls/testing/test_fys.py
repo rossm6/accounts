@@ -121,6 +121,7 @@ class CreateFyTests(TestCase):
         )
 
     def test_failure_when_period_does_have_month_end(self):
+        self.client.force_login(self.user)
         response = self.client.post(self.url, data={
             "financial_year": 2020,
             "period-0-month_end": "01-2020",
@@ -150,6 +151,7 @@ class CreateFyTests(TestCase):
         )
 
     def test_failure_when_month_ends_are_not_consecutive(self):
+        self.client.force_login(self.user)
         response = self.client.post(self.url, data={
             "financial_year": 2020,
             "period-0-month_end": "01-2020",
@@ -179,6 +181,7 @@ class CreateFyTests(TestCase):
         )
 
     def test_failure_when_months_across_all_fys_are_not_consecutive(self):
+        self.client.force_login(self.user)
         fy_2019 = FinancialYear.objects.create(
             financial_year=2019, number_of_periods=1)
         p = Period.objects.create(
@@ -223,6 +226,7 @@ class AdjustFYTests(TestCase):
             username="dummy", password="dummy")
 
     def test_successful(self):
+        self.client.force_login(self.user)
         # create 2019
         fy_2019 = FinancialYear.objects.create(
             financial_year=2019, number_of_periods=12)
@@ -300,6 +304,7 @@ class AdjustFYTests(TestCase):
         
 
     def test_failure_when_FY_does_contain_consecutive_periods(self):
+        self.client.force_login(self.user)
         # create 2019
         fy_2019 = FinancialYear.objects.create(
             financial_year=2019, number_of_periods=12)

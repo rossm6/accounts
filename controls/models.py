@@ -27,6 +27,12 @@ class FinancialYear(AuditMixin, models.Model):
     def __str__(self):
         return str(self.financial_year)
 
+    def first_period(self):
+        periods = self.periods.all()
+        if periods:
+            return periods[0]
+        raise MissingPeriodError("No periods found for this year") 
+
 
 class Period(AuditMixin, models.Model):
     period = models.CharField(max_length=2)
