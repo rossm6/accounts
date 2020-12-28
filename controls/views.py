@@ -191,7 +191,7 @@ class UserCreate(LoginRequiredMixin, CreateView):
         return form
 
 
-class FinancialYearList(LockDuringEditMixin, ListView):
+class FinancialYearList(ListView):
     model = FinancialYear
     template_name = "controls/fy_list.html"
 

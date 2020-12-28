@@ -54,7 +54,7 @@
               </div>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Nominal
               </a>
               <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
@@ -62,6 +62,13 @@
                 <a class="dropdown-item" href="{% url 'nominals:create' %}">Post Transaction</a>
                 <a class="dropdown-item" href="{% url 'nominals:trial_balance' %}">Trial Balance</a>
                 <a class="dropdown-item" href="{% url 'nominals:nominals_list' %}">Nominals</a>
+                <div class="dropdown dropright">
+                    <a class="dropdown-item dropdown-toggle pointer" id="dropdown-layouts" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Financial Year Ends</a>
+                    <div class="dropdown-menu" aria-labelledby="dropdown-layouts">
+                        <a class="dropdown-item text-capitalize" href="{% url 'nominals:finalise_fy' %}">finalise</a>
+                        <a class="dropdown-item text-capitalize" href="{% url 'nominals:rollback_fy' %}">rollback</a>
+                    </div>
+                </div>
               </div>
             </li>
             <li class="nav-item dropdown">
@@ -130,6 +137,7 @@
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+    <script src="{% static 'js/bootstrap_multi_level_dropdown.js' %}"></script>
     {% block js %}
         {% block extra_js %}
         {% endblock extra_js %}

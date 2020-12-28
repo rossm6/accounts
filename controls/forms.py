@@ -465,11 +465,13 @@ class ModuleSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         nominals_period_pk = self.initial["nominals_period"]
         if nominals_period_pk:
-            nominals_period = Period.objects.select_related("fy").get(pk=nominals_period_pk)
+            nominals_period = Period.objects.select_related(
+                "fy").get(pk=nominals_period_pk)
             for field in self.fields:
                 q = self.fields[field].queryset
-                q = q.filter(fy__financial_year__gte=nominals_period.fy.financial_year)
-                self.fields[field].queryset = q 
+                q = q.filter(
+                    fy__financial_year__gte=nominals_period.fy.financial_year)
+                self.fields[field].queryset = q
         self.helper = FormHelper()
         self.helper.layout = Layout(
             HTML(
@@ -477,19 +479,22 @@ class ModuleSettingsForm(forms.ModelForm):
             ),
             Div(
                 Div(
-                    LabelAndFieldAndErrors('cash_book_period', css_class="w-100"), 
+                    LabelAndFieldAndErrors(
+                        'cash_book_period', css_class="w-100"),
                     css_class="my-1 col-12"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('nominals_period', css_class="w-100"), 
+                    LabelAndFieldAndErrors(
+                        'nominals_period', css_class="w-100"),
                     css_class="my-1 col-12"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('purchases_period', css_class="w-100"), 
+                    LabelAndFieldAndErrors(
+                        'purchases_period', css_class="w-100"),
                     css_class="my-1 col-12"
                 ),
                 Div(
-                    LabelAndFieldAndErrors('sales_period', css_class="w-100"), 
+                    LabelAndFieldAndErrors('sales_period', css_class="w-100"),
                     css_class="my-1 col-12"
                 ),
                 css_class="row"

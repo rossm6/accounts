@@ -8,7 +8,7 @@ from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
                                CashBookAndNominalTransList)
 from controls.mixins import QueuePostsMixin
-from controls.models import Period
+from controls.models import ModuleSettings, Period
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
 from django.contrib.auth.mixins import (LoginRequiredMixin,
@@ -20,13 +20,15 @@ from django.shortcuts import get_object_or_404
 from django.template.context_processors import csrf
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import (CreateView, DetailView, FormView, ListView,
+                                  UpdateView)
 from mptt.utils import get_cached_trees
 from users.mixins import LockDuringEditMixin, LockTransactionDuringEditMixin
 from vat.forms import VatForm
 from vat.models import VatTransaction
 
-from nominals.forms import NominalTransactionSearchForm, TrialBalanceForm
+from nominals.forms import (FinaliseFYForm, NominalTransactionSearchForm,
+                            TrialBalanceForm)
 
 from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
@@ -200,7 +202,8 @@ class TrialBalance(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = {}
         context["columns"] = columns = [col for col in self.columns]
-        periods = list(Period.objects.all())  # TODO - get period from NL current period
+        # TODO - get period from NL current period
+        periods = list(Period.objects.all())
         from_period = first_period = periods[0]
         to_period = last_period = periods[-1]
         form_kwargs = {
@@ -403,3 +406,25 @@ class NominalEdit(
     success_url = reverse_lazy("nominals:nominals_list")
     prefix = "nominal"
     permission_required = 'nominals.change_nominal'
+
+
+class FinaliseFY(FormView):
+    template_name = "nominals/finalise_fy.html"
+    form_class = FinaliseFYForm
+    success_url = reverse_lazy("dashboard:dashboard")
+
+    def form_valid(self, form):
+        fy = form.instance.financial_year
+        next_fy = fy.next_year() # in form we check this already exists
+        first_period_of_next_fy = new_year.first_period() # we check this also at form level
+        NominalTransaction.objects.carry_forward(fy, first_period_of_next_fy)
+        mod_settings = ModuleSettings.objects.first()
+        for setting, period in mod_settings.module_periods().items():
+            if period < first_period_of_next_fy:
+                setattr(mod_settings, setting, first_period_of_next_fy)
+        return super().form_valid(form)
+
+
+class RollbackFY(UpdateView):
+    # present the user with a list of FYs which have been finalised
+    pass

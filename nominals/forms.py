@@ -12,13 +12,16 @@ from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
-from controls.models import Period
+from controls.models import FinancialYear, Period
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Layout
+from crispy_forms.layout import HTML, Layout, Submit
 from django import forms
+from django.template import engines
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 from vat.models import Vat
+
+from nominals.models import NominalTransaction
 
 from .models import Nominal, NominalHeader, NominalLine
 
@@ -304,3 +307,80 @@ class NominalTransactionSearchForm(BaseAjaxFormMixin, BaseTransactionSearchForm)
                 },
             }
         }
+
+
+complete_fy_help_text = """
+<small class='text-muted'>
+Finalising a financial year means that the brought forwards are posted into the next financial year.
+Postings into the previous are then disallowed, although you can <a href=''>rollback</a> financial years.
+</small>
+"""
+
+class FinaliseFYForm(forms.Form):
+    financial_year = forms.ModelChoiceField(
+        queryset=FinancialYear.objects.all(),
+        help_text=complete_fy_help_text
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        n = (
+            NominalTransaction
+            .objects
+            .filter(module="NL")
+            .filter(type="nbf")
+            .order_by("-period__fy__financial_year")
+            .values('period__fy__financial_year')
+            .first()
+        )
+        if n:
+            last_fy_finalised = n["period__fy__financial_year"]
+            q = FinancialYear.objects.filter(pk=last_fy_finalised + 1)
+        else:
+            fy = FinancialYear.objects.order_by("financial_year").first()
+            if fy:
+                q = FinancialYear.objects.filter(pk=fy.pk)
+            else:
+                q = FinancialYear.objects.none()
+                django_engine = engines["django"]
+                help_text_template = django_engine.from_string(
+                    "<p class='font-weight-bold text-danger'>You do not have any financial years yet ... <a href='{% url 'controls:fy_create' %}'>Create FY</a></p>"
+                )
+                self.fields["financial_year"].help_text = help_text_template.render()
+        self.fields["financial_year"].queryset = q
+        fy = q.all()
+        if fy:
+            # check that the fy has a following fy with periods
+            # TODO
+            self.initial["financial_year"] = fy[0]
+        self.fields["financial_year"].disabled = True
+        # FY might not exist which is fine -- user just has a blank select menu
+        # FY cannot exist without periods so we do not check for this again
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'financial_year',
+            Div(
+                Submit("complete", "Complete", css_class='btn-success'),
+                css_class="mt-3 text-right"
+            )
+        )
+
+
+"""
+
+This is the SQL -
+
+    select * from controls_financialyear f where f.id not in (
+        (select fy_id from nominals_nominaltransaction n
+        inner join controls_period p
+        on n.period_id = p.id
+        where n.module = 'NL' and n.type = 'nbf')
+    )
+    order by financial_year
+    limit 1;
+
+TO DO -
+
+    Try and do this in Django.
+
+"""

@@ -1,7 +1,7 @@
 from accountancy.mixins import AuditMixin
 from django.db import models
 
-from controls.exceptions import MissingPeriodError
+from controls.exceptions import MissingFinancialYear, MissingPeriodError
 from controls.validators import is_fy_year
 
 
@@ -14,6 +14,14 @@ class ModuleSettings(AuditMixin, models.Model):
         "Period", verbose_name="Purchases Period", on_delete=models.SET_NULL, null=True, related_name="purchases_period")
     sales_period = models.ForeignKey(
         "Period", verbose_name="Sales Period", on_delete=models.SET_NULL, null=True, related_name="sales_period")
+
+    def module_periods(self):
+        return {
+            "cash_book_period": self.cash_book_period,
+            "nominals_period": self.nominals_period,
+            "purchases_period": self.purchases_period,
+            "sales_period": self.sales_period
+        }
 
 # When / if i come to do a UI audit for this i may need to remove AuditMixin
 class FinancialYear(AuditMixin, models.Model):
@@ -31,7 +39,14 @@ class FinancialYear(AuditMixin, models.Model):
         periods = self.periods.all()
         if periods:
             return periods[0]
-        raise MissingPeriodError("No periods found for this year") 
+        raise MissingPeriodError("No periods found for this year")
+
+    def next_year(self):
+        next_fy = self.financial_year + 1
+        try:
+            return FinancialYear.objects.get(financial_year=next_fy)
+        except FinancialYear.DoesNotExist:
+            raise MissingFinancialYear(f"FY {next_year} does not exist.")
 
 
 class Period(AuditMixin, models.Model):
