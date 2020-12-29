@@ -66,29 +66,37 @@ def create_nominal_journal(journal, vat_nominal):
 
 
 def create_nominals():
-    assets = Nominal.objects.create(name="Assets")
+    # assets
+    assets = Nominal.objects.create(name="Assets", type="b")
     current_assets = Nominal.objects.create(
-        name="Current Assets", parent=assets)
-    Nominal.objects.create(name="Sales Ledger Control", parent=current_assets)
-    Nominal.objects.create(name="Bank Account", parent=current_assets)
-    Nominal.objects.create(name="Prepayments", parent=current_assets)
+        name="Current Assets", parent=assets, type="b")
+    Nominal.objects.create(name="Sales Ledger Control", parent=current_assets, type="b")
+    Nominal.objects.create(name="Bank Account", parent=current_assets, type="b")
+    Nominal.objects.create(name="Prepayments", parent=current_assets, type="b")
     non_current_assets = Nominal.objects.create(
-        name="Non Current Assets", parent=assets)
-    Nominal.objects.create(name="Land", parent=non_current_assets)
-    liabilities = Nominal.objects.create(name="Liabilities")
+        name="Non Current Assets", parent=assets, type="b")
+    Nominal.objects.create(name="Land", parent=non_current_assets, type="b")
+    # liabilities
+    liabilities = Nominal.objects.create(name="Liabilities", type="b")
     current_liabilities = Nominal.objects.create(
-        name="Current Liabilities", parent=liabilities)
+        name="Current Liabilities", parent=liabilities, type="b")
     Nominal.objects.create(name="Purchase Ledger Control",
-                           parent=current_liabilities)
-    Nominal.objects.create(name="Vat Control", parent=current_liabilities)
+                           parent=current_liabilities, type="b")
+    Nominal.objects.create(name="Vat Control", parent=current_liabilities, type="b")
     non_current_liabilities = Nominal.objects.create(
-        name="Non Current Liabilities", parent=liabilities)
-    Nominal.objects.create(name="Loans", parent=non_current_liabilities)
-    system_controls = Nominal.objects.create(name="System Controls")
+        name="Non Current Liabilities", parent=liabilities, type="b")
+    Nominal.objects.create(name="Loans", parent=non_current_liabilities, type="b")
+    # equity
+    equity = Nominal.objects.create(name="Equity", type="b")
+    equity = Nominal.objects.create(name="Equity", type="b", parent=equity),
+    retained_earnings = Nominal.objects.create(
+        name="Retained Earnings", parent=equity, type="b")
+    # system controls
+    system_controls = Nominal.objects.create(name="System Controls", type="b")
     system_suspenses = Nominal.objects.create(
-        name="System Suspenses", parent=system_controls)
+        name="System Suspenses", parent=system_controls, type="b")
     default_system_suspense = Nominal.objects.create(
-        name="System Suspense Account", parent=system_suspenses)
+        name="System Suspense Account", parent=system_suspenses, type="b")
 
 
 def create_default_data():

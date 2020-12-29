@@ -20,6 +20,19 @@
                     <div class="border rounded p-4 mt-5">
                         <h1 class="h4 font-weight-bold text-capitalize">finalise financial year</h1>
                         <div class="mt-4">
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    <div class="row">
+                                        <div class="col">
+                                            <ul class="list-unstyled m-0 p-0">
+                                                {% for error in form.non_field_errors %}
+                                                    <li>{{ error }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
                             {% load crispy_forms_tags %}
                             {% crispy form %}
                         </div>

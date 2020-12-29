@@ -1,3 +1,4 @@
+from django.utils.safestring import mark_safe
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceIterator,
@@ -12,10 +13,12 @@ from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  create_transaction_enquiry_layout,
                                  create_transaction_header_helper)
 from accountancy.widgets import SelectWithDataAttr
+from controls.exceptions import MissingFinancialYear
 from controls.models import FinancialYear, Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout, Submit
 from django import forms
+from django.db.models import Subquery
 from django.template import engines
 from django.urls import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -316,46 +319,49 @@ Postings into the previous are then disallowed, although you can <a href=''>roll
 </small>
 """
 
+
 class FinaliseFYForm(forms.Form):
     financial_year = forms.ModelChoiceField(
-        queryset=FinancialYear.objects.all(),
+        queryset=(
+            FinancialYear.objects.filter(
+                pk__in=Subquery(
+                    (
+                        # I had this first subquery as the whole query to begin with
+                        # but django wants to do some further filtering which is disallowed
+                        # once a slice has been taken
+                        # thus this query is now the subquery
+                        # which will return 0 or 1 results
+                        # it is then just wrapped to keep django happy
+                        FinancialYear.objects.exclude(
+                            pk__in=Subquery(
+                                NominalTransaction
+                                .objects
+                                .filter(module="NL")
+                                .filter(type="nbf")
+                                .values("period__fy")
+                            )
+                        ).order_by("financial_year")[:1]
+                    ).values("pk")
+                )
+            )
+        ),
         help_text=complete_fy_help_text
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        n = (
-            NominalTransaction
-            .objects
-            .filter(module="NL")
-            .filter(type="nbf")
-            .order_by("-period__fy__financial_year")
-            .values('period__fy__financial_year')
-            .first()
-        )
-        if n:
-            last_fy_finalised = n["period__fy__financial_year"]
-            q = FinancialYear.objects.filter(pk=last_fy_finalised + 1)
+        q = self.fields["financial_year"].queryset
+        _q = q.all()
+        if _q:
+            fy = _q[0]
+            self.initial["financial_year"] = fy
         else:
-            fy = FinancialYear.objects.order_by("financial_year").first()
-            if fy:
-                q = FinancialYear.objects.filter(pk=fy.pk)
-            else:
-                q = FinancialYear.objects.none()
-                django_engine = engines["django"]
-                help_text_template = django_engine.from_string(
-                    "<p class='font-weight-bold text-danger'>You do not have any financial years yet ... <a href='{% url 'controls:fy_create' %}'>Create FY</a></p>"
-                )
-                self.fields["financial_year"].help_text = help_text_template.render()
-        self.fields["financial_year"].queryset = q
-        fy = q.all()
-        if fy:
-            # check that the fy has a following fy with periods
-            # TODO
-            self.initial["financial_year"] = fy[0]
+            django_engine = engines["django"]
+            help_text_template = django_engine.from_string(
+                "<p class='font-weight-bold text-danger'>You do not have any financial years yet ... <a href='{% url 'controls:fy_create' %}'>Create FY</a></p>"
+            )
+            self.fields["financial_year"].help_text = help_text_template.render()
         self.fields["financial_year"].disabled = True
-        # FY might not exist which is fine -- user just has a blank select menu
-        # FY cannot exist without periods so we do not check for this again
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'financial_year',
@@ -365,22 +371,21 @@ class FinaliseFYForm(forms.Form):
             )
         )
 
-
-"""
-
-This is the SQL -
-
-    select * from controls_financialyear f where f.id not in (
-        (select fy_id from nominals_nominaltransaction n
-        inner join controls_period p
-        on n.period_id = p.id
-        where n.module = 'NL' and n.type = 'nbf')
-    )
-    order by financial_year
-    limit 1;
-
-TO DO -
-
-    Try and do this in Django.
-
-"""
+    def clean(self):
+        cleaned_data = super().clean()
+        fy = cleaned_data.get("financial_year")
+        if fy:
+            try:
+                fy.next_fy()
+            except MissingFinancialYear:
+                django_engine = engines["django"]
+                error_template = django_engine.from_string(
+                    "Cannot finalise this year because there isn't another to move into.  <a href='{% url 'controls:fy_create' %}'>Create next FY</a></p>"
+                )
+                raise forms.ValidationError(
+                    _(
+                        mark_safe(error_template.render())
+                    ),
+                    code="invalid year end"
+                )
+        return cleaned_data

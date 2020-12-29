@@ -414,14 +414,16 @@ class FinaliseFY(FormView):
     success_url = reverse_lazy("dashboard:dashboard")
 
     def form_valid(self, form):
-        fy = form.instance.financial_year
-        next_fy = fy.next_year() # in form we check this already exists
-        first_period_of_next_fy = new_year.first_period() # we check this also at form level
+        fy = form.cleaned_data.get("financial_year")
+        next_fy = fy.next_fy() # in form we check this already exists
+        first_period_of_next_fy = next_fy.first_period() # we assume periods exist for the FY
+        # if they don't somebody has been tampering with the data
         NominalTransaction.objects.carry_forward(fy, first_period_of_next_fy)
         mod_settings = ModuleSettings.objects.first()
         for setting, period in mod_settings.module_periods().items():
             if period < first_period_of_next_fy:
                 setattr(mod_settings, setting, first_period_of_next_fy)
+        mod_settings.save()
         return super().form_valid(form)
 
 

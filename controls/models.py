@@ -41,12 +41,12 @@ class FinancialYear(AuditMixin, models.Model):
             return periods[0]
         raise MissingPeriodError("No periods found for this year")
 
-    def next_year(self):
+    def next_fy(self):
         next_fy = self.financial_year + 1
         try:
             return FinancialYear.objects.get(financial_year=next_fy)
         except FinancialYear.DoesNotExist:
-            raise MissingFinancialYear(f"FY {next_year} does not exist.")
+            raise MissingFinancialYear(f"FY {next_fy} does not exist.")
 
 
 class Period(AuditMixin, models.Model):
