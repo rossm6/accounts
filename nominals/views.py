@@ -28,7 +28,7 @@ from vat.forms import VatForm
 from vat.models import VatTransaction
 
 from nominals.forms import (FinaliseFYForm, NominalTransactionSearchForm,
-                            TrialBalanceForm)
+                            RollbackFYForm, TrialBalanceForm)
 
 from .forms import NominalForm, NominalHeaderForm, NominalLineForm, enter_lines
 from .models import Nominal, NominalHeader, NominalLine, NominalTransaction
@@ -412,11 +412,13 @@ class FinaliseFY(FormView):
     template_name = "nominals/finalise_fy.html"
     form_class = FinaliseFYForm
     success_url = reverse_lazy("dashboard:dashboard")
+    title = "Financial Year"
 
     def form_valid(self, form):
         fy = form.cleaned_data.get("financial_year")
-        next_fy = fy.next_fy() # in form we check this already exists
-        first_period_of_next_fy = next_fy.first_period() # we assume periods exist for the FY
+        next_fy = fy.next_fy()  # in form we check this already exists
+        # we assume periods exist for the FY
+        first_period_of_next_fy = next_fy.first_period()
         # if they don't somebody has been tampering with the data
         NominalTransaction.objects.carry_forward(fy, first_period_of_next_fy)
         mod_settings = ModuleSettings.objects.first()
@@ -427,6 +429,20 @@ class FinaliseFY(FormView):
         return super().form_valid(form)
 
 
-class RollbackFY(UpdateView):
-    # present the user with a list of FYs which have been finalised
-    pass
+class RollbackFY(FormView):
+    template_name = "nominals/finalise_fy.html"
+    form_class = RollbackFYForm
+    success_url = reverse_lazy("dashboard:dashboard")
+    title = "Rollback Financial Year"
+
+    def form_valid(self, form):
+        fy = form.cleaned_data.get("financial_year")
+        (
+            NominalTransaction
+            .objects
+            .filter(module="NL")
+            .filter(type="nbf")
+            .filter(period__fy__financial_year__gte=fy.financial_year + 1)
+            .delete()
+        )
+        return super().form_valid(form)

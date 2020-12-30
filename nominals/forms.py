@@ -1,4 +1,3 @@
-from django.utils.safestring import mark_safe
 from accountancy.fields import (ModelChoiceFieldChooseIterator,
                                 ModelChoiceIteratorWithFields,
                                 RootAndChildrenModelChoiceIterator,
@@ -18,9 +17,10 @@ from controls.models import FinancialYear, Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout, Submit
 from django import forms
-from django.db.models import Subquery
+from django.db.models import F, Subquery
 from django.template import engines
 from django.urls import reverse_lazy
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from vat.models import Vat
 
@@ -366,7 +366,7 @@ class FinaliseFYForm(forms.Form):
         self.helper.layout = Layout(
             'financial_year',
             Div(
-                Submit("complete", "Complete", css_class='btn-success'),
+                Submit("finalise", "Finalise", css_class='btn-success'),
                 css_class="mt-3 text-right"
             )
         )
@@ -389,3 +389,32 @@ class FinaliseFYForm(forms.Form):
                     code="invalid year end"
                 )
         return cleaned_data
+
+
+class RollbackFYForm(forms.Form):
+    financial_year = forms.ModelChoiceField(
+        queryset=(
+            FinancialYear.objects.filter(
+                financial_year__in=Subquery(
+                    NominalTransaction
+                    .objects
+                    .filter(module="NL")
+                    .filter(type="nbf")
+                    .annotate(finalised_fy=F('period__fy__financial_year') - 1)
+                    .values('finalised_fy')
+                )
+            ).order_by("financial_year")
+        ),
+        help_text=complete_fy_help_text
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'financial_year',
+            Div(
+                Submit("rollback", "Rollback", css_class='btn-success'),
+                css_class="mt-3 text-right"
+            )
+        )

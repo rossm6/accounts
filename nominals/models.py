@@ -217,7 +217,10 @@ class NominalTransaction(MultiLedgerTransactions):
         PurchaseHeader.analysis_required +
         NominalHeader.analysis_required +
         SaleHeader.analysis_required +
-        CashBookHeader.analysis_required
+        CashBookHeader.analysis_required + 
+        [
+            ("nbf", "Year End Brought Forward")
+        ]
     )
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
