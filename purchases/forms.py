@@ -62,8 +62,8 @@ class PurchaseHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderFo
         }
 
     def __init__(self, *args, **kwargs):
+        self.module_setting = "purchases_period"
         super().__init__(*args, **kwargs)
-
         if not self.data and not self.instance.pk:
             self.fields["supplier"].queryset = Supplier.objects.none()
         if self.instance.pk:

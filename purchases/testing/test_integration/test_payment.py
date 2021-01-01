@@ -115,7 +115,7 @@ class CreatePayment(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -1411,7 +1411,7 @@ class CreatePaymentNominalEntries(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -3584,7 +3584,7 @@ class EditPayment(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     # CORRECT USAGE
     def test_get_request(self):
@@ -6260,7 +6260,7 @@ class EditPaymentNominalEntries(TestCase):
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -7749,7 +7749,7 @@ class EditPaymentNominalEntries(TestCase):
             self.period
         )
 
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202008", period="08", month_end=date(2020,8,31))
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202008", period="08", month_start=date(2020,8,31))
 
         data = {}
         header_data = create_header(

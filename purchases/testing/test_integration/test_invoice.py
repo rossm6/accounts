@@ -124,7 +124,7 @@ class CreateInvoice(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     """
 
@@ -2414,7 +2414,7 @@ class CreateInvoiceNominalEntries(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     # CORRECT USAGE
     # Each line has a goods value above zero and the vat is 20% of the goods
@@ -6802,7 +6802,7 @@ class EditInvoice(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
 
     # CORRECT USAGE
@@ -13858,7 +13858,7 @@ class EditInvoiceNominalEntries(TestCase):
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     # CORRECT USAGE
     # Basic edit here in so far as we just change a line value
@@ -19249,7 +19249,7 @@ class EditInvoiceNominalEntries(TestCase):
             0
         )
 
-        new_period = Period.objects.create(fy=self.fy, period="09", fy_and_period="202009", month_end=date(2020,9,30))
+        new_period = Period.objects.create(fy=self.fy, period="09", fy_and_period="202009", month_start=date(2020,9,30))
 
         data = {}
         header_data = create_header(

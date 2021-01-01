@@ -41,11 +41,10 @@ class SaleHeaderForm(SaleAndPurchaseHeaderFormMixin, BaseTransactionHeaderForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.module_setting = "sales_period"
         super().__init__(*args, **kwargs)
-
         # FIX ME - Same as PL ledger.  Need to improve this.
         # With general solution.
-
         if not self.data and not self.instance.pk:
             self.fields["customer"].queryset = Customer.objects.none()
         if self.instance.pk:

@@ -17,7 +17,7 @@ class FinancialYearTests(TestCase):
                 Period(
                     period=p,
                     fy_and_period=f"2020{p}",
-                    month_end=date(2020,1,31), # does not matter,
+                    month_start=date(2020,1,31), # does not matter,
                     fy=fy_2020
                 )
             )

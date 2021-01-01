@@ -21,9 +21,9 @@ class CreditReport(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period_06 = Period.objects.create(fy=fy, period="01", fy_and_period="202006", month_end=date(2020,6,30))
-        cls.period_07 = Period.objects.create(fy=fy, period="02", fy_and_period="202007", month_end=date(2020,7,31))
-        cls.period_08 = Period.objects.create(fy=fy, period="03", fy_and_period="202008", month_end=date(2020,8,31))
+        cls.period_06 = Period.objects.create(fy=fy, period="01", fy_and_period="202006", month_start=date(2020,6,30))
+        cls.period_07 = Period.objects.create(fy=fy, period="02", fy_and_period="202007", month_start=date(2020,7,31))
+        cls.period_08 = Period.objects.create(fy=fy, period="03", fy_and_period="202008", month_start=date(2020,8,31))
 
     def test_transaction_not_matched_entered_before_period(self):
         invoice = PurchaseHeader.objects.create(

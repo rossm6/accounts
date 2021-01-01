@@ -109,7 +109,7 @@ class CreateCreditNoteNominalEntries(TestCase):
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         
         cls.description = "a line description"
         # ASSETS
@@ -4660,7 +4660,7 @@ class EditCreditNoteNominalEntries(TestCase):
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
         cls.description = "a line description"
 

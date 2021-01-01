@@ -106,7 +106,7 @@ class CreateBroughtForwardCreditNote(TestCase):
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     # CORRECT USAGE
     # Can request create brought forward invoice view with t=bi GET parameter
@@ -154,7 +154,7 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31)
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31)
         )
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
@@ -1803,7 +1803,7 @@ class EditBroughtForwardCreditNote(TestCase):
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
 
     # CORRECT USAGE
@@ -1865,7 +1865,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
 
     # CORRECT USAGE
@@ -4150,7 +4150,7 @@ class MatchingTests(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31)
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31)
         )
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
@@ -4489,7 +4489,7 @@ class MatchingTests(TestCase):
             1
         )
 
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
 
         data = {}
         header_data = create_header(
@@ -4775,7 +4775,7 @@ class MatchingTests(TestCase):
             1
         )
 
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
 
         data = {}
         header_data = create_header(

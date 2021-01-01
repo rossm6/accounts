@@ -48,7 +48,7 @@ class TrialBalanceTests(TestCase):
             fy=fy_2019, 
             period="01", 
             fy_and_period="201912", 
-            month_end=date(2019, 12, 31)
+            month_start=date(2019, 12, 31)
         )
 
         # 2020
@@ -57,13 +57,13 @@ class TrialBalanceTests(TestCase):
             fy=fy_2020, 
             period="01", 
             fy_and_period="202001", 
-            month_end=date(2020, 1, 31)
+            month_start=date(2020, 1, 31)
         )
         cls.p_202002 = p_202002 = Period.objects.create(
             fy=fy_2020, 
             period="02", 
             fy_and_period="202002", 
-            month_end=date(2020, 2, 29)     
+            month_start=date(2020, 2, 29)     
         )
 
         # create a SL set of NL trans

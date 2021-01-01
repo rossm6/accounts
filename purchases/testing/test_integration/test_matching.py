@@ -137,7 +137,7 @@ class CreateTransactionMatching(TestCase):
                               ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
 
     # VALID USAGE
     # So we match transactions with cancel out
@@ -1349,7 +1349,7 @@ class EditTransactionMatching(TestCase):
                               ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
 
     """
     Most obvious considerations first - just change existing match values

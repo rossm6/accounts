@@ -142,7 +142,6 @@ class TransactionEnquiry(
     template_name = "cashbook/transactions.html"
     row_identifier = "header"
     column_transformers = {
-        "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "date": lambda d: d.strftime('%d %b %Y'),
     }
     permission_required = 'cashbook.view_transactions_enquiry'

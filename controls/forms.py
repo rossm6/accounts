@@ -3,19 +3,20 @@ from itertools import groupby
 from accountancy.fields import (ModelChoiceIteratorWithFields,
                                 ModelMultipleChoiceFieldChooseIterator)
 from accountancy.helpers import sort_multiple
-from accountancy.layouts import (AdjustPeriod, Delete, Div, FieldAndErrors,
-                                 FYInputGroup, LabelAndFieldAndErrors,
-                                 LabelAndFieldOnly, PeriodInputGroup,
-                                 PlainField, PlainFieldErrors, Td, Tr, Field)
+from accountancy.layouts import (AdjustPeriod, Delete, Div, Field,
+                                 FieldAndErrors, FYInputGroup,
+                                 LabelAndFieldAndErrors, LabelAndFieldOnly,
+                                 PeriodInputGroup, PlainField,
+                                 PlainFieldErrors, Td, Tr)
 from cashbook.models import CashBook, CashBookHeader
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Fieldset, Hidden, Layout, Submit
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib.auth.models import ContentType, Group, Permission
-from django.db.models import Q
+from django.db.models import Case, Exists, Q, Subquery, Value, When
 from django.utils.translation import ugettext_lazy as _
-from nominals.models import Nominal, NominalHeader
+from nominals.models import Nominal, NominalHeader, NominalTransaction
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
 from tempus_dominus.widgets import DatePicker
@@ -240,7 +241,7 @@ class UserForm(UserProfileForm):
 
 
 class PeriodForm(forms.ModelForm):
-    month_end = forms.DateField(
+    month_start = forms.DateField(
         widget=DatePicker(
             options={
                 "format": "MM-YYYY",
@@ -255,7 +256,7 @@ class PeriodForm(forms.ModelForm):
 
     class Meta:
         model = Period
-        fields = ("id", "month_end")
+        fields = ("id", "month_start")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -266,7 +267,7 @@ class PeriodForm(forms.ModelForm):
         self.helper.layout = Layout(
             PeriodInputGroup(
                 'id',
-                PlainField('month_end'),
+                PlainField('month_start'),
             )
         )
 
@@ -276,6 +277,7 @@ class PeriodFormset(forms.BaseModelFormSet):
         if(any(self.errors)):
             return
         instances = [form.instance for form in self.forms]
+        instances.sort(key=lambda i: i.month_start)
         for i in range(len(instances) - 1):
             if not(
                 instances[i].fy.financial_year == instances[i +
@@ -287,8 +289,8 @@ class PeriodFormset(forms.BaseModelFormSet):
                 raise forms.ValidationError(
                     _(
                         f"A financial year must contain consecutive periods.  Here you selected calendar month "
-                        f"{instances[i].month_end.strftime('%h %Y')} to be FY {str(instances[i].fy)} and calendar month "
-                        f"{instances[i+1].month_end.strftime('%h %Y')} to be FY {str(instances[i+1].fy)}"
+                        f"{instances[i].month_start.strftime('%h %Y')} to be FY {str(instances[i].fy)} and calendar month "
+                        f"{instances[i+1].month_start.strftime('%h %Y')} to be FY {str(instances[i+1].fy)}"
                     ),
                     code="invalid fy"
                 )
@@ -314,7 +316,7 @@ class PeriodInlineFormset(forms.BaseInlineFormSet):
                     code="invalid period"
                 )
         for i in range(len(self.forms) - 1):
-            if self.forms[i].instance.month_end + relativedelta(months=+1) != self.forms[i+1].instance.month_end:
+            if self.forms[i].instance.month_start + relativedelta(months=+1) != self.forms[i+1].instance.month_start:
                 raise forms.ValidationError(
                     _(
                         "Periods must be consecutive calendar months"
@@ -324,15 +326,15 @@ class PeriodInlineFormset(forms.BaseInlineFormSet):
         # so forms cannot relate to periods already saved
         periods = Period.objects.all()
         old_and_new = list(periods) + [form.instance for form in self.forms]
-        old_and_new.sort(key=lambda p: p.month_end)
+        old_and_new.sort(key=lambda p: p.month_start)
         for i in range(len(old_and_new) - 1):
-            if old_and_new[i].month_end + relativedelta(months=+1) != old_and_new[i+1].month_end:
+            if old_and_new[i].month_start + relativedelta(months=+1) != old_and_new[i+1].month_start:
                 old = old_and_new[i] if old_and_new[i].pk else old_and_new[i+1]
                 new = old_and_new[i+1] if old_and_new[i].pk else old_and_new[i]
                 raise forms.ValidationError(
                     _(
-                        f"Period {old.period} of FY {old.fy_and_period[:4]} is for calendar month {old.month_end.strftime('%h %Y')}.  "
-                        f"But you are trying to now create a period for calendar month {new.month_end.strftime('%h %Y')} again.  "
+                        f"Period {old.period} of FY {old.fy_and_period[:4]} is for calendar month {old.month_start.strftime('%h %Y')}.  "
+                        f"But you are trying to now create a period for calendar month {new.month_start.strftime('%h %Y')} again.  "
                         "This is not allowed because periods must be consecutive calendar months across ALL financial years."
                     )
                 )
@@ -341,14 +343,14 @@ class PeriodInlineFormset(forms.BaseInlineFormSet):
 class AdjustFinancialYearForm(forms.ModelForm):
     class Meta:
         model = Period
-        fields = ('period', 'month_end', 'fy',)
+        fields = ('period', 'month_start', 'fy',)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["period"].disabled = True
-        self.fields["month_end"].disabled = True
-        month_end = self.initial["month_end"]
-        self.fields["month_end"].label = month_end.strftime("%h %Y")
+        self.fields["month_start"].disabled = True
+        month_start = self.initial["month_start"]
+        self.fields["month_start"].label = month_start.strftime("%h %Y")
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.form_show_labels = False
@@ -361,7 +363,7 @@ class AdjustFinancialYearForm(forms.ModelForm):
                     PlainField('period'),
                 ),
                 Td(
-                    LabelAndFieldOnly('month_end', css_class="d-none"),
+                    LabelAndFieldOnly('month_start', css_class="d-none"),
                 ),
                 Td(
                     FieldAndErrors('fy', css_class="w-100"),
@@ -387,7 +389,7 @@ FinancialYearInlineFormSetCreate = forms.inlineformset_factory(
     Period,
     form=PeriodForm,
     formset=PeriodInlineFormset,
-    fields=["month_end"],
+    fields=["month_start"],
     extra=12,
 )
 
@@ -456,6 +458,10 @@ class FinancialYearForm(forms.ModelForm):
 
 
 class ModuleSettingsForm(forms.ModelForm):
+    """
+    See notes on ModuleSettings model
+    """
+
     class Meta:
         model = ModuleSettings
         fields = ("cash_book_period", "nominals_period",
@@ -463,15 +469,26 @@ class ModuleSettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        nominals_period_pk = self.initial["nominals_period"]
-        if nominals_period_pk:
-            nominals_period = Period.objects.select_related(
-                "fy").get(pk=nominals_period_pk)
-            for field in self.fields:
-                q = self.fields[field].queryset
-                q = q.filter(
-                    fy__financial_year__gte=nominals_period.fy.financial_year)
-                self.fields[field].queryset = q
+        """
+        You cannot post into a period in a FY which has been finalised.
+        """
+        t = NominalTransaction.objects.filter(module="NL").filter(type="nbf").values(
+            "period__fy_and_period").order_by("-period__fy_and_period")
+        w = When(Exists(t), then=t[:1])
+        q = (
+            Period.objects.filter(
+                fy_and_period__gte=(
+                    Period.objects.annotate(
+                        earliest_period=(
+                            Case(w, default=Value("000000"))
+                        )
+                    ).values('earliest_period')[:1]
+                )
+            )
+        )
+        for field in self.fields:
+            q = q.all()
+            self.fields[field].queryset = q
         self.helper = FormHelper()
         self.helper.layout = Layout(
             HTML(

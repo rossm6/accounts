@@ -145,7 +145,7 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
 
@@ -1679,7 +1679,7 @@ class EditBroughtForwardInvoice(TestCase):
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     # CORRECT USAGE
     def test_get_request(self):
@@ -1734,7 +1734,7 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         cls.description = "a line description"
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
 
     # CORRECT USAGE
@@ -3967,7 +3967,7 @@ class MatchingTests(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
 
@@ -4112,7 +4112,7 @@ class MatchingTests(TestCase):
         )
 
     def test_does_not_change_period(self):
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
 
         self.client.force_login(self.user)
         # Create a b/f invoice for 120.01 through view first
@@ -4386,7 +4386,7 @@ class MatchingTests(TestCase):
 
 
     def test_does_change_period(self):
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
 
         self.client.force_login(self.user)
         # Create a b/f invoice for 120.01 through view first

@@ -195,7 +195,6 @@ class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, SalesAndPu
         "reference": "ref"
     }
     column_transformers = {
-        "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "date": lambda d: d.strftime('%d %b %Y'),
         # payment trans do not have due dates
         "due_date": lambda d: d.strftime('%d %b %Y') if d else ""

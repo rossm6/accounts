@@ -1,10 +1,12 @@
+from controls.models import ModuleSettings, Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 from django import forms
-from django.db.models import Q
+from django.db.models import Case, Exists, OuterRef, Q, Subquery, Value, When
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from nominals.models import NominalTransaction
 from tempus_dominus.widgets import DatePicker
 
 from accountancy.fields import UIDecimalField
@@ -213,6 +215,50 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
             # HAS BEEN CREATED
             # Form will validate if they do change it but save will not reflect change.
             self.fields["type"].disabled = True
+        """
+        Constrain the period choice to the previous, current and next period
+        where the current period is the period for the module as per the module settings.
+        """
+        lt = Period.objects.filter(fy_and_period__lt=OuterRef('current_period')).order_by("-fy_and_period")
+        gt = Period.objects.filter(fy_and_period__gt=OuterRef('current_period')).order_by("fy_and_period")
+        eq = Period.objects.filter(fy_and_period=OuterRef('current_period')).order_by("fy_and_period")
+        # p queryset gets the previous, current and next period based on the period for the module as set in module settings
+        p = (
+            Period
+            .objects
+            .annotate(
+                current_period=Subquery(
+                    ModuleSettings.objects.values(f'{self.module_setting}__fy_and_period')[:1] # module_setting is set on the module subclass form
+                )
+            )
+            .filter(
+                Q(fy_and_period=Subquery(gt.values('fy_and_period')[:1]))
+                |
+                Q(fy_and_period=Subquery(eq.values('fy_and_period')[:1]))
+                | 
+                Q(fy_and_period=Subquery(lt.values('fy_and_period')[:1])) 
+            )
+        )
+        # this is the same queryset which is used in the module settings model form
+        t = NominalTransaction.objects.filter(module="NL").filter(type="nbf").values(
+            "period__fy_and_period").order_by("-period__fy_and_period")
+        w = When(Exists(t), then=t[:1])
+        periods_not_finalised = (
+            Period.objects.filter(
+                fy_and_period__gte=(
+                    Period.objects.annotate(
+                        earliest_period=(
+                            Case(w, default=Value("000000"))
+                        )
+                    ).values('earliest_period')[:1]
+                )
+            )
+        )    
+        # so get the periods from queryset p but also make sure they are in q queryset i.e. not in previous FYs
+        q = p.filter(
+            pk__in=periods_not_finalised.values('pk')
+        )
+        self.fields["period"].queryset = q
 
     def save(self, commit=True):
         instance = super().save(commit=False)

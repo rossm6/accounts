@@ -6,6 +6,14 @@ from controls.validators import is_fy_year
 
 
 class ModuleSettings(AuditMixin, models.Model):
+    """
+    This model should only ever have 1 record.
+
+    Whenever transactions are affected - either create, edit, void - we provide the user with a period range based on
+    the period of the module as set in this model's single record.
+
+    The form constrains the period for each module so that a period cannot be chosen which is in a FY already finalised.
+    """
     cash_book_period = models.ForeignKey(
         "Period", verbose_name="Cash Book Period", on_delete=models.SET_NULL, null=True, related_name="cash_book_period")
     nominals_period = models.ForeignKey(
@@ -52,7 +60,7 @@ class FinancialYear(AuditMixin, models.Model):
 class Period(AuditMixin, models.Model):
     period = models.CharField(max_length=2)
     fy_and_period = models.CharField(max_length=6, null=True)
-    month_end = models.DateField()
+    month_start = models.DateField()
     # CharField is better than SmallIntegerField because often we'll need to split into year and period
     # e.g. 202001, which is the first period of FY 2020, would need spliting into 2020, 01 for business logic
     fy = models.ForeignKey(
@@ -128,7 +136,7 @@ class Period(AuditMixin, models.Model):
 
     def __str__(self):
         if self.fy_and_period:
-            return self.fy_and_period
+            return self.fy_and_period[4:] + " " + self.fy_and_period[:4]
         return ""
 
 

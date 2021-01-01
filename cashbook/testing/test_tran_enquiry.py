@@ -24,7 +24,7 @@ class TranEnquiryTests(TestCase):
             username="dummy", password="dummy")
         cls.fy = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
 
     def test_default(self):
         t = CashBookTransaction.objects.create(

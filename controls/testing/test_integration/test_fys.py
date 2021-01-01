@@ -1,6 +1,6 @@
 from datetime import date
 
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
@@ -16,22 +16,31 @@ class CreateFyTests(TestCase):
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
 
-    def test_successful(self):
+    def test_successful_first_fy(self):
+        """
+        First FY should change the module settings periods
+        """
         self.client.force_login(self.user)
+        ModuleSettings.objects.create(
+            cash_book_period=None,
+            nominals_period=None,
+            purchases_period=None,
+            sales_period=None
+        )
         response = self.client.post(self.url, data={
             "financial_year": 2020,
-            "period-0-month_end": "01-2020",
-            "period-1-month_end": "02-2020",
-            "period-2-month_end": "03-2020",
-            "period-3-month_end": "04-2020",
-            "period-4-month_end": "05-2020",
-            "period-5-month_end": "06-2020",
-            "period-6-month_end": "07-2020",
-            "period-7-month_end": "08-2020",
-            "period-8-month_end": "09-2020",
-            "period-9-month_end": "10-2020",
-            "period-10-month_end": "11-2020",
-            "period-11-month_end": "12-2020",
+            "period-0-month_start": "01-2020",
+            "period-1-month_start": "02-2020",
+            "period-2-month_start": "03-2020",
+            "period-3-month_start": "04-2020",
+            "period-4-month_start": "05-2020",
+            "period-5-month_start": "06-2020",
+            "period-6-month_start": "07-2020",
+            "period-7-month_start": "08-2020",
+            "period-8-month_start": "09-2020",
+            "period-9-month_start": "10-2020",
+            "period-10-month_start": "11-2020",
+            "period-11-month_start": "12-2020",
             "period-TOTAL_FORMS": "12",
             "period-INITIAL_FORMS": "0",
             "period-MIN_NUM_FORMS": "0",
@@ -66,7 +75,7 @@ class CreateFyTests(TestCase):
                 fy
             )
             self.assertEqual(
-                period.month_end,
+                period.month_start,
                 date(2020, i + 1, 1)
             )
             self.assertEqual(
@@ -77,24 +86,134 @@ class CreateFyTests(TestCase):
                 period.fy_and_period,
                 str(fy) + str(i+1).rjust(2, "0")
             )
+        mod_setttings = ModuleSettings.objects.first()
+        self.assertEqual(
+            mod_setttings.cash_book_period,
+            periods[0]
+        )
+        self.assertEqual(
+            mod_setttings.nominals_period,
+            periods[0]
+        )
+        self.assertEqual(
+            mod_setttings.purchases_period,
+            periods[0]
+        )
+        self.assertEqual(
+            mod_setttings.sales_period,
+            periods[0]
+        )
+
+    def test_successful_second_fy(self):
+        """
+        First FY should change the module settings periods
+        """
+        self.client.force_login(self.user)
+        fy_2019 = FinancialYear.objects.create(
+            financial_year=2019, number_of_periods=1)
+        first_and_only_period_of_2019 = Period.objects.create(
+            fy=fy_2019, period="01", fy_and_period="201901", month_start=date(2019, 12, 1))
+        ModuleSettings.objects.create(
+            cash_book_period=first_and_only_period_of_2019,
+            nominals_period=first_and_only_period_of_2019,
+            purchases_period=first_and_only_period_of_2019,
+            sales_period=first_and_only_period_of_2019
+        )
+        response = self.client.post(self.url, data={
+            "financial_year": 2020,
+            "period-0-month_start": "01-2020",
+            "period-1-month_start": "02-2020",
+            "period-2-month_start": "03-2020",
+            "period-3-month_start": "04-2020",
+            "period-4-month_start": "05-2020",
+            "period-5-month_start": "06-2020",
+            "period-6-month_start": "07-2020",
+            "period-7-month_start": "08-2020",
+            "period-8-month_start": "09-2020",
+            "period-9-month_start": "10-2020",
+            "period-10-month_start": "11-2020",
+            "period-11-month_start": "12-2020",
+            "period-TOTAL_FORMS": "12",
+            "period-INITIAL_FORMS": "0",
+            "period-MIN_NUM_FORMS": "0",
+            "period-MAX_NUM_FORMS": "1000"
+        })
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+        fys = FinancialYear.objects.all().order_by("financial_year")
+        self.assertEqual(
+            len(fys),
+            2
+        )
+        fy = fys[1]
+        self.assertEqual(
+            fy.financial_year,
+            2020
+        )
+        self.assertEqual(
+            fy.number_of_periods,
+            12
+        )
+        periods = Period.objects.exclude(fy_and_period="201901").all()
+        self.assertEqual(
+            len(periods),
+            12
+        )
+        for i, period in enumerate(periods):
+            self.assertEqual(
+                period.fy,
+                fy
+            )
+            self.assertEqual(
+                period.month_start,
+                date(2020, i + 1, 1)
+            )
+            self.assertEqual(
+                period.period,
+                str(i + 1).rjust(2, "0")
+            )
+            self.assertEqual(
+                period.fy_and_period,
+                str(fy) + str(i+1).rjust(2, "0")
+            )
+        mod_setttings = ModuleSettings.objects.first()
+        # check posting periods have not changed
+        self.assertEqual(
+            mod_setttings.cash_book_period,
+            first_and_only_period_of_2019
+        )
+        self.assertEqual(
+            mod_setttings.nominals_period,
+            first_and_only_period_of_2019
+        )
+        self.assertEqual(
+            mod_setttings.purchases_period,
+            first_and_only_period_of_2019
+        )
+        self.assertEqual(
+            mod_setttings.sales_period,
+            first_and_only_period_of_2019
+        )
 
     def test_failure_when_fys_are_not_consecutive(self):
         self.client.force_login(self.user)
         FinancialYear.objects.create(financial_year=2018, number_of_periods=12)
         response = self.client.post(self.url, data={
             "financial_year": 2020,
-            "period-0-month_end": "01-2020",
-            "period-1-month_end": "02-2020",
-            "period-2-month_end": "03-2020",
-            "period-3-month_end": "04-2020",
-            "period-4-month_end": "05-2020",
-            "period-5-month_end": "06-2020",
-            "period-6-month_end": "07-2020",
-            "period-7-month_end": "08-2020",
-            "period-8-month_end": "09-2020",
-            "period-9-month_end": "10-2020",
-            "period-10-month_end": "11-2020",
-            "period-11-month_end": "12-2020",
+            "period-0-month_start": "01-2020",
+            "period-1-month_start": "02-2020",
+            "period-2-month_start": "03-2020",
+            "period-3-month_start": "04-2020",
+            "period-4-month_start": "05-2020",
+            "period-5-month_start": "06-2020",
+            "period-6-month_start": "07-2020",
+            "period-7-month_start": "08-2020",
+            "period-8-month_start": "09-2020",
+            "period-9-month_start": "10-2020",
+            "period-10-month_start": "11-2020",
+            "period-11-month_start": "12-2020",
             "period-TOTAL_FORMS": "12",
             "period-INITIAL_FORMS": "0",
             "period-MIN_NUM_FORMS": "0",
@@ -121,22 +240,22 @@ class CreateFyTests(TestCase):
             0
         )
 
-    def test_failure_when_period_does_have_month_end(self):
+    def test_failure_when_period_does_have_month_start(self):
         self.client.force_login(self.user)
         response = self.client.post(self.url, data={
             "financial_year": 2020,
-            "period-0-month_end": "01-2020",
-            "period-1-month_end": "02-2020",
-            "period-2-month_end": "03-2020",
-            "period-3-month_end": "04-2020",
-            "period-4-month_end": "05-2020",
-            "period-5-month_end": "06-2020",
-            "period-6-month_end": "07-2020",
-            "period-7-month_end": "08-2020",
-            "period-8-month_end": "09-2020",
-            "period-9-month_end": "10-2020",
-            "period-10-month_end": "11-2020",
-            "period-11-month_end": "",
+            "period-0-month_start": "01-2020",
+            "period-1-month_start": "02-2020",
+            "period-2-month_start": "03-2020",
+            "period-3-month_start": "04-2020",
+            "period-4-month_start": "05-2020",
+            "period-5-month_start": "06-2020",
+            "period-6-month_start": "07-2020",
+            "period-7-month_start": "08-2020",
+            "period-8-month_start": "09-2020",
+            "period-9-month_start": "10-2020",
+            "period-10-month_start": "11-2020",
+            "period-11-month_start": "",
             "period-TOTAL_FORMS": "12",
             "period-INITIAL_FORMS": "0",
             "period-MIN_NUM_FORMS": "0",
@@ -151,22 +270,22 @@ class CreateFyTests(TestCase):
             "<li>All periods you wish to create must have a month selected.  Delete any unwanted periods otherwise</li>"
         )
 
-    def test_failure_when_month_ends_are_not_consecutive(self):
+    def test_failure_when_month_starts_are_not_consecutive(self):
         self.client.force_login(self.user)
         response = self.client.post(self.url, data={
             "financial_year": 2020,
-            "period-0-month_end": "01-2020",
-            "period-1-month_end": "02-2020",
-            "period-2-month_end": "03-2020",
-            "period-3-month_end": "04-2020",
-            "period-4-month_end": "05-2020",
-            "period-5-month_end": "06-2020",
-            "period-6-month_end": "07-2020",
-            "period-7-month_end": "08-2020",
-            "period-8-month_end": "09-2020",
-            "period-9-month_end": "10-2020",
-            "period-10-month_end": "11-2020",
-            "period-11-month_end": "01-2021",
+            "period-0-month_start": "01-2020",
+            "period-1-month_start": "02-2020",
+            "period-2-month_start": "03-2020",
+            "period-3-month_start": "04-2020",
+            "period-4-month_start": "05-2020",
+            "period-5-month_start": "06-2020",
+            "period-6-month_start": "07-2020",
+            "period-7-month_start": "08-2020",
+            "period-8-month_start": "09-2020",
+            "period-9-month_start": "10-2020",
+            "period-10-month_start": "11-2020",
+            "period-11-month_start": "01-2021",
             "period-TOTAL_FORMS": "12",
             "period-INITIAL_FORMS": "0",
             "period-MIN_NUM_FORMS": "0",
@@ -186,21 +305,21 @@ class CreateFyTests(TestCase):
         fy_2019 = FinancialYear.objects.create(
             financial_year=2019, number_of_periods=1)
         p = Period.objects.create(
-            fy=fy_2019, fy_and_period="201901", period="01", month_end=date(2020, 1, 1))
+            fy=fy_2019, fy_and_period="201901", period="01", month_start=date(2020, 1, 1))
         response = self.client.post(self.url, data={
             "financial_year": 2020,
-            "period-0-month_end": "01-2020",
-            "period-1-month_end": "02-2020",
-            "period-2-month_end": "03-2020",
-            "period-3-month_end": "04-2020",
-            "period-4-month_end": "05-2020",
-            "period-5-month_end": "06-2020",
-            "period-6-month_end": "07-2020",
-            "period-7-month_end": "08-2020",
-            "period-8-month_end": "09-2020",
-            "period-9-month_end": "10-2020",
-            "period-10-month_end": "11-2020",
-            "period-11-month_end": "12-2020",
+            "period-0-month_start": "01-2020",
+            "period-1-month_start": "02-2020",
+            "period-2-month_start": "03-2020",
+            "period-3-month_start": "04-2020",
+            "period-4-month_start": "05-2020",
+            "period-5-month_start": "06-2020",
+            "period-6-month_start": "07-2020",
+            "period-7-month_start": "08-2020",
+            "period-8-month_start": "09-2020",
+            "period-9-month_start": "10-2020",
+            "period-10-month_start": "11-2020",
+            "period-11-month_start": "12-2020",
             "period-TOTAL_FORMS": "12",
             "period-INITIAL_FORMS": "0",
             "period-MIN_NUM_FORMS": "0",
@@ -257,7 +376,7 @@ class AdjustFYTests(TestCase):
                     fy=fy_2019,
                     fy_and_period="2019" + str(i).rjust(2, "0"),
                     period=str(i+1).rjust(2, "0"),
-                    month_end=date(2019, i+1, 1)
+                    month_start=date(2019, i+1, 1)
                 )
             )
         p_2019 = Period.objects.bulk_create(periods)
@@ -271,7 +390,7 @@ class AdjustFYTests(TestCase):
                     fy=fy_2020,
                     fy_and_period="2020" + str(i).rjust(2, "0"),
                     period=str(i+1).rjust(2, "0"),
-                    month_end=date(2020, i+1, 1)
+                    month_start=date(2020, i+1, 1)
                 )
             )
         p_2020 = Period.objects.bulk_create(periods)
@@ -283,7 +402,7 @@ class AdjustFYTests(TestCase):
         for i, p in enumerate(periods):
             form_data.update({
                 "period-" + str(i) + "-id": p.pk,
-                "period-" + str(i) + "-month_end": p.month_end.strftime("%m-%Y"),
+                "period-" + str(i) + "-month_start": p.month_start.strftime("%m-%Y"),
                 "period-" + str(i) + "-period": p.period,
                 "period-" + str(i) + "-fy": p.fy_id
             })
@@ -304,13 +423,13 @@ class AdjustFYTests(TestCase):
         periods_2019 = periods[:6]
         for i, p in enumerate(periods_2019):
             p.fy = fy_2019
-            p.month_end = date(2019, i+1, 1)
+            p.month_start = date(2019, i+1, 1)
             p.fy_and_period = "2019" + str(i+1).rjust(2, "0")
             p.period = str(i+1).rjust(2, "0")
         periods_2020 = periods[6:]
         for i, p in enumerate(periods_2020):
             p.fy = fy_2020
-            p.month_end = date(2019, 6, 1) + relativedelta(months=+i)
+            p.month_start = date(2019, 6, 1) + relativedelta(months=+i)
             p.fy_and_period = "2020" + str(i+1).rjust(2, "0")
             p.period = str(i+1).rjust(2, "0")
         self.assertEqual(
@@ -346,7 +465,7 @@ class AdjustFYTests(TestCase):
                     fy=fy_2019,
                     fy_and_period="2019" + str(i).rjust(2, "0"),
                     period=str(i+1).rjust(2, "0"),
-                    month_end=date(2019, i+1, 1)
+                    month_start=date(2019, i+1, 1)
                 )
             )
         p_2019 = Period.objects.bulk_create(periods)
@@ -361,7 +480,7 @@ class AdjustFYTests(TestCase):
                     fy=fy_2020,
                     fy_and_period="2020" + str(i).rjust(2, "0"),
                     period=str(i+1).rjust(2, "0"),
-                    month_end=date(2020, i+1, 1)
+                    month_start=date(2020, i+1, 1)
                 )
             )
         p_2020 = Period.objects.bulk_create(periods)
@@ -426,7 +545,7 @@ class AdjustFYTests(TestCase):
         for i, p in enumerate(periods):
             form_data.update({
                 "period-" + str(i) + "-id": p.pk,
-                "period-" + str(i) + "-month_end": p.month_end.strftime("%m-%Y"),
+                "period-" + str(i) + "-month_start": p.month_start.strftime("%m-%Y"),
                 "period-" + str(i) + "-period": p.period,
                 "period-" + str(i) + "-fy": p.fy_id
             })
@@ -448,13 +567,13 @@ class AdjustFYTests(TestCase):
         periods_2019 = periods[:6]
         for i, p in enumerate(periods_2019):
             p.fy = fy_2019
-            p.month_end = date(2019, i+1, 1)
+            p.month_start = date(2019, i+1, 1)
             p.fy_and_period = "2019" + str(i+1).rjust(2, "0")
             p.period = str(i+1).rjust(2, "0")
         periods_2020 = periods[6:]
         for i, p in enumerate(periods_2020):
             p.fy = fy_2020
-            p.month_end = date(2019, 6, 1) + relativedelta(months=+i)
+            p.month_start = date(2019, 6, 1) + relativedelta(months=+i)
             p.fy_and_period = "2020" + str(i+1).rjust(2, "0")
             p.period = str(i+1).rjust(2, "0")
         self.assertEqual(
@@ -480,8 +599,6 @@ class AdjustFYTests(TestCase):
             bf_2019_2
         )
 
-
-
     def test_failure_when_FY_does_contain_consecutive_periods(self):
         self.client.force_login(self.user)
         # create 2019
@@ -494,7 +611,7 @@ class AdjustFYTests(TestCase):
                     fy=fy_2019,
                     fy_and_period="2019" + str(i).rjust(2, "0"),
                     period=str(i+1).rjust(2, "0"),
-                    month_end=date(2019, i+1, 1)
+                    month_start=date(2019, i+1, 1)
                 )
             )
         p_2019 = Period.objects.bulk_create(periods)
@@ -508,7 +625,7 @@ class AdjustFYTests(TestCase):
                     fy=fy_2020,
                     fy_and_period="2020" + str(i).rjust(2, "0"),
                     period=str(i+1).rjust(2, "0"),
-                    month_end=date(2020, i+1, 1)
+                    month_start=date(2020, i+1, 1)
                 )
             )
         p_2020 = Period.objects.bulk_create(periods)
@@ -521,7 +638,7 @@ class AdjustFYTests(TestCase):
         for i, p in enumerate(periods):
             form_data.update({
                 "period-" + str(i) + "-id": p.pk,
-                "period-" + str(i) + "-month_end": p.month_end.strftime("%m-%Y"),
+                "period-" + str(i) + "-month_start": p.month_start.strftime("%m-%Y"),
                 "period-" + str(i) + "-period": p.period,
                 "period-" + str(i) + "-fy": p.fy_id
             })

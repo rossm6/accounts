@@ -34,7 +34,6 @@ class VatTransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBoo
     filter_form_class = VatTransactionSearchForm
     template_name = "vat/transactions.html"
     column_transformers = {
-        "period__fy_and_period": lambda p: p[4:] + " " + p[:4],
         "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t],
         "date": lambda d: d.strftime('%d %b %Y'),
     }

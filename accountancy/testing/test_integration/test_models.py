@@ -20,7 +20,7 @@ class NonAuditQuerySetTests(TestCase):
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     def test_bulk_update(self):
         nominal = Nominal(name="duh")
@@ -36,7 +36,7 @@ class NonAuditQuerySetTests(TestCase):
             nominal=nominal
         )
         tran.save()
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
         tran.period = new_period
         NominalTransaction.objects.bulk_update([tran])
         tran.refresh_from_db()
@@ -57,7 +57,7 @@ class AuditQuerySetTests(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     def test_audited_bulk_create_empty(self):
         # check it handles empty list

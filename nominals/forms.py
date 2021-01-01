@@ -39,7 +39,7 @@ class NominalForm(forms.ModelForm):
 
     class Meta:
         model = Nominal
-        fields = ('name', 'parent')
+        fields = ('name', 'parent', 'type')
 
     def __init__(self, *args, **kwargs):
         if 'action' in kwargs:
@@ -83,6 +83,7 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
         fields = ('ref', 'date', 'total', 'type', 'period', 'vat_type')
 
     def __init__(self, *args, **kwargs):
+        self.module_setting = "nominals_period"
         super().__init__(*args, **kwargs)
         self.fields["total"].help_text = "<span class='d-block'>The total value of the debit side of the journal<span class='d-block'>i.e. the total of the positive values</span></span>"
         self.helper = create_journal_header_helper()
@@ -333,12 +334,13 @@ class FinaliseFYForm(forms.Form):
                         # which will return 0 or 1 results
                         # it is then just wrapped to keep django happy
                         FinancialYear.objects.exclude(
-                            pk__in=Subquery(
+                            financial_year__in=Subquery(
                                 NominalTransaction
                                 .objects
                                 .filter(module="NL")
                                 .filter(type="nbf")
-                                .values("period__fy")
+                                .annotate(finalised_fy=F('period__fy__financial_year') - 1)
+                                .values("finalised_fy")
                             )
                         ).order_by("financial_year")[:1]
                     ).values("pk")

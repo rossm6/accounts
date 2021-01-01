@@ -21,15 +21,15 @@ class AgedCreditorReportWithTransactionsTests(TestCase):
             username="dummy", password="dummy")
         cls.fy = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period_1 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         cls.period_2 = Period.objects.create(
-            fy=fy, period="02", fy_and_period="202002", month_end=date(2020, 2, 29))
+            fy=fy, period="02", fy_and_period="202002", month_start=date(2020, 2, 29))
         cls.period_3 = Period.objects.create(
-            fy=fy, period="03", fy_and_period="202003", month_end=date(2020, 3, 31))
+            fy=fy, period="03", fy_and_period="202003", month_start=date(2020, 3, 31))
         cls.period_4 = Period.objects.create(
-            fy=fy, period="04", fy_and_period="202004", month_end=date(2020, 4, 30))
+            fy=fy, period="04", fy_and_period="202004", month_start=date(2020, 4, 30))
         cls.period_5 = Period.objects.create(
-            fy=fy, period="05", fy_and_period="202005", month_end=date(2020, 5, 31))      
+            fy=fy, period="05", fy_and_period="202005", month_start=date(2020, 5, 31))      
 
     def test_void_is_excluded(self):
         self.client.force_login(self.user)
@@ -1344,15 +1344,15 @@ class AgedCreditorReportWithOutTransactionsTests(TestCase):
             username="dummy", password="dummy")
         cls.fy = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period_1 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         cls.period_2 = Period.objects.create(
-            fy=fy, period="02", fy_and_period="202002", month_end=date(2020, 2, 29))
+            fy=fy, period="02", fy_and_period="202002", month_start=date(2020, 2, 29))
         cls.period_3 = Period.objects.create(
-            fy=fy, period="03", fy_and_period="202003", month_end=date(2020, 3, 31))
+            fy=fy, period="03", fy_and_period="202003", month_start=date(2020, 3, 31))
         cls.period_4 = Period.objects.create(
-            fy=fy, period="04", fy_and_period="202004", month_end=date(2020, 4, 30))
+            fy=fy, period="04", fy_and_period="202004", month_start=date(2020, 4, 30))
         cls.period_5 = Period.objects.create(
-            fy=fy, period="05", fy_and_period="202005", month_end=date(2020, 5, 31))      
+            fy=fy, period="05", fy_and_period="202005", month_start=date(2020, 5, 31))      
 
     def test_void_is_excluded(self):
         self.client.force_login(self.user)

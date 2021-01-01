@@ -104,7 +104,7 @@ class TransactionHeaderTests(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31)
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31)
         )
 
     def test_statuses(self):
@@ -648,7 +648,7 @@ class TransactionLineTests(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31)
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31)
         )
 
     def test_add_nominal_transactions(self):
@@ -792,7 +792,7 @@ class MatchedHeadersTests(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31)
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31)
         )
 
         cls.mb = mb = PurchaseHeader.objects.create(

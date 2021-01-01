@@ -14,13 +14,13 @@ class CarryForwardTests(TestCase):
             username="dummy", password="dummy")
         cls.fy_2019 = fy = FinancialYear.objects.create(financial_year=2019)
         cls.period_201901 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="201901", month_end=date(2019, 1, 31))
+            fy=fy, period="01", fy_and_period="201901", month_start=date(2019, 1, 31))
         cls.fy_2020 = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period_202001 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         cls.fy_2021 = fy = FinancialYear.objects.create(financial_year=2021)
         cls.period_202101 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202101", month_end=date(2021, 1, 31))
+            fy=fy, period="01", fy_and_period="202101", month_start=date(2021, 1, 31))
 
         # P/L
         cls.revenue_1 = revenue_1 = Nominal.objects.create(
@@ -970,13 +970,13 @@ class RollbackFYTests(TestCase):
             username="dummy", password="dummy")
         cls.fy_2019 = fy = FinancialYear.objects.create(financial_year=2019)
         cls.period_201901 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="201901", month_end=date(2019, 1, 31))
+            fy=fy, period="01", fy_and_period="201901", month_start=date(2019, 1, 31))
         cls.fy_2020 = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period_202001 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         cls.fy_2021 = fy = FinancialYear.objects.create(financial_year=2021)
         cls.period_202101 = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202101", month_end=date(2021, 1, 31))
+            fy=fy, period="01", fy_and_period="202101", month_start=date(2021, 1, 31))
 
         # P/L
         cls.revenue_1 = revenue_1 = Nominal.objects.create(

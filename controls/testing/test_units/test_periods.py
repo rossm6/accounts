@@ -17,7 +17,7 @@ class PeriodSubTractTests(TestCase):
                 Period(
                     period=p,
                     fy_and_period=f"2018{p}",
-                    month_end=date(2018,1,31), # does not matter,
+                    month_start=date(2018,1,31), # does not matter,
                     fy=fy_2018
                 )
             )
@@ -30,7 +30,7 @@ class PeriodSubTractTests(TestCase):
                 Period(
                     period=p,
                     fy_and_period=f"2019{p}",
-                    month_end=date(2019,1,31), # does not matter,
+                    month_start=date(2019,1,31), # does not matter,
                     fy=fy_2019
                 )
             )
@@ -43,7 +43,7 @@ class PeriodSubTractTests(TestCase):
                 Period(
                     period=p,
                     fy_and_period=f"2020{p}",
-                    month_end=date(2020,1,31), # does not matter,
+                    month_start=date(2020,1,31), # does not matter,
                     fy=fy_2020
                 )
             )
@@ -107,7 +107,7 @@ class PeriodAdditionTests(TestCase):
                 Period(
                     period=p,
                     fy_and_period=f"2018{p}",
-                    month_end=date(2018,1,31), # does not matter,
+                    month_start=date(2018,1,31), # does not matter,
                     fy=fy_2018
                 )
             )
@@ -120,7 +120,7 @@ class PeriodAdditionTests(TestCase):
                 Period(
                     period=p,
                     fy_and_period=f"2019{p}",
-                    month_end=date(2019,1,31), # does not matter,
+                    month_start=date(2019,1,31), # does not matter,
                     fy=fy_2019
                 )
             )
@@ -133,7 +133,7 @@ class PeriodAdditionTests(TestCase):
                 Period(
                     period=p,
                     fy_and_period=f"2020{p}",
-                    month_end=date(2020,1,31), # does not matter,
+                    month_start=date(2020,1,31), # does not matter,
                     fy=fy_2020
                 )
             )
@@ -188,19 +188,19 @@ class PeriodOverloadOperatorTests(TestCase):
         cls.p1 = Period.objects.create(
             period="01",
             fy_and_period="201801",
-            month_end=date(2018,1,31), # does not matter
+            month_start=date(2018,1,31), # does not matter
             fy=fy_2018
         )
         cls.p2 = Period.objects.create(
             period="02",
             fy_and_period="201802",
-            month_end=date(2018,1,31), # does not matter
+            month_start=date(2018,1,31), # does not matter
             fy=fy_2018
         )
         cls.p3 = Period.objects.create(
             period="03",
             fy_and_period="201803",
-            month_end=date(2018,1,31), # does not matter
+            month_start=date(2018,1,31), # does not matter
             fy=fy_2018
         )
 

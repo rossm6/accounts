@@ -32,7 +32,7 @@ class CreateReceipt(TestCase):
             fy=fy, 
             period="01", 
             fy_and_period="202001", 
-            month_end=date(2020,1,31)
+            month_start=date(2020,1,31)
         )
         cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         # ASSETS
@@ -1534,7 +1534,7 @@ class EditReceipt(TestCase):
             fy=fy, 
             period="01", 
             fy_and_period="202001", 
-            month_end=date(2020,1,31)
+            month_start=date(2020,1,31)
         )
         cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         # ASSETS
@@ -4657,7 +4657,7 @@ class EditReceipt(TestCase):
             header.type
         )
 
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29))
+        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
 
         data = {}
         header_data = create_header(

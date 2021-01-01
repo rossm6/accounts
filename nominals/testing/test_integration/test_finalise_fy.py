@@ -15,14 +15,14 @@ class FinaliseFYTests(TestCase):
         cls.fy_2019 = fy_2019 = FinancialYear.objects.create(
             financial_year=2019, number_of_periods=12)
         cls.p_201901 = p_201901 = Period.objects.create(
-            fy=fy_2019, period="01", fy_and_period="201901", month_end=date(2019, 1, 31))
+            fy=fy_2019, period="01", fy_and_period="201901", month_start=date(2019, 1, 31))
 
         cls.fy_2020 = fy_2020 = FinancialYear.objects.create(
             financial_year=2020, number_of_periods=12)
         cls.p_202001 = p_202001 = Period.objects.create(
-            fy=fy_2020, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy_2020, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         cls.p_202002 = p_202002 = Period.objects.create(
-            fy=fy_2020, period="02", fy_and_period="202002", month_end=date(2020, 2, 29))
+            fy=fy_2020, period="02", fy_and_period="202002", month_start=date(2020, 2, 29))
 
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")

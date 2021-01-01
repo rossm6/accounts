@@ -16,17 +16,17 @@ class RollbackFYTests(TestCase):
         cls.fy_2019 = fy_2019 = FinancialYear.objects.create(
             financial_year=2019, number_of_periods=12)
         cls.p_201901 = p_201901 = Period.objects.create(
-            fy=fy_2019, period="01", fy_and_period="201901", month_end=date(2019, 1, 31))
+            fy=fy_2019, period="01", fy_and_period="201901", month_start=date(2019, 1, 31))
         # 2020
         cls.fy_2020 = fy_2020 = FinancialYear.objects.create(
             financial_year=2020, number_of_periods=12)
         cls.p_202001 = p_202001 = Period.objects.create(
-            fy=fy_2020, period="01", fy_and_period="202001", month_end=date(2020, 1, 31))
+            fy=fy_2020, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         # 2021
         cls.fy_2021 = fy_2021 = FinancialYear.objects.create(
             financial_year=2021, number_of_periods=12)
         cls.p_202101 = p_202101 = Period.objects.create(
-            fy=fy_2021, period="01", fy_and_period="202101", month_end=date(2021, 1, 31))
+            fy=fy_2021, period="01", fy_and_period="202101", month_start=date(2021, 1, 31))
 
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")

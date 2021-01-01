@@ -200,7 +200,7 @@ class FinancialYearList(ListView):
 
 def convert_month_years_to_full_dates(post_data_copy):
     for k, v in post_data_copy.items():
-        if re.search(r"month_end", k):
+        if re.search(r"month_start", k):
             if v:
                 v = "01-" + v
                 if re.search(r"01-\d{2}-\d{4}", v):
@@ -213,10 +213,6 @@ class FinancialYearCreate(LoginRequiredMixin, CreateView):
     template_name = 'controls/fy_create.html'
     form_class = FinancialYearForm
     success_url = reverse_lazy("controls:index")
-
-    @transaction.atomic
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
@@ -238,7 +234,7 @@ class FinancialYearCreate(LoginRequiredMixin, CreateView):
             periods.instance = fy
             periods.save(commit=False)
             period_instances = [p.instance for p in periods]
-            period_instances.sort(key=lambda p: p.month_end)
+            period_instances.sort(key=lambda p: p.month_start)
             i = 1
             for period in period_instances:
                 period.fy_and_period = f"{fy.financial_year}{str(i).rjust(2, '0')}"
@@ -248,6 +244,14 @@ class FinancialYearCreate(LoginRequiredMixin, CreateView):
                 [*period_instances],
                 Period
             )
+            first_period_of_fy = fy.first_period()
+            mod_settings = ModuleSettings.objects.first()
+            # when a FY is created for the first time we need to set the default
+            # posting periods for each posting module in the software
+            for setting, period in mod_settings.module_periods().items():
+                if not period:
+                    setattr(mod_settings, setting, first_period_of_fy)
+            mod_settings.save()
             return HttpResponseRedirect(self.get_success_url())
         return self.render_to_response(context_data)
 

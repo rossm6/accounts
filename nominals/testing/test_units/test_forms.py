@@ -58,14 +58,14 @@ class FinaliseFYFormTests(TestCase):
 
         fy_2018 = FinancialYear.objects.create(
             financial_year=2018, number_of_periods=12)
-        p_201801 = Period.objects.create(
-            fy=fy_2018, period="01", fy_and_period="201801", month_end=date(2018, 1, 31))
         fy_2019 = FinancialYear.objects.create(
             financial_year=2019, number_of_periods=12)
         p_201901 = Period.objects.create(
-            fy=fy_2019, period="01", fy_and_period="201901", month_end=date(2019, 1, 31))
+            fy=fy_2019, period="01", fy_and_period="201901", month_start=date(2019, 1, 31))
         fy_2020 = FinancialYear.objects.create(
             financial_year=2020, number_of_periods=12)
+        p_202001 = Period.objects.create(
+            fy=fy_2020, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         fy_2021 = FinancialYear.objects.create(
             financial_year=2021, number_of_periods=12)
 
@@ -79,7 +79,7 @@ class FinaliseFYFormTests(TestCase):
             field="t",
             nominal=test_nominal,
             value=100,
-            period=p_201801
+            period=p_201901
         )
         NominalTransaction.objects.create(
             module="NL",
@@ -91,7 +91,7 @@ class FinaliseFYFormTests(TestCase):
             field="t",
             nominal=test_nominal,
             value=100,
-            period=p_201901
+            period=p_202001
         )
 
         f = FinaliseFYForm()

@@ -86,6 +86,7 @@ class CashBookHeaderForm(BaseTransactionHeaderForm):
                   'period', 'cash_book', 'vat_type')
 
     def __init__(self, *args, **kwargs):
+        self.module_setting = "cash_book_period"
         super().__init__(*args, **kwargs)
         self.helper = create_cashbook_header_helper()
 

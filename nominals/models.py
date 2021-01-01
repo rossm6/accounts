@@ -1,3 +1,4 @@
+import calendar
 from datetime import date
 from itertools import groupby
 
@@ -9,6 +10,7 @@ from accountancy.models import (MultiLedgerTransactions, NonAuditQuerySet,
                                 Transaction, TransactionHeader,
                                 TransactionLine, UIDecimalField)
 from cashbook.models import CashBookHeader
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db import models
 from django.db.models import Sum
@@ -167,6 +169,7 @@ class NominalTransactionQuerySet(NonAuditQuerySet):
         balance_sheet = self.filter(period__fy=fy).filter(
             nominal__type="b").values("nominal").annotate(total=Sum("value"))
         last_tran = NominalTransaction.objects.filter(module="NL").values("header").order_by("pk").last()
+        # BUG - need to use a different module altogether e.g. YE (year end)
         if last_tran:
             header = last_tran["header"] + 1
         else:
@@ -252,11 +255,14 @@ class NominalTransaction(MultiLedgerTransactions):
 
     @classmethod
     def brought_forward(cls, header, line, fy, period, value, nominal_pk):
+        last_month_of_fy = period.month_start - relativedelta(months=+1)
+        month, day = calendar.monthrange(last_month_of_fy.year, last_month_of_fy.month)
+        d = date(last_month_of_fy.year, last_month_of_fy.month, day)
         return cls(
             module="NL",
             header=header,
             line=line,
-            date=date.today(),
+            date=d,
             ref=f"YEAR END {str(fy)}",
             period=period,
             type="nbf",

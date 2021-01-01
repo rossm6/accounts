@@ -332,7 +332,7 @@ class PurchaseMatchingAuditTests(TestCase):
 
     def test_audit_is_created(self):
         fy = FinancialYear.objects.create(financial_year=2020)
-        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         s = Supplier.objects.create(code="1", name="11")
         h1 = PurchaseHeader.objects.create(
             supplier=s,
@@ -361,7 +361,7 @@ class PurchaseMatchingAuditTests(TestCase):
     def test_audit_is_updated(self):
         s = Supplier.objects.create(code="1", name="11")
         fy = FinancialYear.objects.create(financial_year=2020)
-        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         h1 = PurchaseHeader.objects.create(
             supplier=s,
             ref="1",
@@ -390,7 +390,7 @@ class PurchaseMatchingAuditTests(TestCase):
 
     def test_instance_deleted(self):
         fy = FinancialYear.objects.create(financial_year=2020)
-        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         s = Supplier.objects.create(code="1", name="11")
         h1 = PurchaseHeader.objects.create(
             supplier=s,
@@ -419,7 +419,7 @@ class PurchaseMatchingAuditTests(TestCase):
 
     def test_queryset_deleted(self):
         fy = FinancialYear.objects.create(financial_year=2020)
-        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         s = Supplier.objects.create(code="1", name="11")
         h1 = PurchaseHeader.objects.create(
             supplier=s,

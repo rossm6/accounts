@@ -158,7 +158,7 @@ class CreateBroughtForwardRefundNominalEntries(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
 
     # CORRECT USAGE
@@ -1459,7 +1459,7 @@ class EditBroughtForwardRefundNominalEntries(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     # CORRECT USAGE
     # A non-zero payment is reduced
@@ -2259,7 +2259,7 @@ class EditBroughtForwardRefund(TestCase):
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
     # CORRECT USAGE
     def test_get_request(self):
@@ -2332,7 +2332,7 @@ class MatchingTests(TestCase):
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_end=date(2020,1,31))
+        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
 
 
     def test_create(self):
@@ -2460,7 +2460,7 @@ class MatchingTests(TestCase):
 
     def test_edit_period_does_not_change_matches(self):
         new_period = Period.objects.create(
-            fy=self.fy, fy_and_period="202002", period="02", month_end=date(2020,2,29)
+            fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29)
         )
         self.client.force_login(self.user)
 
