@@ -1,4 +1,5 @@
 import re
+from functools import reduce
 from itertools import chain, groupby
 
 from accountancy.mixins import (ResponsivePaginationMixin,
@@ -13,6 +14,7 @@ from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import (CreateView, DetailView, ListView,
                                   TemplateView, UpdateView)
+from nominals.models import NominalTransaction
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 from users.mixins import LockDuringEditMixin
@@ -292,6 +294,25 @@ class AdjustFinancialYear(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, formset):
         formset.save(commit=False)
+        fy_has_changed = {} # use dict to avoid recording multiple occurences of the same
+        # FY being affected
+        for form in formset:
+            if 'fy' in form.changed_data:
+                fy_id = form.initial.get("fy")
+                fy_queryset = form.fields["fy"]._queryset
+                fy = next(fy for fy in fy_queryset if fy.pk == fy_id)
+                fy_has_changed[fy_id] = fy
+        # we need to rollback now to the earliest of the financial years which has changed
+        # do this before we make changes to the period objects and FY objects
+        fys = [ fy for fy in fy_has_changed.values() ]
+        if fys:
+            earliest_fy_affected = min(fys, key=lambda fy: fy.financial_year)
+            if earliest_fy_affected:
+                # because user may not in fact change anything
+                # if the next year after the earliest affected does not exist no exception is thrown
+                # the db query just won't delete anything
+                NominalTransaction.objects.rollback_fy(earliest_fy_affected.financial_year + 1)
+        # now all the bfs have been deleted we can change the period objects
         instances = [form.instance for form in formset]
         fy_period_counts = {}
         for fy_id, periods in groupby(instances, key=lambda p: p.fy_id):

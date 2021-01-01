@@ -130,6 +130,12 @@ class RollbackFYTests(TestCase):
         )
 
         response = self.client.post(self.url, {"financial_year": self.fy_2019.pk})
+        # rollback to 2019 means deleting bf in 2020, 2021, 2022 etc
+        # the view will add 1 to the FY entered into the form
+        # this is then passed to NominalTransaction.objects.rollback_fy
+        # so in this example 2020 (= 2019 + 1) is passed to the function
+        # which means bfs in 2020 and after all get deleted
+        # posting periods remain as they were though
         self.assertEqual(
             response.status_code,
             302

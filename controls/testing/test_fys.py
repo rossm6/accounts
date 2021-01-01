@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
+from nominals.models import Nominal, NominalTransaction
 
 
 class CreateFyTests(TestCase):
@@ -224,6 +225,25 @@ class AdjustFYTests(TestCase):
         cls.url = reverse("controls:fy_adjust")
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
+        # ASSETS
+        assets = Nominal.objects.create(name="Assets", type="b")
+        current_assets = Nominal.objects.create(
+            parent=assets, name="Current Assets", type="b")
+        cls.bank_nominal = Nominal.objects.create(
+            parent=current_assets, name="Bank Account", type="b")
+        cls.debtors_nominal = Nominal.objects.create(
+            parent=current_assets, name="Trade Debtors", type="b")
+
+        # LIABILITIES
+        cls.liabilities = liabilities = Nominal.objects.create(
+            name="Liabilities", type="b"
+        )
+        cls.current_liabilities = current_liabilities = Nominal.objects.create(
+            name="Current Liabilities", type="b", parent=liabilities
+        )
+        cls.vat_output = vat_output = Nominal.objects.create(
+            name="Vat Output", type="b", parent=current_liabilities
+        )
 
     def test_successful(self):
         self.client.force_login(self.user)
@@ -301,7 +321,166 @@ class AdjustFYTests(TestCase):
             fy_2020.number_of_periods,
             18
         )
-        
+
+    def test_successful_when_bfs_are_present(self):
+        """
+        Say you have two FYs, each of 12 periods,
+            2019
+            2020
+
+        If you extend 2019 to 18 months, 2019 and 2020 are affected by the
+        change.
+
+        If 2019 c/fs have already posted as b/fs into 2020 we need to delete
+        these bfs and anyway bfs posted in periods after.
+        """
+        # create the fys and periods
+        self.client.force_login(self.user)
+        # create 2019
+        fy_2019 = FinancialYear.objects.create(
+            financial_year=2019, number_of_periods=12)
+        periods = []
+        for i in range(12):
+            periods.append(
+                Period(
+                    fy=fy_2019,
+                    fy_and_period="2019" + str(i).rjust(2, "0"),
+                    period=str(i+1).rjust(2, "0"),
+                    month_end=date(2019, i+1, 1)
+                )
+            )
+        p_2019 = Period.objects.bulk_create(periods)
+        p_201901 = fy_2019.first_period()
+        # create 2020
+        fy_2020 = FinancialYear.objects.create(
+            financial_year=2020, number_of_periods=12)
+        periods = []
+        for i in range(12):
+            periods.append(
+                Period(
+                    fy=fy_2020,
+                    fy_and_period="2020" + str(i).rjust(2, "0"),
+                    period=str(i+1).rjust(2, "0"),
+                    month_end=date(2020, i+1, 1)
+                )
+            )
+        p_2020 = Period.objects.bulk_create(periods)
+        p_202001 = fy_2020.first_period()
+        # post the bfs
+        # 2019
+        bf_2019_1 = NominalTransaction.objects.create(
+            module="NL",
+            header=1,
+            line=1,
+            date=date.today(),
+            ref="YEAR END 2018",
+            period=p_201901,
+            field="t",
+            type="nbf",
+            nominal=self.bank_nominal,
+            value=1000
+        )
+        bf_2019_2 = NominalTransaction.objects.create(
+            module="NL",
+            header=1,
+            line=2,
+            date=date.today(),
+            ref="YEAR END 2018",
+            period=p_201901,
+            field="t",
+            type="nbf",
+            nominal=self.vat_output,
+            value=-1000
+        )
+        # 2020
+        bf_2020_1 = NominalTransaction.objects.create(
+            module="NL",
+            header=2,
+            line=1,
+            date=date.today(),
+            ref="YEAR END 2019",
+            period=p_202001,
+            field="t",
+            type="nbf",
+            nominal=self.bank_nominal,
+            value=1000
+        )
+        bf_2020_2 = NominalTransaction.objects.create(
+            module="NL",
+            header=2,
+            line=2,
+            date=date.today(),
+            ref="YEAR END 2019",
+            period=p_202001,
+            field="t",
+            type="nbf",
+            nominal=self.vat_output,
+            value=-1000
+        )
+        # prepare for adjusting FY
+        periods = list(p_2019) + list(p_2020)
+        second_half_of_2019 = periods[6:12]
+        for p in second_half_of_2019:
+            p.fy = fy_2020
+        form_data = {}
+        for i, p in enumerate(periods):
+            form_data.update({
+                "period-" + str(i) + "-id": p.pk,
+                "period-" + str(i) + "-month_end": p.month_end.strftime("%m-%Y"),
+                "period-" + str(i) + "-period": p.period,
+                "period-" + str(i) + "-fy": p.fy_id
+            })
+        form_data.update({
+            "period-TOTAL_FORMS": str(len(periods)),
+            "period-INITIAL_FORMS": str(len(periods)),
+            "period-MIN_NUM_FORMS": "0",
+            "period-MAX_NUM_FORMS": "1000"
+        })
+        # now adjust via the view
+        response = self.client.post(self.url, data=form_data)
+        self.assertEqual(
+            response.status_code,
+            302
+        )
+        fy_2019.refresh_from_db()
+        fy_2020.refresh_from_db()
+        periods = Period.objects.all()
+        periods_2019 = periods[:6]
+        for i, p in enumerate(periods_2019):
+            p.fy = fy_2019
+            p.month_end = date(2019, i+1, 1)
+            p.fy_and_period = "2019" + str(i+1).rjust(2, "0")
+            p.period = str(i+1).rjust(2, "0")
+        periods_2020 = periods[6:]
+        for i, p in enumerate(periods_2020):
+            p.fy = fy_2020
+            p.month_end = date(2019, 6, 1) + relativedelta(months=+i)
+            p.fy_and_period = "2020" + str(i+1).rjust(2, "0")
+            p.period = str(i+1).rjust(2, "0")
+        self.assertEqual(
+            fy_2019.number_of_periods,
+            6
+        )
+        self.assertEqual(
+            fy_2020.number_of_periods,
+            18
+        )
+        # check that the b/fs posted to 01 2020 have been deleted i.e. 2020 has been rolled back
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
+        self.assertEqual(
+            len(nom_trans),
+            2
+        )
+        self.assertEqual(
+            nom_trans[0],
+            bf_2019_1
+        )
+        self.assertEqual(
+            nom_trans[1],
+            bf_2019_2
+        )
+
+
 
     def test_failure_when_FY_does_contain_consecutive_periods(self):
         self.client.force_login(self.user)

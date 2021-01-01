@@ -437,12 +437,5 @@ class RollbackFY(FormView):
 
     def form_valid(self, form):
         fy = form.cleaned_data.get("financial_year")
-        (
-            NominalTransaction
-            .objects
-            .filter(module="NL")
-            .filter(type="nbf")
-            .filter(period__fy__financial_year__gte=fy.financial_year + 1)
-            .delete()
-        )
+        NominalTransaction.objects.rollback_fy(fy.financial_year + 1)
         return super().form_valid(form)

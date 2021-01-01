@@ -1082,7 +1082,7 @@ class RollbackFYTests(TestCase):
             )
         )
         NominalTransaction.objects.bulk_create(fy_2020_bfs)
-        NominalTransaction.objects.rollback_fy(self.fy_2020)
+        NominalTransaction.objects.rollback_fy(self.fy_2020.financial_year)
         nom_trans = NominalTransaction.objects.all().order_by(*
                                                               ["header", "line"])
         self.assertEqual(

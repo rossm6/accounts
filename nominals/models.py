@@ -140,19 +140,20 @@ class NominalLine(ModuleTransactions, TransactionLine):
 
 class NominalTransactionQuerySet(NonAuditQuerySet):
 
-    def rollback_fy(self, fy):
+    def rollback_fy(self, financial_year):
         """
-        Delete the brought forwards for `fy`
+        Delete the brought forwards for `financial_year` which is an integer for the year e.g. 2020
+        Ensure you pass therefore fy.financial_year, where fy is an instance of model FinancialYear,
+        and not fy.
 
         E.g. 
-        fy = 2020
+        financial_year = 2020
         So will delete bfs posted into 01 2020
         Allowing the user to post back into FY 2019
         Afterwards carrying forward again i.e. doing a year end which
         will again post the bfs into 01 2020
         """
-        period = fy.first_period()
-        self.filter(module="NL").filter(type="nbf").filter(period=period).delete()
+        self.filter(module="NL").filter(type="nbf").filter(period__fy__financial_year__gte=financial_year).delete()
 
     def carry_forward(self, fy, period):
         """
