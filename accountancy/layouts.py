@@ -3,17 +3,21 @@ from crispy_forms.layout import HTML, Div, Field, Hidden, Layout
 
 # do we need to import Hidden ??
 
+
 class AdjustPeriod(Div):
     """
     Used for adjusting FYs
     """
     template = "accounts/layout/fy_adjust.html"
 
+
 class PeriodInputGroup(Div):
     template = "accounts/layout/period_input_group.html"
 
+
 class FYInputGroup(Div):
     template = "accounts/layout/fy_input_group.html"
+
 
 class Delete(Div):
     template = "accounts/layout/delete.html"
@@ -85,7 +89,8 @@ def create_transaction_enquiry_time_fields(search_within=False):
     if search_within:
         row += [
             Div(
-                LabelAndFieldAndErrors('search_within', css_class="form-control form-control-sm"),
+                LabelAndFieldAndErrors(
+                    'search_within', css_class="form-control form-control-sm"),
                 css_class="col-2"
             )
         ]
@@ -108,9 +113,19 @@ def create_transaction_enquiry_time_fields(search_within=False):
     return row
 
 
-def create_transaction_enquiry_layout(main_choice, search_within=False):
+def create_transaction_enquiry_layout(main_choice, include_voided=False, include_brought_forwards=False, search_within=False):
     second_row = create_transaction_enquiry_time_fields(
         search_within=search_within)
+    third_row = []
+    if include_voided:
+        third_row.append(
+            LabelAndFieldAndErrors('include_voided')
+        )
+    if include_brought_forwards:
+        third_row.append(
+            LabelAndFieldAndErrors('include_brought_forwards')
+        )
+
     return Layout(
         Div(
             Div(
@@ -143,7 +158,7 @@ def create_transaction_enquiry_layout(main_choice, search_within=False):
             ),
             Field('use_adv_search', type="hidden"),
             Div(
-                LabelAndFieldAndErrors('include_voided'),
+                *third_row,
                 css_class="mt-3"
             )
         ),
@@ -281,7 +296,8 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
                                 css_class="col position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors("vat_type", css_class="vat_type_selectize form-control form-control-sm"),
+                                LabelAndFieldAndErrors(
+                                    "vat_type", css_class="vat_type_selectize form-control form-control-sm"),
                                 css_class="col position-relative"
                             ),
                             css_class="form-row"
@@ -350,7 +366,8 @@ def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False):
                                 css_class="col position-relative"
                             ),
                             Div(
-                                LabelAndFieldAndErrors("vat_type", css_class="vat_type_selectize form-control form-control-sm"),
+                                LabelAndFieldAndErrors(
+                                    "vat_type", css_class="vat_type_selectize form-control form-control-sm"),
                                 css_class="col-3 position-relative"
                             ),
                             css_class="form-row"

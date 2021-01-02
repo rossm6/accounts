@@ -119,7 +119,6 @@ TEMPLATES = [
     },
 ]
 
-# Allowed layout pack
 CRISPY_ALLOWED_TEMPLATE_PACKS = (
     'bootstrap',
     'uni_form',
@@ -128,11 +127,9 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = (
     'accounts'
 )
 
-# Default layout pack
 CRISPY_TEMPLATE_PACK = 'accounts'
 
 WSGI_APPLICATION = 'proj.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
@@ -143,7 +140,6 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 #         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
 #     }
 # }
-
 
 DATABASES = {
     'default': {
@@ -211,7 +207,6 @@ ANYMAIL = {
 
 # EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
 EMAIL_BACKEND = "users.backends.CustomEmailBackend"
-
 DEFAULT_FROM_EMAIL = "you@example.com"
 # the email address that error messages come from, such as those sent to ADMINS and MANAGERS
 SERVER_EMAIL = "your-server@example.com"
@@ -237,6 +232,10 @@ ACCOUNTANCY_MODULES = {
     'CB': 'cashbook',
     'VL': 'vat'
 }
+
+NEW_USERS_ARE_SUPERUSERS = os.environ.get('NEW_USERS_ARE_SUPERUSERS', default=0)
+FIRST_USER_IS_SUPERUSER = os.environ.get('FIRST_USER_IS_SUPERUSER', default=1)
+
 
 # DEFAULT_RENDERER_CLASSES = (
 #     'rest_framework.renderers.JSONRenderer',

@@ -67,7 +67,7 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
                     yield root_and_leaves
                     leaves = []
                 root_and_leaves = (node.name, leaves)
-            elif node.is_leaf_node():
+            elif node.level == 2:
                 leaves.append(self.choice(node))
         yield root_and_leaves
 
@@ -75,15 +75,15 @@ class RootAndLeavesModelChoiceIterator(ModelChoiceIterator):
         length = 0
         tree = self.queryset
         for node in tree:
-            if node.is_root_node() or node.is_leaf_node():
+            if node.is_root_node() or node.level == 2:
                 length = length + 1
         return length + (1 if self.field.empty_label is not None else 0)
 
 
 class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
     """
-    When creating nominal codes one needs to ick the account type i.e.
-    the child of a root.  Again this is based on Xero.
+    When creating nominal codes one needs to tick the account type i.e.
+    a direct child of a root.  Again this is based on Xero.
 
         E.g.
 
@@ -108,7 +108,7 @@ class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
                     yield root_and_children
                     children = []
                 root_and_children = (node.name, children)
-            elif node.is_child_node() and not node.is_leaf_node():
+            elif node.level == 1:
                 children.append(self.choice(node))
         yield root_and_children
 
@@ -116,7 +116,7 @@ class RootAndChildrenModelChoiceIterator(ModelChoiceIterator):
         length = 0
         tree = self.queryset
         for node in tree:
-            if node.is_root_node() or (node.is_child_node() and not node.is_leaf_node()):
+            if node.is_root_node() or node.level == 1:
                 length = length + 1
         return length + (1 if self.field.empty_label is not None else 0)
 

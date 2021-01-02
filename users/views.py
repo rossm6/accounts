@@ -1,4 +1,3 @@
-from accountancy.views import ajax_form_validator
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
@@ -19,12 +18,7 @@ class SignUp(CreateView):
     model = User
     form_class = SignUpForm
     template_name = "registration/signup.html"
-    success_url = reverse_lazy("purchases:transaction_enquiry")
-
-
-validate_forms_by_ajax = ajax_form_validator({
-    "signup": SignUpForm
-})
+    success_url = reverse_lazy("dashboard:dashboard")
 
 
 class SignIn(LoginView):

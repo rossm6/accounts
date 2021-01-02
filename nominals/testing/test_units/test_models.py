@@ -131,7 +131,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             bank_bf.date,
-            date(2019,12,31)
+            date(2019, 12, 31)
         )
         self.assertEqual(
             bank_bf.ref,
@@ -178,7 +178,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtor_bf.date,
-            date.today()
+            date(2019, 12, 31)
         )
         self.assertEqual(
             debtor_bf.ref,
@@ -382,7 +382,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtors_bf.date,
-            date(2019,12,31)
+            date(2019, 12, 31)
         )
         self.assertEqual(
             debtors_bf.ref,
@@ -420,7 +420,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             vat_output_bf.date,
-            date.today()
+            date(2019, 12, 31)
         )
         self.assertEqual(
             vat_output_bf.ref,
@@ -458,7 +458,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             retained_earnings_bf.date,
-            date.today()
+            date(2019, 12, 31)
         )
         self.assertEqual(
             retained_earnings_bf.ref,
@@ -619,7 +619,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtors_bf.date,
-            date(2019,12,31)
+            date(2019, 12, 31)
         )
         self.assertEqual(
             debtors_bf.ref,
@@ -657,7 +657,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             vat_output_bf.date,
-            date.today()
+            date(2019, 12, 31)
         )
         self.assertEqual(
             vat_output_bf.ref,
@@ -695,7 +695,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             retained_earnings_bf.date,
-            date.today()
+            date(2019, 12, 31)
         )
         self.assertEqual(
             retained_earnings_bf.ref,
@@ -858,7 +858,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtors_bf.date,
-            date.today()
+            date(2020, 12, 31)
         )
         self.assertEqual(
             debtors_bf.ref,
@@ -896,7 +896,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             vat_output_bf.date,
-            date.today()
+            date(2020, 12, 31)
         )
         self.assertEqual(
             vat_output_bf.ref,
@@ -934,7 +934,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             retained_earnings_bf.date,
-            date.today()
+            date(2020, 12, 31)
         )
         self.assertEqual(
             retained_earnings_bf.ref,

@@ -5,7 +5,7 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
 from accountancy.forms import (BaseAjaxFormMixin, BaseLineFormset,
                                BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
-                               BaseTransactionSearchForm)
+                               NominalTransactionSearchForm)
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  PlainFieldErrors, TableHelper,
                                  create_journal_header_helper,
@@ -281,7 +281,7 @@ class TrialBalanceForm(forms.Form):
         return cleaned_data
 
 
-class NominalTransactionSearchForm(BaseAjaxFormMixin, BaseTransactionSearchForm):
+class NominalTransactionSearchForm(BaseAjaxFormMixin, NominalTransactionSearchForm):
     """
     This is not a model form.  The Meta attribute is only for the Ajax
     form implementation.
@@ -299,7 +299,7 @@ class NominalTransactionSearchForm(BaseAjaxFormMixin, BaseTransactionSearchForm)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.helper.layout = create_transaction_enquiry_layout("nominal")
+        self.helper.layout = create_transaction_enquiry_layout("nominal", include_brought_forwards=True)
 
     class Meta:
         # not a model form

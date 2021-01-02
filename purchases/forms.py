@@ -274,7 +274,7 @@ class PurchaseTransactionSearchForm(BaseAjaxFormMixin, SalesAndPurchaseTransacti
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper.layout = create_transaction_enquiry_layout(
-            "supplier", search_within=True)
+            "supplier", search_within=True, include_voided=True)
 
     class Meta:
         # not a model form

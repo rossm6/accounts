@@ -1,11 +1,12 @@
+from accountancy.contrib.mixins import TransactionPermissionMixin
 from accountancy.forms import BaseVoidTransactionForm
 from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (BaseViewTransaction, BaseVoidTransaction,
-                               CashBookAndNominalTransList,
-                               CreateCashBookTransaction,
+                               CashBookTransList, CreateCashBookTransaction,
                                DeleteCashBookTransMixin,
                                EditCashBookTransaction,
                                NominalTransactionsMixin)
+from controls.mixins import QueuePostsMixin
 from django.conf import settings
 from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin)
@@ -24,8 +25,6 @@ from cashbook.models import CashBook
 
 from .forms import CashBookHeaderForm, CashBookLineForm, enter_lines
 from .models import CashBookHeader, CashBookLine, CashBookTransaction
-from accountancy.contrib.mixins import TransactionPermissionMixin
-from controls.mixins import QueuePostsMixin
 
 
 class CreateTransaction(
@@ -123,7 +122,7 @@ class VoidTransaction(
 class TransactionEnquiry(
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    CashBookAndNominalTransList
+    CashBookTransList
 ):
     model = CashBookTransaction
     fields = [
@@ -143,7 +142,7 @@ class TransactionEnquiry(
     row_identifier = "header"
     column_transformers = {
         "date": lambda d: d.strftime('%d %b %Y'),
-        "period__fy_and_period": lambda p: ( p[4:] + " " + p[:4] ) if p else ""
+        "period__fy_and_period": lambda p: (p[4:] + " " + p[:4]) if p else ""
     }
     permission_required = 'cashbook.view_transactions_enquiry'
 

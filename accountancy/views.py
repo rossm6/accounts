@@ -337,6 +337,7 @@ class JQueryDataTableScrollerMixin:
         return s, s.visible
 
 
+
 class SalesAndPurchaseSearchMixin:
     def apply_advanced_search(self, queryset, cleaned_data):
         reference = cleaned_data.get("reference")
@@ -380,14 +381,13 @@ class SalesAndPurchaseSearchMixin:
         return queryset
 
 
-class NominalSearchMixin:
+class VatSearchMixin:
     def apply_advanced_search(self, queryset, cleaned_data):
         reference = cleaned_data.get("reference")
         total = cleaned_data.get("total")
         period = cleaned_data.get("period")
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
-
         if reference:
             queryset = (
                 queryset.annotate(
@@ -407,6 +407,15 @@ class NominalSearchMixin:
             queryset = queryset.filter(date__gte=start_date)
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
+        return queryset
+
+
+class NominalSearchMixin:
+    def apply_advanced_search(self, queryset, cleaned_data):
+        queryset = super().apply_advanced_search(queryset, cleaned_data)
+        include_brought_forwards = cleaned_data.get("include_brought_forwards")
+        if not include_brought_forwards:
+            queryset = queryset.exclude(type="nbf")
         return queryset
 
 
@@ -448,11 +457,17 @@ class BaseTransactionsList(CustomFilterJQueryDataTableMixin,
         return row["id"]
 
 
-class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsList):
+class VatTransList(VatSearchMixin, BaseTransactionsList):
+    pass
+
+class CashBookTransList(VatSearchMixin, BaseTransactionsList):
+    pass
+
+class NominalTransList(NominalSearchMixin, VatSearchMixin, BaseTransactionsList):
     pass
 
 
-class CashBookAndNominalTransList(NominalSearchMixin, BaseTransactionsList):
+class SalesAndPurchasesTransList(SalesAndPurchaseSearchMixin, BaseTransactionsList):
     pass
 
 
@@ -892,6 +907,7 @@ class RESTIndividualTransactionMixin:
     def get_line_formset_queryset(self):
         return self.get_line_model().objects.filter(header=self.main_header)
 
+
 class IndividualTransactionMixin:
 
     def setup(self, request, *args, **kwargs):
@@ -1141,8 +1157,8 @@ class EditPurchaseOrSalesTransaction(
 
 
 class BaseViewTransaction(
-    ViewTransactionAuditMixin,
-    DetailView):
+        ViewTransactionAuditMixin,
+        DetailView):
     """
     No REST BASE exists for view yet.  Remember to move permission_action
     to this class when it is created
@@ -1218,6 +1234,7 @@ class MatchingViewTransactionMixin:
         for match in matches:
             if match.matched_by_id == header.pk:
                 match_obj = {
+                    "pk": match.pk,
                     "type": match.matched_to.get_type_display(),
                     "ref": match.matched_to.ref,
                     "total": match.matched_to.ui_total,
@@ -1227,6 +1244,7 @@ class MatchingViewTransactionMixin:
                 }
             else:
                 match_obj = {
+                    "pk": match.pk,
                     "type": match.matched_by.get_type_display(),
                     "ref": match.matched_by.ref,
                     "total": match.matched_by.ui_total,
@@ -1248,8 +1266,8 @@ class SaleAndPurchaseViewTransaction(
 
 
 class BaseVoidTransaction(
-    IndividualTransactionMixin, 
-    View):
+        IndividualTransactionMixin,
+        View):
     http_method_names = ['post']
     permission_action = "void"
 
@@ -1332,7 +1350,7 @@ class BaseVoidTransaction(
 
 
 class SaleAndPurchaseVoidTransaction(BaseVoidTransaction):
-    
+
     def get_void_form_kwargs(self):
         kwargs = super().get_void_form_kwargs()
         kwargs.update({
@@ -1374,8 +1392,6 @@ class SaleAndPurchaseVoidTransaction(BaseVoidTransaction):
         self.delete_related()
 
 
-
-
 class DeleteCashBookTransMixin:
 
     def delete_related(self):
@@ -1388,9 +1404,6 @@ class DeleteCashBookTransMixin:
             .filter(header=self.transaction_to_void.pk)
             .delete()
         )
-
-
-
 
 
 class AgeMatchingReportMixin(
@@ -1538,7 +1551,7 @@ class AgeMatchingReportMixin(
 
     def load_page(self):
         context = {}
-        current_period = Period.objects.first() 
+        current_period = Period.objects.first()
         # obviously this will need to look up the current period of the PL or SL eventually
         form = self.get_filter_form(
             initial={"period": current_period, "show_transactions": True})
@@ -1706,35 +1719,3 @@ class LoadMatchingTransactions(
         else:
             queryset = queryset.none()
         return queryset
-
-
-def ajax_form_validator(forms):
-
-    def func(request):
-        success = False
-        status = 404
-        response_data = {}
-        if form := request.GET.get("form"):
-            data = request.GET
-        elif form := request.POST.get("form"):
-            data = request.POST
-
-        if form in forms:
-            form_instance = forms[form](data=data)
-            status = 200
-            if form_instance.is_valid():
-                success = True
-            else:
-                ctx = {}
-                ctx.update(csrf(request))
-                form_html = render_crispy_form(form_instance, context=ctx)
-                response_data.update({
-                    "form_html": form_html
-                })
-        response_data.update({
-            "success": success,
-            "status": status
-        })
-        return JsonResponse(data=response_data, status=status)
-
-    return func

@@ -69,14 +69,23 @@ class Period(AuditMixin, models.Model):
     class Meta:
         ordering = ['fy_and_period']
 
-    def __add__(self, other):
-        fys = {
-            fy.financial_year: {
-                'fy': fy,
-                'periods': list(fy.periods.all())
+    @property
+    def fys(self):
+        if hasattr(self, '_fys'):
+            fys = self._fys
+        else:
+            fys = {
+                fy.financial_year: {
+                    'fy': fy,
+                    'periods': list(fy.periods.all())
+                }
+                for fy in FinancialYear.objects.all().prefetch_related('periods')
             }
-            for fy in FinancialYear.objects.all()
-        }
+            self._fys = fys # cache
+        return fys
+
+    def __add__(self, other):
+        fys = self.fys
         fy_int, period_int = int(
             self.fy_and_period[:4]), int(self.fy_and_period[4:])
         while(other):
@@ -94,13 +103,7 @@ class Period(AuditMixin, models.Model):
                 return fys[fy_int]["periods"][period_int - 1 + other]
 
     def __sub__(self, other):
-        fys = {
-            fy.financial_year: {
-                'fy': fy,
-                'periods': list(fy.periods.all())
-            }
-            for fy in FinancialYear.objects.all()
-        }
+        fys = self.fys
         fy_int, period_int = int(
             self.fy_and_period[:4]), int(self.fy_and_period[4:])
         while(other):

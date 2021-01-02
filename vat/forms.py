@@ -67,6 +67,7 @@ class VatTransactionSearchForm(forms.Form):
             options={
                 "useCurrent": True,
                 "collapse": True,
+                "format": "DD-MM-YYYY"
             },
             attrs={
                 "icon_toggle": True,
@@ -80,6 +81,7 @@ class VatTransactionSearchForm(forms.Form):
             options={
                 "useCurrent": True,
                 "collapse": True,
+                "format": "DD-MM-YYYY"
             },
             attrs={
                 "icon_toggle": True,

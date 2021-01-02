@@ -2,6 +2,8 @@ from accountancy.layouts import Div, LabelAndFieldAndErrors
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout, Submit
 from django import forms
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import (AuthenticationForm, PasswordResetForm,
                                        SetPasswordForm, UserCreationForm)
 from django.contrib.auth.models import User
@@ -37,6 +39,20 @@ class SignUpForm(UserCreationForm):
                     '<button class="btn btn-lg btn-primary btn-block" type="submit">Sign Up</button>')
             )
         )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        NEW_USERS_ARE_SUPERUSERS = settings.NEW_USERS_ARE_SUPERUSERS
+        FIRST_USER_IS_SUPERUSER = settings.FIRST_USER_IS_SUPERUSER
+        if NEW_USERS_ARE_SUPERUSERS:
+            instance.is_superuser = True # has full perms
+            instance.is_staff = False # cannot access admin
+        elif FIRST_USER_IS_SUPERUSER:
+            if not get_user_model().objects.first():
+                instance.is_superuser = True
+                instance.is_staff = False
+        if commit:
+            return super().save()
 
 
 class SignInForm(AuthenticationForm):

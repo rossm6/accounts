@@ -116,7 +116,6 @@ class BaseTransactionSearchForm(forms.Form):
         label='Total',
         required=False
     )
-
     period = forms.CharField(
         label='Period',
         max_length=100,
@@ -150,8 +149,6 @@ class BaseTransactionSearchForm(forms.Form):
         ),
         required=False
     )
-    include_voided = forms.BooleanField(
-        label="Include Voided Transactions", initial=False, required=False)
     # used in BaseTransactionList view
     use_adv_search = forms.BooleanField(initial=True, required=False)
     # w/o this adv search is not applied
@@ -167,7 +164,17 @@ class BaseTransactionSearchForm(forms.Form):
         self.helper.include_media = False
 
 
-class SalesAndPurchaseTransactionSearchForm(BaseTransactionSearchForm):
+class NominalTransactionSearchForm(BaseTransactionSearchForm):
+    include_brought_forwards = forms.BooleanField(
+        label="Include Brought Forwards", initial=False, required=False)
+
+
+class NotNominalTransactionSearchForm(BaseTransactionSearchForm):
+    include_voided = forms.BooleanField(
+        label="Include Voided Transactions", initial=False, required=False)
+
+
+class SalesAndPurchaseTransactionSearchForm(NotNominalTransactionSearchForm):
     # subclass must define a contact model choice field
     search_within = forms.ChoiceField(
         choices=(

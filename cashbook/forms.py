@@ -4,7 +4,7 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
 from accountancy.forms import (BaseAjaxFormMixin,
                                BaseCashBookLineForm, BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
-                               BaseTransactionSearchForm,
+                               NotNominalTransactionSearchForm,
                                SaleAndPurchaseHeaderFormMixin,
                                SaleAndPurchaseLineFormset)
 from accountancy.layouts import (Div, LabelAndFieldAndErrors, PlainFieldErrors,
@@ -171,7 +171,7 @@ enter_lines = forms.modelformset_factory(
 enter_lines.include_empty_form = True
 
 
-class CashBookTransactionSearchForm(BaseTransactionSearchForm):
+class CashBookTransactionSearchForm(NotNominalTransactionSearchForm):
     cash_book = forms.ModelChoiceField(
         queryset=CashBook.objects.all(),
         required=False

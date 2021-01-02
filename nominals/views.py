@@ -6,7 +6,7 @@ from accountancy.forms import BaseVoidTransactionForm
 from accountancy.mixins import SingleObjectAuditDetailViewMixin
 from accountancy.views import (BaseCreateTransaction, BaseEditTransaction,
                                BaseViewTransaction, BaseVoidTransaction,
-                               CashBookAndNominalTransList)
+                               NominalTransList)
 from controls.mixins import QueuePostsMixin
 from controls.models import ModuleSettings, Period
 from crispy_forms.utils import render_crispy_form
@@ -103,7 +103,7 @@ class ViewTransaction(LoginRequiredMixin, TransactionPermissionMixin, BaseViewTr
     edit_view_name = "nominals:edit"
 
 
-class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBookAndNominalTransList):
+class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, NominalTransList):
     model = NominalTransaction
     # ORDER OF FIELDS HERE IS IMPORTANT FOR GROUPING THE SQL QUERY
     # ATM -
@@ -125,7 +125,7 @@ class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBookAn
     row_identifier = "header"
     column_transformers = {
         "date": lambda d: d.strftime('%d %b %Y'),
-        "period__fy_and_period": lambda p: ( p[4:] + " " + p[:4] ) if p else ""
+        "period__fy_and_period": lambda p: (p[4:] + " " + p[:4]) if p else ""
     }
     permission_required = 'nominals.view_transactions_enquiry'
 
