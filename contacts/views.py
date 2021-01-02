@@ -96,6 +96,7 @@ class CreateAndUpdateMixin:
 
 class CreateContact(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         CreateAndUpdateMixin,
         CreateView):
     model = Contact
@@ -105,6 +106,7 @@ class CreateContact(
     prefix = "contact"
     success_url = reverse_lazy("contacts:list")
     title = "Create Contact"
+    permission_required = "contacts.add_contacts"
 
     def get_form_class(self):
         if self.request.is_ajax():
@@ -141,15 +143,17 @@ class CreateContact(
 
 class ContactDetail(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         SingleObjectAuditDetailViewMixin,
         DetailView):
     model = Contact
     template_name = "contacts/contact_detail.html"
     context_object_name = "contact"
-
+    permission_required = "contacts.view_contacts"
 
 class ContactUpdate(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         LockDuringEditMixin,
         CreateAndUpdateMixin,
         UpdateView):
@@ -159,3 +163,4 @@ class ContactUpdate(
     context_object_name = "contact"
     success_url = reverse_lazy("contacts:list")
     title = "Edit Contact"
+    permission_required = "contacts.change_contacts"

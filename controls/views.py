@@ -5,7 +5,7 @@ from itertools import chain, groupby
 from accountancy.mixins import (ResponsivePaginationMixin,
                                 SingleObjectAuditDetailViewMixin)
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 from django.db.models import prefetch_related_objects
@@ -59,6 +59,7 @@ class ReadPermissionsMixin:
 
 class GroupDetail(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         SingleObjectAuditDetailViewMixin,
         ReadPermissionsMixin,
         IndividualMixin,
@@ -66,6 +67,7 @@ class GroupDetail(
     model = Group
     template_name = "controls/group_detail.html"
     edit = False
+    permission_required = "auth.view_group"
 
     def get_perms(self):
         return self.object.permissions.all()
@@ -73,6 +75,7 @@ class GroupDetail(
 
 class GroupUpdate(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         LockDuringEditMixin,
         SingleObjectAuditDetailViewMixin,
         IndividualMixin,
@@ -82,13 +85,15 @@ class GroupUpdate(
     success_url = reverse_lazy("controls:groups")
     form_class = GroupForm
     edit = True
+    permission_required = "auth.change_group"
 
 
-class GroupCreate(LoginRequiredMixin, CreateView):
+class GroupCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Group
     template_name = "controls/group_edit.html"
     success_url = reverse_lazy("controls:groups")
     form_class = GroupForm
+    permission_required = "auth.add_group"
 
 
 class UsersList(LoginRequiredMixin, ListView):
@@ -109,12 +114,14 @@ class UsersList(LoginRequiredMixin, ListView):
 
 class UserDetail(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         SingleObjectAuditDetailViewMixin,
         ReadPermissionsMixin,
         DetailView):
     model = User
     template_name = "controls/user_detail.html"
     edit = False
+    permission_required = "auth.view_user"
 
     def get_perms(self):
         user = self.object
@@ -132,6 +139,7 @@ class UserDetail(
 
 class UserEdit(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         LockDuringEditMixin,
         SingleObjectAuditDetailViewMixin,
         IndividualMixin,
@@ -141,6 +149,7 @@ class UserEdit(
     template_name = "controls/user_edit.html"
     success_url = reverse_lazy("controls:users")
     edit = True
+    permission_required = "auth.change_user"
 
     # because 5 db hits are needed for POST
     @transaction.atomic
@@ -174,11 +183,12 @@ class UserEdit(
         return super().form_valid(form)
 
 
-class UserCreate(LoginRequiredMixin, CreateView):
+class UserCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = User
     form_class = UserForm
     template_name = "controls/user_edit.html"
     success_url = reverse_lazy("controls:users")
+    permission_required = "auth.add_user"
 
     def get_form(self):
         self.form_class.declared_fields["user_permissions"].widget = CheckboxSelectMultipleWithDataAttr(
@@ -208,11 +218,12 @@ def convert_month_years_to_full_dates(post_data_copy):
     return post_data_copy
 
 
-class FinancialYearCreate(LoginRequiredMixin, CreateView):
+class FinancialYearCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = FinancialYear
     template_name = 'controls/fy_create.html'
     form_class = FinancialYearForm
     success_url = reverse_lazy("controls:index")
+    permission_required = "controls.add_financialyear"
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
@@ -256,10 +267,11 @@ class FinancialYearCreate(LoginRequiredMixin, CreateView):
         return self.render_to_response(context_data)
 
 
-class FinancialYearDetail(LoginRequiredMixin, DetailView):
+class FinancialYearDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = FinancialYear
     template_name = "controls/fy_detail.html"
     context_object_name = "financial_year"
+    permission_required = "controls.view_financialyear"
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
@@ -268,12 +280,13 @@ class FinancialYearDetail(LoginRequiredMixin, DetailView):
         return context_data
 
 
-class AdjustFinancialYear(LoginRequiredMixin, UpdateView):
+class AdjustFinancialYear(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Period
     template_name = "controls/fy_adjust.html"
     form_class = AdjustFinancialYearFormset
     success_url = reverse_lazy("controls:fy_list")
     prefix = "period"
+    permission_required = "controls.change_fy"
 
     def get_object(self):
         # form is in fact a formset
@@ -298,7 +311,7 @@ class AdjustFinancialYear(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, formset):
         formset.save(commit=False)
-        fy_has_changed = {} # use dict to avoid recording multiple occurences of the same
+        fy_has_changed = {}  # use dict to avoid recording multiple occurences of the same
         # FY being affected
         for form in formset:
             if 'fy' in form.changed_data:
@@ -308,14 +321,15 @@ class AdjustFinancialYear(LoginRequiredMixin, UpdateView):
                 fy_has_changed[fy_id] = fy
         # we need to rollback now to the earliest of the financial years which has changed
         # do this before we make changes to the period objects and FY objects
-        fys = [ fy for fy in fy_has_changed.values() ]
+        fys = [fy for fy in fy_has_changed.values()]
         if fys:
             earliest_fy_affected = min(fys, key=lambda fy: fy.financial_year)
             if earliest_fy_affected:
                 # because user may not in fact change anything
                 # if the next year after the earliest affected does not exist no exception is thrown
                 # the db query just won't delete anything
-                NominalTransaction.objects.rollback_fy(earliest_fy_affected.financial_year + 1)
+                NominalTransaction.objects.rollback_fy(
+                    earliest_fy_affected.financial_year + 1)
         # now all the bfs have been deleted we can change the period objects
         instances = [form.instance for form in formset]
         fy_period_counts = {}
@@ -333,12 +347,14 @@ class AdjustFinancialYear(LoginRequiredMixin, UpdateView):
 
 class ModuleSettingsUpdate(
         LoginRequiredMixin,
+        PermissionRequiredMixin,
         SingleObjectAuditDetailViewMixin,
         UpdateView):
     model = ModuleSettings
     form_class = ModuleSettingsForm
     template_name = "controls/module_settings.html"
     success_url = reverse_lazy("controls:index")
+    permission_required = "controls.change_modulesettings"
 
     def get_object(self):
         return ModuleSettings.objects.first()

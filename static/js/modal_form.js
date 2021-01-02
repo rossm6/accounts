@@ -11,6 +11,13 @@
     // the form fails and so a new form is inserted into the dom
     // the server returns an error and we remove the events
 
+    function show_clientside_error(messages){
+        var template = $("#message_template").html();
+        var result = Mustache.render(template, {messages: messages});
+        $("body").find(".void-message-error").remove();
+        $("body").append(result);
+    }
+
     ModalForm.prototype.create = function(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -36,6 +43,22 @@
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 console.log("There was an error creating the new item", jqXHR, textStatus, errorThrown);
+                console.log(jqXHR.responseJSON);
+                var errors = [];
+                if(jqXHR.responseJSON && jqXHR.responseJSON.error_message){
+                    errors.push({
+                        "level": "alert-danger",
+                        "message": jqXHR.responseJSON.error_message
+                    });
+                }
+                if(jqXHR.status == 403){
+                    var message = "Permission denied.  Please contact the top level user on the system to change this."
+                    errors.push({
+                        "level": "alert-danger",
+                        "message": message
+                    })
+                }
+                show_clientside_error(errors)
                 self.callback({});
                 self.hide();
             }

@@ -9,10 +9,12 @@ from accountancy.layouts import (AdjustPeriod, Delete, Div, Field,
                                  PeriodInputGroup, PlainField,
                                  PlainFieldErrors, Td, Tr)
 from cashbook.models import CashBook, CashBookHeader
+from contacts.models import Contact
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Div, Fieldset, Hidden, Layout, Submit
 from dateutil.relativedelta import relativedelta
 from django import forms
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import ContentType, Group, Permission
 from django.db.models import Case, Exists, Q, Subquery, Value, When
 from django.utils.translation import ugettext_lazy as _
@@ -43,6 +45,7 @@ UI_PERMISSIONS = (
     .objects
     .select_related("content_type")
     .filter(
+        # cashbook
         Q(
             content_type=ContentType.objects.get_for_model(CashBook)
         )
@@ -61,6 +64,26 @@ UI_PERMISSIONS = (
             )
         )
         |
+        # contact
+        Q(
+            content_type=ContentType.objects.get_for_model(Contact)
+        )
+        |
+        # financial year
+        Q(
+            content_type=ContentType.objects.get_for_model(FinancialYear)
+        )
+        |
+        # groups
+        Q(
+            content_type=ContentType.objects.get_for_model(Group)
+        )
+        |
+        Q(
+            content_type=ContentType.objects.get_for_model(ModuleSettings)
+        )
+        |
+        # nominal
         Q(
             content_type=ContentType.objects.get_for_model(Nominal)
         )
@@ -79,6 +102,7 @@ UI_PERMISSIONS = (
             )
         )
         |
+        # purchases
         Q(
             Q(
                 content_type=ContentType.objects.get_for_model(
@@ -93,6 +117,7 @@ UI_PERMISSIONS = (
             )
         )
         |
+        # sales
         Q(
             Q(
                 content_type=ContentType.objects.get_for_model(
@@ -107,6 +132,12 @@ UI_PERMISSIONS = (
             )
         )
         |
+        # users
+        Q(
+            content_type=ContentType.objects.get_for_model(get_user_model())
+        )
+        |
+        # vat
         Q(
             content_type=ContentType.objects.get_for_model(Vat)
         )
