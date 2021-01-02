@@ -36,6 +36,7 @@ class VatTransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBoo
     column_transformers = {
         "vat_type": lambda t: {vat_type[0]: vat_type[1] for vat_type in VatTransaction.vat_types}[t],
         "date": lambda d: d.strftime('%d %b %Y'),
+        "period__fy_and_period": lambda p: ( p[4:] + " " + p[:4] ) if p else ""
     }
     row_identifier = "header"
     permission_required = 'vat.view_transactions_enquiry'

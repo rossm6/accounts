@@ -6,7 +6,7 @@ from accountancy.testing.helpers import *
 from cashbook.helpers import *
 from cashbook.models import (CashBook, CashBookHeader, CashBookLine,
                              CashBookTransaction)
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
@@ -43,7 +43,6 @@ class CreateReceipt(TestCase):
             parent=current_assets, name="Bank Account")
         cls.not_bank_nominal = Nominal.objects.create(
             parent=current_assets, name="Not Bank Nominal")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(
@@ -52,15 +51,19 @@ class CreateReceipt(TestCase):
             parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(
             parent=current_liabilities, name="Vat")
-
         # Cash book
         cls.cash_book = CashBook.objects.create(
             name="Cash Book", nominal=cls.bank_nominal)  # Bank Nominal
-
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
-
         cls.url = reverse("cashbook:create") + "?t=cr"
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     def test_get_request_with_query_params(self):
         self.client.force_login(self.user)
@@ -1545,7 +1548,6 @@ class EditReceipt(TestCase):
             parent=current_assets, name="Bank Account")
         cls.not_bank_nominal = Nominal.objects.create(
             parent=current_assets, name="Not Bank Nominal")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(
@@ -1554,13 +1556,18 @@ class EditReceipt(TestCase):
             parent=current_liabilities, name="Purchase Ledger Control")
         cls.vat_nominal = Nominal.objects.create(
             parent=current_liabilities, name="Vat")
-
         # Cash book
         cls.cash_book = CashBook.objects.create(
             name="Cash Book", nominal=cls.bank_nominal)  # Bank Nominal
-
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     def test_get_request(self):
         self.client.force_login(self.user)

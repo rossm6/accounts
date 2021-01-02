@@ -125,6 +125,7 @@ class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, CashBookAn
     row_identifier = "header"
     column_transformers = {
         "date": lambda d: d.strftime('%d %b %Y'),
+        "period__fy_and_period": lambda p: ( p[4:] + " " + p[:4] ) if p else ""
     }
     permission_required = 'nominals.view_transactions_enquiry'
 

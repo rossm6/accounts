@@ -4,7 +4,7 @@ from json import loads
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, Period, ModuleSettings
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -115,6 +115,12 @@ class GeneralTransactionTests(TestCase):
                         ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
         cls.description = "a line description"
         # ASSETS
         assets = Nominal.objects.create(name="Assets")
@@ -155,7 +161,6 @@ class GeneralTransactionTests(TestCase):
         data.update(header_data)
         matching_data = create_formset_data(match_form_prefix, [])
         line_forms = ([{
-
             'description': self.description,
             'goods': 100,
             'nominal': self.nominal.pk,

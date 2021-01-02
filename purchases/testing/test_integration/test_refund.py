@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -155,6 +155,13 @@ class CreateRefundNominalEntries(TestCase):
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         cls.url = reverse("purchases:create")
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     # CORRECT USAGE
     # A payment with no matching
@@ -2307,6 +2314,12 @@ class EditRefundNominalEntries(TestCase):
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         cls.url = reverse("purchases:create")
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     # A non-zero payment is reduced
@@ -3593,6 +3606,13 @@ class EditRefund(TestCase):
         current_assets = Nominal.objects.create(parent=assets, name="Current Assets")
         cls.nominal = Nominal.objects.create(parent=current_assets, name="Bank Account")
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     # CORRECT USAGE
     def test_get_request(self):

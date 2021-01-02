@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
@@ -138,6 +138,13 @@ class CreateTransactionMatching(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(
             fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     # VALID USAGE
     # So we match transactions with cancel out
@@ -1350,6 +1357,13 @@ class EditTransactionMatching(TestCase):
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(
             fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     """
     Most obvious considerations first - just change existing match values

@@ -444,9 +444,10 @@ class BaseTransactionHeaderFormTests(TestCase):
         )
 
         class Form(BaseTransactionHeaderForm):
+            module_setting = "purchases_period"
             class Meta:
                 model = PurchaseHeader
-                fields = ("type", "supplier", "ref", "date", "total",)
+                fields = ("type", "supplier", "ref", "date", "total", "period")
 
         data = {
             "type": "pc",
@@ -473,9 +474,10 @@ class BaseTransactionHeaderFormTests(TestCase):
         supplier = Supplier.objects.create(code="1", name="12")
 
         class Form(BaseTransactionHeaderForm):
+            module_setting = "purchases_period"
             class Meta:
                 model = PurchaseHeader
-                fields = ("type", "supplier", "ref", "date", "total",)
+                fields = ("type", "supplier", "ref", "date", "total", "period")
 
         data = {
             "type": "pc",
@@ -524,9 +526,10 @@ class BaseTransactionHeaderFormTests(TestCase):
         supplier = Supplier.objects.create(code="1", name="12")
 
         class Form(BaseTransactionHeaderForm):
+            module_setting = "purchases_period"
             class Meta:
                 model = PurchaseHeader
-                fields = ("type", "supplier", "ref", "date", "total",)
+                fields = ("type", "supplier", "ref", "date", "total", "period")
 
         data = {
             "type": "pi",

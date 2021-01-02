@@ -4,7 +4,7 @@ from json import loads
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -148,6 +148,12 @@ class CreateBroughtForwardInvoiceNominalTransactions(TestCase):
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     # Lines can be entered for brought forward transactions
@@ -1680,6 +1686,12 @@ class EditBroughtForwardInvoice(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     def test_get_request(self):
@@ -1735,7 +1747,12 @@ class EditBroughtForwardInvoiceNominalEntries(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
-
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     # Basic edit here in so far as we just change a line value
@@ -3970,6 +3987,13 @@ class MatchingTests(TestCase):
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     def test_create(self):
         self.client.force_login(self.user)

@@ -197,7 +197,8 @@ class TransactionEnquiry(LoginRequiredMixin, PermissionRequiredMixin, SalesAndPu
     column_transformers = {
         "date": lambda d: d.strftime('%d %b %Y'),
         # payment trans do not have due dates
-        "due_date": lambda d: d.strftime('%d %b %Y') if d else ""
+        "due_date": lambda d: d.strftime('%d %b %Y') if d else "",
+        "period__fy_and_period": lambda p: ( p[4:] + " " + p[:4] ) if p else ""
     }
     filter_form_class = PurchaseTransactionSearchForm
     contact_name = "supplier"

@@ -4,7 +4,7 @@ from json import loads
 
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import create_formset_data, create_header
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -60,6 +60,12 @@ class CreateJournal(TestCase):
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
         cls.url = reverse("nominals:create")
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     # Can request create journal view t=nj GET parameter
@@ -1261,16 +1267,21 @@ class EditJournal(TestCase):
             parent=current_assets, name="Bank Account")
         cls.debtors_nominal = Nominal.objects.create(
             parent=current_assets, name="Trade Debtors")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(
             parent=liabilities, name="Current Liabilities")
         cls.vat_nominal = Nominal.objects.create(
             parent=current_assets, name="Vat")
-
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     # CORRECT USAGE
     # Can request create journal view t=nj GET parameter
@@ -4461,19 +4472,22 @@ class VoidJournal(TestCase):
             parent=current_assets, name="Bank Account")
         cls.debtors_nominal = Nominal.objects.create(
             parent=current_assets, name="Trade Debtors")
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(
             parent=liabilities, name="Current Liabilities")
         cls.vat_nominal = Nominal.objects.create(
             parent=current_assets, name="Vat")
-
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # INCORRECT USAGE
-
     def test_void_journal_already_voided(self):
         self.client.force_login(self.user)
 

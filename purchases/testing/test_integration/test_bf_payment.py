@@ -4,7 +4,7 @@ from json import loads
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -158,7 +158,12 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         cls.url = reverse("purchases:create")
-
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     # A payment with no matching
@@ -1450,6 +1455,12 @@ class EditBroughtForwardPayment(TestCase):
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     def test_get_request(self):
@@ -1517,6 +1528,13 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         cls.url = reverse("purchases:create")
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     # CORRECT USAGE
     # A non-zero payment is reduced
@@ -2357,7 +2375,12 @@ class MatchingTests(TestCase):
         cls.cash_book = CashBook.objects.create(name="Cash Book", nominal=cls.nominal) # Bank Nominal
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
         cls.url = reverse("purchases:create")
-
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     def test_create(self):
         self.client.force_login(self.user)

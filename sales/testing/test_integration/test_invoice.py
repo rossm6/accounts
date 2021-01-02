@@ -4,7 +4,7 @@ from json import loads
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -127,11 +127,16 @@ class CreateInvoiceNominalEntries(TestCase):
             parent=liabilities, name="Current Liabilities")
         cls.vat_nominal = Nominal.objects.create(
             parent=current_liabilities, name="Vat")
-
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
-
         cls.url = reverse("sales:create")
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
+
 
     # CORRECT USAGE
     # Each line has a goods value above zero and the vat is 20% of the goods
@@ -4676,14 +4681,17 @@ class EditInvoiceNominalEntries(TestCase):
         cls.sale_control = Nominal.objects.create(
             parent=current_assets, name="Sales Ledger Control"
         )
-
         # LIABILITIES
         liabilities = Nominal.objects.create(name="Liabilities")
         current_liabilities = Nominal.objects.create(parent=liabilities, name="Current Liabilities")
         cls.vat_nominal = Nominal.objects.create(parent=current_liabilities, name="Vat")
-
         cls.vat_code = Vat.objects.create(code="1", name="standard rate", rate=20)
-
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
     # Basic edit here in so far as we just change a line value

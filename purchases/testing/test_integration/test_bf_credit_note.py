@@ -4,7 +4,7 @@ from json import loads
 from accountancy.helpers import sort_multiple
 from accountancy.testing.helpers import *
 from cashbook.models import CashBook, CashBookTransaction
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import RequestFactory, TestCase
@@ -106,7 +106,8 @@ class CreateBroughtForwardCreditNote(TestCase):
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
 
     # CORRECT USAGE
     # Can request create brought forward invoice view with t=bi GET parameter
@@ -141,7 +142,6 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -150,11 +150,17 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
                         ).strftime(DATE_INPUT_FORMAT)
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31)
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31)
+        )
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
         )
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
@@ -172,8 +178,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -282,8 +288,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -395,8 +401,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -451,8 +457,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -460,7 +466,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -592,8 +599,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -601,7 +608,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -719,8 +727,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -797,8 +805,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -876,8 +884,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -885,7 +893,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1022,8 +1031,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1118,8 +1127,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1221,8 +1230,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1230,7 +1239,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1362,8 +1372,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1371,7 +1381,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1490,8 +1501,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1568,8 +1579,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1648,8 +1659,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -1657,7 +1668,8 @@ class CreateBroughtForwardCreditNoteNominalTransactions(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -1783,7 +1795,6 @@ class EditBroughtForwardCreditNote(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-
         cls.factory = RequestFactory()
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
@@ -1791,7 +1802,7 @@ class EditBroughtForwardCreditNote(TestCase):
                         ).strftime(DATE_INPUT_FORMAT)
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
         cls.description = "a line description"
         assets = Nominal.objects.create(name="Assets")
         current_assets = Nominal.objects.create(
@@ -1803,10 +1814,17 @@ class EditBroughtForwardCreditNote(TestCase):
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
-
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
     # CORRECT USAGE
+
     def test_get_request(self):
         self.client.force_login(self.user)
         transaction = PurchaseHeader.objects.create(
@@ -1858,14 +1876,21 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
                         ).strftime(DATE_INPUT_FORMAT)
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
         cls.description = "a line description"
         cls.vat_code = Vat.objects.create(
             code="1", name="standard rate", rate=20)
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
         fy = FinancialYear.objects.create(financial_year=2020)
-        cls.period = Period.objects.create(fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31))
+        cls.period = Period.objects.create(
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
 
     # CORRECT USAGE
@@ -1878,7 +1903,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -1966,7 +1991,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -2095,7 +2120,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2183,7 +2208,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -2292,7 +2317,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2379,7 +2404,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -2509,7 +2534,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2595,7 +2620,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -2725,7 +2750,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2813,7 +2838,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -2862,7 +2887,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -2950,7 +2975,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -3056,7 +3081,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -3140,7 +3165,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -3250,7 +3275,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             **{
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -3323,7 +3348,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -3486,8 +3511,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3519,8 +3544,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbi",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3557,8 +3582,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3657,8 +3682,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3719,8 +3744,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3751,8 +3776,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbi",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3789,8 +3814,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3889,8 +3914,8 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -3946,7 +3971,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier,
-				"period": self.period,
+                "period": self.period,
                 "ref": self.ref,
                 "date": self.model_date,
                 "due_date": self.model_due_date,
@@ -4029,7 +4054,7 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
             {
                 "type": header.type,
                 "supplier": header.supplier.pk,
-				"period": header.period.pk,
+                "period": header.period.pk,
                 "ref": header.ref,
                 "date": header.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": header.due_date.strftime(DATE_INPUT_FORMAT),
@@ -4127,7 +4152,6 @@ class EditBroughtForwardCreditNoteNominalEntries(TestCase):
         )
 
 
-
 class MatchingTests(TestCase):
     """
     We need to check -
@@ -4146,16 +4170,22 @@ class MatchingTests(TestCase):
                         ).strftime(DATE_INPUT_FORMAT)
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)
-                        ).strftime(MODEL_DATE_INPUT_FORMAT)
+                              ).strftime(MODEL_DATE_INPUT_FORMAT)
         fy = FinancialYear.objects.create(financial_year=2020)
         cls.fy = fy
         cls.period = Period.objects.create(
-            fy=fy, period="01", fy_and_period="202001", month_start=date(2020,1,31)
+            fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31)
         )
         cls.description = "brought forward"
         cls.url = reverse("purchases:create")
         cls.user = get_user_model().objects.create_superuser(
             username="dummy", password="dummy")
+        ModuleSettings.objects.create(
+            cash_book_period=cls.period,
+            nominals_period=cls.period,
+            purchases_period=cls.period,
+            sales_period=cls.period
+        )
 
 
     def test_create(self):
@@ -4165,8 +4195,8 @@ class MatchingTests(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4174,7 +4204,8 @@ class MatchingTests(TestCase):
             }
         )
         data.update(header_data)
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2400)[0]
         headers_as_dicts = [to_dict(payment)]
         headers_to_match_against = [get_fields(
             header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
@@ -4317,8 +4348,8 @@ class MatchingTests(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4349,8 +4380,8 @@ class MatchingTests(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbi",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4387,8 +4418,8 @@ class MatchingTests(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4489,15 +4520,16 @@ class MatchingTests(TestCase):
             1
         )
 
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
+        new_period = Period.objects.create(
+            fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020, 2, 29))
 
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period": new_period.pk,
+                "supplier": self.supplier.pk,
+                "period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4597,8 +4629,8 @@ class MatchingTests(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4629,8 +4661,8 @@ class MatchingTests(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbi",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4667,8 +4699,8 @@ class MatchingTests(TestCase):
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period":self.period.pk,
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4775,15 +4807,16 @@ class MatchingTests(TestCase):
             1
         )
 
-        new_period = Period.objects.create(fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020,2,29))
+        new_period = Period.objects.create(
+            fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020, 2, 29))
 
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
-                "supplier":self.supplier.pk,
-				"period": new_period.pk,
+                "supplier": self.supplier.pk,
+                "period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4829,7 +4862,8 @@ class MatchingTests(TestCase):
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
         data.update(matching_data)
-        response = self.client.post(reverse("purchases:edit", kwargs={"pk": headers[2].pk}), data)
+        response = self.client.post(
+            reverse("purchases:edit", kwargs={"pk": headers[2].pk}), data)
         self.assertEqual(
             response.status_code,
             302
