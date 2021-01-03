@@ -23,7 +23,7 @@
                         <div class="col-6">
                             <div class="card">
                                 <div class="d-flex justify-content-between card-header bg-white font-weight-bold">
-                                    <span>Invoices owed to you</span>
+                                    <span>Owed To You</span>
                                     <a class="btn btn-sm btn-primary" role="button" href="{% url 'sales:transaction_enquiry' %}">View Sales</a>
                                 </div>
                                 <div class="card-body">
@@ -36,7 +36,7 @@
                         <div class="col-6">
                             <div class="card">
                                 <div class="d-flex justify-content-between card-header bg-white font-weight-bold">
-                                    <span>Invoices you need to pay</span>
+                                    <span>Owed By You</span>
                                     <a class="btn btn-sm btn-primary" role="button" href="{% url 'purchases:transaction_enquiry' %}">View Purchases</a>
                                 </div>
                                 <div class="card-body">
@@ -54,21 +54,35 @@
 
 {% block js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js" integrity="sha512-d9xgZrVZpmmQlfonhQUvTR7lMPtO7NkZMkA0ABN3PHCbKA5nqylQ/yWlFAyY6hYgdF1Qh6nYiuADWwKB4C2WSw==" crossorigin="anonymous"></script>
+{{ cash_in_and_out|json_script:"cash_in_and_out" }}
+{{ owed_to_you|json_script:"owed_to_you" }}
+{{ owed_by_you|json_script:"owed_by_you" }}
 <script>
     $(document).ready(function(){
 
         var ctx1 = document.getElementById("chart_1").getContext("2d");
 
+        var cash_in_and_out = JSON.parse(document.getElementById("cash_in_and_out").textContent);
+        var cash_book_labels = [];
+        var cash_book_ins = [];
+        var cash_book_outs = [];
+        for(var i in cash_in_and_out){
+            var c = cash_in_and_out[i];
+            cash_book_labels.push(c.period);
+            cash_book_ins.push(c.in);
+            cash_book_outs.push(c.out);
+        }
+        
         var data = {
-            labels: ["01 2020", "02 2020", "03 2020"],
+            labels: cash_book_labels,
             datasets: [{
                 label: "Cash In",
                 backgroundColor: "#89d0f5",
-                data: [3, 7, 4]
+                data: cash_book_ins
             }, {
                 label: "Cash Out",
                 backgroundColor: "#d6dade",
-                data: [4, 3, 5]
+                data: cash_book_outs
             }]
         };
 
@@ -89,13 +103,23 @@
 
         var ctx2 = document.getElementById("chart_2").getContext("2d");
 
+        var owed_to_you = JSON.parse(document.getElementById("owed_to_you").textContent);
+        var owed_to_you_labels = [];
+        var owed_to_you_values = [];
+
+        for(var i in owed_to_you){
+            var o = owed_to_you[i];
+            owed_to_you_labels.push(o.period);
+            owed_to_you_values.push(o.value);
+        }
+
         var myChart = new Chart(ctx2, {
             type: 'bar',
             data: {
-                labels: ["Older", "4 periods ago", "3 periods ago", "2 periods ago", "1 period ago", "Current"],
+                labels: owed_to_you_labels,
                 datasets: [{
-                    label: '# of Tomatoes',
-                    data: [12, 19, 3, 5, 2, 3, 20, 3, 5, 6, 2, 1],
+                    label: 'you are owed',
+                    data: owed_to_you_values,
                     backgroundColor: [
                         "#d6dade",
                         "#89d0f5",
@@ -120,13 +144,23 @@
 
         var ctx3 = document.getElementById("chart_3").getContext("2d");
 
+        var owed_by_you = JSON.parse(document.getElementById("owed_by_you").textContent);
+        var owed_by_you_labels = [];
+        var owed_by_you_values = [];
+
+        for(var i in owed_by_you){
+            var o = owed_by_you[i];
+            owed_by_you_labels.push(o.period);
+            owed_by_you_values.push(o.value);
+        }
+
         var myChart = new Chart(ctx3, {
             type: 'bar',
             data: {
-                labels: ["Older", "4 periods ago", "3 periods ago", "2 periods ago", "1 period ago", "Current"],
+                labels: owed_by_you_labels,
                 datasets: [{
-                    label: '# of Tomatoes',
-                    data: [12, 19, 3, 5, 2, 3, 20, 3, 5, 6, 2, 1],
+                    label: 'you owe',
+                    data: owed_by_you_values,
                     backgroundColor: [
                         "#d6dade",
                         "#89d0f5",

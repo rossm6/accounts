@@ -4,7 +4,7 @@ from controls.models import FinancialYear, ModuleSettings, Period
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
-from nominals.models import Nominal, NominalTransaction
+from nominals.models import Nominal, NominalHeader, NominalTransaction
 from nominals.views import FinaliseFY
 
 
@@ -75,6 +75,14 @@ class FinaliseFYTests(TestCase):
             parent=equity_2
         )
 
+        # SYSTEM CONTROLS
+        system_controls = Nominal.objects.create(name="System Controls")
+        system_suspenses = Nominal.objects.create(
+            name="System Suspenses", parent=system_controls)
+        cls.system_suspense_account = default_system_suspense = Nominal.objects.create(
+            name="System Suspense Account", parent=system_suspenses)
+
+
     def test_finalising_first_fy(self):
         # all module periods still in FY being finalised
         module_settings = ModuleSettings.objects.create(
@@ -127,6 +135,7 @@ class FinaliseFYTests(TestCase):
             response.status_code,
             302
         )
+        header = NominalHeader.objects.last()
         nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
@@ -159,6 +168,10 @@ class FinaliseFYTests(TestCase):
             "NL"
         )
         self.assertEqual(
+            debtors_bf.header,
+            header.pk
+        )
+        self.assertEqual(
             debtors_bf.ref,
             "YEAR END 2019"
         )
@@ -188,6 +201,10 @@ class FinaliseFYTests(TestCase):
             "NL"
         )
         self.assertEqual(
+            vat_output_bf.header,
+            header.pk
+        )
+        self.assertEqual(
             vat_output_bf.ref,
             "YEAR END 2019"
         )
@@ -215,6 +232,10 @@ class FinaliseFYTests(TestCase):
         self.assertEqual(
             retained_earnings_bf.module,
             "NL"
+        )
+        self.assertEqual(
+            retained_earnings_bf.header,
+            header.pk
         )
         self.assertEqual(
             retained_earnings_bf.ref,
@@ -310,6 +331,7 @@ class FinaliseFYTests(TestCase):
             response.status_code,
             302
         )
+        header = NominalHeader.objects.last()
         nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
@@ -342,6 +364,10 @@ class FinaliseFYTests(TestCase):
             "NL"
         )
         self.assertEqual(
+            debtors_bf.header,
+            header.pk
+        )
+        self.assertEqual(
             debtors_bf.ref,
             "YEAR END 2019"
         )
@@ -371,6 +397,10 @@ class FinaliseFYTests(TestCase):
             "NL"
         )
         self.assertEqual(
+            vat_output_bf.header,
+            header.pk
+        )
+        self.assertEqual(
             vat_output_bf.ref,
             "YEAR END 2019"
         )
@@ -398,6 +428,10 @@ class FinaliseFYTests(TestCase):
         self.assertEqual(
             retained_earnings_bf.module,
             "NL"
+        )
+        self.assertEqual(
+            retained_earnings_bf.header,
+            header.pk
         )
         self.assertEqual(
             retained_earnings_bf.ref,

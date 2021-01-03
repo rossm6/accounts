@@ -22,6 +22,13 @@ from simple_history import register
 from vat.models import Vat
 
 
+def last_day_of_month(period):
+    last_month_of_fy = period.month_start - relativedelta(months=+1)
+    month, day = calendar.monthrange(
+        last_month_of_fy.year, last_month_of_fy.month)
+    return date(last_month_of_fy.year, last_month_of_fy.month, day)
+
+
 class Nominal(AuditMixin, MPTTModel):
     NOMINAL_TYPES = [
         ("pl", "profit and loss"),
@@ -70,7 +77,7 @@ class ModuleTransactions:
     credits = []
     debits = ['nj']
     payment_types = []
-    types = analysis_required
+    types = analysis_required + [("nbf", "Nominal Brought Forward")]
 
 
 class NominalHeader(ModuleTransactions, TransactionHeader):
@@ -79,7 +86,7 @@ class NominalHeader(ModuleTransactions, TransactionHeader):
         ("o", "Output")
     ]
     type = models.CharField(
-        max_length=2,
+        max_length=3,
         choices=ModuleTransactions.types
     )
     vat_type = models.CharField(
@@ -155,7 +162,10 @@ class NominalTransactionQuerySet(NonAuditQuerySet):
         Afterwards carrying forward again i.e. doing a year end which
         will again post the bfs into 01 2020
         """
-        self.filter(module="NL").filter(type="nbf").filter(period__fy__financial_year__gte=financial_year).delete()
+        self.filter(module="NL").filter(type="nbf").filter(
+            period__fy__financial_year__gte=financial_year).delete()
+        NominalHeader.objects.filter(type="nbf").filter(
+            period__fy__financial_year__gte=financial_year).delete()
 
     def carry_forward(self, fy, period):
         """
@@ -163,17 +173,26 @@ class NominalTransactionQuerySet(NonAuditQuerySet):
         as brought forwards into `period`
         """
         # REMEMBER TO LOCK POSTS IN CALLING CODE I.E. THE VIEW
-        retained_earnings = Nominal.objects.get(name="Retained Earnings")
+        retained_earnings, system_suspense = Nominal.objects.filter(
+            name__in=["Retained Earnings", "System Suspense Account"]).order_by("name")
         pl = self.filter(period__fy=fy).filter(
             nominal__type="pl").aggregate(profit=Sum("value"))
         balance_sheet = self.filter(period__fy=fy).filter(
             nominal__type="b").values("nominal").annotate(total=Sum("value"))
-        last_tran = NominalTransaction.objects.filter(module="NL").values("header").order_by("pk").last()
-        # BUG - need to use a different module altogether e.g. YE (year end)
-        if last_tran:
-            header = last_tran["header"] + 1
-        else:
-            header = 1
+        """
+        We only really care about posting nominal transactions but nominaltransaction.header is
+        unique per MODULE.  Since we want module=NL we create a blank header to satisfy this requirement.
+        """
+        header = NominalHeader.objects.create(
+            date=last_day_of_month(period),
+            ref=f"YEAR END {str(fy)}",
+            period=period,
+            total=0,
+            status="c",
+            type="nbf",
+            vat_type=None,
+        )
+        header = header.pk
         line = 1
         bfs = []
         prev_retained_earnings_bf = False
@@ -213,18 +232,25 @@ class NominalTransactionQuerySet(NonAuditQuerySet):
                 # thus i do not think this line of code can ever be hit
                 # log this !
                 bfs.append(retained_earnings_bf)
+            else:
+                # i.e. no transactions at all !
+                # this is unlikely but was spotted during testing
+                # a FY is considered finalised unless there is a year end posting
+                # so we just post a zero value transaction to the suspense account
+                # it will be invisible to the users
+                bf = NominalTransaction.brought_forward(
+                    header, line, fy, period, 0, system_suspense.pk
+                )
+                bfs.append(bf)
         self.bulk_create(bfs)
 
 
 class NominalTransaction(MultiLedgerTransactions):
     all_module_types = (
         PurchaseHeader.analysis_required +
-        NominalHeader.analysis_required +
+        NominalHeader.types +
         SaleHeader.analysis_required +
-        CashBookHeader.analysis_required + 
-        [
-            ("nbf", "Year End Brought Forward")
-        ]
+        CashBookHeader.analysis_required
     )
     nominal = models.ForeignKey(Nominal, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
@@ -255,14 +281,11 @@ class NominalTransaction(MultiLedgerTransactions):
 
     @classmethod
     def brought_forward(cls, header, line, fy, period, value, nominal_pk):
-        last_month_of_fy = period.month_start - relativedelta(months=+1)
-        month, day = calendar.monthrange(last_month_of_fy.year, last_month_of_fy.month)
-        d = date(last_month_of_fy.year, last_month_of_fy.month, day)
         return cls(
             module="NL",
             header=header,
             line=line,
-            date=d,
+            date=last_day_of_month(period),
             ref=f"YEAR END {str(fy)}",
             period=period,
             type="nbf",

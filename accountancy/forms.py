@@ -116,9 +116,8 @@ class BaseTransactionSearchForm(forms.Form):
         label='Total',
         required=False
     )
-    period = forms.CharField(
-        label='Period',
-        max_length=100,
+    period = forms.ModelChoiceField(
+        queryset=Period.objects.all(),
         required=False
     )
     start_date = forms.DateField(

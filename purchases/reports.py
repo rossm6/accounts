@@ -1,11 +1,17 @@
-from django.db.models import Q
 from itertools import groupby
+
+from django.db.models import Q
 
 from .models import PurchaseHeader, PurchaseMatching
 
 
 def creditors(period):
-    headers = PurchaseHeader.objects.filter(period__fy_and_period__lte=period.fy_and_period).order_by("pk")
+    """
+    This is redundant by the looks of things.
+    TODO - DELETE IF SO
+    """
+    headers = PurchaseHeader.objects.filter(
+        period__fy_and_period__lte=period.fy_and_period).order_by("pk")
 
     matches = (PurchaseMatching.objects
                .filter(period__fy_and_period__gt=period.fy_and_period)

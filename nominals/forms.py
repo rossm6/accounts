@@ -85,6 +85,7 @@ class NominalHeaderForm(BaseTransactionHeaderForm):
     def __init__(self, *args, **kwargs):
         self.module_setting = "nominals_period"
         super().__init__(*args, **kwargs)
+        self.fields["type"].choices = NominalHeader.analysis_required
         self.fields["total"].help_text = "<span class='d-block'>The total value of the debit side of the journal<span class='d-block'>i.e. the total of the positive values</span></span>"
         self.helper = create_journal_header_helper()
 
@@ -299,7 +300,8 @@ class NominalTransactionSearchForm(BaseAjaxFormMixin, NominalTransactionSearchFo
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.helper.layout = create_transaction_enquiry_layout("nominal", include_brought_forwards=True)
+        self.helper.layout = create_transaction_enquiry_layout(
+            "nominal", include_brought_forwards=True)
 
     class Meta:
         # not a model form

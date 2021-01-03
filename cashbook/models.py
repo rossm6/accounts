@@ -1,8 +1,11 @@
 from accountancy.mixins import (AuditMixin, CashBookPaymentTransactionMixin,
                                 VatTransactionMixin)
-from accountancy.models import (MultiLedgerTransactions, Transaction,
-                                TransactionHeader, TransactionLine)
+from accountancy.models import (MultiLedgerTransactions, NonAuditQuerySet,
+                                Transaction, TransactionHeader,
+                                TransactionLine)
+from controls.models import Period
 from django.db import models
+from django.db.models import Case, F, Subquery, Sum, Value, When
 from django.shortcuts import reverse
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -183,6 +186,47 @@ all_module_types = (
     CashBookHeader.analysis_required
 )
 
+class CashBookTransactionQuerySet(NonAuditQuerySet):
+    
+    def cash_book_in_and_out_report(self, current_cb_period):
+        """
+        Used in the dashboard
+
+        Get the ins and outs for each of five consecutive periods
+        where the current_cb_period is the middle period.
+        """
+        earliest_period = Period.objects.filter(fy_and_period__lt=current_cb_period.fy_and_period).values('fy_and_period').order_by("-fy_and_period")[1:2]
+        latest_period = Period.objects.filter(fy_and_period__gt=current_cb_period.fy_and_period).values('fy_and_period').order_by("fy_and_period")[1:2]
+        return (
+            self
+            .values('period__fy_and_period')
+            .annotate(
+                monies_in=Case(
+                    When(value__gt=0, then=F('value')),
+                    default=Value('0')
+                )
+            )
+            .annotate(
+                monies_out=Case(
+                    When(value__lt=0, then=F('value') * -1),
+                    default=0
+                )
+            )
+            .annotate(
+                total_monies_in=Sum('monies_in')
+            )
+            .annotate(
+                total_monies_out=Sum('monies_out')
+            )
+            .filter(
+                period__fy_and_period__gte=Subquery(earliest_period)
+            )
+            .filter(
+                period__fy_and_period__lte=Subquery(latest_period)
+            )
+        )
+
+
 class CashBookTransaction(MultiLedgerTransactions):
     cash_book = models.ForeignKey(CashBook, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=all_module_types)
@@ -197,6 +241,8 @@ class CashBookTransaction(MultiLedgerTransactions):
             models.UniqueConstraint(
                 fields=['module', 'header', 'line', 'field'], name="cashbook_unique_batch")
         ]
+
+    objects = CashBookTransactionQuerySet.as_manager()
 
     @classmethod
     def fields_to_update(cls):

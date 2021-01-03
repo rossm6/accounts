@@ -1,5 +1,6 @@
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  create_transaction_enquiry_time_fields)
+from controls.models import Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Field, Layout
 from django import forms
@@ -57,9 +58,8 @@ class VatForm(forms.ModelForm):
 
 
 class VatTransactionSearchForm(forms.Form):
-    period = forms.CharField(
-        label='Period',
-        max_length=100,
+    period = forms.ModelChoiceField(
+        queryset=Period.objects.all(),
         required=False
     )
     start_date = forms.DateField(

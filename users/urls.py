@@ -13,6 +13,6 @@ urlpatterns = [
          name="password_reset_confirm"),
     path("profile", Profile.as_view(), name="profile"),
     path("signup", SignUp.as_view(), name="signup"),
-    path("signin", SignIn.as_view(), name="signin"),
+    path("signin", SignIn.as_view(redirect_authenticated_user=True), name="signin"),
     path("unlock/<int:pk>", unlock, name="unlock")
 ]

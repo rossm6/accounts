@@ -69,13 +69,59 @@ class CarryForwardTests(TestCase):
             parent=equity_2
         )
 
+        # SYSTEM CONTROLS
+        system_controls = Nominal.objects.create(name="System Controls")
+        system_suspenses = Nominal.objects.create(
+            name="System Suspenses", parent=system_controls)
+        cls.system_suspense_account = default_system_suspense = Nominal.objects.create(
+            name="System Suspense Account", parent=system_suspenses)
+
+
     def test_when_there_are_no_transactions(self):
         NominalTransaction.objects.carry_forward(
             self.fy_2019, self.period_202001)
+        nom_trans = NominalTransaction.objects.all()
         self.assertEqual(
-            len(NominalTransaction.objects.all()),
+            len(nom_trans),
+            1
+        )
+        headers = NominalHeader.objects.all()
+        self.assertEqual(
+            len(headers),
+            1
+        )
+        header = headers[0]
+        bf = nom_trans[0]
+        self.assertEqual(
+            bf.module,
+            "NL"
+        )
+        self.assertEqual(
+            bf.header,
+            header.pk
+        )
+        self.assertEqual(
+            bf.line,
+            1
+        )
+        self.assertEqual(
+            bf.type,
+            "nbf"
+        )
+        self.assertEqual(
+            bf.value,
             0
         )
+        self.assertEqual(
+            bf.nominal,
+            self.system_suspense_account
+        )
+        self.assertEqual(
+            bf.ref,
+            "YEAR END 2019"
+        )
+        
+
 
     def test_balance_sheet_only_trans(self):
         # here we also test that the header is incremented
@@ -107,6 +153,9 @@ class CarryForwardTests(TestCase):
         NominalTransaction.objects.carry_forward(
             self.fy_2019, self.period_202001)
         nom_trans = NominalTransaction.objects.all().order_by("pk")
+
+        header = NominalHeader.objects.first().pk
+
         self.assertEqual(
             len(nom_trans),
             4
@@ -123,7 +172,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             bank_bf.header,
-            3
+            header
         )
         self.assertEqual(
             bank_bf.line,
@@ -170,7 +219,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtor_bf.header,
-            3
+            header
         )
         self.assertEqual(
             debtor_bf.line,
@@ -233,9 +282,10 @@ class CarryForwardTests(TestCase):
         NominalTransaction.objects.carry_forward(
             self.fy_2019, self.period_202001)
         nom_trans = NominalTransaction.objects.all().order_by("pk")
+        header = NominalHeader.objects.first().pk
         self.assertEqual(
             len(nom_trans),
-            2
+            3
         )
         self.assertEqual(
             nom_trans[0],
@@ -244,6 +294,29 @@ class CarryForwardTests(TestCase):
         self.assertEqual(
             nom_trans[1],
             t2
+        )
+        # bf posted for zero to suspense because FY is finalysed
+        # only if bf has been posted to nominal
+        # should consider changing this in the future
+        self.assertEqual(
+            nom_trans[2].header,
+            header
+        )
+        self.assertEqual(
+            nom_trans[2].line,
+            1
+        )
+        self.assertEqual(
+            nom_trans[2].value,
+            0
+        )
+        self.assertEqual(
+            nom_trans[2].type,
+            "nbf"
+        )
+        self.assertEqual(
+            nom_trans[2].nominal,
+            self.system_suspense_account
         )
 
     def test_first_year_end_with_pl_and_bal_trans(self):
@@ -325,6 +398,7 @@ class CarryForwardTests(TestCase):
         NominalTransaction.objects.carry_forward(
             self.fy_2019, self.period_202001)
         nom_trans = NominalTransaction.objects.all().order_by("pk")
+        header = NominalHeader.objects.first().pk
         self.assertEqual(
             len(nom_trans),
             9
@@ -378,7 +452,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtors_bf.header,
-            1
+            header
         )
         self.assertEqual(
             debtors_bf.date,
@@ -416,7 +490,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             vat_output_bf.header,
-            1
+            header
         )
         self.assertEqual(
             vat_output_bf.date,
@@ -454,7 +528,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             retained_earnings_bf.header,
-            1
+            header
         )
         self.assertEqual(
             retained_earnings_bf.date,
@@ -562,6 +636,7 @@ class CarryForwardTests(TestCase):
         NominalTransaction.objects.carry_forward(
             self.fy_2019, self.period_202001)
         nom_trans = NominalTransaction.objects.all().order_by("pk")
+        header = NominalHeader.objects.last().pk
         self.assertEqual(
             len(nom_trans),
             9
@@ -615,7 +690,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtors_bf.header,
-            1
+            header
         )
         self.assertEqual(
             debtors_bf.date,
@@ -653,7 +728,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             vat_output_bf.header,
-            1
+            header
         )
         self.assertEqual(
             vat_output_bf.date,
@@ -691,7 +766,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             retained_earnings_bf.header,
-            1
+            header
         )
         self.assertEqual(
             retained_earnings_bf.date,
@@ -799,6 +874,7 @@ class CarryForwardTests(TestCase):
         NominalTransaction.objects.carry_forward(
             self.fy_2020, self.period_202101)
         nom_trans = NominalTransaction.objects.all().order_by("pk")
+        header = NominalHeader.objects.last().pk
         self.assertEqual(
             len(nom_trans),
             18
@@ -854,7 +930,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             debtors_bf.header,
-            2
+            header
         )
         self.assertEqual(
             debtors_bf.date,
@@ -892,7 +968,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             vat_output_bf.header,
-            2
+            header
         )
         self.assertEqual(
             vat_output_bf.date,
@@ -930,7 +1006,7 @@ class CarryForwardTests(TestCase):
         )
         self.assertEqual(
             retained_earnings_bf.header,
-            2
+            header
         )
         self.assertEqual(
             retained_earnings_bf.date,
@@ -1028,9 +1104,17 @@ class RollbackFYTests(TestCase):
     def test(self):
         # create two lots of bfs
         # check that only the correct set is deleted
+        header_1 = NominalHeader.objects.create(
+            date=date.today(), # does not matter
+            ref="1",
+            period=self.period_201901,
+            status="c",
+            type="nbf",
+            vat_type=None
+        )
         t1 = NominalTransaction.objects.create(
             module="NL",
-            header=1,
+            header=header_1.pk,
             line=1,
             date=date.today(),
             ref=f"YEAR END {str(self.fy_2019)}",
@@ -1042,7 +1126,7 @@ class RollbackFYTests(TestCase):
         )
         t2 = NominalTransaction.objects.create(
             module="NL",
-            header=1,
+            header=header_1.pk,
             line=2,
             date=date.today(),
             ref=f"YEAR END {str(self.fy_2019)}",
@@ -1052,11 +1136,19 @@ class RollbackFYTests(TestCase):
             value=1000,
             nominal=self.debtors_nominal
         )
+        header_2 = NominalHeader.objects.create(
+            date=date.today(), # does not matter
+            ref="2",
+            period=self.period_202001,
+            status="c",
+            type="nbf",
+            vat_type=None
+        )
         fy_2020_bfs = []
         fy_2020_bfs.append(
             NominalTransaction(
                 module="NL",
-                header=2,
+                header=header_2.pk,
                 line=1,
                 date=date.today(),
                 ref=f"YEAR END {str(self.fy_2020)}",
@@ -1070,7 +1162,7 @@ class RollbackFYTests(TestCase):
         fy_2020_bfs.append(
             NominalTransaction(
                 module="NL",
-                header=2,
+                header=header_2.pk,
                 line=2,
                 date=date.today(),
                 ref=f"YEAR END {str(self.fy_2020)}",
@@ -1096,4 +1188,14 @@ class RollbackFYTests(TestCase):
         self.assertEqual(
             nom_trans[1],
             t2
+        )
+
+        headers = NominalHeader.objects.all()
+        self.assertEqual(
+            len(headers),
+            1
+        )
+        self.assertEqual(
+            headers[0],
+            header_1
         )
