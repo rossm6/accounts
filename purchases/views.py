@@ -263,6 +263,7 @@ class AgeCreditorsReport(LoginRequiredMixin, PermissionRequiredMixin, AgeMatchin
     contact_range_field_names = ['from_supplier', 'to_supplier']
     contact_field_name = "supplier"
     permission_required = 'purchases.view_age_creditors_report'
+    module_setting_name = "purchases_period"
 
     def load_page(self, **kwargs):
         context = super().load_page(**kwargs)

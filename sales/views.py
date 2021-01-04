@@ -246,3 +246,4 @@ class AgeDebtorsReport(AgeCreditorsReport):
     contact_range_field_names = ['from_customer', 'to_customer']
     contact_field_name = "customer"
     permission_required = 'sales.view_aged_debtors_report'
+    module_setting_name = "sales_period"

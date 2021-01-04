@@ -4,7 +4,7 @@ from datetime import date
 from itertools import chain, groupby
 
 from controls.exceptions import MissingPeriodError
-from controls.models import Period
+from controls.models import ModuleSettings, Period
 from crispy_forms.helper import FormHelper
 from crispy_forms.utils import render_crispy_form
 from django.conf import settings
@@ -1551,8 +1551,8 @@ class AgeMatchingReportMixin(
 
     def load_page(self):
         context = {}
-        current_period = Period.objects.first()
-        # obviously this will need to look up the current period of the PL or SL eventually
+        mod_settings = ModuleSettings.objects.select_related(self.module_setting_name).first()
+        current_period = getattr(mod_settings, self.module_setting_name)
         form = self.get_filter_form(
             initial={"period": current_period, "show_transactions": True})
         context["form"] = form

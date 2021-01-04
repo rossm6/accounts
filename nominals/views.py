@@ -202,10 +202,12 @@ class TrialBalance(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = {}
         context["columns"] = columns = [col for col in self.columns]
-        # TODO - get period from NL current period
-        periods = list(Period.objects.all())
-        from_period = first_period = periods[0]
-        to_period = last_period = periods[-1]
+        mod_settings = ModuleSettings.objects.select_related('nominals_period').select_related('nominals_period__fy').first()
+        current_period = mod_settings.nominals_period
+        current_fy = current_period.fy
+        first_period = current_fy.first_period()
+        from_period = first_period
+        to_period = last_period = current_period
         form_kwargs = {
             "initial": {
                 "from_period": first_period,
