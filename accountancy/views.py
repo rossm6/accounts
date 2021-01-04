@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.contrib.postgres.search import TrigramSimilarity
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Q, Subquery, Sum
 from django.http import (Http404, HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect, JsonResponse)
 from django.shortcuts import get_object_or_404, render, reverse
@@ -1704,6 +1704,15 @@ class LoadMatchingTransactions(
                 .exclude(due__exact=0)
                 .exclude(status="v")
             )
+            if period := self.request.GET.get('period'):
+                queryset = queryset.filter(
+                    period__fy_and_period__lte=Subquery(
+                        Period
+                        .objects
+                        .filter(pk=period)
+                        .values('fy_and_period')
+                    )
+                )
             if edit := self.request.GET.get("edit"):
                 matches = (
                     self.match_model.objects.filter(

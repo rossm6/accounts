@@ -225,24 +225,28 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
         Constrain the period choice to the previous, current and next period
         where the current period is the period for the module as per the module settings.
         """
-        lt = Period.objects.filter(fy_and_period__lt=OuterRef('current_period')).order_by("-fy_and_period")
-        gt = Period.objects.filter(fy_and_period__gt=OuterRef('current_period')).order_by("fy_and_period")
-        eq = Period.objects.filter(fy_and_period=OuterRef('current_period')).order_by("fy_and_period")
+        lt = Period.objects.filter(fy_and_period__lt=OuterRef(
+            'current_period')).order_by("-fy_and_period")
+        gt = Period.objects.filter(fy_and_period__gt=OuterRef(
+            'current_period')).order_by("fy_and_period")
+        eq = Period.objects.filter(fy_and_period=OuterRef(
+            'current_period')).order_by("fy_and_period")
         # p queryset gets the previous, current and next period based on the period for the module as set in module settings
         p = (
             Period
             .objects
             .annotate(
                 current_period=Subquery(
-                    ModuleSettings.objects.values(f'{self.module_setting}__fy_and_period')[:1] # module_setting is set on the module subclass form
+                    ModuleSettings.objects.values(f'{self.module_setting}__fy_and_period')[
+                        :1]  # module_setting is set on the module subclass form
                 )
             )
             .filter(
                 Q(fy_and_period=Subquery(gt.values('fy_and_period')[:1]))
                 |
                 Q(fy_and_period=Subquery(eq.values('fy_and_period')[:1]))
-                | 
-                Q(fy_and_period=Subquery(lt.values('fy_and_period')[:1])) 
+                |
+                Q(fy_and_period=Subquery(lt.values('fy_and_period')[:1]))
             )
         )
         # this is the same queryset which is used in the module settings model form
@@ -259,7 +263,7 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
                     ).values('earliest_period')[:1]
                 )
             )
-        )    
+        )
         # so get the periods from queryset p but also make sure they are in q queryset i.e. not in previous FYs
         q = p.filter(
             pk__in=periods_not_finalised.values('pk')
@@ -298,7 +302,8 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
 class SaleAndPurchaseHeaderFormMixin:
     def __init__(self, *args, **kwargs):
-        self.contact_model_name = contact_model_name = kwargs.pop("contact_model_name")
+        self.contact_model_name = contact_model_name = kwargs.pop(
+            "contact_model_name")
         super().__init__(*args, **kwargs)
         if self.data:
             tran_type = self.data.get(self.prefix + "-" + "type")
@@ -617,11 +622,14 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
                 self.initial_value = initial_value = 0
                 if (self.tran_being_created_or_edited.pk
                         and self.tran_being_created_or_edited.pk == matched_to.pk):
-                    raise forms.ValidationError(
-                        _(
-                            "Cannot match a transaction to itself."
-                        ),
-                        code="invalid-match"
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                "Cannot match a transaction to itself."
+                            ),
+                            code="invalid-match"
+                        )
                     )
             else:
                 if self.tran_being_created_or_edited.pk == self.instance.matched_by_id:
@@ -642,27 +650,73 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
         if header:
             if hasattr(header, "customer"):
                 if header.customer_id != self.tran_being_created_or_edited.customer_id:
-                    raise forms.ValidationError(
-                        _(
-                            "Cannot match to a transaction which belongs to another account"
-                        ),
-                        code="invalid-match"
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                "Cannot match to a transaction which belongs to another account"
+                            ),
+                            code="invalid-match"
+                        )
                     )
             if hasattr(header, "supplier"):
                 if header.supplier_id != self.tran_being_created_or_edited.supplier_id:
-                   raise forms.ValidationError(
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                "Cannot match to a transaction which belongs to another account"
+                            ),
+                            code="invalid-match"
+                        )
+                    )
+            if header.is_void():
+                self.add_error(
+                    "value",
+                    forms.ValidationError(
                         _(
-                            "Cannot match to a transaction which belongs to another account"
+                            "Cannot match to a void transaction"
                         ),
                         code="invalid-match"
                     )
-            if header.is_void():
-                raise forms.ValidationError(
-                    _(
-                        "Cannot match to a void transaction"
-                    ),
-                    code="invalid-match"
                 )
+            if not self.instance.pk:
+                if matched_to.period > self.tran_being_created_or_edited.period:
+                    self.add_error(
+                        "value",
+                        forms.ValidationError(
+                            _(
+                                "Cannot match to a transaction which is in a later period"
+                            ),
+                            code="invalid match"
+                        )
+                    )
+            else:
+                if tran_being_created_or_edited_is_matched_by:
+                    if self.tran_being_created_or_edited.period < matched_to.period:  # matched_to is header
+                        self.add_error(
+                            "value",
+                            forms.ValidationError(
+                                _(
+                                    "Cannot do this.  In the matched relationship already established the transaction you are editing is B.  The transaction you have "
+                                    "matched B to is this matched transaction A.  The period of A cannot be after the period of B."
+                                ),
+                                code="invalid match"
+                            )
+                        )
+                else:
+                    if self.tran_being_created_or_edited.period > matched_by.period:  # matched_by is header
+                        self.add_error(
+                            "value",
+                            forms.ValidationError(
+                                _(
+                                    "Cannot do this.  In the matched relationship already established the transaction you are editing is A.  The transaction you "
+                                    "have matched A to is this matched transaction B.  The period of A cannot be after the period of B."
+                                ),
+                                code="invalid match"
+                            )
+                        )
+
             value_change = (value - initial_value)
             due_would_be = header.due - value_change
             f = -1 if header.is_negative_type() else 1

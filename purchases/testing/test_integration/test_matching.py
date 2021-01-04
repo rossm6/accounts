@@ -26,6 +26,7 @@ match_form_prefix = "match"
 DATE_INPUT_FORMAT = '%d-%m-%Y'
 MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
+
 def match(match_by, matched_to):
     headers_to_update = []
     matches = []
@@ -135,7 +136,7 @@ class CreateTransactionMatching(TestCase):
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                               ).strftime(MODEL_DATE_INPUT_FORMAT)
-        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(
             fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         ModuleSettings.objects.create(
@@ -145,9 +146,9 @@ class CreateTransactionMatching(TestCase):
             sales_period=cls.period
         )
 
-
     # VALID USAGE
     # So we match transactions with cancel out
+
     def test_create_zero_value_1(self):
         self.client.force_login(self.user)
         data = {}
@@ -243,20 +244,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2000)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2000)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2000})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 2000})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -330,20 +334,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2500})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 2500})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -391,20 +398,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2400)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 2400})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -479,20 +489,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2500})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": -2500})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -540,20 +553,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': -100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': -20
-            }]) * 20
+            'description': self.description,
+            'goods': -100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': -20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2000)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2000)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2000})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": -2000})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -627,20 +643,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': -100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': -20
-            }]) * 20
+            'description': self.description,
+            'goods': -100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': -20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2500})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": -2500})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -688,20 +707,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': -100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': -20
-            }]) * 20
+            'description': self.description,
+            'goods': -100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': -20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2400)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2400)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2400})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": -2400})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -776,20 +798,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': -100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': -20
-            }]) * 20
+            'description': self.description,
+            'goods': -100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': -20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2500})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 2500})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -838,20 +863,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2600})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 2600})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -899,20 +927,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': -100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': -20
-            }]) * 20
+            'description': self.description,
+            'goods': -100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': -20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2600})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": -2600})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -961,20 +992,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": -2500})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": -2500})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1021,20 +1055,23 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': -100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': -20
-            }]) * 20
+            'description': self.description,
+            'goods': -100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': -20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, -2500)[0]
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -2500)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2500})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 2500})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1084,23 +1121,26 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2400)[0]
         payment.due = 0
         payment.paid = -2400
         payment.save()
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 2400})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 2400})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1148,23 +1188,26 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2400)[0]
         payment.due = -100
         payment.paid = -2300
         payment.save()
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 200})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 200})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1211,22 +1254,25 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
-        payment = create_payments(self.supplier, "payment", 1, self.period, 2400)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, 2400)[0]
         payment.status = "v"
         payment.save()
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 200})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 200})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1256,7 +1302,7 @@ class CreateTransactionMatching(TestCase):
             0
         )
 
-    def test_cannot_match_to_a_transaction_on_another_account(self):
+    def test_cannot_match_to_a_transaction_on_another_account_39(self):
         self.client.force_login(self.user)
         data = {}
         header_data = create_header(
@@ -1273,23 +1319,24 @@ class CreateTransactionMatching(TestCase):
         )
         data.update(header_data)
         line_forms = ([{
-                'description': self.description,
-                'goods': 100,
-                'nominal': self.nominal.pk,
-                'vat_code': self.vat_code.pk,
-                'vat': 20
-            }]) * 20
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         data.update(line_data)
         # invoice is for 2400
         other_supplier = Supplier.objects.create(code="other", name="other")
-        payment = create_payments(other_supplier, "payment", 1, self.period, 2400)[0]
-        payment.status = "v"
-        payment.save()
-        headers_as_dicts = [ to_dict(payment) ]
-        headers_to_match_against = [ get_fields(header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts ]
+        payment = create_payments(
+            other_supplier, "payment", 1, self.period, 2400)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {"id": "matched_to"}, {"value": 200})
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 200})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         data.update(matching_data)
         response = self.client.post(self.url, data)
@@ -1319,12 +1366,78 @@ class CreateTransactionMatching(TestCase):
             0
         )
 
+    def test_cannot_match_to_a_transaction_in_a_later_period_40(self):
+        self.client.force_login(self.user)
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "pi",
+                "supplier": self.supplier.pk,
+                "period": self.period.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "due_date": self.due_date,
+                "total": 0
+            }
+        )
+        data.update(header_data)
+        line_forms = ([{
+            'description': self.description,
+            'goods': 100,
+            'nominal': self.nominal.pk,
+            'vat_code': self.vat_code.pk,
+            'vat': 20
+        }]) * 20
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        # invoice is for 2400
+        next_period = Period.objects.create(
+            fy=self.fy, period="02", fy_and_period="202002", month_start=date(2020, 2, 29))
+        payment = create_payments(
+            self.supplier, "payment", 1, next_period, 2400)[0]
+        headers_as_dicts = [to_dict(payment)]
+        headers_to_match_against = [get_fields(
+            header, ['type', 'ref', 'total', 'paid', 'due', 'id']) for header in headers_as_dicts]
+        matching_forms = []
+        matching_forms += add_and_replace_objects([headers_to_match_against[0]], {
+                                                  "id": "matched_to"}, {"value": 200})
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        data.update(matching_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Cannot match to a transaction which is in a later period"
+        )
+        headers = PurchaseHeader.objects.all().order_by("pk")
+        payment = headers[0]
+        self.assertEqual(
+            payment.total,
+            -2400
+        )
+        self.assertEqual(
+            payment.paid,
+            0
+        )
+        self.assertEqual(
+            payment.due,
+            -2400
+        )
+
+        matches = PurchaseMatching.objects.all()
+        self.assertEqual(
+            len(matches),
+            0
+        )
+
+
 class EditTransactionMatching(TestCase):
     """
     Editing transactions is tricker than creating transactions when it comes to the matching.
     """
-    
-    @classmethod 
+
+    @classmethod
     def setUpTestData(cls):
         cls.supplier = Supplier.objects.create(name="test_supplier")
         cls.ref = "test matching"
@@ -1354,7 +1467,7 @@ class EditTransactionMatching(TestCase):
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
         cls.model_due_date = (datetime.now() + timedelta(days=31)
                               ).strftime(MODEL_DATE_INPUT_FORMAT)
-        fy = FinancialYear.objects.create(financial_year=2020)
+        cls.fy = fy = FinancialYear.objects.create(financial_year=2020)
         cls.period = Period.objects.create(
             fy=fy, period="01", fy_and_period="202001", month_start=date(2020, 1, 31))
         ModuleSettings.objects.create(
@@ -1363,7 +1476,6 @@ class EditTransactionMatching(TestCase):
             purchases_period=cls.period,
             sales_period=cls.period
         )
-
 
     """
     Most obvious considerations first - just change existing match values
@@ -1403,7 +1515,8 @@ class EditTransactionMatching(TestCase):
 
         invoice = PurchaseHeader.objects.first()
 
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -1200)])
 
         invoice.refresh_from_db()
@@ -1495,7 +1608,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -1503,17 +1616,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matching_forms[-1]["value"] = 600
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
@@ -1641,7 +1757,8 @@ class EditTransactionMatching(TestCase):
 
         invoice = PurchaseHeader.objects.first()
 
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -1733,7 +1850,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -1741,17 +1858,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matching_forms[-1]["value"] = 1200
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
@@ -1879,7 +1999,8 @@ class EditTransactionMatching(TestCase):
 
         invoice = PurchaseHeader.objects.first()
 
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -1971,7 +2092,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -1979,17 +2100,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 0})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 0})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -2088,7 +2212,8 @@ class EditTransactionMatching(TestCase):
 
         invoice = PurchaseHeader.objects.first()
 
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -2180,7 +2305,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -2188,17 +2313,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -2291,8 +2419,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
     # INVALID
+
     def test_increasing_a_match_value_so_matched_to_is_overallocated_18(self):
 
         self.client.force_login(self.user)
@@ -2326,7 +2454,8 @@ class EditTransactionMatching(TestCase):
 
         invoice = PurchaseHeader.objects.first()
 
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -2418,7 +2547,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -2426,17 +2555,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["value"] = 1500
         matching_forms[0]["id"] = matches[0].pk
@@ -2570,7 +2702,8 @@ class EditTransactionMatching(TestCase):
 
         invoice = PurchaseHeader.objects.first()
 
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -2662,7 +2795,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -2670,17 +2803,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -2792,7 +2928,8 @@ class EditTransactionMatching(TestCase):
 
         invoice = PurchaseHeader.objects.first()
 
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -2884,7 +3021,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -2892,17 +3029,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -3036,7 +3176,8 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.paid = -400
         payment2.due = -800
         payment2.save()
@@ -3131,7 +3272,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -3139,17 +3280,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -3275,7 +3419,8 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.paid = -400
         payment2.due = -800
         payment2.save()
@@ -3370,7 +3515,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -3378,17 +3523,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -3436,7 +3584,8 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.paid = -400
         payment2.due = -800
         payment2.save()
@@ -3531,7 +3680,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -3539,17 +3688,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -3660,7 +3812,8 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.paid = -400
         payment2.due = -800
         payment2.save()
@@ -3755,7 +3908,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -3763,17 +3916,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -3789,7 +3945,6 @@ class EditTransactionMatching(TestCase):
             "Value must be between 0 and 800"
         )
 
-    
     """
     Now change the outstanding of the transaction being edited by ADDING a new match
     """
@@ -3826,10 +3981,12 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.save()
         match(invoice, [(payment1, -1200), (payment2, -600)])
-        payment3 = create_payments(self.supplier, "payment", 1, self.period, -1200)[0]
+        payment3 = create_payments(
+            self.supplier, "payment", 1, self.period, -1200)[0]
 
         invoice.refresh_from_db()
         payment1.refresh_from_db()
@@ -3887,7 +4044,6 @@ class EditTransactionMatching(TestCase):
             1200
         )
 
-
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
             len(matches),
@@ -3934,7 +4090,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -3942,17 +4098,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2, payment3]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -4021,7 +4180,6 @@ class EditTransactionMatching(TestCase):
             payment3.total,
             1200
         )
-
 
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
@@ -4110,10 +4268,12 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.save()
         match(invoice, [(payment1, -1200), (payment2, -600)])
-        payment3 = create_payments(self.supplier, "payment", 1, self.period, -1800)[0]
+        payment3 = create_payments(
+            self.supplier, "payment", 1, self.period, -1800)[0]
 
         invoice.refresh_from_db()
         payment1.refresh_from_db()
@@ -4171,7 +4331,6 @@ class EditTransactionMatching(TestCase):
             1800
         )
 
-
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
             len(matches),
@@ -4218,7 +4377,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -4226,17 +4385,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2, payment3]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -4305,7 +4467,6 @@ class EditTransactionMatching(TestCase):
             payment3.total,
             1800
         )
-
 
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
@@ -4394,10 +4555,12 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.save()
         match(invoice, [(payment1, -1200), (payment2, -600)])
-        payment3 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
+        payment3 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
 
         invoice.refresh_from_db()
         payment1.refresh_from_db()
@@ -4455,7 +4618,6 @@ class EditTransactionMatching(TestCase):
             -1200
         )
 
-
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
             len(matches),
@@ -4502,7 +4664,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -4510,17 +4672,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2, payment3]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -4589,7 +4754,6 @@ class EditTransactionMatching(TestCase):
             payment3.total,
             -1200
         )
-
 
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
@@ -4678,10 +4842,12 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         payment2.save()
         match(invoice, [(payment1, -1200), (payment2, -600)])
-        payment3 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
+        payment3 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
 
         invoice.refresh_from_db()
         payment1.refresh_from_db()
@@ -4739,7 +4905,6 @@ class EditTransactionMatching(TestCase):
             -1200
         )
 
-
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
             len(matches),
@@ -4786,7 +4951,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "total": invoice.total
@@ -4794,17 +4959,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [payment1, payment2, payment3]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[1]["id"] = matches[1].pk
@@ -4874,7 +5042,6 @@ class EditTransactionMatching(TestCase):
             -1200
         )
 
-
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
             len(matches),
@@ -4930,7 +5097,6 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
     """
     All tests above involve editing the match values where the transaction being edited is the
     matched_by in the match relationship.
@@ -4971,7 +5137,8 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 1200)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 1200)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -5056,7 +5223,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
         data = {}
@@ -5066,7 +5234,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment2.type,
                 "supplier": payment2.supplier.pk,
-				"period": payment2.period.pk,
+                "period": payment2.period.pk,
                 "ref": payment2.ref,
                 "date": payment2.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment2.total * -1
@@ -5076,10 +5244,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": 800})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": 800})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[1].pk
         matching_forms[0]["matched_to"] = payment2.pk
@@ -5132,7 +5302,6 @@ class EditTransactionMatching(TestCase):
             payment2.total,
             -1200
         )
-
 
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
@@ -5206,7 +5375,8 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1, payment2 = create_payments(self.supplier, "payment", 2, self.period, 2000)
+        payment1, payment2 = create_payments(
+            self.supplier, "payment", 2, self.period, 2000)
         match(invoice, [(payment1, -1200), (payment2, -600)])
 
         invoice.refresh_from_db()
@@ -5291,7 +5461,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
         data = {}
@@ -5301,7 +5472,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment2.type,
                 "supplier": payment2.supplier.pk,
-				"period": payment2.period.pk,
+                "period": payment2.period.pk,
                 "ref": payment2.ref,
                 "date": payment2.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment2.total * -1
@@ -5311,10 +5482,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": 1800})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": 1800})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[1].pk
         matching_forms[0]["matched_to"] = payment2.pk
@@ -5372,7 +5545,6 @@ class EditTransactionMatching(TestCase):
             -2000
         )
 
-
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
             len(matches),
@@ -5412,10 +5584,10 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
     # VALID
     # I.E. outstanding of tran which is matched_by in match relationship is valid
     # We should try and create another test where we edit payment1 instead
+
     def test_decrease_match_value_legal_31(self):
         self.client.force_login(self.user)
 
@@ -5447,8 +5619,10 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
-        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(
+            self.supplier, "payment", 1, self.period, -5000)[0]
         match(invoice, [(payment1, -1200), (payment2, 600)])
 
         invoice.refresh_from_db()
@@ -5533,7 +5707,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
         data = {}
@@ -5543,7 +5718,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment2.type,
                 "supplier": payment2.supplier.pk,
-				"period": payment2.period.pk,
+                "period": payment2.period.pk,
                 "ref": payment2.ref,
                 "date": payment2.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment2.total * -1
@@ -5553,10 +5728,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -1200})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": -1200})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[1].pk
         matching_forms[0]["matched_to"] = payment2.pk
@@ -5609,7 +5786,6 @@ class EditTransactionMatching(TestCase):
             payment2.total,
             5000
         )
-
 
         matches = PurchaseMatching.objects.all().order_by("pk")
         self.assertEqual(
@@ -5682,13 +5858,14 @@ class EditTransactionMatching(TestCase):
             self.purchase_control
         )
 
-
         # 2400 invoice matched to a 1200 payment gives 1200 outstanding
         # match a payment for -3600 gives outstanding of 4800.  Nonsense !
 
         invoice = PurchaseHeader.objects.first()
-        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
-        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(
+            self.supplier, "payment", 1, self.period, -5000)[0]
         match(invoice, [(payment1, -1200), (payment2, 600)])
 
         invoice.refresh_from_db()
@@ -5773,7 +5950,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
         data = {}
@@ -5783,7 +5961,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment2.type,
                 "supplier": payment2.supplier.pk,
-				"period": payment2.period.pk,
+                "period": payment2.period.pk,
                 "ref": payment2.ref,
                 "date": payment2.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment2.total * -1
@@ -5793,10 +5971,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -3600})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": -3600})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[1].pk
         matching_forms[0]["matched_to"] = payment2.pk
@@ -5900,9 +6080,12 @@ class EditTransactionMatching(TestCase):
     def test_decrease_match_value_illegal_32a_positive(self):
 
         self.client.force_login(self.user)
-        payment = create_payments(self.supplier, "payment", 1, self.period, -1.00)[0]
-        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1201)[0]
-        payment2 = create_payments(self.supplier, "payment", 1, self.period, -1200)[0]
+        payment = create_payments(
+            self.supplier, "payment", 1, self.period, -1.00)[0]
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1201)[0]
+        payment2 = create_payments(
+            self.supplier, "payment", 1, self.period, -1200)[0]
         match(payment, [(payment1, -1201), (payment2, 1200)])
 
         payment.refresh_from_db()
@@ -5987,7 +6170,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         url = reverse("purchases:edit", kwargs={"pk": payment1.pk})
         data = {}
@@ -5997,7 +6181,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment1.type,
                 "supplier": payment1.supplier.pk,
-				"period": payment1.period.pk,
+                "period": payment1.period.pk,
                 "ref": payment1.ref,
                 "date": payment1.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment1.total * -1
@@ -6007,10 +6191,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [payment]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -1199.99})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": -1199.99})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[0].pk
         matching_forms[0]["matched_to"] = payment1.pk
@@ -6107,10 +6293,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
     def test_decrease_match_value_illegal_32a_negative(self):
         pass
-
 
     """
     Add new match transaction.  Tran being edited is still the matched_to in at least one of the matches
@@ -6148,8 +6332,10 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
-        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(
+            self.supplier, "payment", 1, self.period, -5000)[0]
         match(invoice, [(payment1, -1200), (payment2, 600)])
 
         invoice.refresh_from_db()
@@ -6234,7 +6420,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         # create new invoice to match
         create_invoice_with_nom_entries(
@@ -6264,7 +6451,6 @@ class EditTransactionMatching(TestCase):
             self.purchase_control
         )
 
-
         new_invoice = PurchaseHeader.objects.filter(type="pi").last()
 
         url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
@@ -6275,7 +6461,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment2.type,
                 "supplier": payment2.supplier.pk,
-				"period": payment2.period.pk,
+                "period": payment2.period.pk,
                 "ref": payment2.ref,
                 "date": payment2.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment2.total * -1
@@ -6285,10 +6471,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice, new_invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -600})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": -600})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[1].pk
         matching_forms[0]["matched_to"] = payment2.pk
@@ -6382,7 +6570,6 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
         self.assertEqual(
             matches[1].matched_by,
             invoice
@@ -6400,7 +6587,6 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
         self.assertEqual(
             matches[2].matched_by,
             payment2
@@ -6417,7 +6603,6 @@ class EditTransactionMatching(TestCase):
             matches[2].period,
             self.period
         )
-
 
     """
     Need two tests.  One which hits both branches of the code.
@@ -6464,8 +6649,10 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
-        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(
+            self.supplier, "payment", 1, self.period, -5000)[0]
         match(invoice, [(payment1, -1200), (payment2, 600)])
 
         invoice.refresh_from_db()
@@ -6550,9 +6737,11 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
-        payment3 = create_payments(self.supplier, "payment", 1, self.period, -600)[0]
+        payment3 = create_payments(
+            self.supplier, "payment", 1, self.period, -600)[0]
 
         url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
         data = {}
@@ -6562,7 +6751,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment2.type,
                 "supplier": payment2.supplier.pk,
-				"period": payment2.period.pk,
+                "period": payment2.period.pk,
                 "ref": payment2.ref,
                 "date": payment2.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment2.total * -1
@@ -6572,10 +6761,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice, payment3]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -600})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": -600})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[1].pk
         matching_forms[0]["matched_to"] = payment2.pk
@@ -6669,7 +6860,6 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
         self.assertEqual(
             matches[1].matched_by,
             invoice
@@ -6687,9 +6877,9 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-
     # INVALID
     # NOT POSSIBLE THROUGH UI BUT STILL NEEDS TESTING
+
     def test_cannot_match_transaction_to_itself_35(self):
         self.client.force_login(self.user)
 
@@ -6742,7 +6932,7 @@ class EditTransactionMatching(TestCase):
             {
                 "type": invoice.type,
                 "supplier": invoice.supplier.pk,
-				"period": invoice.period.pk,
+                "period": invoice.period.pk,
                 "ref": invoice.ref,
                 "date": invoice.date.strftime(DATE_INPUT_FORMAT),
                 "due_date": invoice.due_date.strftime(DATE_INPUT_FORMAT),
@@ -6751,17 +6941,20 @@ class EditTransactionMatching(TestCase):
         )
         data.update(header_data)
         lines = PurchaseLine.objects.all().order_by("pk")
-        lines_as_dicts = [ to_dict(line) for line in lines ]
-        line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
         line_forms = line_trans
         line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
         line_data["line-INITIAL_FORMS"] = 20
         data.update(line_data)
         matching_trans = [invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": 600})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": 600})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["matched_to"] = invoice.pk
         matching_data = create_formset_data(match_form_prefix, matching_forms)
@@ -6790,7 +6983,6 @@ class EditTransactionMatching(TestCase):
             len(matches),
             0
         )
-
 
     def test_cannot_match_a_transaction_with_status_void_36(self):
         self.client.force_login(self.user)
@@ -6823,21 +7015,19 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
-        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
-        match(invoice, [(payment1, -1200), (payment2, 600)])
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
 
         invoice.refresh_from_db()
         payment1.refresh_from_db()
-        payment2.refresh_from_db()
 
         self.assertEqual(
             invoice.due,
-            1800
+            2400
         )
         self.assertEqual(
             invoice.paid,
-            600
+            0
         )
         self.assertEqual(
             invoice.total,
@@ -6848,101 +7038,48 @@ class EditTransactionMatching(TestCase):
 
         self.assertEqual(
             payment1.due,
-            0
+            -1200
         )
         self.assertEqual(
             payment1.paid,
-            -1200
+            0
         )
         self.assertEqual(
             payment1.total,
             -1200
         )
 
-        self.assertEqual(
-            payment2.due,
-            4400
-        )
-        self.assertEqual(
-            payment2.paid,
-            600
-        )
-        self.assertEqual(
-            payment2.total,
-            5000
-        )
-
-        matches = PurchaseMatching.objects.all().order_by("pk")
-        self.assertEqual(
-            len(matches),
-            2
-        )
-
-        self.assertEqual(
-            matches[0].matched_by,
-            invoice
-        )
-        self.assertEqual(
-            matches[0].matched_to,
-            payment1
-        )
-        self.assertEqual(
-            matches[0].value,
-            -1200
-        )
-        self.assertEqual(
-            matches[0].period,
-            self.period
-        )
-        self.assertEqual(
-            matches[1].matched_by,
-            invoice
-        )
-        self.assertEqual(
-            matches[1].matched_to,
-            payment2
-        )
-        self.assertEqual(
-            matches[1].value,
-            600
-        )
-        self.assertEqual(
-            matches[1].period,
-            self.period
-        )
-
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         invoice.status = "v"
         invoice.save()
 
-        url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
+        url = reverse("purchases:edit", kwargs={"pk": payment1.pk})
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "cash_book": cashbook.pk,
-                "type": payment2.type,
-                "supplier": payment2.supplier.pk,
-				"period": payment2.period.pk,
-                "ref": payment2.ref,
-                "date": payment2.date.strftime(DATE_INPUT_FORMAT),
-                "total": payment2.total * -1
+                "type": payment1.type,
+                "supplier": payment1.supplier.pk,
+                "period": payment1.period.pk,
+                "ref": payment1.ref,
+                "date": payment1.date.strftime(DATE_INPUT_FORMAT),
+                "total": payment1.total * -1
             }
         )
         data.update(header_data)
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -600})
-        matches = PurchaseMatching.objects.all().order_by("pk")
-        matching_forms[0]["id"] = matches[1].pk
-        matching_forms[0]["matched_to"] = payment2.pk
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 600})
         matching_data = create_formset_data(match_form_prefix, matching_forms)
-        matching_data["match-INITIAL_FORMS"] = 1
         data.update(matching_data)
 
         response = self.client.post(url, data)
@@ -6983,8 +7120,10 @@ class EditTransactionMatching(TestCase):
         )
 
         invoice = PurchaseHeader.objects.first()
-        payment1 = create_payments(self.supplier, "payment", 1, self.period, 1200)[0]
-        payment2 = create_payments(self.supplier, "payment", 1, self.period, -5000)[0]
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(
+            self.supplier, "payment", 1, self.period, -5000)[0]
         match(invoice, [(payment1, -1200), (payment2, 600)])
 
         invoice.refresh_from_db()
@@ -7071,7 +7210,8 @@ class EditTransactionMatching(TestCase):
             self.period
         )
 
-        cashbook = CashBook.objects.create(name="current", nominal=self.nominal)
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
 
         new_supplier = Supplier.objects.create(name="new", code="new")
 
@@ -7083,7 +7223,7 @@ class EditTransactionMatching(TestCase):
                 "cash_book": cashbook.pk,
                 "type": payment2.type,
                 "supplier": new_supplier.pk,
-				"period": payment2.period.pk,
+                "period": payment2.period.pk,
                 "ref": payment2.ref,
                 "date": payment2.date.strftime(DATE_INPUT_FORMAT),
                 "total": payment2.total * -1
@@ -7093,10 +7233,12 @@ class EditTransactionMatching(TestCase):
         line_data = create_formset_data(LINE_FORM_PREFIX, [])
         data.update(line_data)
         matching_trans = [invoice]
-        matching_trans_as_dicts = [ to_dict(m) for m in matching_trans ]
-        matching_trans = [ get_fields(m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts ]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
         matching_forms = []
-        matching_forms += add_and_replace_objects(matching_trans, {"id": "matched_by"}, {"value": -600})
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": -600})
         matches = PurchaseMatching.objects.all().order_by("pk")
         matching_forms[0]["id"] = matches[1].pk
         matching_forms[0]["matched_to"] = payment2.pk
@@ -7109,4 +7251,358 @@ class EditTransactionMatching(TestCase):
         self.assertContains(
             response,
             "You cannot change the supplier if the transaction is matched to other transactions. Please remove the matches first."
+        )
+
+    def test_cannot_change_period_so_matched_by_period_is_less_than_matched_to_41(self):
+        self.client.force_login(self.user)
+
+        create_invoice_with_nom_entries(
+            {
+                "type": "pi",
+                "supplier": self.supplier,
+                "period": self.period,
+                "ref": self.ref,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
+                "total": 2400,
+                "paid": 0,
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400
+            },
+            [
+                {
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ] * 20,
+            self.vat_nominal,
+            self.purchase_control
+        )
+
+        invoice = PurchaseHeader.objects.first()
+
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
+        match(invoice, [(payment1, -1200)])
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1200
+        )
+        self.assertEqual(
+            invoice.paid,
+            1200
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            1
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+
+        # later period
+        last_fy = FinancialYear.objects.create(financial_year=2019, number_of_periods=1)
+        last_period = Period.objects.create(
+            fy=last_fy, period="01", fy_and_period="201901", month_start=date(2019, 1, 31))
+        url = reverse("purchases:edit", kwargs={"pk": invoice.pk})
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": invoice.type,
+                "supplier": invoice.supplier.pk,
+                "period": last_period.pk,
+                "ref": invoice.ref,
+                "date": invoice.date.strftime(DATE_INPUT_FORMAT),
+                "total": invoice.total
+            }
+        )
+        data.update(header_data)
+        lines = PurchaseLine.objects.all().order_by("pk")
+        lines_as_dicts = [to_dict(line) for line in lines]
+        line_trans = [get_fields(line, ['id',  'description', 'goods',
+                                        'nominal', 'vat_code', 'vat']) for line in lines_as_dicts]
+        line_forms = line_trans
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        line_data["line-INITIAL_FORMS"] = 20
+        data.update(line_data)
+        matching_trans = [payment1]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_to"}, {"value": 1200})
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        matching_forms[0]["id"] = matches[0].pk
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Cannot do this.  In the matched relationship already established the transaction you are editing is B.  The transaction you have "
+            "matched B to is this matched transaction A.  The period of A cannot be after the period of B."
+        )
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1200
+        )
+        self.assertEqual(
+            invoice.paid,
+            1200
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            1
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+
+
+    def test_cannot_change_period_so_matched_to_period_is_greater_than_matched_by_42(self):
+        self.client.force_login(self.user)
+
+        create_invoice_with_nom_entries(
+            {
+                "type": "pi",
+                "supplier": self.supplier,
+                "period": self.period,
+                "ref": self.ref,
+                "date": self.model_date,
+                "due_date": self.model_due_date,
+                "total": 2400,
+                "paid": 0,
+                "due": 2400,
+                "goods": 2000,
+                "vat": 400,
+            },
+            [
+                {
+                    'description': self.description,
+                    'goods': 100,
+                    'nominal': self.nominal,
+                    'vat_code': self.vat_code,
+                    'vat': 20
+                }
+            ] * 20,
+            self.vat_nominal,
+            self.purchase_control
+        )
+
+        invoice = PurchaseHeader.objects.first()
+        payment1 = create_payments(
+            self.supplier, "payment", 1, self.period, 1200)[0]
+        payment2 = create_payments(
+            self.supplier, "payment", 1, self.period, -5000)[0]
+        match(invoice, [(payment1, -1200), (payment2, 600)])
+
+        invoice.refresh_from_db()
+        payment1.refresh_from_db()
+        payment2.refresh_from_db()
+
+        self.assertEqual(
+            invoice.due,
+            1800
+        )
+        self.assertEqual(
+            invoice.paid,
+            600
+        )
+        self.assertEqual(
+            invoice.total,
+            2400
+        )
+
+        # here we match with models only so matching is possible
+
+        self.assertEqual(
+            payment1.due,
+            0
+        )
+        self.assertEqual(
+            payment1.paid,
+            -1200
+        )
+        self.assertEqual(
+            payment1.total,
+            -1200
+        )
+
+        self.assertEqual(
+            payment2.due,
+            4400
+        )
+        self.assertEqual(
+            payment2.paid,
+            600
+        )
+        self.assertEqual(
+            payment2.total,
+            5000
+        )
+
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        self.assertEqual(
+            len(matches),
+            2
+        )
+
+        self.assertEqual(
+            matches[0].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[0].matched_to,
+            payment1
+        )
+        self.assertEqual(
+            matches[0].value,
+            -1200
+        )
+        self.assertEqual(
+            matches[0].period,
+            self.period
+        )
+        self.assertEqual(
+            matches[1].matched_by,
+            invoice
+        )
+        self.assertEqual(
+            matches[1].matched_to,
+            payment2
+        )
+        self.assertEqual(
+            matches[1].value,
+            600
+        )
+        self.assertEqual(
+            matches[1].period,
+            self.period
+        )
+
+        cashbook = CashBook.objects.create(
+            name="current", nominal=self.nominal)
+        # later period
+        next_period = Period.objects.create(
+            fy=self.fy, period="02", fy_and_period="202002", month_start=date(2020, 2, 29))
+
+        url = reverse("purchases:edit", kwargs={"pk": payment2.pk})
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "cash_book": cashbook.pk,
+                "type": payment2.type,
+                "supplier": self.supplier.pk,
+                "period": next_period.pk,
+                "ref": payment2.ref,
+                "date": payment2.date.strftime(DATE_INPUT_FORMAT),
+                "total": payment2.total * -1
+            }
+        )
+        data.update(header_data)
+        line_data = create_formset_data(LINE_FORM_PREFIX, [])
+        data.update(line_data)
+        matching_trans = [invoice]
+        matching_trans_as_dicts = [to_dict(m) for m in matching_trans]
+        matching_trans = [get_fields(
+            m, ['type', 'ref', 'total', 'paid', 'due', 'id']) for m in matching_trans_as_dicts]
+        matching_forms = []
+        matching_forms += add_and_replace_objects(
+            matching_trans, {"id": "matched_by"}, {"value": -600})
+        matches = PurchaseMatching.objects.all().order_by("pk")
+        matching_forms[0]["id"] = matches[1].pk
+        matching_forms[0]["matched_to"] = payment2.pk
+        matching_data = create_formset_data(match_form_prefix, matching_forms)
+        matching_data["match-INITIAL_FORMS"] = 1
+        data.update(matching_data)
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Cannot do this.  In the matched relationship already established the transaction you are editing is A.  The transaction you "
+            "have matched A to is this matched transaction B.  The period of A cannot be after the period of B."
         )

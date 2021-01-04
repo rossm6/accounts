@@ -12,6 +12,7 @@
 
         var contact_field = $("select[data-contact-field]").eq(0); // should only be one anyway
         // in the future other fields may determine the matching queryset also
+        var period_field = $(":input[name='header-period']");
 
         // Ordering was a bit tricky.
         // There are two problems -
@@ -91,8 +92,12 @@
                     // each time they do we need to load new matching transactions
                     // there may be other changes which require a reload
                     var contact = contact_field.val();
+                    var period = period_field.val();
                     if (contact){
                         d["s"] = contact;
+                        if(period){
+                            d["period"] = period;
+                        }
                         if(edit){
                             d["edit"] = edit;
                         }
@@ -162,7 +167,9 @@
         contact_field.on("change", function() {
             outstanding_table.ajax.reload();
         });
-
+        period_field.on("change", function(){
+            outstanding_table.ajax.reload();
+        });
         // CLIENT JS ITEM 1
         // Unlike input elements we cannot set a readonly attribute on the select element
         // So we disable it but then enable it before the data is sent to the server 
