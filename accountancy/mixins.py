@@ -3,12 +3,19 @@ from uuid import uuid4
 
 from django.conf import settings
 from simple_history import register
+from simple_history.models import HistoricalRecords
+from simple_history.signals import pre_create_historical_record
 
 from accountancy.helpers import (
     DELETED_HISTORY_TYPE, create_historical_records,
     disconnect_simple_history_receiver_for_post_delete_signal,
     get_all_historical_changes)
 from accountancy.signals import audit_post_delete
+
+
+def zeus(sender, **kwargs):
+    print(sender)
+    print(kwargs)
 
 
 class AuditMixin:
@@ -58,6 +65,7 @@ class AuditMixin:
         disconnect_simple_history_receiver_for_post_delete_signal(cls)
         audit_post_delete.connect(
             cls.post_delete, sender=cls, dispatch_uid=uuid4())
+        pre_create_historical_record.connect(zeus, sender=HistoricalRecords)
 
     @classmethod
     def post_delete(cls, sender, instance, **kwargs):
@@ -70,11 +78,6 @@ class AuditMixin:
     def ready(self):
         """
         Called by <app_name>.apps.<app_name>Config.
-
-        This might be viewed as dangerous in case ever there is a
-        ready method implemented on the models.Model class but without
-        calling the super class here we'd surely know from running
-        our tests something was seriously wrong.
         """
         print("APP READY")
         models = list(self.get_models())  # use up generator
@@ -92,7 +95,10 @@ class SingleObjectAuditDetailViewMixin:
                 self.model._meta.pk.name: self.object.pk
             }
         ).order_by("pk")
-        changes = get_all_historical_changes(audit_records)
+        kwargs = {}
+        if hasattr(self, "ui_audit_fields"):
+            kwargs["ui_audit_fields"] = self.ui_audit_fields
+        changes = get_all_historical_changes(audit_records, **kwargs)
         context["audits"] = changes
         return context
 

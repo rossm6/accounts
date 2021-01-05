@@ -111,6 +111,15 @@ class UsersList(LoginRequiredMixin, ListView):
 
 """
 
+user_fields_to_show_in_audit = [
+    'is_superuser',
+    'username',
+    'first_name',
+    'last_name',
+    'email',
+    'is_active',
+]
+
 
 class UserDetail(
         LoginRequiredMixin,
@@ -122,6 +131,7 @@ class UserDetail(
     template_name = "controls/user_detail.html"
     edit = False
     permission_required = "auth.view_user"
+    ui_audit_fields = user_fields_to_show_in_audit
 
     def get_perms(self):
         user = self.object
@@ -150,6 +160,7 @@ class UserEdit(
     success_url = reverse_lazy("controls:users")
     edit = True
     permission_required = "auth.change_user"
+    ui_audit_fields = user_fields_to_show_in_audit
 
     # because 5 db hits are needed for POST
     @transaction.atomic
@@ -179,7 +190,6 @@ class UserEdit(
         form.instance.user_permissions.add(*user_permissions)  # hit db
         form.instance.groups.clear()  # hit db
         form.instance.groups.add(*groups)  # hit db
-        form.save()  # hit db
         return super().form_valid(form)
 
 
