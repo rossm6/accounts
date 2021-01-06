@@ -328,7 +328,7 @@ class AuditTransactionTest(TestCase):
         )
         self.assertEqual(
             create["goods"]["new"],
-            str(h.goods),
+            str(h.goods * -1), # payment ui value is positive
         )
         self.assertEqual(
             create["vat"]["old"],
@@ -344,7 +344,7 @@ class AuditTransactionTest(TestCase):
         )
         self.assertEqual(
             create["total"]["new"],
-            str(h.total),
+            str(h.total * -1), # payment ui value is positive
         )
         self.assertEqual(
             create["paid"]["old"],

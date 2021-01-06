@@ -13,11 +13,6 @@ from accountancy.helpers import (
 from accountancy.signals import audit_post_delete
 
 
-def zeus(sender, **kwargs):
-    print(sender)
-    print(kwargs)
-
-
 class AuditMixin:
     """
 
@@ -65,7 +60,6 @@ class AuditMixin:
         disconnect_simple_history_receiver_for_post_delete_signal(cls)
         audit_post_delete.connect(
             cls.post_delete, sender=cls, dispatch_uid=uuid4())
-        pre_create_historical_record.connect(zeus, sender=HistoricalRecords)
 
     @classmethod
     def post_delete(cls, sender, instance, **kwargs):

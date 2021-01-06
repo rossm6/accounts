@@ -1,9 +1,10 @@
-from accountancy.forms import BaseTransactionHeaderForm
 from datetime import date
 
 import mock
-from accountancy.forms import BaseAjaxFormMixin, BaseTransactionMixin
+from accountancy.forms import (BaseAjaxFormMixin, BaseTransactionHeaderForm,
+                               BaseTransactionMixin)
 from contacts.models import Contact
+from controls.models import FinancialYear, ModuleSettings, Period
 from django import forms
 from django.test import TestCase
 from purchases.models import PurchaseHeader, Supplier
@@ -328,7 +329,7 @@ class BaseAjaxFormMixinTestsForModalForm(TestCase):
 class BaseTransactionMixinTests(TestCase):
     """
     I was going to mock out everything but i got stuck with the
-    isintance call.
+    isinstance call.
 
     Mocking the UIDecimalField with mock.patch is no good because it returns
     an instance of mock.Mock, and the second argument of isinstance must be a
@@ -430,6 +431,11 @@ class BaseTransactionMixinTests(TestCase):
 
 class BaseTransactionHeaderFormTests(TestCase):
 
+    @classmethod
+    def setUpTestData(cls):
+        cls.fy = fy = FinancialYear.objects.create(financial_year=2020, number_of_periods=1)
+        cls.period = period = Period.objects.create(fy=fy, fy_and_period="202001", month_start=date(2020,1,1), period="01")
+        ModuleSettings.objects.create(purchases_period=period)
 
     def test_cannot_change_the_sign(self):
 
@@ -440,7 +446,8 @@ class BaseTransactionHeaderFormTests(TestCase):
             supplier=supplier,
             ref="1",
             date=date.today(),
-            total=120
+            total=120,
+            period=self.period
         )
 
         class Form(BaseTransactionHeaderForm):
@@ -454,10 +461,12 @@ class BaseTransactionHeaderFormTests(TestCase):
             "supplier": supplier.pk,
             "ref": "1",
             "date": date.today(),
-            "total": 120
+            "total": 120,
+            "period": self.period.pk
         }
 
         f = Form(data=data, instance=instance)
+
         self.assertTrue(f.is_valid())
         instance = f.save()
         self.assertEqual(
@@ -484,7 +493,8 @@ class BaseTransactionHeaderFormTests(TestCase):
             "supplier": supplier.pk,
             "ref": "1",
             "date": date.today(),
-            "total": 120
+            "total": 120,
+            "period": self.period.pk
         }
 
         f = Form(data=data)
@@ -536,7 +546,8 @@ class BaseTransactionHeaderFormTests(TestCase):
             "supplier": supplier.pk,
             "ref": "1",
             "date": date.today(),
-            "total": 120
+            "total": 120,
+            "period": self.period.pk
         }
 
         f = Form(data=data)

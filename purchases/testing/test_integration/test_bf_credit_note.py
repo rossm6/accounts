@@ -4336,6 +4336,9 @@ class MatchingTests(TestCase):
     def test_edit_does_not_change_period(self):
         """
         Test here that the period on the match record is not changed because we are editing the matched_to in the match relationship
+
+        After validating that the matched_to period cannot be after the period of the matched by i changed the test so the match is
+        done in 02 2020.  The matched_to is then edited so that the period is 02 2020.
         """
         self.client.force_login(self.user)
         # Create a credit for 120.01 through view first
@@ -4343,13 +4346,16 @@ class MatchingTests(TestCase):
         # Third create an invoice for 0.01 and match the other two to it
         # Invalid edit follows
 
+        new_period = Period.objects.create(
+            fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020, 2, 29))
+
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
                 "supplier": self.supplier.pk,
-                "period": self.period.pk,
+                "period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4381,7 +4387,7 @@ class MatchingTests(TestCase):
             {
                 "type": "pbi",
                 "supplier": self.supplier.pk,
-                "period": self.period.pk,
+                "period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4419,7 +4425,7 @@ class MatchingTests(TestCase):
             {
                 "type": "pbc",
                 "supplier": self.supplier.pk,
-                "period": self.period.pk,
+                "period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4487,7 +4493,7 @@ class MatchingTests(TestCase):
         )
         self.assertEqual(
             matches[0].period,
-            self.period
+            new_period
         )
         self.assertEqual(
             matches[0].value,
@@ -4507,7 +4513,7 @@ class MatchingTests(TestCase):
         )
         self.assertEqual(
             matches[1].period,
-            self.period
+            new_period
         )
 
         # Now for the edit.  In the UI the match value shows as -120.01.  In the DB it shows as 120.01
@@ -4520,16 +4526,13 @@ class MatchingTests(TestCase):
             1
         )
 
-        new_period = Period.objects.create(
-            fy=self.fy, fy_and_period="202002", period="02", month_start=date(2020, 2, 29))
-
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
             {
                 "type": "pbc",
                 "supplier": self.supplier.pk,
-                "period": new_period.pk,
+                "period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "due_date": self.due_date,
@@ -4589,7 +4592,7 @@ class MatchingTests(TestCase):
         )
         self.assertEqual(
             matches[0].period,
-            self.period
+            new_period
         )
         self.assertEqual(
             matches[0].value,
@@ -4609,7 +4612,7 @@ class MatchingTests(TestCase):
         )
         self.assertEqual(
             matches[1].period,
-            self.period
+            new_period
         )
 
         self.assertEqual(

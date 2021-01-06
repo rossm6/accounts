@@ -11,7 +11,7 @@ from django.views.generic import CreateView, DeleteView, UpdateView
 from users.forms import (SignInForm, SignUpForm, UserPasswordResetForm,
                          UserProfileForm, UserSetPasswordForm)
 from users.mixins import LockDuringEditMixin
-from users.models import Lock
+from users.models import Lock, UserSession
 
 
 class SignUp(CreateView):
@@ -36,7 +36,9 @@ class Profile(LoginRequiredMixin, LockDuringEditMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        update_session_auth_hash(self.request, self.request.user)
+        update_session_auth_hash(self.request, self.object) # this will delete the current user session
+        # and create anew
+        UserSession.objects.create(user=self.object, session_id=self.request.session.session_key)
         return response
 
 

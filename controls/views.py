@@ -5,7 +5,9 @@ from itertools import chain, groupby
 from accountancy.mixins import (ResponsivePaginationMixin,
                                 SingleObjectAuditDetailViewMixin)
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.mixins import (LoginRequiredMixin,
+                                        PermissionRequiredMixin)
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 from django.db.models import prefetch_related_objects
@@ -18,6 +20,7 @@ from nominals.models import NominalTransaction
 from simple_history.utils import (bulk_create_with_history,
                                   bulk_update_with_history)
 from users.mixins import LockDuringEditMixin
+from users.models import UserSession
 
 from controls.forms import (UI_PERMISSIONS, AdjustFinancialYearFormset,
                             FinancialYearForm,
@@ -190,7 +193,12 @@ class UserEdit(
         form.instance.user_permissions.add(*user_permissions)  # hit db
         form.instance.groups.clear()  # hit db
         form.instance.groups.add(*groups)  # hit db
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # this deletes the current user session
+        update_session_auth_hash(self.request, self.object)
+        UserSession.objects.create(
+            user=self.object, session_id=self.request.session.session_key)
+        return response
 
 
 class UserCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

@@ -210,85 +210,6 @@ def create_historical_records(
     )
 
 
-def bulk_create_with_history(
-    objs,
-    model,
-    batch_size=None,
-    default_user=None,
-    default_change_reason=None,
-    default_date=None,
-):
-    """
-    This is a copy of the utility of the same name from `simple_history`.
-
-    The problem I had was that I need to save a different value to the audit record
-    other than the field value sometimes.  This is because the transaction models - header, line,
-    and update - all contain field values which have the sign determined by header.type when
-    displaying in the UI.  If the values show like this in the UI they should in the audit also.
-
-    I have removed the @ignore_conflicts parameter because we should never ignore conflicts.
-    Moreover it seemed to be that doing so would result in a seperate DB hit to get each object
-    from the db so we have  the pk.
-
-    Also this utility calls create_historical_records.  In this function we can then implement
-    the logic which swaps the field value to the ui field value if need be.
-    """
-    # Exclude ManyToManyFields because they end up as invalid kwargs to
-    # model.objects.filter(...) below.
-    exclude_fields = [
-        field.name
-        for field in model._meta.get_fields()
-        if isinstance(field, ManyToManyField)
-    ]
-    model_manager = model._default_manager
-    with transaction.atomic(savepoint=False):
-        objs_with_id = model_manager.bulk_create(
-            objs, batch_size=batch_size, ignore_conflicts=False
-        )
-        create_historical_records(
-            objs_with_id,
-            model,
-            "+",
-            batch_size=batch_size,
-            default_user=default_user,
-            default_change_reason=default_change_reason,
-            default_date=default_date,
-        )
-    return objs_with_id
-
-
-def bulk_update_with_history(
-    objs,
-    model,
-    fields,
-    batch_size=None,
-    default_user=None,
-    default_change_reason=None,
-    default_date=None,
-    manager=None,
-):
-    """
-    Again like bulk_create_with_history this calls `create_historical_records`
-    """
-    model_manager = manager or model._default_manager
-    if model_manager.model is not model:
-        raise AlternativeManagerError(
-            "The given manager does not belong to the model.")
-
-    with transaction.atomic(savepoint=False):
-        model_manager.bulk_update(objs, fields, batch_size=batch_size)
-        create_historical_records(
-        objs,
-        model,
-        "-",
-        batch_size=batch_size,
-        update=True,
-        default_user=default_user,
-        default_change_reason=default_change_reason,
-        default_date=default_date,
-    )
-
-
 def bulk_delete_with_history(objects, model, batch_size=None, default_user=None, default_change_reason="", default_date=None):
     """
     The package `simple_history` does not log what was deleted if the items
@@ -311,6 +232,7 @@ def bulk_delete_with_history(objects, model, batch_size=None, default_user=None,
 class AuditTransaction:
     def __init__(self, header_tran, header_model, line_model, match_model=None):
         self.audit_header_history = header_tran.history.all().order_by("pk")
+        self.header_tran = header_tran
         self.header_model = header_model
         self.header_model_pk_name = header_model._meta.pk.name
         # may be empty if payment for example (which has no lines)
@@ -321,13 +243,27 @@ class AuditTransaction:
             self.audit_lines_history = (
                 line_model.history.filter(
                     header=header_tran.pk
-                ).order_by(line_model._meta.pk.name, "pk")
+                ).order_by(line_model._meta.pk.name, "pk") # order by pk of line model, then pk of audit
             )
         if match_model:
+            matches = (
+                match_model
+                .objects
+                .select_related("matched_by")
+                .select_related("matched_to")
+                .filter(
+                    Q(matched_by=header_tran.pk) | Q(matched_to=header_tran.pk)
+                )
+                .order_by(match_model._meta.pk.name)
+            )
+            self.matches = {
+                m.pk: m
+                for m in matches
+            }
             self.audit_matches_history = (
                 match_model.history.filter(
                     Q(matched_by=header_tran.pk) | Q(matched_to=header_tran.pk)
-                ).order_by(line_model._meta.pk.name, "pk")
+                ).order_by(match_model._meta.pk.name, "pk") # order by pk of order model, then pk of audit
             )
             self.match_model_pk_name = match_model._meta.pk.name
             self.match_model = match_model
@@ -351,7 +287,8 @@ class AuditTransaction:
     def get_historical_changes(self):
         all_changes = []
         self.audit_header_history_changes = get_all_historical_changes(
-            [ self.get_ui_values(h, self.header_model) for h in self.audit_header_history], self.header_model_pk_name
+            [self.get_ui_values(h, self.header_model)
+             for h in self.audit_header_history], self.header_model_pk_name
         )
         for change in self.audit_header_history_changes:
             change["meta"]["transaction_aspect"] = "header"
@@ -359,20 +296,35 @@ class AuditTransaction:
 
         for line_pk, history in groupby(self.audit_lines_history, key=lambda l: getattr(l, self.line_model_pk_name)):
             changes = get_all_historical_changes(
-                [ self.get_ui_values(h, self.line_model) for h in history], self.line_model_pk_name)
+                [self.get_ui_values(h, self.line_model) for h in history], self.line_model_pk_name)
             for change in changes:
                 change["meta"]["transaction_aspect"] = "line"
             all_changes += changes
 
         if hasattr(self, "audit_matches_history"):
+            from accountancy.models import MatchedHeaders
             for match_pk, history in groupby(self.audit_matches_history, lambda m: getattr(m, self.match_model_pk_name)):
+                history = [self.get_ui_values(
+                    h, self.match_model) for h in history]
+                # get_ui_value will not get the ui_value for value attribute of the match model
+                # so we need the usual logic like we use the Matchformset
+                for h in history:
+                    match_model_pk_name = self.match_model_pk_name
+                    match = self.matches[getattr(h, match_model_pk_name)]
+                    if h.matched_by_id == self.header_tran.pk:
+                        matched_header = match.matched_to
+                        ui_value = MatchedHeaders.ui_match_value(
+                            matched_header, h.value)
+                    else:
+                        matched_header = match.matched_by
+                        ui_value = MatchedHeaders.ui_match_value(
+                            matched_header, -1 * h.value)
+                    h.value = ui_value
                 changes = get_all_historical_changes(
-                    [ 
-                        self.get_ui_values(h, self.match_model) 
-                        for h in history
-                    ], 
+                    history,
                     self.match_model_pk_name
                 )
+
                 for change in changes:
                     change["meta"]["transaction_aspect"] = "match"
                 all_changes += changes

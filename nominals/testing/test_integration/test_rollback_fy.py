@@ -57,7 +57,7 @@ class RollbackFYTests(TestCase):
         header_1 = NominalHeader.objects.create(
             date=date.today(), # does not matter
             ref="1",
-            period=self.period_201901,
+            period=self.p_201901,
             status="c",
             type="nbf",
             vat_type=None
@@ -89,7 +89,7 @@ class RollbackFYTests(TestCase):
         header_2 = NominalHeader.objects.create(
             date=date.today(), # does not matter
             ref="2",
-            period=self.period_202001,
+            period=self.p_202001,
             status="c",
             type="nbf",
             vat_type=None
@@ -122,7 +122,7 @@ class RollbackFYTests(TestCase):
         header_3 = NominalHeader.objects.create(
             date=date.today(), # does not matter
             ref="3",
-            period=self.period_202101,
+            period=self.p_202101,
             status="c",
             type="nbf",
             vat_type=None
@@ -142,7 +142,7 @@ class RollbackFYTests(TestCase):
         )
         bf_2021_2 = NominalTransaction.objects.create(
             module="NL",
-            header=header_3,
+            header=header_3.pk,
             line=2,
             date=date.today(),
             ref="YEAR END 2020",

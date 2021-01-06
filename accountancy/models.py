@@ -251,7 +251,7 @@ class TransactionHeader(AuditMixin, TransactionBase, models.Model):
         """
         return (1 if self.is_positive_type() else -1) * (1 if self.is_debit_type() else -1)
 
-    def ui_status(self):
+    def display_status(self):
         if self.type in ("nj", "cp", "cr", "cbr", "cbp"):
             return ""
         if self.status == "c":
@@ -379,7 +379,8 @@ class MatchedHeaders(AuditMixin, models.Model):
     matched_by is the payment
     matched_to is the invoice
 
-    matched_by is ALWAYS the transaction being created or edited
+    When a match is established between two transactions, the matched_by is the header being edited or created
+    at the time through the browser.  The other is in the match is the "matched_to".
 
     value is the amount that is paid by matched_to.  It is the amount that was deducted from the outstanding
     value of the matched_to header, and the amount added to the paid value of the matched_to header, when the match

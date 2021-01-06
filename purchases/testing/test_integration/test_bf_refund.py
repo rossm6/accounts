@@ -2502,7 +2502,7 @@ class MatchingTests(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
-				"period": self.period.pk,
+				"period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -2524,7 +2524,7 @@ class MatchingTests(TestCase):
             {
                 "type": "pbp",
                 "supplier": self.supplier.pk,
-				"period": self.period.pk,
+				"period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.00
@@ -2552,7 +2552,7 @@ class MatchingTests(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
-				"period": self.period.pk,
+				"period": new_period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": -0.01
@@ -2635,7 +2635,7 @@ class MatchingTests(TestCase):
             {
                 "type": "pbr",
                 "supplier": self.supplier.pk,
-				"period": new_period.pk,
+				"period": self.period.pk,
                 "ref": self.ref,
                 "date": self.date,
                 "total": 120.01
@@ -2685,7 +2685,7 @@ class MatchingTests(TestCase):
         )
         self.assertEqual(
             matches[0].period,
-            self.period
+            new_period
         )
         self.assertEqual(
             matches[1].matched_by,
@@ -2701,7 +2701,7 @@ class MatchingTests(TestCase):
         )
         self.assertEqual(
             matches[1].period,
-            self.period
+            new_period
         )
 
         self.assertEqual(

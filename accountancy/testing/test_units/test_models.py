@@ -173,7 +173,7 @@ class TransactionHeaderTests(TestCase):
             -1
         )
 
-    def test_ui_status_for_nominal_journal(self):
+    def test_display_status_for_nominal_journal(self):
         nj = NominalHeader.objects.create(
             type="nj",
             ref="1",
@@ -182,11 +182,11 @@ class TransactionHeaderTests(TestCase):
             period=self.period,
         )
         self.assertEqual(
-            nj.ui_status(),
+            nj.display_status(),
             ""
         )
 
-    def test_ui_status_for_cash_book_transaction(self):
+    def test_display_status_for_cash_book_transaction(self):
         nominal = Nominal.objects.create(name="nominal")
         cashbook = CashBook.objects.create(
             name="current",
@@ -201,11 +201,11 @@ class TransactionHeaderTests(TestCase):
             cash_book=cashbook
         )
         self.assertEqual(
-            cr.ui_status(),
+            cr.display_status(),
             ""
         )
 
-    def test_ui_status_for_fully_paid(self):
+    def test_display_status_for_fully_paid(self):
         pi = PurchaseHeader.objects.create(
             type="pi",
             supplier=self.supplier,
@@ -217,11 +217,11 @@ class TransactionHeaderTests(TestCase):
             paid=100
         )
         self.assertEqual(
-            pi.ui_status(),
+            pi.display_status(),
             "fully matched"
         )
 
-    def test_ui_status_for_overdue(self):
+    def test_display_status_for_overdue(self):
         pi = PurchaseHeader.objects.create(
             type="pi",
             supplier=self.supplier,
@@ -233,11 +233,11 @@ class TransactionHeaderTests(TestCase):
             paid=90
         )
         self.assertEqual(
-            pi.ui_status(),
+            pi.display_status(),
             "overdue"
         )
 
-    def test_ui_status_for_outstanding(self):
+    def test_display_status_for_outstanding(self):
         pi = PurchaseHeader.objects.create(
             type="pi",
             supplier=self.supplier,
@@ -249,11 +249,11 @@ class TransactionHeaderTests(TestCase):
             paid=90
         )
         self.assertEqual(
-            pi.ui_status(),
+            pi.display_status(),
             "outstanding"
         )
 
-    def test_ui_status_no_due_date(self):
+    def test_display_status_no_due_date(self):
         pi = PurchaseHeader.objects.create(
             type="pi",
             supplier=self.supplier,
@@ -264,11 +264,11 @@ class TransactionHeaderTests(TestCase):
             paid=90
         )
         self.assertEqual(
-            pi.ui_status(),
+            pi.display_status(),
             "not fully matched"
         )
 
-    def test_ui_status_void(self):
+    def test_display_status_void(self):
         pi = PurchaseHeader.objects.create(
             type="pi",
             supplier=self.supplier,
@@ -280,7 +280,7 @@ class TransactionHeaderTests(TestCase):
             status="v"
         )
         self.assertEqual(
-            pi.ui_status(),
+            pi.display_status(),
             "void"
         )
 

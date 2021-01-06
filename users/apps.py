@@ -26,11 +26,6 @@ def delete_user_session(sender, request, user, **kwargs):
         user_session.session.delete()
 
 
-def zeus(sender, **kwargs):
-    print(sender)
-    print(kwargs)
-
-
 class UsersConfig(AppConfig):
     name = 'users'
 
@@ -38,4 +33,3 @@ class UsersConfig(AppConfig):
         user_session = self.get_model("UserSession")
         user_logged_in.connect(user_logged_in_handler)
         user_logged_out.connect(delete_user_session)
-        pre_create_historical_record.connect(zeus)

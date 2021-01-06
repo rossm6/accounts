@@ -1,12 +1,12 @@
 from datetime import date
+from decimal import Decimal
 
-from controls.models import FinancialYear, Period
+from controls.models import FinancialYear, ModuleSettings, Period
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.shortcuts import reverse
 from django.test import TestCase
 from nominals.models import Nominal, NominalTransaction
-from decimal import Decimal
 
 PURCHASES_CONTROL_ACCOUNT = "Purchase Ledger Control"
 SALES_CONTROL_ACCOUNT = "Sales Ledger Control"
@@ -41,7 +41,7 @@ class TrialBalanceTests(TestCase):
         cls.vat_control_account = vat_control_account = Nominal.objects.create(parent=current_liabilities, name=settings.DEFAULT_VAT_NOMINAL)
 
         today = date.today()
-
+        
         # 2019
         cls.fy_2019 = fy_2019 = FinancialYear.objects.create(financial_year=2019)
         cls.p_201912 = p_201912 = Period.objects.create(
@@ -65,6 +65,8 @@ class TrialBalanceTests(TestCase):
             fy_and_period="202002", 
             month_start=date(2020, 2, 29)     
         )
+
+        ModuleSettings.objects.create(nominals_period=cls.p_202001)
 
         # create a SL set of NL trans
         NominalTransaction.objects.create(

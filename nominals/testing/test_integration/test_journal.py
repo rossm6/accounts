@@ -77,25 +77,23 @@ class CreateJournal(TestCase):
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select form-control form-control-sm" required id="id_header-type">'
-            '<option value="">---------</option>'
-            '<option value="nj" selected="selected">Journal</option>'
+            '<select name="header-type" class="transaction-type-select form-control form-control-sm" id="id_header-type">'
+            '<option value="nj" selected>Journal</option>'
             '</select>',
             html=True
         )
 
     # CORRECT USAGE
     # Can request create journal view without GET parameter
-    def test_get_request_with_query_parameter(self):
+    def test_get_request_without_query_parameter(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
-            '<select name="header-type" class="transaction-type-select form-control form-control-sm" required id="id_header-type">'
-            '<option value="">---------</option>'
-            '<option value="nj" selected="selected">Journal</option>'
+            '<select name="header-type" class="transaction-type-select form-control form-control-sm" id="id_header-type">'
+            '<option value="nj" selected>Journal</option>'
             '</select>',
             html=True
         )
@@ -1542,9 +1540,8 @@ class EditJournal(TestCase):
         # This HTML fragment is before the selectize widget does its thing
         self.assertContains(
             response,
-            '<select name="header-type" class="form-control form-control-sm transaction-type-select" disabled required id="id_header-type">'
-            '<option value="">---------</option>'
-            '<option value="nj" selected="selected">Journal</option>'
+            '<select name="header-type" class="transaction-type-select form-control form-control-sm" disabled id="id_header-type">'
+            '<option value="nj" selected>Journal</option>'
             '</select>',
             html=True
         )
