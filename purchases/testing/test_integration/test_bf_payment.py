@@ -198,7 +198,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             header.goods,
-            0
+            -120
         )
         self.assertEqual(
             header.vat,
@@ -380,7 +380,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             header.goods,
-            0
+            120
         )
         self.assertEqual(
             header.vat,
@@ -469,7 +469,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             payment.goods,
-            0
+            -120
         )
         self.assertEqual(
             payment.vat,
@@ -589,7 +589,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             payment.goods,
-            0
+            -120
         )
         self.assertEqual(
             payment.vat,
@@ -860,7 +860,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             payment.goods,
-            0
+            -120
         )
         self.assertEqual(
             payment.vat,
@@ -985,7 +985,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             payment.goods,
-            0
+            120
         )
         self.assertEqual(
             payment.vat,
@@ -1105,7 +1105,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             payment.goods,
-            0
+            120
         )
         self.assertEqual(
             payment.vat,
@@ -1355,7 +1355,7 @@ class CreateBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             payment.goods,
-            0
+            120
         )
         self.assertEqual(
             payment.vat,
@@ -1627,7 +1627,7 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             header.goods,
-            0
+            -100
         )
         self.assertEqual(
             header.vat,
@@ -1905,7 +1905,7 @@ class EditBroughtForwardPaymentNominalEntries(TestCase):
         )
         self.assertEqual(
             header.goods,
-            0
+            -120
         )
         self.assertEqual(
             header.vat,
@@ -2420,7 +2420,7 @@ class MatchingTests(TestCase):
         )
         self.assertEqual(
             payment.goods,
-            0
+            -120
         )
         self.assertEqual(
             payment.vat,

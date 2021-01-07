@@ -5,6 +5,23 @@ from controls.exceptions import MissingFinancialYear, MissingPeriodError
 from controls.validators import is_fy_year
 
 
+class ModuleSettingsQueryset(models.QuerySet):
+
+    def first(self):
+        try:
+            m = (
+                self
+                .select_related("cash_book_period")
+                .select_related("nominals_period")
+                .select_related("purchases_period")
+                .select_related("sales_period")
+                .order_by("pk")
+            )[0]
+        except IndexError:
+            m = None
+        return m
+
+
 class ModuleSettings(AuditMixin, models.Model):
     """
     This model should only ever have 1 record.
@@ -22,6 +39,8 @@ class ModuleSettings(AuditMixin, models.Model):
         "Period", verbose_name="Purchases Period", on_delete=models.SET_NULL, null=True, related_name="purchases_period")
     sales_period = models.ForeignKey(
         "Period", verbose_name="Sales Period", on_delete=models.SET_NULL, null=True, related_name="sales_period")
+
+    objects = ModuleSettingsQueryset.as_manager()
 
     def module_periods(self):
         return {

@@ -1,4 +1,6 @@
-$(document).ready(function () {
+(function(root, module){
+    root.calculator = module();
+})(window, function(){
 
     var header_transaction_pk = "{{ main_header.pk }}";
     var header_transaction_type = "{{ header_type }}" || "{{ main_header.type }}";
@@ -19,7 +21,7 @@ $(document).ready(function () {
         var goods = tr.find(":input").filter(function (index) {
             return this.name.match(/line-\d+-goods/);
         });
-        var vat_code = tr.find(":input.selectized").filter(function (index) {
+        var vat_code = tr.find(":input").filter(function (index) {
             return this.name.match(/line-\d+-vat_code/);
         });
         var vat = tr.find(":input").filter(function (index) {
@@ -33,9 +35,19 @@ $(document).ready(function () {
         };
     }
 
+    function get_vat_rate($select){
+        // sometimes we have a selectized select widget (create mode or user edited in edite mode)
+        // other times a native widget (edit mode but not editing)
+        var rate = $select.attr("data-rate");
+        if(!rate){
+            rate = $select.find(":selected").attr("data-rate");
+        }
+        return rate;
+    }
+
     function calculate_totals() {
         // first calculate the totals for goods, vat and total
-        var lines = $("table.line").find("tbody").find("tr").not("tr.empty-form");
+        var lines = $("table.line").find("tbody").find("tr").not("tr.empty-form, tr.deleted-row");
         var goods;
         var vat;
         var total;
@@ -125,10 +137,22 @@ $(document).ready(function () {
         due_total_elem.text(due);
     }
 
+    return {
+        calculate_vat: calculate_vat,
+        get_vat_rate: get_vat_rate,
+        get_elements: get_elements,
+        calculate_totals: calculate_totals
+    };
+
+});
+
+
+$(document).ready(function () {
+
     $("table.line").on("change", ":input", function (event) {
         var input = $(this);
         var tr = input.parents("tr").eq(0);
-        var elements = get_elements(tr);
+        var elements = calculator.get_elements(tr);
         // calculate the VAT if the user changed value in field other than vat
         // because they may want to override
         if (
@@ -139,33 +163,29 @@ $(document).ready(function () {
             )
         ) {
             elements.vat.val(
-                calculate_vat(
+                calculator.calculate_vat(
                     elements.goods.val(),
-                    elements.vat_code.attr("data-rate")
+                    calculator.get_vat_rate(elements.vat_code)
                 )
             );
             event.stopPropagation();
         }
-        calculate_totals();
+        calculator.calculate_totals();
     });
 
 
     $("table.existing_matched_transactions").on("change", "input", function (event) {
         event.stopPropagation();
-        calculate_totals();
+        calculator.calculate_totals();
     });
 
     $("table.new_matched_transactions").on("change", "input", function (event) {
         event.stopPropagation();
-        calculate_totals();
-    });
-
-    $("td.col-close-icon").on("click", function () {
-        calculate_totals();
+        calculator.calculate_totals();
     });
 
     // on page load.  So either for editing, or errors returned when
     // trying to create
-    calculate_totals();
+    calculator.calculate_totals();
 
 });

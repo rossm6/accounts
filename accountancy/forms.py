@@ -295,9 +295,9 @@ class BaseTransactionHeaderForm(BaseTransactionMixin, forms.ModelForm):
 
             """
             instance.due = instance.total - instance.paid
-        # if instance.is_payment_type():
-        #     # payments do not have vat
-        #     instance.goods = instance.total
+        if instance.is_payment_type():
+            # payments do not have vat (for now)
+            instance.goods = instance.total
         if commit:
             instance.save()
         return instance

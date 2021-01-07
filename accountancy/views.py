@@ -1551,7 +1551,7 @@ class AgeMatchingReportMixin(
 
     def load_page(self):
         context = {}
-        mod_settings = ModuleSettings.objects.select_related(self.module_setting_name).first()
+        mod_settings = ModuleSettings.objects.first()
         current_period = getattr(mod_settings, self.module_setting_name)
         form = self.get_filter_form(
             initial={"period": current_period, "show_transactions": True})

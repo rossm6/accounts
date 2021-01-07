@@ -326,7 +326,7 @@ class GeneralTransactionTests(TestCase):
         )
         self.assertEqual(
             header.goods,
-            0
+            100
         )
         self.assertEqual(
             header.vat,

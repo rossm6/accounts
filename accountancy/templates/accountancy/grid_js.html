@@ -8,11 +8,9 @@
 <script src="{% static 'accountancy/js/input_grid_selectize.js' %}"></script>
 <script>
     {% include "accountancy/input_grid.js" %}
-    {% comment %} this requires server side input so is a template {% endcomment %}
 </script>
 <script>
     {% include "accountancy/calculator.js" %}
-    {% comment %} again needs server side injection so we know whether we have debit or credit transaction type {% endcomment %}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
 <script src="{% static 'js/modal_form.js' %}"></script>
@@ -25,9 +23,11 @@
     var total_field_errors = header_errors.length + line_and_match_field_errors.length;
     if(total_field_errors){
         // this helps the user to see the field errors in the UI
-        $("span.field_errors_total").text(total_field_errors);
+        $("span.field_errors_total").text(total_field_errors); 
         if(total_field_errors == 1){
-            $("button.field_errors_btn").attr("disabled", true);
+            $("button.field_errors_btn").eq(0).attr("disabled", true);
+            // leave the right arrow so the user can press a button to see the first
+            // error
         }
         var select_field_errors = $("select.field_errors_select");
         var options = "";

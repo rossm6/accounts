@@ -39,10 +39,15 @@ $(document).ready(function() {
         }
     })
 
-    function two_decimal_places(n_str) {
-        if (n_str) {
-            return parseFloat(n_str).toFixed(2);
+    function two_decimal_places($input) {
+        if(!$input){
+            return;
         }
+        var val = $input.val();
+        if(!isNaN(val)){
+            val = parseFloat(val).toFixed(2);
+        }
+        $input.val(val);
     }
 
     main_grid.add_callback = function(new_line) {
@@ -84,6 +89,7 @@ $(document).ready(function() {
                 $tr.addClass("deleted-row");
             }
         }
+        calculator.calculate_totals();
     });
 
     // in case the server returns errors loop through lines with deleted set
@@ -110,6 +116,9 @@ $(document).ready(function() {
 
     $("html").on("click focusin", function() {
         $("table.line td").find("*").removeClass("data-input-focus-border");
+        $(":input[type='number']").each(function() {
+            two_decimal_places($(this)); // could be slow
+        });
     });
 
     $(document).on("click focusin", "table.line td", function(event) {
@@ -123,14 +132,8 @@ $(document).ready(function() {
         event.stopPropagation();
     });
 
-    $("input[type=number]").each(function() {
-        var n = two_decimal_places($(this).val());
-        $(this).val(n);
-    });
-
-    $(document).on("change", "input[type=number]", function() {
-        var n = two_decimal_places($(this).val());
-        $(this).val(n);
+    $(document).on("change", ":input[type='number']", function() {
+        two_decimal_places($(this));
     });
 
 });
