@@ -1,6 +1,7 @@
 {
     "name": "accounts",
     "description": "a minimalist accounts package",
+    "repository": "https://github.com/rossm6/accounts",
     "success_url": "/users/signup",
     "addons": [
         {
