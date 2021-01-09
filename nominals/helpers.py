@@ -66,6 +66,12 @@ def create_nominal_journal(journal, vat_nominal):
 
 
 def create_nominals():
+    # revenue
+    revenue = Nominal.objects.create(name="Revenue", type="pl")
+    revenue = Nominal.objects.create(name="Revenue", type="pl", parent=revenue)
+    # expenses
+    expenses = Nominal.objects.create(name="Expenses", type="pl")
+    expenses = Nominal.objects.create(name="Expenses", type="pl", parent=expenses)
     # assets
     assets = Nominal.objects.create(name="Assets", type="b")
     current_assets = Nominal.objects.create(
@@ -88,7 +94,7 @@ def create_nominals():
     Nominal.objects.create(name="Loans", parent=non_current_liabilities, type="b")
     # equity
     equity = Nominal.objects.create(name="Equity", type="b")
-    equity = Nominal.objects.create(name="Equity", type="b", parent=equity),
+    equity = Nominal.objects.create(name="Equity", type="b", parent=equity)
     retained_earnings = Nominal.objects.create(
         name="Retained Earnings", parent=equity, type="b")
     # system controls

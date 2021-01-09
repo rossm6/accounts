@@ -201,10 +201,10 @@ LOGIN_URL = '/users/signin'
 LOGIN_REDIRECT_URL = '/users/profile'
 LOGOUT_REDIRECT_URL = '/users/signin'
 
-ANYMAIL = {
-    "MAILGUN_API_KEY": os.environ.get('MAILGUN_API_KEY', ''),
-    "MAILGUN_SENDER_DOMAIN": os.environ.get('MAILGUN_DOMAIN', ''),
-}
+# ANYMAIL = {
+#     "MAILGUN_API_KEY": os.environ.get('MAILGUN_API_KEY', ''),
+#     "MAILGUN_SENDER_DOMAIN": os.environ.get('MAILGUN_DOMAIN', ''),
+# }
 
 # EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
 EMAIL_BACKEND = "users.backends.CustomEmailBackend"
@@ -234,8 +234,8 @@ ACCOUNTANCY_MODULES = {
     'VL': 'vat'
 }
 
-NEW_USERS_ARE_SUPERUSERS = os.environ.get('NEW_USERS_ARE_SUPERUSERS', default=0)
-FIRST_USER_IS_SUPERUSER = os.environ.get('FIRST_USER_IS_SUPERUSER', default=1)
+NEW_USERS_ARE_SUPERUSERS = int(os.environ.get('NEW_USERS_ARE_SUPERUSERS', default=0))
+FIRST_USER_IS_SUPERUSER = int(os.environ.get('FIRST_USER_IS_SUPERUSER', default=1))
 
 
 # DEFAULT_RENDERER_CLASSES = (

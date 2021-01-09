@@ -1,0 +1,25 @@
+{
+    "name": "accounts",
+    "description": "a minimalist accounts package",
+    "success_url": "/users/signup",
+    "addons": [
+        {
+            "plan": "heroku-postgresql:hobby-dev"
+        }
+    ],
+    "env": {
+        "NEW_USERS_ARE_SUPERUSERS": "0"
+    },
+    "formation": {
+        "web": {
+            "quantity": 1,
+            "size": "free",
+            "command": "gunicorn proj.wsgi"
+        }
+    },
+    "buildpacks": [
+        {
+            "url": "heroku/python"
+        }
+    ]
+}
