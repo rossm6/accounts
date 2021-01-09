@@ -140,10 +140,8 @@ class CreateInvoiceNominalEntries(TestCase):
 
     # CORRECT USAGE
     # Each line has a goods value above zero and the vat is 20% of the goods
-
     def test_nominals_created_for_lines_with_goods_and_vat_above_zero(self):
         self.client.force_login(self.user)
-
         data = {}
         header_data = create_header(
             HEADER_FORM_PREFIX,
