@@ -16,11 +16,6 @@
             "quantity": 1,
             "size": "free",
             "command": "gunicorn proj.wsgi"
-        },
-        "release": {
-            "quantity": 1,
-            "size": "free",
-            "command": "python3 manage.py migrate"
         }
     },
     "buildpacks": [
