@@ -256,6 +256,7 @@ class CashBookTransaction(MultiLedgerTransactions):
 
     def update_details_from_header(self, header):
         super().update_details_from_header(header)
+        f = header.get_nominal_transaction_factor()
         self.cash_book = header.cash_book
         self.type = header.type
-        self.value = header.total
+        self.value = f * header.total

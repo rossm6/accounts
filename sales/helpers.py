@@ -71,7 +71,8 @@ def create_receipts(customer, ref_prefix, n, period, value=100):
             due=-1 * value,
             date=date,
             type="sp",
-            period=period
+            period=period,
+            goods=-1* value
         )
         payments.append(p)
     return SaleHeader.objects.bulk_create(payments)
@@ -146,8 +147,8 @@ def create_receipt_with_nom_entries(header, control_nominal, bank_nominal):
     header["total"] *= -1
     header["due"] *= -1
     header["paid"] *= -1
-    header["goods"] = 0
     header["vat"] = 0
+    header["goods"] = header["total"]
     header = SaleHeader.objects.create(**header)
     if header.total != 0:
         nom_trans = []

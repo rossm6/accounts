@@ -534,11 +534,12 @@ class CashBookEntryMixin:
 
     def create_cash_book_entry(self, cash_book_tran_cls, **kwargs):
         if self.header_obj.total != 0:
+            f = self.header_obj.get_nominal_transaction_factor()
             return cash_book_tran_cls.objects.create(
                 module=self.module,
                 header=self.header_obj.pk,
                 line=1,
-                value=self.header_obj.total,
+                value=f * self.header_obj.total,
                 ref=self.header_obj.ref,
                 period=self.header_obj.period,
                 date=self.header_obj.date,
