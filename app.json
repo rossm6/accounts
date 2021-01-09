@@ -16,6 +16,11 @@
             "quantity": 1,
             "size": "free",
             "command": "gunicorn proj.wsgi"
+        },
+        "release": {
+            "quantity": 1,
+            "size": "free",
+            "command": "python3 manage.py migrate"
         }
     },
     "buildpacks": [
@@ -24,7 +29,6 @@
         }
     ],
     "scripts": {
-        "postdeploy": "psql -c \"create extension pg_trgm\" $DATABASE_URL",
-        "heroku-postbuild": "./bin/setup.sh"
+        "postdeploy": "psql -c \"create extension pg_trgm\" $DATABASE_URL && ./bin/setup.sh"
     }
 }
