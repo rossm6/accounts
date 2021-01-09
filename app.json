@@ -24,7 +24,7 @@
         }
     ],
     "scripts": {
-        "postdeploy": "CREATE EXTENSION pg_trgm",
+        "postdeploy": "psql -c \"create extension pg_trgm\" $DATABASE_URL",
         "heroku-postbuild": "./bin/setup.sh"
     }
 }
