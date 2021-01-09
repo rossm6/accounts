@@ -65,50 +65,6 @@ def create_nominal_journal(journal, vat_nominal):
     return header, lines, trans
 
 
-def create_nominals():
-    # revenue
-    revenue = Nominal.objects.create(name="Revenue", type="pl")
-    revenue = Nominal.objects.create(name="Revenue", type="pl", parent=revenue)
-    # expenses
-    expenses = Nominal.objects.create(name="Expenses", type="pl")
-    expenses = Nominal.objects.create(name="Expenses", type="pl", parent=expenses)
-    # assets
-    assets = Nominal.objects.create(name="Assets", type="b")
-    current_assets = Nominal.objects.create(
-        name="Current Assets", parent=assets, type="b")
-    Nominal.objects.create(name="Sales Ledger Control", parent=current_assets, type="b")
-    Nominal.objects.create(name="Bank Account", parent=current_assets, type="b")
-    Nominal.objects.create(name="Prepayments", parent=current_assets, type="b")
-    non_current_assets = Nominal.objects.create(
-        name="Non Current Assets", parent=assets, type="b")
-    Nominal.objects.create(name="Land", parent=non_current_assets, type="b")
-    # liabilities
-    liabilities = Nominal.objects.create(name="Liabilities", type="b")
-    current_liabilities = Nominal.objects.create(
-        name="Current Liabilities", parent=liabilities, type="b")
-    Nominal.objects.create(name="Purchase Ledger Control",
-                           parent=current_liabilities, type="b")
-    Nominal.objects.create(name="Vat Control", parent=current_liabilities, type="b")
-    non_current_liabilities = Nominal.objects.create(
-        name="Non Current Liabilities", parent=liabilities, type="b")
-    Nominal.objects.create(name="Loans", parent=non_current_liabilities, type="b")
-    # equity
-    equity = Nominal.objects.create(name="Equity", type="b")
-    equity = Nominal.objects.create(name="Equity", type="b", parent=equity)
-    retained_earnings = Nominal.objects.create(
-        name="Retained Earnings", parent=equity, type="b")
-    # system controls
-    system_controls = Nominal.objects.create(name="System Controls", type="b")
-    system_suspenses = Nominal.objects.create(
-        name="System Suspenses", parent=system_controls, type="b")
-    default_system_suspense = Nominal.objects.create(
-        name="System Suspense Account", parent=system_suspenses, type="b")
-
-
-def create_default_data():
-    create_nominals()
-
-
 def create_vat_transactions(header, lines):
     vat_trans = []
     for line in lines:
