@@ -53,12 +53,11 @@ class ReadPermissionsMixin:
         context_data = super().get_context_data(**kwargs)
         perms = self.get_perms()
         perm_ui = PermissionUI(perms)
-        for perm in UI_PERMISSIONS.all():
+        for perm in UI_PERMISSIONS()():
             perm_ui.add_to_group(perm)
         perm_table_rows = perm_ui.create_table_rows()
         context_data["perm_table_rows"] = perm_table_rows
         return context_data
-
 
 class GroupDetail(
         LoginRequiredMixin,

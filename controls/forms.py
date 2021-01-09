@@ -40,128 +40,134 @@ The queryset below is used in the edit and detail view for group and user perms.
 
 """
 
-UI_PERMISSIONS = (
-    Permission
-    .objects
-    .select_related("content_type")
-    .filter(
-        # cashbook
-        Q(
-            content_type=ContentType.objects.get_for_model(CashBook)
-        )
-        |
-        Q(
-            Q(
-                content_type=ContentType.objects.get_for_model(
-                    CashBookHeader)
+
+class UI_PERMISSIONS:
+    def __call__(self):
+        return (
+            Permission
+            .objects
+            .select_related("content_type")
+            .filter(
+                # cashbook
+                Q(
+                    content_type=ContentType.objects.get_for_model(CashBook)
+                )
+                |
+                Q(
+                    Q(
+                        content_type=ContentType.objects.get_for_model(
+                            CashBookHeader)
+                    )
+                    &
+                    Q(
+                        codename__in=[
+                            perm[0]
+                            for perm in CashBookHeader._meta.permissions
+                        ]
+                    )
+                )
+                |
+                # contact
+                Q(
+                    content_type=ContentType.objects.get_for_model(Contact)
+                )
+                |
+                # financial year
+                Q(
+                    content_type=ContentType.objects.get_for_model(
+                        FinancialYear)
+                )
+                |
+                # groups
+                Q(
+                    content_type=ContentType.objects.get_for_model(Group)
+                )
+                |
+                Q(
+                    content_type=ContentType.objects.get_for_model(
+                        ModuleSettings)
+                )
+                |
+                # nominal
+                Q(
+                    content_type=ContentType.objects.get_for_model(Nominal)
+                )
+                |
+                Q(
+                    Q(
+                        content_type=ContentType.objects.get_for_model(
+                            NominalHeader)
+                    )
+                    &
+                    Q(
+                        codename__in=[
+                            perm[0]
+                            for perm in NominalHeader._meta.permissions
+                        ]
+                    )
+                )
+                |
+                # purchases
+                Q(
+                    Q(
+                        content_type=ContentType.objects.get_for_model(
+                            PurchaseHeader)
+                    )
+                    &
+                    Q(
+                        codename__in=[
+                            perm[0]
+                            for perm in PurchaseHeader._meta.permissions
+                        ]
+                    )
+                )
+                |
+                # sales
+                Q(
+                    Q(
+                        content_type=ContentType.objects.get_for_model(
+                            SaleHeader)
+                    )
+                    &
+                    Q(
+                        codename__in=[
+                            perm[0]
+                            for perm in SaleHeader._meta.permissions
+                        ]
+                    )
+                )
+                |
+                # users
+                Q(
+                    content_type=ContentType.objects.get_for_model(
+                        get_user_model())
+                )
+                |
+                # vat
+                Q(
+                    content_type=ContentType.objects.get_for_model(Vat)
+                )
+                |
+                Q(
+                    Q(
+                        content_type=ContentType.objects.get_for_model(
+                            VatTransaction)
+                    )
+                    &
+                    Q(
+                        codename__in=[
+                            perm[0]
+                            for perm in VatTransaction._meta.permissions
+                        ]
+                    )
+                )
             )
-            &
-            Q(
-                codename__in=[
-                    perm[0]
-                    for perm in CashBookHeader._meta.permissions
-                ]
-            )
         )
-        |
-        # contact
-        Q(
-            content_type=ContentType.objects.get_for_model(Contact)
-        )
-        |
-        # financial year
-        Q(
-            content_type=ContentType.objects.get_for_model(FinancialYear)
-        )
-        |
-        # groups
-        Q(
-            content_type=ContentType.objects.get_for_model(Group)
-        )
-        |
-        Q(
-            content_type=ContentType.objects.get_for_model(ModuleSettings)
-        )
-        |
-        # nominal
-        Q(
-            content_type=ContentType.objects.get_for_model(Nominal)
-        )
-        |
-        Q(
-            Q(
-                content_type=ContentType.objects.get_for_model(
-                    NominalHeader)
-            )
-            &
-            Q(
-                codename__in=[
-                    perm[0]
-                    for perm in NominalHeader._meta.permissions
-                ]
-            )
-        )
-        |
-        # purchases
-        Q(
-            Q(
-                content_type=ContentType.objects.get_for_model(
-                    PurchaseHeader)
-            )
-            &
-            Q(
-                codename__in=[
-                    perm[0]
-                    for perm in PurchaseHeader._meta.permissions
-                ]
-            )
-        )
-        |
-        # sales
-        Q(
-            Q(
-                content_type=ContentType.objects.get_for_model(
-                    SaleHeader)
-            )
-            &
-            Q(
-                codename__in=[
-                    perm[0]
-                    for perm in SaleHeader._meta.permissions
-                ]
-            )
-        )
-        |
-        # users
-        Q(
-            content_type=ContentType.objects.get_for_model(get_user_model())
-        )
-        |
-        # vat
-        Q(
-            content_type=ContentType.objects.get_for_model(Vat)
-        )
-        |
-        Q(
-            Q(
-                content_type=ContentType.objects.get_for_model(
-                    VatTransaction)
-            )
-            &
-            Q(
-                codename__in=[
-                    perm[0]
-                    for perm in VatTransaction._meta.permissions
-                ]
-            )
-        )
-    )
-)
 
 
 class GroupForm(forms.ModelForm):
     permissions = ModelMultipleChoiceFieldChooseIterator(
-        queryset=UI_PERMISSIONS.all(),  # all is necesssary to take a copy
+        queryset=Permission.objects.none(),
         widget=CheckboxSelectMultipleWithDataAttr(attrs={
             "data-option-attrs": [
                 "codename",
@@ -178,6 +184,7 @@ class GroupForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["permissions"].queryset = UI_PERMISSIONS()()
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.layout = Layout(
@@ -189,7 +196,7 @@ class GroupForm(forms.ModelForm):
 
 class UserForm(UserProfileForm):
     user_permissions = ModelMultipleChoiceFieldChooseIterator(
-        queryset=UI_PERMISSIONS.all(),  # all is necesssary to take a copy
+        queryset=Permission.objects.none(),
         widget=CheckboxSelectMultipleWithDataAttr_UserEdit(attrs={
             "data-option-attrs": [
                 "codename",
@@ -205,6 +212,7 @@ class UserForm(UserProfileForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["user_permissions"].queryset = UI_PERMISSIONS()()
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.layout = Layout(
