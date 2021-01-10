@@ -1,35 +1,38 @@
 # Accounts
-A Django General Ledger Accountancy CRUD system
 
-### Still in development
+Accounts is an open source accountancy web app, on which you can build.
 
-Out of the box this software gives you the following ledgers -
+### Includes
 
-  1. Purchase
-  2. Sales
-  3. Cash Book
-  4. Nominal
-  
-All transactions can be -
+1. Cash Book ledger
+2. Nominal ledger
+3. Purchase ledger
+4. Sales ledger
+5. Vat ledger
+6. Users
+7. Groups
+8. Permissions
+9. Audit
+10. Transaction locking (transactions can only be posted into the previous, current and next period)
+11. Financial years consisting of accounting periods
+12. Trial Balance report
+13. Aged balance reports
+14. Dashboard
 
-  1. Created
-  2. Edited
-  3. Read (in a list or individually)
-  4. Voided (rather than delete transactions the software will change the status to 'void'.  Such transactions are then automatically
-  invisible from the usual views).
-  
-Transactions on the purchase and sales ledger can also be "matched".  This way the user can see which transactions are matched to each other.  
-For example which invoices a payment is matched to i.e. the invoices the payment pays. Matches can also be edited or removed altogether.
-Surprisingly, Xero, appears to lack this matching feature.
+### Nice Features -
 
-## Todo
+1. Matching - Purchase and Sales transactions can be matched.  This way a user can see which transactions are matched to each other.  For example what a payment is paying.
 
-  1. REST API
-  2. Set up a "Deploy To Heroku" button
-  3. Make the system more configurable
-  4. User module with basic user permissions
-  5. Audit
+2. Financial years can be adjusted retrospectively.  Finalised financial years can also be rolled back.
 
-# DEMO
+### Essential Features It Lacks -
 
-https://blooming-ocean-94552.herokuapp.com/
+1. While sales transactions can be entered, there are no documents produced (e.g. invoice and credit note templates)
+2. Customer Statements
+3. Supplier remittances
+4. Supplier payment run which generates a bank file
+5. Discounts
+
+### Recommended Features It Lacks -
+
+1. Purchase ordering.
