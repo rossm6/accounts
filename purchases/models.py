@@ -186,6 +186,10 @@ class PurchaseHeader(ModuleTransactions, TransactionHeader):
             ("void_refund_transaction", "Can void refund"),
         ]
 
+    @property
+    def cashbook_transaction_factor(self):
+        return 1
+
     def get_type_transaction(self):
         if self.type == "pbi":
             return BroughtForwardInvoice(header=self)

@@ -104,11 +104,11 @@ class PurchaseLineForm(SaleAndPurchaseLineForm):
                 "data-selectize-type": 'vat'
             }
         ),
+        required=False
     )
 
     class Meta:
         model = PurchaseLine
-        # WHY DO WE INCLUDE THE ID?
         fields = ('id', 'description', 'goods',
                   'nominal', 'vat_code', 'vat',)
         ajax_fields = {

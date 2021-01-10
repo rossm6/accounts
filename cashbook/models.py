@@ -5,7 +5,7 @@ from accountancy.models import (MultiLedgerTransactions, NonAuditQuerySet,
                                 TransactionLine)
 from controls.models import Period
 from django.db import models
-from django.db.models import Case, F, Subquery, Sum, Value, When
+from django.db.models import Case, Exists, F, Subquery, Sum, Value, When
 from django.shortcuts import reverse
 from purchases.models import PurchaseHeader
 from sales.models import SaleHeader
@@ -129,6 +129,9 @@ class CashBookHeader(ModuleTransactions, TransactionHeader):
             ("void_receipt_transaction", "Can void receipt"),
         ]
 
+    @property
+    def cashbook_transaction_factor(self):
+        return 1
 
     def get_type_transaction(self):
         if self.type == "cbp":
@@ -195,11 +198,10 @@ class CashBookTransactionQuerySet(NonAuditQuerySet):
         Get the ins and outs for each of five consecutive periods
         where the current_cb_period is the middle period.
         """
-        earliest_period = Period.objects.filter(fy_and_period__lt=current_cb_period.fy_and_period).values('fy_and_period').order_by("-fy_and_period")[1:2]
-        latest_period = Period.objects.filter(fy_and_period__gt=current_cb_period.fy_and_period).values('fy_and_period').order_by("fy_and_period")[1:2]
+        earlier_periods = Period.objects.filter(fy_and_period__lt=current_cb_period.fy_and_period).values('fy_and_period').order_by("-fy_and_period")
+        later_periods = Period.objects.filter(fy_and_period__gt=current_cb_period.fy_and_period).values('fy_and_period').order_by("fy_and_period")
         return (
             self
-            .values('period__fy_and_period')
             .annotate(
                 monies_in=Case(
                     When(value__gt=0, then=F('value')),
@@ -212,6 +214,7 @@ class CashBookTransactionQuerySet(NonAuditQuerySet):
                     default=0
                 )
             )
+            .values('period__fy_and_period')
             .annotate(
                 total_monies_in=Sum('monies_in')
             )
@@ -219,10 +222,34 @@ class CashBookTransactionQuerySet(NonAuditQuerySet):
                 total_monies_out=Sum('monies_out')
             )
             .filter(
-                period__fy_and_period__gte=Subquery(earliest_period)
+                period__fy_and_period__gte=(
+                    Period.objects.annotate(
+                        earliest_period=(
+                            Case(
+                                When(
+                                    Exists(earlier_periods),
+                                    then=earlier_periods[:1]
+                                ),
+                                default=Value("000000")
+                            )
+                        )
+                    ).values('earliest_period')[:1]
+                )
             )
             .filter(
-                period__fy_and_period__lte=Subquery(latest_period)
+                period__fy_and_period__lte=(
+                    Period.objects.annotate(
+                        latest_period=(
+                            Case(
+                                When(
+                                    Exists(later_periods),
+                                    then=later_periods[:1]
+                                ),
+                                default=Value("999999")
+                            )
+                        )
+                    ).values('latest_period')[:1]
+                )
             )
         )
 
@@ -256,7 +283,7 @@ class CashBookTransaction(MultiLedgerTransactions):
 
     def update_details_from_header(self, header):
         super().update_details_from_header(header)
-        f = header.get_nominal_transaction_factor()
+        f = header.cashbook_transaction_factor
         self.cash_book = header.cash_book
         self.type = header.type
         self.value = f * header.total

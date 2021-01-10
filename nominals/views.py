@@ -304,7 +304,7 @@ class LoadNominal(LoginRequiredMixin, ListView):
         context = super().get_context_data()
         # we need to know the root nodes for each node which has no children
         nodes = context["page_obj"].object_list
-        selectable_nodes = [node for node in nodes if node.is_leaf_node()]
+        selectable_nodes = [node for node in nodes if node.level == 2]
         all_nominals = Nominal.objects.all().prefetch_related("children")  # whole set
         # hits the DB but will cache result
         # root nodes are the groups for the select menu

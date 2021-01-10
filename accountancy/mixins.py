@@ -534,7 +534,7 @@ class CashBookEntryMixin:
 
     def create_cash_book_entry(self, cash_book_tran_cls, **kwargs):
         if self.header_obj.total != 0:
-            f = self.header_obj.get_nominal_transaction_factor()
+            f = self.header_obj.cashbook_transaction_factor
             return cash_book_tran_cls.objects.create(
                 module=self.module,
                 header=self.header_obj.pk,

@@ -123,7 +123,8 @@ class CashBookLineForm(BaseCashBookLineForm):
                 "data-option-attrs": ["rate"],
                 "data-selectize-type": 'vat'
             }
-        )
+        ),
+        required=False
     )
 
     class Meta:

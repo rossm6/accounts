@@ -198,7 +198,7 @@ def create_transaction_header_helper(generic_to_fields_map, payment_form=False, 
                                 "input input-disabled text-left border" if read_only else "cashbook-select form-control form-control-sm")),
                             css_class="form-group mr-2"
                         )
-                        if payment_form
+                        if payment_form and not payment_brought_forward_form
                         else
                         HTML('')
                     ),
