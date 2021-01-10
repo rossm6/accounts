@@ -2,6 +2,9 @@
 
 Accounts is an open source accountancy web app, on which you can build.
 
+### Try It Out For Yourself
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
 ### Includes
 
 1. Cash Book ledger
@@ -36,3 +39,15 @@ Accounts is an open source accountancy web app, on which you can build.
 ### Recommended Features It Lacks -
 
 1. Purchase ordering.
+
+
+# Technology Stack
+- Python 3.8.x
+- Django Web Framework
+- PostgreSQL
+- Docker (local development)
+- docker-compose (local development)
+- WhiteNoise
+- Bootstrap 4
+- jQuery 3
+- Heroku (production)
