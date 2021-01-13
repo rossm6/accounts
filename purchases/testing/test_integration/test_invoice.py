@@ -13304,9 +13304,7 @@ class EditInvoice(TestCase):
         matching_forms.append(matching_trans[1])
         matching_data = create_formset_data(match_form_prefix, matching_forms)
         matching_data["match-INITIAL_FORMS"] = 2
-
         # SO TRYING TO MATCH -1200 to a 1140 invoice which is wrong
-
         lines_as_dicts = [ to_dict(line) for line in lines ]
         line_trans = [ get_fields(line, ['id',  'description', 'goods', 'nominal', 'vat_code', 'vat']) for line in lines_as_dicts ]
         line_trans[-1]["goods"] = 50
@@ -13341,7 +13339,6 @@ class EditInvoice(TestCase):
         self.assertEqual(len(lines), 10)
 
         for line in lines:
-            
             self.assertEqual(line.description, self.description)
             self.assertEqual(line.goods, 100)
             self.assertEqual(line.nominal, self.nominal)
@@ -13357,12 +13354,6 @@ class EditInvoice(TestCase):
         self.assertEqual(matches[1].matched_by, payment)
         self.assertEqual(matches[1].matched_to, invoices[0])
         self.assertEqual(matches[1].value, 600)
-
-        self.assertContains(
-            response,
-            '<li class="py-1">Please ensure the total of the transactions you are matching is between 0 and 1140.00</li>',
-            html=True
-        )
 
     # NOW I CHECK AN INVALID HEADER, INVALID LINES AND INVALID MATCHING
     # AGAIN JUST USE TEST_33 AS A BASE
@@ -19513,3 +19504,5 @@ class EditInvoiceNominalEntries(TestCase):
             header.vat,
             sum( vat_tran.vat for vat_tran in vat_transactions)
         )
+
+

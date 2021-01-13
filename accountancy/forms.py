@@ -967,7 +967,7 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
                     if total_matched_to_value == 0:
                         raise forms.ValidationError(
                             _(
-                                f"Please ensure the total of the transactions you are matching is between 0 and { self.tran_being_created_or_edited.total }"
+                                f"Please ensure the total of the transactions you are matching is between 0 and { self.tran_being_created_or_edited.ui_total }"
                             ),
                             code="invalid-match"
                         )
@@ -990,7 +990,7 @@ class SaleAndPurchaseMatchingFormset(BaseTransactionModelFormSet):
                     if total_matched_to_value == 0:
                         raise forms.ValidationError(
                             _(
-                                f"Please ensure the total of the transactions you are matching is between 0 and { self.tran_being_created_or_edited.total }"
+                                f"Please ensure the total of the transactions you are matching is between 0 and { self.tran_being_created_or_edited.ui_total }"
                             ),
                             code="invalid-match"
                         )

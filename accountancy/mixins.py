@@ -195,19 +195,25 @@ class VatTransactionMixin:
         if deleted_lines := kwargs.get("deleted_lines"):
             sorted(deleted_lines, key=lambda l: l.pk)
 
+        old_lines_without_vat_trans = [] # any old line without vat tran
+
         if lines_to_update:
             lines_to_update_pk = [line.pk for line in lines_to_update]
             vat_trans_to_update = [
                 tran for tran in existing_vat_trans if tran.line in lines_to_update_pk]
             vat_trans_to_update = sorted(
                 vat_trans_to_update, key=lambda n: n.line)
-            line_pk_map = {line.pk: line for line in lines_to_update}
-            for vat_tran in vat_trans_to_update:
-                line = line_pk_map[vat_tran.line]
-                to_delete = self._edit_vat_transaction_for_line(
-                    vat_tran, line)
-                if to_delete:
-                    vat_trans_to_delete.append(to_delete)
+            line_to_vat_tran_map = { tran.line: tran for tran in vat_trans_to_update }
+            # loop for through the lines instead
+            for line in lines_to_update:
+                if line.pk in line_to_vat_tran_map:
+                    vat_tran = line_to_vat_tran_map[line.pk]
+                    to_delete = self._edit_vat_transaction_for_line(
+                        vat_tran, line)
+                    if to_delete:
+                        vat_trans_to_delete.append(to_delete)
+                else:
+                    old_lines_without_vat_trans.append(line)
 
         vat_trans_to_update = [
             tran for tran in vat_trans_to_update if tran not in vat_trans_to_delete]
@@ -221,7 +227,7 @@ class VatTransactionMixin:
         self.create_vat_transactions(
             vat_tran_cls,
             line_cls=line_cls,
-            lines=new_lines,
+            lines=new_lines + old_lines_without_vat_trans,
         )
         vat_tran_cls.objects.bulk_update(vat_trans_to_update)
         vat_tran_cls.objects.filter(
