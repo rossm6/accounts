@@ -4789,7 +4789,6 @@ class VoidJournal(TestCase):
         )
 
         # NOM LINES
-
         lines = NominalLine.objects.all()
 
         create_vat_transactions(header, lines)

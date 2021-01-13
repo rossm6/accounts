@@ -383,7 +383,6 @@ class VoidTransaction(TestCase):
             0
         )
 
-
         self.assertEqual(
             len(
                 VatTransaction.objects.all()

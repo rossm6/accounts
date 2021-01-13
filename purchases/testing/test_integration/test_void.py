@@ -2035,7 +2035,6 @@ class VoidTransactionsTest(TestCase):
             0
         )
 
-
     # INCORRECT USAGE
     def test_voiding_a_payment_already_voided(self):
         self.client.force_login(self.user)
