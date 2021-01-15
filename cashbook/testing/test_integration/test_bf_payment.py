@@ -18,7 +18,7 @@ LINE_FORM_PREFIX = 'line'
 DATE_INPUT_FORMAT = '%d-%m-%Y'
 MODEL_DATE_INPUT_FORMAT = '%Y-%m-%d'
 
-class CreatePayment(TestCase):
+class CreateBroughtForwardPayment(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -765,7 +765,7 @@ class CreatePayment(TestCase):
         )
 
 
-class EditPayment(TestCase):
+class EditBroughtForwardPayment(TestCase):
 
     @classmethod
     def setUpTestData(cls):
