@@ -92,6 +92,5 @@ def run():
     ModuleSettings.objects.create(cash_book_period=first_period, nominals_period=first_period,
                                   purchases_period=first_period, sales_period=first_period)
     # there should only ever be one record
-
     Customer.objects.create(name="Hilton", code="hilton", customer=True)
     Supplier.objects.create(name="Screwfix", code="screw", supplier=True)

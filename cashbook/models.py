@@ -1,4 +1,5 @@
-from accountancy.mixins import (AuditMixin, CashBookPaymentTransactionMixin,
+from accountancy.mixins import (AuditMixin, CashBookEntryMixin,
+                                CashBookPaymentTransactionMixin,
                                 VatTransactionMixin)
 from accountancy.models import (MultiLedgerTransactions, NonAuditQuerySet,
                                 Transaction, TransactionHeader,
@@ -23,7 +24,7 @@ class CashBook(AuditMixin, models.Model):
 
     def get_absolute_url(self):
         return reverse("cashbook:cashbook_detail", kwargs={"pk": self.pk})
-    
+
 
 class CashBookTransaction(Transaction):
     module = "CB"
@@ -33,7 +34,7 @@ class Payment(VatTransactionMixin, CashBookPaymentTransactionMixin, CashBookTran
     pass
 
 
-class BroughtForwardPayment(CashBookTransaction):
+class BroughtForwardPayment(CashBookEntryMixin, CashBookTransaction):
     pass
 
 
@@ -41,7 +42,7 @@ class Refund(Payment):
     pass
 
 
-class BroughtForwardRefund(CashBookTransaction):
+class BroughtForwardRefund(CashBookEntryMixin, CashBookTransaction):
     pass
 
 
@@ -111,20 +112,28 @@ class CashBookHeader(ModuleTransactions, TransactionHeader):
             # enquiry perms
             ("view_transactions_enquiry", "Can view transactions"),
             # transaction perms
-            ("create_brought_forward_payment_transaction", "Can create brought forward payment"),
-            ("create_brought_forward_receipt_transaction", "Can create brought forward receipt"),
+            ("create_brought_forward_payment_transaction",
+             "Can create brought forward payment"),
+            ("create_brought_forward_receipt_transaction",
+             "Can create brought forward receipt"),
             ("create_payment_transaction", "Can create payment"),
             ("create_receipt_transaction", "Can create receipt"),
-            ("edit_brought_forward_payment_transaction", "Can edit brought forward payment"),
-            ("edit_brought_forward_receipt_transaction", "Can edit brought forward receipt"),
+            ("edit_brought_forward_payment_transaction",
+             "Can edit brought forward payment"),
+            ("edit_brought_forward_receipt_transaction",
+             "Can edit brought forward receipt"),
             ("edit_payment_transaction", "Can edit payment"),
             ("edit_receipt_transaction", "Can edit receipt"),
-            ("view_brought_forward_payment_transaction", "Can view brought forward payment"),
-            ("view_brought_forward_receipt_transaction", "Can view brought forward receipt"),
+            ("view_brought_forward_payment_transaction",
+             "Can view brought forward payment"),
+            ("view_brought_forward_receipt_transaction",
+             "Can view brought forward receipt"),
             ("view_payment_transaction", "Can view payment"),
             ("view_receipt_transaction", "Can view receipt"),
-            ("void_brought_forward_payment_transaction", "Can void brought forward payment"),
-            ("void_brought_forward_receipt_transaction", "Can void brought forward receipt"),
+            ("void_brought_forward_payment_transaction",
+             "Can void brought forward payment"),
+            ("void_brought_forward_receipt_transaction",
+             "Can void brought forward receipt"),
             ("void_payment_transaction", "Can void payment"),
             ("void_receipt_transaction", "Can void receipt"),
         ]
@@ -189,8 +198,9 @@ all_module_types = (
     CashBookHeader.analysis_required
 )
 
+
 class CashBookTransactionQuerySet(NonAuditQuerySet):
-    
+
     def cash_book_in_and_out_report(self, current_cb_period):
         """
         Used in the dashboard
@@ -198,8 +208,10 @@ class CashBookTransactionQuerySet(NonAuditQuerySet):
         Get the ins and outs for each of five consecutive periods
         where the current_cb_period is the middle period.
         """
-        earlier_periods = Period.objects.filter(fy_and_period__lt=current_cb_period.fy_and_period).values('fy_and_period').order_by("-fy_and_period")
-        later_periods = Period.objects.filter(fy_and_period__gt=current_cb_period.fy_and_period).values('fy_and_period').order_by("fy_and_period")
+        earlier_periods = Period.objects.filter(fy_and_period__lt=current_cb_period.fy_and_period).values(
+            'fy_and_period').order_by("-fy_and_period")
+        later_periods = Period.objects.filter(fy_and_period__gt=current_cb_period.fy_and_period).values(
+            'fy_and_period').order_by("fy_and_period")
         return (
             self
             .annotate(

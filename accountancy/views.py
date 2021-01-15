@@ -1109,6 +1109,15 @@ class NominalTransactionsMixin:
 
 class EditCashBookEntriesMixin(CreateCashBookEntriesMixin):
 
+    def lines_are_valid(self):
+        super().lines_are_valid()
+        if not self.requires_analysis(self.header_form):
+            # cash book is unlike other ledgers -
+            # bf on cash book should still post cash book transaction
+            # bf on SL and PL does not post relate trans (cb, nominal, vat)
+            # bf does not exist on nominal
+            self.create_or_update_related_transactions()
+
     def create_or_update_cash_book_transactions(self, **kwargs):
         self.transaction_type_object.edit_cash_book_entry(
             self.get_cash_book_transaction_model(),
