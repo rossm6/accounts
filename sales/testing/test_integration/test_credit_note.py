@@ -200,7 +200,7 @@ class CreateCreditNoteNominalEntries(TestCase):
             header.due,
             header.total
         )
-        nom_trans = NominalTransaction.objects.all()
+        nom_trans = NominalTransaction.objects.all().order_by("pk")
         self.assertEqual(
             len(nom_trans),
             20 + 20 + 20

@@ -495,30 +495,29 @@ class JQueryDataTableMixinTests(TestCase):
     @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.get_row_identifier")
     @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.get_row")
     @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.paginate_objects")
-    @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.order_by")
+    @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.order")
     @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.apply_filter")
+    @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.queryset_count")
     @mock.patch("accountancy.testing.test_units.test_views.JQueryDataTableMixin.get_queryset")
     def test_get_table_data_with_object_list(
         self,
         mocked_get_queryset,
+        mocked_queryset_count,
         mocked_apply_filter,
-        mocked_order_by,
+        mocked_order,
         mocked_paginate_objects,
         mocked_get_row,
         mocked_get_row_identifier,
         mocked_get_row_href
     ):
         j = JQueryDataTableMixin()
-        mocked_order_by.return_value = []
-        count_queryset = mock.Mock()
-        count_queryset.return_value = 1
-        mock_queryset = mock.Mock()
-        mock_queryset.return_value = mock_queryset
-        mock_queryset.count = count_queryset
-        mock_queryset.all = mock_queryset
-        mock_queryset.order_by = mock_queryset
-        mocked_apply_filter.return_value = mock_queryset
+        mocked_queryset = mock.Mock()
+        mocked_apply_filter.return_value = mocked_queryset
         mocked_get_queryset.return_value = mocked_apply_filter
+        mocked_get_queryset.return_value = mocked_queryset
+        mocked_queryset_count.return_value = 1
+        mocked_apply_filter.return_value = mocked_queryset
+        mocked_order.return_value = mocked_queryset
         paginator_object = mock.Mock()
         paginator_object.count = 2
         page_object = mock.Mock()

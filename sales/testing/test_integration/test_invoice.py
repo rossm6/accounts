@@ -3876,7 +3876,7 @@ class CreateInvoiceNominalEntries(TestCase):
             2400
         )
 
-        nom_trans = NominalTransaction.objects.all().order_by("module", "header", "line")
+        nom_trans = NominalTransaction.objects.all().order_by("module", "header", "line", "pk")
         self.assertEqual(
             len(nom_trans),
             20 + 20 + 20

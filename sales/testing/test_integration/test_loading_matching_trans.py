@@ -35,7 +35,7 @@ class LoadingMatchingTransactions(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(
             self.url, 
-            data={"s": self.customer.name}, 
+            data={"s": self.customer.pk}, 
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         content = response.content.decode("utf")
@@ -68,7 +68,7 @@ class LoadingMatchingTransactions(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(
             self.url, 
-            data={"s": self.customer.name}, 
+            data={"s": self.customer.pk}, 
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         content = response.content.decode("utf")
@@ -102,7 +102,7 @@ class LoadingMatchingTransactions(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(
             self.url, 
-            data={"s": self.customer.name}, 
+            data={"s": self.customer.pk}, 
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         content = response.content.decode("utf")
@@ -137,7 +137,7 @@ class LoadingMatchingTransactions(TestCase):
         response = self.client.get(
             self.url, 
             data={
-                "s": self.customer.name,
+                "s": self.customer.pk,
                 "edit": header.pk,
             }, 
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
@@ -194,7 +194,7 @@ class LoadingMatchingTransactions(TestCase):
         response = self.client.get(
             self.url, 
             data={
-                "s": self.customer.name,
+                "s": self.customer.pk,
                 "edit": header.pk,
             }, 
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'

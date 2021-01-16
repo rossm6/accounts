@@ -665,11 +665,10 @@ class BaseTransaction(
 class RESTBaseCreateTransactionMixin:
     permission_action = 'create'
 
-    def get_default_type(self):
-        return self.default_type
-
     def get_header_form_type(self):
-        return self.request.GET.get("t", self.get_default_type())
+        if not (t := self.request.GET.get("t")):
+            return self.default_type
+        return t
 
     def create_or_update_nominal_transactions(self, **kwargs):
         kwargs.update({

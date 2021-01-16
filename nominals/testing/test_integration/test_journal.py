@@ -1242,13 +1242,13 @@ class CreateJournal(TestCase):
         )
 
 
-Journal(TestCase):
+class EditJournal(TestCase):
 
     @classmethod
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_superuser(username="dummy", password="dummy")
         cls.ref = "test journal"
-        cls.class Editdate = datetime.now().strftime(DATE_INPUT_FORMAT)
+        cls.date = datetime.now().strftime(DATE_INPUT_FORMAT)
         cls.due_date = (datetime.now() + timedelta(days=31)
                         ).strftime(DATE_INPUT_FORMAT)
         cls.model_date = datetime.now().strftime(MODEL_DATE_INPUT_FORMAT)
