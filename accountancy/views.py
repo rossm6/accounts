@@ -573,27 +573,28 @@ class RESTBaseTransactionMixin:
                 formset_class = self.line.get('formset')
                 return formset_class(**self.get_line_formset_kwargs(header))
 
-    def lines_are_invalid(self):
-        self.line_formset = self.get_line_formset()
-        if self.line_formset:
-            self.line_formset.is_valid()
-            # validation will not run again if this method has already been run
-            # see is_valid method at - https://github.com/django/django/blob/master/django/forms/forms.py
-            if self.line_formset.non_form_errors():
-                self.non_field_errors = True
-            for form in self.line_formset:
-                if form.non_field_errors():
-                    self.non_field_errors = True
-
-    def header_is_invalid(self):
-        if self.header_form.non_field_errors():
-            self.non_field_errors = True
+    def flag_invalid_forms(self):
+        """
+        We don't actuallly need the header_form_valid flag because
+        if the form is successful the header_form.instance is passed to
+        the subsequent line and match formsets.
+        """
+        if self.header_form.is_valid():
+            header_form_valid = True
+        else:
+            header_form_valid = False
+        line_formset = None
+        if hasattr(self, "line_formset"):
+            line_formset = self.line_formset
+        else:
+            if self.requires_lines(self.header_form):
+                self.line_formset = line_formset = self.get_line_formset()
+        if line_formset:
+            line_formset.header_form_valid = header_form_valid
 
     def invalid_forms(self):
         self.forms_invalid = True
-        self.header_is_invalid()
-        if self.requires_lines(self.get_header_form()):
-            self.lines_are_invalid()
+        self.flag_invalid_forms()
         return self.render_to_response(self.get_context_data())
 
     def post(self, request, *args, **kwargs):
@@ -601,6 +602,7 @@ class RESTBaseTransactionMixin:
         if self.header_form.is_valid():
             self.header_obj = self.header_form.save(commit=False)
             self.line_formset = self.get_line_formset(self.header_obj)
+            self.line_formset.header_form_valid = True
             if self.line_formset.is_valid():
                 self.header_obj.save()
                 self.lines_are_valid()
@@ -647,9 +649,6 @@ class BaseTransaction(
         if 'forms_invalid' not in kwargs:
             if hasattr(self, 'forms_invalid'):
                 kwargs['forms_invalid'] = self.forms_invalid
-        if 'non_field_errors' not in kwargs:
-            if hasattr(self, 'non_field_errors'):
-                kwargs['non_field_errors'] = self.non_field_errors
         if 'negative_transaction_types' not in kwargs:
             # calculator.js needs this
             kwargs['negative_transaction_types'] = self.get_header_model().negatives
@@ -794,19 +793,27 @@ class BaseMatchingMixin:
                 f.helper.template = self.matching_formset_template
                 return f
 
-    def matching_is_invalid(self):
-        self.match_formset = self.get_match_formset()
-        if self.match_formset:
-            self.match_formset.is_valid()
-            if self.match_formset.non_form_errors():
-                self.non_field_errors = True
-            for form in self.match_formset:
-                if form.non_field_errors():
-                    self.non_field_errors = True
 
-    def invalid_forms(self):
-        self.matching_is_invalid()
-        return super().invalid_forms()
+    def flag_invalid_forms(self):
+        super().flag_invalid_forms()
+        if self.header_form.is_valid():
+            header_form_valid = True
+        else:
+            header_form_valid = False
+        lines_are_valid = None
+        if hasattr(self, "line_formset"):
+            if self.line_formset.is_valid():
+                lines_are_valid = True
+            else:
+                lines_are_valid = False
+        if hasattr(self, "match_formset"):
+            match_formset = self.match_formset
+        else:
+            self.match_formset = match_formset = self.get_match_formset()
+        match_formset.header_form_valid = header_form_valid
+        if lines_are_valid is not None:
+            match_formset.lines_are_valid = lines_are_valid
+
 
     def post(self, request, *args, **kwargs):
         self.header_form = self.get_header_form()
@@ -826,6 +833,7 @@ class BaseMatchingMixin:
                 else:
                     return self.invalid_forms()
             else:
+                # TODO - remove this seemingly needless check
                 if self.line_formset and self.match_formset:
                     if self.line_formset.is_valid() and self.match_formset.is_valid():
                         self.header_obj.save()
@@ -839,7 +847,6 @@ class BaseMatchingMixin:
                         return self.invalid_forms()
         else:
             return self.invalid_forms()
-
         return HttpResponseRedirect(self.get_success_url())
 
 

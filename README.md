@@ -40,6 +40,22 @@ Accounts is an open source accountancy web app, on which you can build.
 
 1. Purchase ordering.
 
+### Considerations -
+
+1. Auditing is provided with the help of the simplehistory package.  For performance reasons
+it saves the model state with EVERY save.  A periodic task which cleans up the unnecessary duplicate
+model states is surely recommended.  The package already provides the command.  See https://django-simple-history.readthedocs.io/en/latest/utils.html
+
+2. Transactions CAN be voided.  This means the vat, cash book and nominals transactions are deleted but enough is left untouched so that a new function which undoes the void could easily be implemented.
+
+3. Single objects like cash books, nominals, vat codes, users, groups etc cannot be deleted.  Either allow the user to delete the object and check all the consequences; or add an "active"
+flag to the model and use this to hide the object from the standard lists.
+
+### Browser Support -
+
+All UI testing has so far been manual and limited to the latest version of Chrome and Firefox,
+and to a far lesser extent Edge.  I'm not supporting IE11 because it's a nightmare.  Safari hasn't
+been tested but should be supported.
 
 # Technology Stack
 - Python 3.8.x

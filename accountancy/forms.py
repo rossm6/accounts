@@ -347,6 +347,20 @@ class BaseTransactionModelFormSet(forms.BaseModelFormSet):
     def get_ordering_widget(self):
         return forms.HiddenInput(attrs={'class': 'ordering'})
 
+    def non_field_errors(self):
+        """
+        Formsets have two methods for errors -
+            1. errors, which gives error for all forms in a single list
+            2. non_form_errors, which gives errors raised in clean of formset
+        But we need to know if any there are non_form_errors OR non_field_errors
+        in any of the forms
+        """
+        if self.non_form_errors():
+            return True
+        for form in self.forms:
+            if form.non_field_errors:
+                return True
+
 
 class BaseTransactionLineForm(BaseTransactionMixin, forms.ModelForm):
 
@@ -610,41 +624,42 @@ class SaleAndPurchaseMatchingForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if not hasattr(self, 'tran_being_created_or_edited'):
+            return # header form failed so don't bother validating matches
+        if hasattr(self, "lines_are_valid"):
+            if not self.lines_are_valid:
+                return # line formset failed so don't bother either
         matched_by = cleaned_data.get("matched_by")
         matched_to = cleaned_data.get("matched_to")
         ui_initial_value = self.initial.get("value") or 0
         ui_value = cleaned_data.get("value")
         header = None
         tran_being_created_or_edited_is_matched_by = True
-        # check transaction exists as attribute first because it will not if the header_form fails
-        if hasattr(self, 'tran_being_created_or_edited'):
-            if not self.instance.pk:
-                # this is a new match so we need to check matched_to can be adjusted by new match value
+        if not self.instance.pk:
+            # this is a new match so we need to check matched_to can be adjusted by new match value
+            tran_being_created_or_edited_is_matched_by = True
+            header = matched_to
+            self.initial_value = initial_value = 0
+            if (self.tran_being_created_or_edited.pk
+                    and self.tran_being_created_or_edited.pk == matched_to.pk):
+                self.add_error(
+                    "value",
+                    forms.ValidationError(
+                        _(
+                            "Cannot match a transaction to itself."
+                        ),
+                        code="invalid-match"
+                    )
+                )
+        else:
+            if self.tran_being_created_or_edited.pk == self.instance.matched_by_id:
                 tran_being_created_or_edited_is_matched_by = True
                 header = matched_to
-                self.initial_value = initial_value = 0
-                if (self.tran_being_created_or_edited.pk
-                        and self.tran_being_created_or_edited.pk == matched_to.pk):
-                    self.add_error(
-                        "value",
-                        forms.ValidationError(
-                            _(
-                                "Cannot match a transaction to itself."
-                            ),
-                            code="invalid-match"
-                        )
-                    )
             else:
-                if self.tran_being_created_or_edited.pk == self.instance.matched_by_id:
-                    tran_being_created_or_edited_is_matched_by = True
-                    header = matched_to
-                else:
-                    tran_being_created_or_edited_is_matched_by = False
-                    header = matched_by
-                self.initial_value = initial_value = self.Meta.model.ui_match_value(
-                    header, ui_initial_value)
-        else:
-            return  # header_form must have failed so do not bother checking anything further
+                tran_being_created_or_edited_is_matched_by = False
+                header = matched_by
+            self.initial_value = initial_value = self.Meta.model.ui_match_value(
+                header, ui_initial_value)
         # convert ui_value to the value to be checked against the header
         # e.g. credit note of 120.00 has ui_value of 120.00
         # value here would be -120.00
