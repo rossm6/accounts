@@ -315,7 +315,7 @@ def create_journal_header_helper(generic_to_fields_map={}, read_only=False):
     return StandardHeaderHelper()
 
 
-def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False):
+def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False, brought_forward=False):
     """
 
     This will returns the standard header help for transaction forms
@@ -365,10 +365,14 @@ def create_cashbook_header_helper(generic_to_fields_map={}, read_only=False):
                                     "date", "date"), css_class="input input-disabled text-left border" if read_only else "w-100 form-control form-control-sm"),
                                 css_class="col position-relative"
                             ),
-                            Div(
-                                LabelAndFieldAndErrors(
-                                    "vat_type", css_class="vat_type_selectize form-control form-control-sm"),
-                                css_class="col-3 position-relative"
+                            (
+                                Div(
+                                    LabelAndFieldAndErrors(
+                                        "vat_type", css_class="vat_type_selectize form-control form-control-sm"),
+                                    css_class="col-3 position-relative"
+                                )
+                                if not brought_forward else
+                                HTML('')
                             ),
                             css_class="form-row"
                         ),

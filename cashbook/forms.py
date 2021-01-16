@@ -88,7 +88,12 @@ class CashBookHeaderForm(BaseTransactionHeaderForm):
     def __init__(self, *args, **kwargs):
         self.module_setting = "cash_book_period"
         super().__init__(*args, **kwargs)
-        self.helper = create_cashbook_header_helper()
+        brought_forward = False
+        analysis_required = CashBookHeader.get_types_requiring_analysis()
+        t = self.initial.get("type")
+        if t not in analysis_required:
+            brought_forward = True
+        self.helper = create_cashbook_header_helper(brought_forward=brought_forward)
 
 
 line_css_classes = {
