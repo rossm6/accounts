@@ -16,10 +16,9 @@
     {% endblock head %}
   </head>
   <body>
-
     <header class="header-nav bg-primary-blue font-weight-bold">
       <nav class="navbar navbar-expand-lg text-white">
-        <div class="collapse navbar-collapse justify-content-between" id="navbarNavDropdown">
+        <div class="collapse navbar-collapse justify-content-between" id="companyNavDropDown">
           <ul class="navbar-nav">
             <div class="dropdown">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -34,37 +33,37 @@
               <a class="nav-link" href="{% url 'dashboard:dashboard' %}">Dashboard</a>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link" id="purchasesMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Purchases
               </a>
-              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              <div class="dropdown-menu" aria-labelledby="purchasesMenuLink">
                 <a class="dropdown-item" href="{% url 'purchases:transaction_enquiry' %}">View Transactions</a>
                 <a class="dropdown-item" href="{% url 'purchases:create' %}">Post Transaction</a>
                 <a class="dropdown-item" href="{% url 'purchases:creditors_report' %}">Age Creditors Report</a>
               </div>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link" id="salesMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Sales
               </a>
-              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              <div class="dropdown-menu" aria-labelledby="salesMenuLink">
                 <a class="dropdown-item" href="{% url 'sales:transaction_enquiry' %}">View Transactions</a>
                 <a class="dropdown-item" href="{% url 'sales:create' %}">Post Transaction</a>
                 <a class="dropdown-item" href="{% url 'sales:debtors_report' %}">Age Debtors Report</a>
               </div>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link" id="nominalMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Nominal
               </a>
-              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              <div class="dropdown-menu" aria-labelledby="nominalMenuLink">
                 <a class="dropdown-item" href="{% url 'nominals:transaction_enquiry' %}">View Transactions</a>
                 <a class="dropdown-item" href="{% url 'nominals:create' %}">Post Transaction</a>
                 <a class="dropdown-item" href="{% url 'nominals:trial_balance' %}">Trial Balance</a>
                 <a class="dropdown-item" href="{% url 'nominals:nominals_list' %}">Nominals</a>
                 <div class="dropdown dropright">
-                    <a class="dropdown-item dropdown-toggle pointer" id="dropdown-layouts" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Financial Year Ends</a>
-                    <div class="dropdown-menu" aria-labelledby="dropdown-layouts">
+                    <a class="dropdown-item dropdown-toggle pointer" id="dropdown-fy" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Financial Year Ends</a>
+                    <div class="dropdown-menu" aria-labelledby="dropdown-fy">
                         <a class="dropdown-item text-capitalize" href="{% url 'nominals:finalise_fy' %}">finalise</a>
                         <a class="dropdown-item text-capitalize" href="{% url 'nominals:rollback_fy' %}">rollback</a>
                     </div>
@@ -72,29 +71,29 @@
               </div>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link" id="cashbookMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Cash Book
               </a>
-              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              <div class="dropdown-menu" aria-labelledby="cashbookMenuLink">
                 <a class="dropdown-item" href="{% url 'cashbook:transaction_enquiry' %}">View Transactions</a>
                 <a class="dropdown-item" href="{% url 'cashbook:create' %}">Post Transaction</a>
                 <a class="dropdown-item" href="{% url 'cashbook:cashbook_list' %}">Cashbooks</a>
               </div>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link" id="vatMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Vat
               </a>
-              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              <div class="dropdown-menu" aria-labelledby="vatMenuLink">
                 <a class="dropdown-item" href="{% url 'vat:transaction_enquiry' %}">View Transactions</a>
                 <a class="dropdown-item" href="{% url 'vat:vat_list' %}">Vat Codes</a>
               </div>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link" id="contactsMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Contacts
               </a>
-              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+              <div class="dropdown-menu" aria-labelledby="contactsMenuLink">
                 <a class="dropdown-item" href="{% url 'contacts:list' %}?q=all">All</a>
                 <a class="dropdown-item" href="{% url 'contacts:list' %}?q=customers">Customers</a>
                 <a class="dropdown-item" href="{% url 'contacts:list' %}?q=suppliers">Suppliers</a>
@@ -103,10 +102,10 @@
           </ul>
           <ul class="nav-bar nav">
             <li class="dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <a class="nav-link dropdown-toggle" id="userMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 {{ request.user.username }}
               </a>
-              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userMenuLink">
                 <a class="dropdown-item" href="{% url 'users:profile' %}">Profile</a>
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="{% url 'logout' %}">Log Out</a>
@@ -148,7 +147,6 @@
     <script src="{% static 'accountancy/js/reload.js' %}"></script>
     <script>
         $(document).ready(function(){
-
             var locked_by_another = '{{ locked_by_another }}';
             if(locked_by_another){
                 $("#edited_by_another_modal").modal("show");
@@ -157,10 +155,8 @@
                     e.stopPropagation();
                 });
             }
-
             var unlocked = false;
             var before_unload_began;
-
             function unlock() {
                 var unlock_form = $("form.unlock_form");
                 if(unlock_form.length){
@@ -174,7 +170,6 @@
                     })
                 }
             }
-
             window.addEventListener('beforeunload', function(event){
                 before_unload_began = Date.now();
                 unlock();
@@ -184,7 +179,6 @@
                     }
                 }
             });
-
         });
     </script>
   </body>

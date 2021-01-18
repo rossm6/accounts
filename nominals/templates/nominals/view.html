@@ -54,8 +54,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.1.0/mustache.min.js" integrity="sha512-HYiNpwSxYuji84SQbCU5m9kHEsRqwWypXgJMBtbRSumlx1iBB6QaxgEBZHSHEGM+fKyCX/3Kb5V5jeVXm0OglQ==" crossorigin="anonymous"></script>
 <script src="{% static 'accountancy/js/nominal_transactions.js' %}"></script>
 <script>
-
-
     function show_clientside_error(messages){
         // sometimes we get a html error from the server, this is for when not
         var template = $("#message_template").html();
@@ -64,7 +62,6 @@
         $("body").append(result);
         $(".void-modal").modal("hide");
     }
-
     function show_server_side_error(message){
         if(!message){
             show_clientside_error([
@@ -83,7 +80,6 @@
         $("body").append(message_html);
         $(".void-modal").modal("hide");
     }
-
     $(document).ready(function() {
         $("form.void-form").on("click", function(event) {
             $(".void-modal").modal("show");

@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
 <div class="cont">
     <div>
         <div class="container">
@@ -40,18 +39,15 @@
         </div>
     </div>
 </div>
-
 {% endblock content %}
 
 {% block js %}
 <script>
     $(document).ready(function(){
-
         $("tbody tr").on("click", function(){
             var href = $(this).attr("data-href");
             window.location.href = href;
         });
-        
     });
 </script>
 {% endblock js %}

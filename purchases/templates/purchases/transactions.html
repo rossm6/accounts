@@ -1,57 +1,46 @@
-{% extends 'base.html' %}
+{% extends 'nominals/transactions.html' %}
 
 {% load crispy_forms_tags %}
 
-{% block head %}
-    {% include 'accountancy/transactions_css.html' %}
-{% endblock head %}
-
-{% block content %}
-    <div class="custom-container">
-        <div class="upper mb-5 border-bottom">
-            <div class="container mt-5">
-                <h1 class="h4 font-weight-bold pb-2 border-bottom">Purchase Ledger Transactions</h1>
-                <div>
-                    <div class="mt-4">
-                        <a href="{% url 'purchases:create' %}?t=pi" class="btn btn-sm btn-success mr-2">New Invoice</a>
-                        <a href="{% url 'purchases:create' %}?t=pc" class="btn btn-sm btn-success mr-2">New Credit Note</a>
-                        <a href="{% url 'purchases:create' %}?t=pp" class="btn btn-sm btn-success mr-2">New Payment</a>
-                        <a href="{% url 'purchases:create' %}?t=pr" class="btn btn-sm btn-success mr-2">New Refund</a>
-                    </div>
-                    <div class="mt-2">
-                        <a href="{% url 'purchases:create' %}?t=pbi" class="btn btn-sm btn-success mr-2">New Brought Forward Invoice</a>
-                        <a href="{% url 'purchases:create' %}?t=pbc" class="btn btn-sm btn-success mr-2">New Brought Forward Credit Note</a>
-                        <a href="{% url 'purchases:create' %}?t=pbp" class="btn btn-sm btn-success mr-2">New Brought Forward Payment</a>
-                        <a href="{% url 'purchases:create' %}?t=pbr" class="btn btn-sm btn-success mr-2">New Brought Forward Refund</a>
-                    </div>
-                </div>
+{% block above_table %}
+    <div class="upper mb-5 border-bottom">
+        <div class="container mt-5">
+            <h1 class="h4 font-weight-bold pb-2 border-bottom">Purchase Ledger Transactions</h1>
+            <div>
                 <div class="mt-4">
-                    <div>
-                        <ul class="nav nav-tabs border-0 small">
-                            <li class="nav-item">
-                                <a class="nav-link group-all color-b-1 font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=a">All</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link group-awaiting-payment color-b-1 font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=ap">Awaiting Payment</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-danger group-overdue font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=o">Overdue</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link group-paid color-b-1 font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=p">Paid</a>
-                            </li>
-                        </ul>
-                    </div>
+                    <a href="{% url 'purchases:create' %}?t=pi" class="btn btn-sm btn-success mr-2">New Invoice</a>
+                    <a href="{% url 'purchases:create' %}?t=pc" class="btn btn-sm btn-success mr-2">New Credit Note</a>
+                    <a href="{% url 'purchases:create' %}?t=pp" class="btn btn-sm btn-success mr-2">New Payment</a>
+                    <a href="{% url 'purchases:create' %}?t=pr" class="btn btn-sm btn-success mr-2">New Refund</a>
+                </div>
+                <div class="mt-2">
+                    <a href="{% url 'purchases:create' %}?t=pbi" class="btn btn-sm btn-success mr-2">New Brought Forward Invoice</a>
+                    <a href="{% url 'purchases:create' %}?t=pbc" class="btn btn-sm btn-success mr-2">New Brought Forward Credit Note</a>
+                    <a href="{% url 'purchases:create' %}?t=pbp" class="btn btn-sm btn-success mr-2">New Brought Forward Payment</a>
+                    <a href="{% url 'purchases:create' %}?t=pbr" class="btn btn-sm btn-success mr-2">New Brought Forward Refund</a>
                 </div>
             </div>
-        </div>
-        <div class="lower d-flex justify-content-center">
-            <div class="container">
-                {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
+            <div class="mt-4">
+                <div>
+                    <ul class="nav nav-tabs border-0 small">
+                        <li class="nav-item">
+                            <a class="nav-link group-all color-b-1 font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=a">All</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link group-awaiting-payment color-b-1 font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=ap">Awaiting Payment</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger group-overdue font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=o">Overdue</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link group-paid color-b-1 font-weight-bold" href="{% url 'purchases:transaction_enquiry' %}?group=p">Paid</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
-{% endblock content %}
+{% endblock above_table %}
 
 {% block modal_forms %}
     <div class="modal-on-the-fly-forms">

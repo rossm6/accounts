@@ -9,26 +9,24 @@
 {% endblock head %}
  
 {% block content %}
-
-<div class="cont">
-    <div>
-        <div class="container">
-            <div class="d-flex justify-content-center">
-                <div class="w-75">
-                    <div class="border rounded p-4 mt-5">
-                        <h1 class="h4 font-weight-bold">{{ title }}</h1>
-                        <form class="mt-5" method="POST">
-                            {% crispy form %}
-                            <div class="d-flex justify-content-between">
-                                <a class="btn btn-secondary" href="{% url 'contacts:list' %}">Cancel</a>
-                                <button type="submit" class="btn btn-success">Save</button>
-                            </div>
-                        </form>
+    <div class="cont">
+        <div>
+            <div class="container">
+                <div class="d-flex justify-content-center">
+                    <div class="w-75">
+                        <div class="border rounded p-4 mt-5">
+                            <h1 class="h4 font-weight-bold">{{ title }}</h1>
+                            <form class="mt-5" method="POST">
+                                {% crispy form %}
+                                <div class="d-flex justify-content-between">
+                                    <a class="btn btn-secondary" href="{% url 'contacts:list' %}">Cancel</a>
+                                    <button type="submit" class="btn btn-success">Save</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
 {% endblock content %}

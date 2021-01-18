@@ -1,100 +1,41 @@
-{% extends 'base.html' %}
+{% extends 'purchases/transactions.html' %}
 
-{% load crispy_forms_tags %}
-
-{% block head %}
-    {% include 'accountancy/transactions_css.html' %}
-{% endblock head %}
-
-{% block content %}
-    <div class="custom-container">
-        <div class="upper mb-5 border-bottom">
-            <div class="container mt-5">
-                <h1 class="h4 font-weight-bold pb-2 border-bottom">Sale Ledger Transactions</h1>
-                <div>
-                    <div class="mt-4">
-                        <a href="{% url 'sales:create' %}?t=si" class="btn btn-sm btn-success mr-2">New Invoice</a>
-                        <a href="{% url 'sales:create' %}?t=sc" class="btn btn-sm btn-success mr-2">New Credit Note</a>
-                        <a href="{% url 'sales:create' %}?t=sp" class="btn btn-sm btn-success mr-2">New Receipt</a>
-                        <a href="{% url 'sales:create' %}?t=sr" class="btn btn-sm btn-success mr-2">New Refund</a>
-                    </div>
-                    <div class="mt-2">
-                        <a href="{% url 'sales:create' %}?t=sbi" class="btn btn-sm btn-success mr-2">New Brought Forward Invoice</a>
-                        <a href="{% url 'sales:create' %}?t=sbc" class="btn btn-sm btn-success mr-2">New Brought Forward Credit Note</a>
-                        <a href="{% url 'sales:create' %}?t=sbp" class="btn btn-sm btn-success mr-2">New Brought Forward Receipt</a>
-                        <a href="{% url 'sales:create' %}?t=sbr" class="btn btn-sm btn-success mr-2">New Brought Forwrd Refund</a>
-                    </div>
-                </div>
+{% block above_table %}
+    <div class="upper mb-5 border-bottom">
+        <div class="container mt-5">
+            <h1 class="h4 font-weight-bold pb-2 border-bottom">Sale Ledger Transactions</h1>
+            <div>
                 <div class="mt-4">
-                    <div>
-                        <ul class="nav nav-tabs border-0 small">
-                            <li class="nav-item">
-                                <a class="nav-link group-all color-b-1 font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=a">All</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link group-awaiting-payment color-b-1 font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=ap">Awaiting Payment</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-danger group-overdue font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=o">Overdue</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link group-paid color-b-1 font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=p">Paid</a>
-                            </li>
-                        </ul>
-                    </div>
+                    <a href="{% url 'sales:create' %}?t=si" class="btn btn-sm btn-success mr-2">New Invoice</a>
+                    <a href="{% url 'sales:create' %}?t=sc" class="btn btn-sm btn-success mr-2">New Credit Note</a>
+                    <a href="{% url 'sales:create' %}?t=sp" class="btn btn-sm btn-success mr-2">New Receipt</a>
+                    <a href="{% url 'sales:create' %}?t=sr" class="btn btn-sm btn-success mr-2">New Refund</a>
+                </div>
+                <div class="mt-2">
+                    <a href="{% url 'sales:create' %}?t=sbi" class="btn btn-sm btn-success mr-2">New Brought Forward Invoice</a>
+                    <a href="{% url 'sales:create' %}?t=sbc" class="btn btn-sm btn-success mr-2">New Brought Forward Credit Note</a>
+                    <a href="{% url 'sales:create' %}?t=sbp" class="btn btn-sm btn-success mr-2">New Brought Forward Receipt</a>
+                    <a href="{% url 'sales:create' %}?t=sbr" class="btn btn-sm btn-success mr-2">New Brought Forwrd Refund</a>
                 </div>
             </div>
-        </div>
-        <div class="lower d-flex justify-content-center">
-            <div class="container">
-                {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
-            </div>
-        </div>
-    </div>
-{% endblock content %}
-
-{% block modal_forms %}
-    <div class="modal-on-the-fly-forms">
-        <div class="modal fade" id="new-contact" tabindex="-1" role="dialog"  aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title font-weight-bold" id="exampleModalLabel">New Contact</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                {% crispy contact_form %}
+            <div class="mt-4">
+                <div>
+                    <ul class="nav nav-tabs border-0 small">
+                        <li class="nav-item">
+                            <a class="nav-link group-all color-b-1 font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=a">All</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link group-awaiting-payment color-b-1 font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=ap">Awaiting Payment</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger group-overdue font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=o">Overdue</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link group-paid color-b-1 font-weight-bold" href="{% url 'sales:transaction_enquiry' %}?group=p">Paid</a>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
-{% endblock modal_forms %}
-
-{% block js %}
-    {% load static %}
-    {% comment %} need to factor out common elements of this template {% endcomment %}
-    <script src="{% static 'purchases/js/transaction_search_form.js' %}"></script> 
-    {% include 'accountancy/transactions_js.html' %}
-    <script>
-        $(document).ready(function(){
-            function getUrlVars() {
-                // https://stackoverflow.com/a/20097994
-                var vars = {};
-                var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi,    
-                function(m,key,value) {
-                    vars[key] = value;
-                });
-                return vars;
-            }
-            var group = getUrlVars()["group"] || "a";
-            var group_tabs = {
-                a: "a.group-all",
-                ap: "a.group-awaiting-payment",
-                o: "a.group-overdue",
-                p: "a.group-paid"
-            };
-            $(group_tabs[group]).addClass("active");
-        });
-    </script>
-{% endblock js %}
+{% endblock above_table %}

@@ -1,13 +1,7 @@
-{% extends 'accountancy/single_object_detail_with_audit.html' %}
+{% extends 'controls/fy_detail' %}
 
 {% load crispy_forms_tags %}
 {% load static %}
-
-{% block extra_head %}
-    <link rel="stylesheet" href="{% static 'accountancy/css/selectize.css' %}">
-    <link rel="stylesheet" href="{% static 'controls/css/fy.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/css/tempusdominus-bootstrap-4.min.css" integrity="sha512-3JRrEUwaCkFUBLK1N8HehwQgu8e23jTH4np5NHOmQOobuC4ROQxFwFgBLTnhcnQRMs84muMh0PnnwXlPq5MGjg==" crossorigin="anonymous" />
-{% endblock extra_head %}
 
 {% block content %}
 <div class="cont">
@@ -52,15 +46,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.39.0/js/tempusdominus-bootstrap-4.min.js" integrity="sha512-k6/Bkb8Fxf/c1Tkyl39yJwcOZ1P4cRrJu77p83zJjN2Z55prbFHxPs9vN7q3l3+tSMGPDdoH51AEU8Vgo1cgAA==" crossorigin="anonymous"></script>
 <script>
     $(document).ready(function(){
-        
         function init () {
             $("span.period-number:visible").each(function(index, el){
                 $(el).text("Period " + (index + 1))
             });
         }
-
         init();
-
         var add_period_btn = $("button.add-period-btn");
         add_period_btn.on("click", function(e){
             e.preventDefault();
@@ -78,7 +69,6 @@
             $("div.formset").append(new_form);
             $("form").find("input[name='period-TOTAL_FORMS']").val(+total_forms + 1);
         });
-
         function auto_fill(){
             var format = "YYYY-MM-DD";
             var p1 = $(".datepicker:visible").eq(0);
@@ -91,13 +81,10 @@
                 previous = month_from_now;
             });
         }
-
         $("button.auto-fill-btn").on("click", auto_fill);
-
         $(document).on("focusout", ".datepicker", function(e){
             $("button.auto-fill-btn").prop("disabled", false);
         });
-
         $(document).on("click", ".col-close-icon", function(){
             var delete_btn = $(this);
             var input_group = delete_btn.parents(".input-group").eq(0);
@@ -107,7 +94,6 @@
             total_forms_input.val(+total_periods - 1);
             init();
         });
-
     });
 </script>
 {% endblock module_js %}

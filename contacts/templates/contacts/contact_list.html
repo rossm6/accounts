@@ -126,7 +126,6 @@
 <script src="{% static 'accountancy/js/datatable_extensions.js' %}"></script>
 <script>
     $(document).ready(function(){
-   
         function enable_search () {
             var search_box = $("div.has-search");
             search_box.find(":input[name='search']").on("keyup", function(){
@@ -134,14 +133,12 @@
                 table.ajax.reload();
             });
         }
-
         function add_row_events(){
             $("tbody tr").on("click", function(){
                 var href = $(this).data("href");
                 return window.location.href = href;
             });
         }
-
         var table = $("table")
         .on('init.dt', function (e, settings, json) {
             var search_box = $("div.has-search");
@@ -170,12 +167,10 @@
             ],
             dom: "<'row'<'d-flex align-items-center col-6'l><'search-col d-flex align-items-center col-6'>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'d-flex align-items-center col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
         });
-
         table.on('draw', function (e, settings) {
             add_row_events();
             enable_search();
         });
-
     });
 </script>
 {% endblock js %}

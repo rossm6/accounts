@@ -8,6 +8,7 @@
 
 {% block content %}
     <div class="custom-container">
+        {% block above_table %}
         <div class="upper mb-5 border-bottom">
             <div class="container mt-5">
                 <h1 class="h4 font-weight-bold pb-2 border-bottom">Nominal Transactions</h1>
@@ -18,11 +19,14 @@
                 </div>
             </div>
         </div>
+        {% endblock above_table %}
+        {% block table %}
         <div class="lower d-flex justify-content-center">
             <div class="container">
                 {% include 'accountancy/transactions_table.html' with form=form columns=columns  %}
             </div>
         </div>
+        {% endblock table %}
     </div>
 {% endblock content %}
 
