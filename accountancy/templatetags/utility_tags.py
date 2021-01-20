@@ -7,6 +7,7 @@ from django.utils.encoding import force_str
 register = Library()
 
 
+
 def construct_query_string(context, query_params):
     # empty values will be removed
     query_string = context["request"].path
@@ -17,6 +18,14 @@ def construct_query_string(context, query_params):
         ])
         query_string += f"?{encoded_params}"
     return query_string
+
+
+@register.simple_tag
+def get_forms(formset):
+    print(formset.__dict__)
+    if hasattr(formset, "ordered_forms"):
+        return formset.ordered_forms
+    return formset
 
 
 @register.simple_tag(takes_context=True)

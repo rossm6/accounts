@@ -571,7 +571,10 @@ class RESTBaseTransactionMixin:
                 return self.line_formset
             else:
                 formset_class = self.line.get('formset')
-                return formset_class(**self.get_line_formset_kwargs(header))
+                formset = formset_class(**self.get_line_formset_kwargs(header))
+                formset.helper = FormHelper()
+                formset.helper.template = self.line_formset_template
+                return formset
 
     def flag_invalid_forms(self):
         """
@@ -618,6 +621,7 @@ class BaseTransaction(
         TemplateResponseMixin,
         ContextMixin,
         View):
+    line_formset_template = "accounts/line_formset.html"
 
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)

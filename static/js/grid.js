@@ -5,6 +5,33 @@
 })(window, function () {
 
 
+    Grid.prototype.re_index_forms = function () {
+        // this fixes a bug
+        // hithero i'd assumed, for example, we post two forms,
+        // form_1 and form_4 as part of a django formset
+        // except we cannot.
+        // django will see the form count is 2 and so construct a form_1
+        // and a form_2.  Each then is passed POST data where the prefix index
+        // is the same as the form index.
+        // this means clientside we must ensure our forms are consecutively indexed
+        this.get_table()
+            .find("tbody")
+            .find("tr")
+            .not(this.empty_form_identifier)
+            .each(function (row_index, row) {
+                var $row = $(row);
+                $row.find(":input").each(function(i, field){
+                    field = $(field);
+                    var name = $(field).attr("name");
+                    if(name){
+                        name = name.replace(/\d+/, row_index);
+                        field.attr("name", name);
+                    }
+                });
+            });
+    };
+
+
     Grid.prototype.delete_line = function (delete_button) {
         // assume delete button is in the line to delete
         // pretty dumb otherwise
@@ -13,19 +40,18 @@
         this.reorder();
     };
 
-
     Grid.prototype.get_order = function (row_index, $row) {
         var order;
         $row.find(":input:visible").each(function (field_index, field) {
             var field = $(field);
-            if(field.attr("type") == "checkbox"){
-                if(field.prop("checked")){
+            if (field.attr("type") == "checkbox") {
+                if (field.prop("checked")) {
                     order = row_index;
                     return false; // end the loop
                 }
             }
-            else{
-                if(field.val()){
+            else {
+                if (field.val()) {
                     order = row_index;
                     return false; // end the loop
                 }
@@ -53,6 +79,7 @@
                     $row.find("input" + instance.order_identifier).val(order);
                 }
             });
+        this.re_index_forms();
     };
 
 
@@ -115,12 +142,12 @@
             update: function (event, ui) {
                 grid.reorder();
             },
-            helper: function(e, ui){
+            helper: function (e, ui) {
                 // without this helper the table width is the sum of
                 // the content width per each column
                 // Setting the width per row does not work so must
                 // be done for each th and td element instead
-                ui.parents("table").find("th, td").each(function(){
+                ui.parents("table").find("th, td").each(function () {
                     $(this).width($(this).width());
                 });
                 return ui;

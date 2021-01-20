@@ -49,7 +49,7 @@ model states is surely recommended.  The package already provides the command.  
 2. Transactions CAN be voided.  This means the vat, cash book and nominals transactions are deleted but enough is left untouched so that a new function which undoes the void could easily be implemented.
 
 3. Single objects like cash books, nominals, vat codes, users, groups etc cannot be deleted.  Either allow the user to delete the object and check all the consequences; or add an "active"
-flag to the model and use this to hide the object from the standard lists.
+flag to the model and use this to hide the object from the standard lists.  Should you opt to allow nominals to be deleted make sure the user cannot delete the purchase, sales, vat and suspense control accounts, and the retained earnings account, because these accounts are assumed to always exist in the software.
 
 ### Browser Support -
 

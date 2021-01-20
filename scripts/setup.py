@@ -19,10 +19,12 @@ def run():
     # revenue
     revenue = Nominal.objects.create(name="Revenue", type="pl")
     revenue = Nominal.objects.create(name="Revenue", type="pl", parent=revenue)
+    sales = Nominal.objects.create(name="Sales", type="pl", parent=revenue)
     # expenses
     expenses = Nominal.objects.create(name="Expenses", type="pl")
     expenses = Nominal.objects.create(
         name="Expenses", type="pl", parent=expenses)
+    sundry = Nominal.objects.create(name="Sundry", type="pl", parent=expenses)
     # assets
     assets = Nominal.objects.create(name="Assets", type="b")
     current_assets = Nominal.objects.create(

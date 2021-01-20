@@ -15,17 +15,15 @@
                             </div>
                         </div>
                         <ul class="mt-4 list-unstyled">
-                            {% for nominal in nominals %}
-                                {% if not nominal.is_root_node %}
-                                    {% if not nominal.is_leaf_node %}
-                                        <li class="pl-2 font-weight-bold text-secondary">{{ nominal }}</li>
-                                    {% else %}
-                                        <a href="{% url 'nominals:nominal_detail' pk=nominal.pk %}">
-                                            <li class="pl-4">{{ nominal }}</li>
-                                        </a>
-                                    {% endif %}
-                                {% else %}
+                            {% for nominal in nominals %}                 
+                                {% if nominal.level == 0 %}
                                     <li class="font-weight-bold text-black">{{ nominal }}</li>
+                                {% elif nominal.level == 1 %}
+                                    <li class="pl-2 font-weight-bold text-secondary">{{ nominal }}</li>
+                                {% elif nominal.level == 2 %}
+                                    <a href="{% url 'nominals:nominal_detail' pk=nominal.pk %}">
+                                        <li class="pl-4">{{ nominal }}</li>
+                                    </a>
                                 {% endif %}
                             {% endfor %}
                         </ul>
