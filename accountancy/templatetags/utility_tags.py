@@ -22,7 +22,6 @@ def construct_query_string(context, query_params):
 
 @register.simple_tag
 def get_forms(formset):
-    print(formset.__dict__)
     if hasattr(formset, "ordered_forms"):
         return formset.ordered_forms
     return formset

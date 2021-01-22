@@ -43,19 +43,23 @@ Accounts is an open source accountancy web app, on which you can build.
 ### Considerations -
 
 1. Auditing is provided with the help of the simplehistory package.  For performance reasons
-it saves the model state with EVERY save.  A periodic task which cleans up the unnecessary duplicate
-model states is surely recommended.  The package already provides the command.  See https://django-simple-history.readthedocs.io/en/latest/utils.html
+it saves the model state with every save.  A periodic task which cleans up the unnecessary duplicate
+model states is probably a good idea.  The package already provides the command.  See https://django-simple-history.readthedocs.io/en/latest/utils.html
 
-2. Transactions CAN be voided.  This means the vat, cash book and nominals transactions are deleted but enough is left untouched so that a new function which undoes the void could easily be implemented.
+2. simplehistory does not provide a means out of the box of auditing many to many relationships so
+the groups for users are not audited.  Financial years are also not audited at the moment but that
+is simply due to a lack of time.
 
-3. Single objects like cash books, nominals, vat codes, users, groups etc cannot be deleted.  Either allow the user to delete the object and check all the consequences; or add an "active"
+3. Transactions can be voided.  This means the vat, cash book and nominals transactions are deleted but enough is left untouched so that a new function which undoes the void could easily be implemented.
+
+4. Single objects like cash books, nominals, vat codes, users, groups etc cannot be deleted.  Either allow the user to delete the object and check all the consequences; or add an "active"
 flag to the model and use this to hide the object from the standard lists.  Should you opt to allow nominals to be deleted make sure the user cannot delete the purchase, sales, vat and suspense control accounts, and the retained earnings account, because these accounts are assumed to always exist in the software.
+
+5. By default the first user who signs up is a superuser but not admin.  Subquent users are neither superusers or admin.  Non admin users - so that's all users - can't access the admin.  Middleware performs this check.
 
 ### Browser Support -
 
-All UI testing has so far been manual and limited to the latest version of Chrome and Firefox,
-and to a far lesser extent Edge.  I'm not supporting IE11 because it's a nightmare.  Safari hasn't
-been tested but should be supported.
+All UI testing has so far been manual and limited to the latest version of Chrome and Firefox, and to a far lesser extent Edge.  I'm not supporting IE11 because it's a nightmare.  Safari hasn't been tested but should be supported.
 
 # Technology Stack
 - Python 3.8.x

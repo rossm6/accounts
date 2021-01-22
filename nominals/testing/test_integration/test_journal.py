@@ -444,7 +444,6 @@ class CreateJournal(TestCase):
 
     # CORRECT USAGE
     # Each line contains goods only
-
     def test_create_journal_with_goods_only_and_not_vat(self):
         self.client.force_login(self.user)
         data = {}
@@ -999,7 +998,6 @@ class CreateJournal(TestCase):
             )
 
     # INCORRECT USAGE
-
     def test_create_journal_without_total(self):
         self.client.force_login(self.user)
         data = {}
@@ -1234,6 +1232,65 @@ class CreateJournal(TestCase):
         self.assertContains(
             response,
             '<li class="py-1">The total of the debits does not equal the total you entered.</li>',
+            html=True
+        )
+        self.assertEqual(
+            len(VatTransaction.objects.all()),
+            0
+        )
+
+    # INCORRECT USAGE
+    def test_create_journal_without_vat_type_but_vat_is_analysed(self):
+        self.client.force_login(self.user)
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "nj",
+                "ref": self.ref,
+                "date": self.date,
+                "total": '',
+                "period": self.period.pk,
+                "vat_type": ""
+            }
+        )
+        data.update(header_data)
+        line_forms = []
+        line_forms.append(
+            {
+                "description": self.description,
+                "goods": 100,
+                "nominal": self.bank_nominal.pk,
+                "vat_code": self.vat_code.pk,
+                "vat": 20
+            }
+        )
+        line_forms.append(
+            {
+                "description": self.description,
+                "goods": -100,
+                "nominal": self.debtors_nominal.pk,
+                "vat_code": self.vat_code.pk,
+                "vat": -20
+            }
+        )
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        header = NominalHeader.objects.all()
+        lines = NominalLine.objects.all()
+        self.assertEqual(
+            len(header),
+            0
+        )
+        self.assertEqual(
+            len(lines),
+            0
+        )
+        self.assertContains(
+            response,
+            '<li class="py-1">If you want to analyse the vat you need to state at the top of the page whether it is input or output</li>',
             html=True
         )
         self.assertEqual(

@@ -5,7 +5,8 @@ from accountancy.fields import (ModelChoiceFieldChooseIterator,
 from accountancy.forms import (BaseAjaxFormMixin, BaseLineFormset,
                                BaseTransactionHeaderForm,
                                BaseTransactionLineForm,
-                               NominalTransactionSearchForm)
+                               NominalTransactionSearchForm,
+                               UserDefinedVatTypeLineForm)
 from accountancy.layouts import (Div, Field, LabelAndFieldAndErrors,
                                  PlainFieldErrors, TableHelper,
                                  create_journal_header_helper,
@@ -101,7 +102,10 @@ line_css_classes = {
 }
 
 
-class NominalLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
+class NominalLineForm(
+        BaseAjaxFormMixin,
+        BaseTransactionLineForm,
+        UserDefinedVatTypeLineForm):
     nominal = ModelChoiceFieldChooseIterator(
         queryset=Nominal.objects.none(),
         iterator=RootAndLeavesModelChoiceIterator,
@@ -143,6 +147,11 @@ class NominalLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
         }
 
     def __init__(self, *args, **kwargs):
+        kwargs.pop('brought_forward') # passed by formset but not needed
+        if 'header' in kwargs:
+            header = kwargs.get('header')
+            self.header = header
+            kwargs.pop("header")
         super().__init__(*args, **kwargs)
         self.helpers = TableHelper(
             NominalLineForm.Meta.fields,

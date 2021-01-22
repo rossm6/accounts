@@ -1537,6 +1537,44 @@ class CreatePayment(TestCase):
                 lines[i].vat
             )
 
+    def test_create_with_two_lines_NEGATIVE(self):
+        self.client.force_login(self.user)
+        data = {}
+        header_data = create_header(
+            HEADER_FORM_PREFIX,
+            {
+                "type": "cp",
+				"period": self.period.pk,
+                "cash_book": self.cash_book.pk,
+                "ref": self.ref,
+                "date": self.date,
+                "total": -240,
+                "vat_type": ""
+            }
+        )
+        data.update(header_data)
+        line_forms = [
+            {
+                "description": self.description,
+                "goods": -100,
+                "nominal": self.not_bank_nominal.pk,
+                "vat_code": self.vat_code.pk,
+                "vat": -20
+            }
+        ] * 2
+        line_data = create_formset_data(LINE_FORM_PREFIX, line_forms)
+        data.update(line_data)
+        response = self.client.post(self.url, data)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+        self.assertContains(
+            response,
+            "If you want to analyse the vat you need to state at the top of the page whether it is input or output"
+        )
+
+
 
 class EditPayment(TestCase):
 

@@ -400,8 +400,6 @@ class BaseLineFormset(BaseTransactionModelFormSet):
             kwargs.pop("brought_forward")
         super().__init__(*args, **kwargs)
 
-
-class SaleAndPurchaseLineFormset(BaseLineFormset):
     def _construct_form(self, i, **kwargs):
         if hasattr(self, 'brought_forward'):
             kwargs["brought_forward"] = self.brought_forward
@@ -421,6 +419,8 @@ class SaleAndPurchaseLineFormset(BaseLineFormset):
             })
             return kwargs
         return super().get_form_kwargs(index)
+
+class SaleAndPurchaseLineFormset(BaseLineFormset):
 
     def clean(self):
         super().clean()
@@ -500,11 +500,20 @@ class BroughtForwardLineForm(BaseAjaxFormMixin, BaseTransactionLineForm):
         # if the type is a brought forward type the line_formset will show
         # but the columns containing the irrelevant fields will be hidden
 
+class UserDefinedVatTypeLineForm:
 
-# WHEN WE DELETE THE ITEM FIELD WE'LL HAVE THE SAME LINE FORM
-# FOR SALES, PURCHASES, CASH BOOK
+    def clean_vat_code(self):
+        vat_code = self.cleaned_data.get('vat_code')
+        if vat_code and not self.header.vat_type:
+            raise forms.ValidationError(
+                _(
+                    "If you want to analyse the vat you need to state at the top of the page whether it is input or output"
+                )
+            )
+        return vat_code
 
-class BaseCashBookLineForm(BroughtForwardLineForm):
+
+class BaseCashBookLineForm(BroughtForwardLineForm, UserDefinedVatTypeLineForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

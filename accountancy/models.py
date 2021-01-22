@@ -13,17 +13,6 @@ from accountancy.fields import AccountsDecimalField, UIDecimalField
 from accountancy.helpers import bulk_delete_with_history
 from accountancy.mixins import AuditMixin
 
-"""
-
-    Two considerations -
-
-        1. Move the methods on TransactionHeader which relate to transaction type to the TransactionBase model so that TransactionLine has them also
-        2. MatchedHeaders would be improved by having two value fields.  One relating to the matched_by and the other to matched_to.  This should erase the logic
-           in the calling code which checks what the value relates.
-        3. We have not tested AccountsDecimalField.
-
-"""
-
 
 class NonAuditQuerySet(models.QuerySet):
 
@@ -485,10 +474,7 @@ class MatchedHeaders(AuditMixin, models.Model):
             value = match_value * -1
         else:
             value = match_value
-        # TODO - value in match field ought to have model field to avoid negative zero
-        if value == 0:
-            value = 0 # avoid negative zero
-        return value
+        return (value + 0) # avoid negative zero
 
     @classmethod
     def get_not_fully_matched_at_period(cls, headers, period):

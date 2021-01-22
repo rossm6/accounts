@@ -134,7 +134,6 @@
 
 
         $.fn.dataTable.enum(['Revenue', 'Expenses', 'Assets', 'Liabilities', 'Equity', 'System Controls']);
-        // not sure ordering is working although seems to be
         $("table.report").DataTable({
             paging: false,
             dom: "t",
@@ -146,10 +145,6 @@
                 [2, 'asc'],
             ],
             columnDefs: [
-                {
-                    OrderDatatType: "enum",
-                    targets: [2]
-                },
                 { 
                     targets: [1, 2], visible: false
                 },

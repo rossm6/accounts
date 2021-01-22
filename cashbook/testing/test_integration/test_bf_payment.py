@@ -764,7 +764,6 @@ class CreateBroughtForwardPayment(TestCase):
             header.type
         )
 
-
 class EditBroughtForwardPayment(TestCase):
 
     @classmethod
