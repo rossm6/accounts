@@ -2,7 +2,10 @@
 
 Accounts is an open source accountancy web app, on which you can build.
 
-### Try It Out For Yourself
+### Live Demo (no email address is required to sign up)
+https://django-accounts-1.herokuapp.com/contacts/
+
+### Or Try It Out By Deploying Your Own
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
 ### Includes
