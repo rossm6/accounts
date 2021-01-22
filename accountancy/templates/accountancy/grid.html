@@ -25,7 +25,7 @@
                             {% endblock action %}
                             <div>
                                 {% if create or edit %}
-                                <form class="formset" method="POST">
+                                <form class="formset" method="POST" autocomplete="off">
                                     {% csrf_token %}
                                 {% endif %}
                                     {% load crispy_forms_tags %}

@@ -44,10 +44,14 @@ $(document).ready(function() {
             return;
         }
         var val = $input.val();
-        if(!isNaN(val)){
-            val = parseFloat(val).toFixed(2);
+        if(val == ""){
+            return;
         }
-        $input.val(val);
+        val = +val;
+        if(typeof val == 'number'){
+            val = parseFloat(val).toFixed(2);
+            $input.val(val);
+        }
     }
 
     main_grid.add_callback = function(new_line) {

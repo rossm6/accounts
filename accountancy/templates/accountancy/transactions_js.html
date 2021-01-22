@@ -16,11 +16,25 @@ $(document).ready(function () {
         $(".search-btn-trigger").show();
     });
 
+    function reset_form($form){
+        // we cannot use .reset because the form defaults
+        // come from the server and we want blank fields
+        $form.find(":input").each(function(i, input){
+            input = $(input);
+            if(input.attr("type") == "checkbox"){
+                input.prop("checked", false);
+            }
+            else{
+                input.val("");
+            }
+        });
+    }
+
     // Advanced Search Form
     // The Button defined at the top of the page will show this form
-
     $(document).on("click", ".adv-search-form .clear-btn", function () {
-        $(".adv-search-form form").get(0).reset();
+        var form = $(".adv-search-form form");
+        reset_form(form);
         table.ajax.reload();
     });
 
@@ -113,7 +127,6 @@ $(document).ready(function () {
                 // I was using jQuery.serialize but this encodes the url
                 // Because jQuery datatables does also we get double encoding
                 var fields = $(".adv-search-form").find("form").find(":input");
-                console.log(fields);
                 for(var i = 0; i < fields.length; i++){
                     var field = $(fields[i]);
                     var name = field.attr("name");
@@ -131,7 +144,6 @@ $(document).ready(function () {
                         }
                     }
                 }
-                console.log(data);
                 $.ajax({
                     url:"",
                     type: "GET",

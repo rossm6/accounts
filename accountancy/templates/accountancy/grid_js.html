@@ -65,6 +65,10 @@
             field_errors_select_selectized.setValue(error_index, 0);
         });
     }
+    else{
+        $("div.field_errors_info").hide();
+        // if there are non field errors only these will show
+    }
 
     {% if create or edit %}
 
