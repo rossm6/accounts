@@ -10,23 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
-
-"""
-
-HELP !!!
-
-
-1. With whitenoise installed and DEBUG=False and <!doctype html> instead of <!DOCTYPE html> I had a weird issue where commenting out JS lines
-   in input_dropdown_widget.js was stripping off the trailing characters of the JS file.
-
-2. I uninstalled whitenoises but then got the problem where the css files were rejected because MIME-TYPE = text/html and this is obviously not right.
-   The answer is Debug=True.  Although i think the HTML declaration is wrong so this needs changing anyway.
-
-   Then the JS file problem went away.
-
-"""
-
-
 import dj_database_url
 import os
 
@@ -135,13 +118,6 @@ WSGI_APPLICATION = 'proj.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -201,11 +177,6 @@ LOGIN_URL = '/users/signin'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/users/signin'
 
-# ANYMAIL = {
-#     "MAILGUN_API_KEY": os.environ.get('MAILGUN_API_KEY', ''),
-#     "MAILGUN_SENDER_DOMAIN": os.environ.get('MAILGUN_DOMAIN', ''),
-# }
-
 # EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
 EMAIL_BACKEND = "users.backends.CustomEmailBackend"
 DEFAULT_FROM_EMAIL = "you@example.com"
@@ -218,7 +189,6 @@ SERVER_EMAIL = "your-server@example.com"
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
-
 
 DEFAULT_VAT_NOMINAL = "Vat"
 DEFAULT_SYSTEM_SUSPENSE = "System Suspense Account"
@@ -236,31 +206,6 @@ ACCOUNTANCY_MODULES = {
 
 NEW_USERS_ARE_SUPERUSERS = int(os.environ.get('NEW_USERS_ARE_SUPERUSERS', default=0))
 FIRST_USER_IS_SUPERUSER = int(os.environ.get('FIRST_USER_IS_SUPERUSER', default=1))
-
-
-# DEFAULT_RENDERER_CLASSES = (
-#     'rest_framework.renderers.JSONRenderer',
-# )
-
-# # Browsable API is great for development but i don't really want it to be
-# # viewable for end users.  The consumers of the API, like a third party software
-# # company, are expected to use the API via a Python client.
-
-# if DEBUG:
-#     # Based on this SO answer - https://stackoverflow.com/a/49395080
-#     DEFAULT_RENDERER_CLASSES = DEFAULT_RENDERER_CLASSES + (
-#         'rest_framework.renderers.BrowsableAPIRenderer',
-#     )
-
-# REST_FRAMEWORK = {
-#     'DEFAULT_PERMISSION_CLASSES': (
-#         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-#     ),
-#     'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES,
-#     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-#     'PAGE_SIZE': 10
-# }
-
 
 # production
 if ENVIRONMENT == 'production' and DEBUG == 0:
